@@ -46,7 +46,7 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     
     const stats = teamStats.get(teamId)!;
     const isWin = row.result === '1';
-    const gameLength = parseFloat(row.gamelength);
+    const gameLength = parseFloat(row.gamelength || '0');
     
     if (isWin) stats.wins++;
     else stats.losses++;
@@ -130,9 +130,9 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
     
     const stats = playerStats.get(playerId)!;
-    stats.kills += parseInt(row.kills) || 0;
-    stats.deaths += parseInt(row.deaths) || 0;
-    stats.assists += parseInt(row.assists) || 0;
+    stats.kills += parseInt(row.kills || '0') || 0;
+    stats.deaths += parseInt(row.deaths || '0') || 0;
+    stats.assists += parseInt(row.assists || '0') || 0;
     stats.games++;
     
     const minionKills = parseInt(row.minionkills || '0') || 0;
@@ -148,40 +148,83 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Calculate team total damage for damage share computation
-  const teamTotalDamage = new Map<string, number>();
+  // Calculate team total damage for each game separately
+  const teamGameDamage = new Map<string, Map<string, number>>();
+  
+  // First pass to calculate total team damage per game
   data.forEach(row => {
-    if (!row.teamid || !row.playerid) return;
+    if (!row.teamid || !row.playerid || !row.gameid) return;
     
     const teamId = row.teamid;
+    const gameId = row.gameid;
     const damageDone = parseInt(row.damagetochampions || '0') || 0;
     
-    if (!teamTotalDamage.has(teamId)) {
-      teamTotalDamage.set(teamId, 0);
+    // Create nested map structure if it doesn't exist
+    if (!teamGameDamage.has(teamId)) {
+      teamGameDamage.set(teamId, new Map<string, number>());
     }
     
-    teamTotalDamage.set(teamId, teamTotalDamage.get(teamId)! + damageDone);
+    const teamGames = teamGameDamage.get(teamId)!;
+    if (!teamGames.has(gameId)) {
+      teamGames.set(gameId, 0);
+    }
+    
+    // Add this player's damage to the team's total for this game
+    teamGames.set(gameId, teamGames.get(gameId)! + damageDone);
+  });
+  
+  // Calculate player damage share per game and average it
+  const playerDamageShares = new Map<string, number[]>();
+  
+  data.forEach(row => {
+    if (!row.teamid || !row.playerid || !row.gameid) return;
+    
+    const playerId = row.playerid;
+    const teamId = row.teamid;
+    const gameId = row.gameid;
+    const damageDone = parseInt(row.damagetochampions || '0') || 0;
+    
+    // Get team's total damage for this game
+    const teamGameMap = teamGameDamage.get(teamId);
+    if (!teamGameMap) return;
+    
+    const teamGameTotalDamage = teamGameMap.get(gameId) || 0;
+    if (teamGameTotalDamage <= 0) return;
+    
+    // Calculate damage share for this game
+    const damageShare = damageDone / teamGameTotalDamage;
+    
+    // Store the damage share for averaging later
+    if (!playerDamageShares.has(playerId)) {
+      playerDamageShares.set(playerId, []);
+    }
+    
+    playerDamageShares.get(playerId)!.push(damageShare);
+  });
+  
+  // Update player stats with average damage share
+  playerDamageShares.forEach((damageShares, playerId) => {
+    const player = uniquePlayers.get(playerId);
+    if (player && damageShares.length > 0) {
+      const avgDamageShare = damageShares.reduce((sum, share) => sum + share, 0) / damageShares.length;
+      player.damageShare = avgDamageShare.toFixed(3);
+      console.log(`Player ${player.name} average damage share: ${avgDamageShare}`);
+    }
   });
 
-  // Second pass to calculate individual damage share
+  // Second pass to calculate individual player stats
   playerStats.forEach((stats, playerId) => {
     const player = uniquePlayers.get(playerId);
     if (player) {
-      const teamId = player.team;
-      const teamDamage = teamTotalDamage.get(teamId) || 0;
+      // Calculate KDA
+      const kda = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths) : (stats.kills + stats.assists);
+      player.kda = kda.toFixed(2);
       
-      const kda = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths).toFixed(2) : ((stats.kills + stats.assists) * 1).toFixed(2);
-      const csPerMin = stats.games > 0 ? (stats.cs / stats.games / 30).toFixed(2) : '0';
+      // Calculate CS per minute (assuming 30 min average game length if not available)
+      const csPerMin = stats.games > 0 ? (stats.cs / stats.games / 30) : 0;
+      player.csPerMin = csPerMin.toFixed(2);
       
-      // Calculate damage share
-      let damageShare = 0;
-      if (teamDamage > 0 && stats.totalDamage > 0) {
-        damageShare = stats.totalDamage / teamDamage;
-      }
-      
-      player.kda = kda;
-      player.csPerMin = csPerMin;
-      player.damageShare = damageShare.toFixed(2);
+      // Champion pool
       player.championPool = Array.from(stats.championsPlayed).join(',');
     }
   });
