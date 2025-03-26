@@ -1,108 +1,85 @@
 
-import { 
-  setLoadedTeams, 
-  setLoadedPlayers, 
-  setLoadedMatches 
-} from './csvTypes';
+import axios from 'axios';
+import Papa from 'papaparse';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
+import { LeagueGameDataRow } from './csvTypes';
 import { processLeagueData } from './leagueDataProcessor';
-import { convertTeamData, convertPlayerData, convertMatchData } from './dataConverter';
-import { TeamCSV, PlayerCSV, MatchCSV } from './csvTypes';
-import { saveToDatabase } from './databaseService';
+import { hasDatabaseData, clearDatabase, saveToDatabase } from './database/databaseService';
+import { toast } from 'sonner';
 
-// Function to load data from a single Google Sheet (Oracle's Elixir format)
-export const loadFromSingleGoogleSheet = async (sheetUrl: string) => {
+// Load data from Google Sheets
+export const loadFromGoogleSheets = async (
+  sheetUrl: string,
+  deleteExisting: boolean = false
+): Promise<boolean> => {
   try {
-    console.log("Début du chargement depuis Google Sheets (format unique):", sheetUrl);
-    const sheetId = extractSheetId(sheetUrl);
-    
-    const csvUrl = getGSheetCSVUrl(sheetId);
-    console.log("URL CSV générée:", csvUrl);
-    
-    const results = await parseCSVFromURL(csvUrl);
-    console.log(`Données chargées: ${results.data.length} lignes, ${Object.keys(results.data[0] || {}).length} colonnes`);
-    
-    // Vérifier si les données semblent être au format League
-    const firstRow = results.data[0] as any;
-    const isLeagueFormat = firstRow && (firstRow.gameid || firstRow.teamid || firstRow.playerid);
-    
-    if (!isLeagueFormat) {
-      throw new Error("Format de données non reconnu. Assurez-vous d'utiliser un format compatible.");
+    if (!sheetUrl) {
+      console.error("URL de feuille Google Sheets non fournie");
+      toast.error("Veuillez fournir une URL de feuille Google Sheets");
+      return false;
     }
     
-    const data = processLeagueData(results.data as any);
+    // If we already have data and don't want to delete it, return early
+    if (!deleteExisting && await hasDatabaseData()) {
+      toast.error("Des données existent déjà dans la base de données. Cochez 'Supprimer les données existantes' pour continuer.");
+      return false;
+    }
+    
+    // Extract the Google Sheet ID
+    const sheetId = extractSheetId(sheetUrl);
+    if (!sheetId) {
+      console.error("Impossible d'extraire l'ID de la feuille Google");
+      toast.error("URL de feuille Google Sheets invalide");
+      return false;
+    }
+    
+    toast.info("Chargement des données depuis Google Sheets...");
+    
+    // Get CSV URL and parse the data
+    const csvUrl = getGSheetCSVUrl(sheetId);
+    const csvData = await parseCSVFromURL(csvUrl);
+    
+    if (!csvData || csvData.length === 0) {
+      console.error("Aucune donnée n'a pu être récupérée depuis Google Sheets");
+      toast.error("Aucune donnée n'a pu être récupérée");
+      return false;
+    }
+    
+    console.log(`${csvData.length} lignes de données chargées depuis Google Sheets`);
+    
+    // Process the data into our application format
+    const processedData = processLeagueData(csvData as LeagueGameDataRow[]);
+    
+    if (processedData.teams.length === 0 || processedData.players.length === 0) {
+      console.error("Le traitement des données n'a pas généré d'équipes ou de joueurs");
+      toast.error("Erreur lors du traitement des données");
+      return false;
+    }
     
     console.log("Données traitées:", {
-      teams: data.teams.length,
-      players: data.players.length, 
-      matches: data.matches.length
+      teamsCount: processedData.teams.length,
+      playersCount: processedData.players.length,
+      matchesCount: processedData.matches.length
     });
     
-    setLoadedTeams(data.teams);
-    setLoadedPlayers(data.players);
-    setLoadedMatches(data.matches);
+    // If we need to delete existing data before inserting new data
+    if (deleteExisting) {
+      await clearDatabase();
+    }
     
-    await saveToDatabase(data);
+    // Save the processed data to Supabase
+    const saveResult = await saveToDatabase(processedData);
     
-    return data;
-  } catch (error) {
-    console.error('Erreur lors du chargement des données Google Sheets:', error);
-    throw error;
-  }
-};
-
-// Function to load data from multiple sheets in a Google Sheet
-export const loadFromGoogleSheets = async (sheetUrl: string) => {
-  try {
-    console.log("Tentative de chargement depuis Google Sheets:", sheetUrl);
-    const sheetId = extractSheetId(sheetUrl);
-    
-    try {
-      // D'abord essayer le format à feuille unique (Oracle's Elixir)
-      console.log("Essai du format à feuille unique...");
-      return await loadFromSingleGoogleSheet(sheetUrl);
-    } catch (error) {
-      console.log("Le format à feuille unique a échoué, essai du format à onglets multiples...");
-      
-      const teamsUrl = getGSheetCSVUrl(sheetId, 'teams');
-      const playersUrl = getGSheetCSVUrl(sheetId, 'players');
-      const matchesUrl = getGSheetCSVUrl(sheetId, 'matches');
-      
-      console.log("URLs générées pour les onglets:", { teamsUrl, playersUrl, matchesUrl });
-      
-      const teamsResults = await parseCSVFromURL(teamsUrl);
-      console.log(`Données des équipes chargées: ${teamsResults.data.length} lignes`);
-      
-      const playersResults = await parseCSVFromURL(playersUrl);
-      console.log(`Données des joueurs chargées: ${playersResults.data.length} lignes`);
-      
-      const matchesResults = await parseCSVFromURL(matchesUrl);
-      console.log(`Données des matchs chargées: ${matchesResults.data.length} lignes`);
-      
-      const teams = convertTeamData(teamsResults.data as TeamCSV[]);
-      const players = convertPlayerData(playersResults.data as PlayerCSV[]);
-      const matches = convertMatchData(matchesResults.data as MatchCSV[], teams);
-      
-      console.log("Données converties:", { 
-        teams: teams.length, 
-        players: players.length, 
-        matches: matches.length
-      });
-      
-      teams.forEach(team => {
-        team.players = players.filter(player => player.team === team.id);
-      });
-      
-      setLoadedTeams(teams);
-      setLoadedPlayers(players);
-      setLoadedMatches(matches);
-      
-      await saveToDatabase({ teams, players, matches });
-      
-      return { teams, players, matches };
+    if (saveResult) {
+      toast.success("Données importées avec succès");
+      return true;
+    } else {
+      toast.error("Erreur lors de la sauvegarde des données");
+      return false;
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des données Google Sheets:', error);
-    throw error;
+    console.error("Erreur lors du chargement des données depuis Google Sheets:", error);
+    toast.error("Erreur lors du chargement des données");
+    return false;
   }
 };

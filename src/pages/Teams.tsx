@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -25,7 +24,6 @@ const Teams = () => {
         if (Array.isArray(loadedTeams)) {
           setTeams(loadedTeams);
           
-          // Extract unique regions
           const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
           setRegions(uniqueRegions);
         }
@@ -151,7 +149,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Avg. Game Time</p>
-              <p className="text-lg font-semibold">{formatSecondsToMinutesSeconds(team.averageGameTime * 60)}</p>
+              <p className="text-lg font-semibold">{formatSecondsToMinutesSeconds(team.averageGameTime)}</p>
             </div>
           </div>
           

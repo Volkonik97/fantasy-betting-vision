@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { Tournament } from "../mockData";
 import { getLoadedTournaments, setLoadedTournaments } from '../csvTypes';
 
 // Get all tournaments
-export const getTournaments = async (): Promise<any[]> => {
+export const getTournaments = async (): Promise<Tournament[]> => {
   const loadedTournaments = getLoadedTournaments();
   if (loadedTournaments) return loadedTournaments;
   
@@ -32,7 +33,10 @@ export const getTournaments = async (): Promise<any[]> => {
       return {
         id: tournamentName.replace(/\s+/g, '-').toLowerCase(),
         name: tournamentName,
-        region: region
+        region: region,
+        startDate: "2023-01-01", // Default date
+        endDate: "2023-12-31",   // Default date
+        logo: "/placeholder.svg"  // Default logo
       };
     });
     
