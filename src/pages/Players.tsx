@@ -1,27 +1,48 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { teams } from "@/utils/mockData";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
+import { Player } from "@/utils/mockData";
+import { getTeams } from "@/utils/csvService";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
+  const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
   const regions = ["All", "LCK", "LPL", "LEC", "LCS"];
   
-  // Flatten player array from all teams
-  const allPlayers = teams.flatMap(team => 
-    team.players.map(player => ({
-      ...player,
-      teamName: team.name,
-      teamRegion: team.region
-    }))
-  );
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch teams which also contain players
+        const teams = await getTeams();
+        
+        // Flatten player array from all teams
+        const players = teams.flatMap(team => 
+          team.players.map(player => ({
+            ...player,
+            teamName: team.name,
+            teamRegion: team.region
+          }))
+        );
+        
+        setAllPlayers(players);
+      } catch (error) {
+        console.error("Error fetching player data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
   
   const filteredPlayers = allPlayers.filter(player => 
     (selectedRole === "All" || player.role === selectedRole) &&
@@ -90,24 +111,30 @@ const Players = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredPlayers.length > 0 ? (
-            filteredPlayers.map((player, index) => (
-              <motion.div
-                key={player.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                <PlayerCard player={player} />
-              </motion.div>
-            ))
-          ) : (
-            <div className="col-span-full py-10 text-center">
-              <p className="text-gray-500">No players found matching your filters.</p>
-            </div>
-          )}
-        </div>
+        {loading ? (
+          <div className="text-center py-10">
+            <p className="text-gray-500">Loading players...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredPlayers.length > 0 ? (
+              filteredPlayers.map((player, index) => (
+                <motion.div
+                  key={player.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <PlayerCard player={player} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-10 text-center">
+                <p className="text-gray-500">No players found matching your filters.</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
