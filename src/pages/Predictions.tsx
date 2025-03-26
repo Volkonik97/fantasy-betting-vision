@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { 
@@ -8,7 +7,8 @@ import {
   ArrowUpRight, 
   ArrowDownRight, 
   Clock,
-  Calendar
+  Calendar,
+  GitCompare
 } from "lucide-react";
 import { teams, matches } from "@/utils/mockData";
 import Navbar from "@/components/Navbar";
@@ -29,9 +29,8 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
-// Add the odds property to match the usage in the component
 interface ExtendedMatch extends Omit<import('@/utils/mockData').Match, 'status'> {
-  status: 'Upcoming' | 'Live' | 'Completed' | 'Scheduled';
+  status: 'Upcoming' | 'Live' | 'Completed';
   odds?: {
     blue: number;
     red: number;
@@ -42,7 +41,6 @@ const Predictions = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   
-  // Ensure every match has an odds property
   const matchesWithOdds: ExtendedMatch[] = matches.map(match => ({
     ...match,
     odds: {
@@ -51,15 +49,12 @@ const Predictions = () => {
     }
   }));
   
-  // Filter matches - changed 'Scheduled' to 'Upcoming' to match the type
   const upcomingMatches = matchesWithOdds.filter(match => match.status === "Upcoming");
   
-  // Handle search
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
   
-  // Filtered matches
   const filteredMatches = upcomingMatches.filter(match => {
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
@@ -72,26 +67,20 @@ const Predictions = () => {
     return true;
   });
   
-  // Important match (for featured prediction)
   const featuredMatch = matchesWithOdds.find(match => match.id === "match-001") || matchesWithOdds[0];
   
-  // Value bet detection - identify matches where our prediction differs significantly from implied odds
   const valueBets = matchesWithOdds
     .filter(match => match.status === "Upcoming")
     .map(match => {
-      // Make sure match.odds exists before accessing its properties
       const matchOdds = match.odds || { blue: 2, red: 2 };
       
-      // Calculate the difference between our prediction and the implied odds
       const blueImpliedOdds = 1 / matchOdds.blue;
       const redImpliedOdds = 1 / matchOdds.red;
       
-      // Normalize implied odds to percentages
       const totalImplied = blueImpliedOdds + redImpliedOdds;
       const blueImpliedProb = (blueImpliedOdds / totalImplied) * 100;
       const redImpliedProb = (redImpliedOdds / totalImplied) * 100;
       
-      // Compare with our model's predictions
       const blueModelProb = match.blueWinOdds * 100;
       const redModelProb = match.redWinOdds * 100;
       
@@ -113,15 +102,22 @@ const Predictions = () => {
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Match Predictions</h1>
-          <p className="text-gray-600">
-            Advanced statistical predictions for upcoming League of Legends matches
-          </p>
-        </div>
-        
-        <div className="mb-6">
-          <SearchBar onSearch={handleSearch} value={searchQuery} />
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Match Predictions</h1>
+            <p className="text-gray-600">
+              Advanced statistical predictions for upcoming League of Legends matches
+            </p>
+          </div>
+          
+          <Button 
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => window.location.href = '/compare-teams'}
+          >
+            <GitCompare className="h-4 w-4" />
+            Comparer deux équipes
+          </Button>
         </div>
         
         <Tabs defaultValue="upcoming" className="mb-8">
@@ -192,7 +188,6 @@ const Predictions = () => {
                   const valuePercent = isBlueBetterValue ? match.valueBlueSide : match.valueRedSide;
                   const valuePositive = valuePercent > 0;
                   
-                  // Safely access match.odds
                   const matchOdds = match.odds || { blue: 2, red: 2 };
                   
                   return (
@@ -575,3 +570,4 @@ const Predictions = () => {
 };
 
 export default Predictions;
+
