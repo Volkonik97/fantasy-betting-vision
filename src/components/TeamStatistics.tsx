@@ -12,7 +12,7 @@ const TeamStatistics = ({ team }: TeamStatisticsProps) => {
     { name: "Win Rate", value: `${(team.winRate * 100).toFixed(0)}%` },
     { name: "Blue Side Win", value: `${(team.blueWinRate * 100).toFixed(0)}%` },
     { name: "Red Side Win", value: `${(team.redWinRate * 100).toFixed(0)}%` },
-    { name: "Avg Game Time", value: `${team.averageGameTime} min` },
+    { name: "Avg Game Time", value: `${team.averageGameTime.toFixed(1)} min` },
   ];
 
   return (

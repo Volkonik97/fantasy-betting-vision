@@ -5,6 +5,7 @@ import { Match } from "@/utils/mockData";
 import { cn } from "@/lib/utils";
 import { Clock, TrendingUp, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 import { SideAnalysisProps } from "@/components/SideAnalysis";
 
 interface MatchCardProps {
@@ -156,7 +157,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         {match.status === "Completed" && match.result && (
           <div className="mt-4 grid grid-cols-1 gap-2">
             <div className="text-sm text-gray-600">
-              <span className="font-medium">{match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}</span> won in {match.result.duration || "31:42"}
+              <span className="font-medium">{match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}</span> won in {match.result.duration ? formatSecondsToMinutesSeconds(parseInt(match.result.duration)) : "??:??"}
             </div>
             {match.result.mvp && (
               <div className="flex items-center gap-2 text-sm text-gray-600">

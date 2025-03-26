@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player, Match, Tournament } from './mockData';
 import { chunk } from './dataConverter';
@@ -346,50 +345,38 @@ export const getMatches = async (): Promise<Match[]> => {
   }
 };
 
-// Get tournaments from database
-export const getTournaments = async (): Promise<Tournament[]> => {
-  const loadedTournaments = getLoadedTournaments();
-  if (loadedTournaments) return loadedTournaments;
-  
+// Get all tournaments
+export const getTournaments = async (): Promise<any[]> => {
   try {
-    const { data: matchesData, error: matchesError } = await supabase
+    const { data, error } = await supabase
       .from('matches')
-      .select('tournament');
+      .select('tournament')
+      .order('tournament');
     
-    if (matchesError || !matchesData || matchesData.length === 0) {
-      console.error("Erreur lors de la récupération des tournois:", matchesError);
-      const { tournaments } = await import('./mockData');
-      return tournaments;
+    if (error) {
+      console.error('Erreur lors de la récupération des tournois:', error);
+      return [];
     }
     
-    const tournamentNames = matchesData.map(match => match.tournament).filter(Boolean);
-    const uniqueTournaments = [...new Set(tournamentNames)];
+    // Extract unique tournaments
+    const tournaments = [...new Set(data.map(match => match.tournament))];
     
-    const tournaments: Tournament[] = uniqueTournaments
-      .filter(Boolean)
-      .map(name => {
-        if (!name) return null;
-        
-        // Ensure name is a string and has split method
-        const safeName = String(name);
-        
-        return {
-          id: safeName.toLowerCase().replace(/\s+/g, '-'),
-          name: safeName,
-          logo: `/tournaments/${safeName.toLowerCase().replace(/\s+/g, '-')}.png`,
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-          region: 'Global'
-        };
-      })
-      .filter((t): t is Tournament => t !== null);
-    
-    setLoadedTournaments(tournaments);
-    return tournaments;
+    // Format tournaments data
+    return tournaments.map(tournament => {
+      // Handle the case where tournament might be null or undefined
+      const tournamentName = tournament || "Unknown Tournament";
+      
+      return {
+        id: tournamentName.replace(/\s+/g, '-').toLowerCase(),
+        name: tournamentName,
+        region: tournamentName.includes(',') 
+          ? tournamentName.split(',')[0]
+          : "Global"
+      };
+    });
   } catch (error) {
-    console.error("Erreur lors de la récupération des tournois:", error);
-    const { tournaments } = await import('./mockData');
-    return tournaments;
+    console.error('Erreur lors de la récupération des tournois:', error);
+    return [];
   }
 };
 

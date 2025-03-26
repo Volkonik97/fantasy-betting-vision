@@ -2,6 +2,22 @@
 import { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
 import { Team, Player, Match } from './mockData';
 
+// Format seconds to MM:SS format
+export const formatSecondsToMinutesSeconds = (seconds: number): string => {
+  if (!seconds || isNaN(seconds)) return "00:00";
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+};
+
+// Convert seconds to minutes (as a number) for averaging
+export const secondsToMinutes = (seconds: number): number => {
+  if (!seconds || isNaN(seconds)) return 0;
+  return Math.round(seconds / 60 * 10) / 10; // Round to 1 decimal place
+};
+
 // Convert CSV data to application objects
 export const convertTeamData = (teamsCSV: TeamCSV[]): Team[] => {
   return teamsCSV.map(team => ({
@@ -12,7 +28,7 @@ export const convertTeamData = (teamsCSV: TeamCSV[]): Team[] => {
     winRate: parseFloat(team.winRate) || 0,
     blueWinRate: parseFloat(team.blueWinRate) || 0,
     redWinRate: parseFloat(team.redWinRate) || 0,
-    averageGameTime: parseFloat(team.averageGameTime) || 0,
+    averageGameTime: secondsToMinutes(parseFloat(team.averageGameTime) || 0),
     players: []
   }));
 };

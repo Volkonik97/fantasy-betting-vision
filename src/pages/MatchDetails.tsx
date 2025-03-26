@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -9,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import SideAnalysis from "@/components/SideAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const MatchDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -183,7 +183,7 @@ const MatchDetails = () => {
                         <Clock className="w-5 h-5 text-gray-400" />
                         <div>
                           <div className="text-sm text-gray-500">Match Duration</div>
-                          <div className="font-medium">{match.result.duration || "31:42"}</div>
+                          <div className="font-medium">{match.result?.duration ? formatSecondsToMinutesSeconds(parseInt(match.result.duration)) : "??:??"}</div>
                         </div>
                       </div>
                       
