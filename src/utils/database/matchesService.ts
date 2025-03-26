@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Team, Match, Player } from '../models/types';
+import { Json } from '@/integrations/supabase/types';
 
 // Get all matches from the database
 export const getMatches = async (): Promise<Match[]> => {
@@ -114,8 +115,8 @@ export const getMatches = async (): Promise<Match[]> => {
         formattedMatch.result = {
           winner: match.winner_team_id,
           score: [
-            match.score_blue ? parseInt(match.score_blue) : 0, 
-            match.score_red ? parseInt(match.score_red) : 0
+            typeof match.score_blue === 'string' ? parseInt(match.score_blue) : match.score_blue || 0, 
+            typeof match.score_red === 'string' ? parseInt(match.score_red) : match.score_red || 0
           ],
           duration: match.duration,
           mvp: match.mvp,
@@ -176,6 +177,15 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     
     // Prepare matches for database insertion
     const dbMatches = matches.map(match => {
+      // Convert the score to the correct type (number) for Supabase
+      let scoreBlue: number | null = null;
+      let scoreRed: number | null = null;
+      
+      if (match.result?.score) {
+        scoreBlue = match.result.score[0];
+        scoreRed = match.result.score[1];
+      }
+      
       return {
         id: match.id,
         tournament: match.tournament,
@@ -187,8 +197,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
         red_win_odds: match.redWinOdds,
         status: match.status,
         winner_team_id: match.result?.winner,
-        score_blue: match.result?.score[0]?.toString(),
-        score_red: match.result?.score[1]?.toString(),
+        score_blue: scoreBlue,
+        score_red: scoreRed,
         duration: match.result?.duration,
         mvp: match.result?.mvp,
         first_blood: match.result?.firstBlood,
