@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -96,11 +95,7 @@ const TeamDetails = () => {
           <span>Retour aux équipes</span>
         </Link>
         
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <motion.div>
           <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -133,7 +128,7 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <Clock size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{formatSecondsToMinutesSeconds(team.averageGameTime * 60)}</p>
+                  <p className="text-2xl font-bold">{formatSecondsToMinutesSeconds(team.averageGameTime)}</p>
                   <p className="text-xs text-gray-500">Avg. Game Time</p>
                 </div>
                 

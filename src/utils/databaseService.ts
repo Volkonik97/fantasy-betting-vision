@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player, Match, Tournament } from './mockData';
 import { chunk } from './dataConverter';
@@ -106,7 +105,7 @@ export const saveToDatabase = async (data: {
           win_rate: team.winRate,
           blue_win_rate: team.blueWinRate,
           red_win_rate: team.redWinRate,
-          average_game_time: team.averageGameTime
+          average_game_time: team.averageGameTime // Stocké en secondes
         }))
       );
       
@@ -236,7 +235,7 @@ export const getTeams = async (): Promise<Team[]> => {
       winRate: Number(team.win_rate) || 0,
       blueWinRate: Number(team.blue_win_rate) || 0,
       redWinRate: Number(team.red_win_rate) || 0,
-      averageGameTime: Number(team.average_game_time) || 0,
+      averageGameTime: Number(team.average_game_time) || 0, // Récupéré en secondes
       players: []
     }));
     

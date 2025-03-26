@@ -15,7 +15,9 @@ export const formatSecondsToMinutesSeconds = (seconds: number): string => {
 // Convert seconds to minutes (as a number) for averaging
 export const secondsToMinutes = (seconds: number): number => {
   if (!seconds || isNaN(seconds)) return 0;
-  return Math.round(seconds / 60 * 10) / 10; // Round to 1 decimal place
+  // On retourne directement les secondes au lieu de les convertir en minutes
+  // Cela permettra de stocker la valeur en secondes dans la base de données
+  return seconds;
 };
 
 // Convert CSV data to application objects
@@ -28,7 +30,7 @@ export const convertTeamData = (teamsCSV: TeamCSV[]): Team[] => {
     winRate: parseFloat(team.winRate) || 0,
     blueWinRate: parseFloat(team.blueWinRate) || 0,
     redWinRate: parseFloat(team.redWinRate) || 0,
-    averageGameTime: secondsToMinutes(parseFloat(team.averageGameTime) || 0),
+    averageGameTime: parseFloat(team.averageGameTime) || 0,
     players: []
   }));
 };
