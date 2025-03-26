@@ -126,10 +126,12 @@ export const saveToDatabase = async (data: {
           // Handle champion pool parsing
           let championPoolArray: string[] = [];
           
-          if (Array.isArray(player.championPool)) {
-            championPoolArray = player.championPool;
-          } else if (typeof player.championPool === 'string') {
-            championPoolArray = player.championPool.split(',').map(c => c.trim());
+          if (player.championPool) {
+            if (Array.isArray(player.championPool)) {
+              championPoolArray = player.championPool as string[];
+            } else if (typeof player.championPool === 'string') {
+              championPoolArray = player.championPool.split(',').map(c => c.trim());
+            }
           }
           
           return {
