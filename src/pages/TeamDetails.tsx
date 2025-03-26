@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,6 +12,7 @@ import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeams, getMatches, getSideStatistics } from "@/utils/csvService";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -131,8 +133,8 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <Clock size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{team.averageGameTime.toFixed(1)}</p>
-                  <p className="text-xs text-gray-500">Avg. Game (min)</p>
+                  <p className="text-2xl font-bold">{formatSecondsToMinutesSeconds(team.averageGameTime * 60)}</p>
+                  <p className="text-xs text-gray-500">Avg. Game Time</p>
                 </div>
                 
                 <div className="text-center">

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player, Match, Tournament } from './mockData';
 import { chunk } from './dataConverter';
@@ -365,13 +366,14 @@ export const getTournaments = async (): Promise<any[]> => {
     return tournaments.map(tournament => {
       // Handle the case where tournament might be null or undefined
       const tournamentName = tournament || "Unknown Tournament";
+      const region = tournamentName.includes(',') 
+        ? tournamentName.split(',')[0]
+        : "Global";
       
       return {
         id: tournamentName.replace(/\s+/g, '-').toLowerCase(),
         name: tournamentName,
-        region: tournamentName.includes(',') 
-          ? tournamentName.split(',')[0]
-          : "Global"
+        region: region
       };
     });
   } catch (error) {
