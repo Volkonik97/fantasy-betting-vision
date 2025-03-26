@@ -13,19 +13,42 @@ import { fr } from "date-fns/locale";
 const DataImport = () => {
   const [hasData, setHasData] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if there's data in the database
-    setHasData(hasDatabaseData());
-    setLastUpdate(getLastDatabaseUpdate());
+    // Vérifier s'il y a des données dans la base de données
+    const checkData = async () => {
+      setIsLoading(true);
+      try {
+        const hasDbData = await hasDatabaseData();
+        setHasData(hasDbData);
+        
+        if (hasDbData) {
+          const lastUpdateDate = await getLastDatabaseUpdate();
+          setLastUpdate(lastUpdateDate);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification des données:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkData();
   }, []);
 
-  const handleClearDatabase = () => {
-    if (clearDatabase()) {
-      toast.success("Base de données vidée avec succès");
-      setHasData(false);
-      setLastUpdate(null);
-    } else {
+  const handleClearDatabase = async () => {
+    try {
+      const success = await clearDatabase();
+      if (success) {
+        toast.success("Base de données vidée avec succès");
+        setHasData(false);
+        setLastUpdate(null);
+      } else {
+        toast.error("Erreur lors de la suppression des données");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
       toast.error("Erreur lors de la suppression des données");
     }
   };
@@ -55,7 +78,15 @@ const DataImport = () => {
           </p>
         </motion.div>
         
-        {hasData && (
+        {isLoading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex justify-center py-8"
+          >
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lol-blue"></div>
+          </motion.div>
+        ) : hasData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -88,9 +119,10 @@ const DataImport = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <CsvDataManager onDataImported={() => {
+          <CsvDataManager onDataImported={async () => {
             setHasData(true);
-            setLastUpdate(getLastDatabaseUpdate());
+            const lastUpdateDate = await getLastDatabaseUpdate();
+            setLastUpdate(lastUpdateDate);
           }} />
         </motion.div>
         

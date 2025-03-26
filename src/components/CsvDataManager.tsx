@@ -21,7 +21,12 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [hasDataInDb, setHasDataInDb] = useState(false);
 
   useEffect(() => {
-    setHasDataInDb(hasDatabaseData());
+    const checkData = async () => {
+      const hasData = await hasDatabaseData();
+      setHasDataInDb(hasData);
+    };
+    
+    checkData();
   }, []);
 
   const handleTeamsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +60,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       toast.success(`Données chargées avec succès: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
       
       if (onDataImported) {
-        onDataImported();
+        await onDataImported();
       }
       
       setHasDataInDb(true);
@@ -85,7 +90,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       toast.success(`Données chargées avec succès depuis Google Sheets: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
       
       if (onDataImported) {
-        onDataImported();
+        await onDataImported();
       }
       
       setHasDataInDb(true);
@@ -116,7 +121,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
             <div className="flex items-center text-blue-700">
               <Database className="mr-2 h-5 w-5" />
               <p className="text-sm font-medium">
-                Les données sont stockées dans la base de données locale.
+                Les données sont stockées dans Supabase.
                 Les nouvelles données importées remplaceront les données existantes.
               </p>
             </div>
