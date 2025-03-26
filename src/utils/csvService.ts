@@ -524,8 +524,8 @@ export const getTeams = async (): Promise<Team[]> => {
 
 export const getPlayers = async (): Promise<Player[]> => {
   if (loadedPlayers) return loadedPlayers;
-  const { players } = await import('./mockData');
-  return players;
+  const { teams } = await import('./mockData');
+  return teams.flatMap(team => team.players);
 };
 
 export const getMatches = async (): Promise<Match[]> => {
