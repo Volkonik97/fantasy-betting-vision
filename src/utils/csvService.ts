@@ -91,7 +91,7 @@ export const hasDatabaseData = async (): Promise<boolean> => {
       return false;
     }
     
-    return data && data.count > 0;
+    return data && typeof data.count === 'number' && data.count > 0;
   } catch (error) {
     console.error("Erreur lors de la vérification des données:", error);
     return false;
@@ -113,7 +113,7 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
       return null;
     }
     
-    return data ? data.updated_at : null;
+    return data && data.updated_at ? data.updated_at : null;
   } catch (error) {
     console.error("Erreur lors de la récupération de la date de mise à jour:", error);
     return null;
@@ -124,29 +124,12 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
 export const clearDatabase = async (): Promise<boolean> => {
   try {
     // Supprimer d'abord les tables avec des références (dans l'ordre)
-    const { error: matchesError } = await supabase.from('matches').delete().neq('id', '');
-    if (matchesError) {
-      console.error("Erreur lors de la suppression des matchs:", matchesError);
-      return false;
-    }
-    
-    const { error: playersError } = await supabase.from('players').delete().neq('id', '');
-    if (playersError) {
-      console.error("Erreur lors de la suppression des joueurs:", playersError);
-      return false;
-    }
-    
-    const { error: teamsError } = await supabase.from('teams').delete().neq('id', '');
-    if (teamsError) {
-      console.error("Erreur lors de la suppression des équipes:", teamsError);
-      return false;
-    }
+    await supabase.from('matches').delete().neq('id', '');
+    await supabase.from('players').delete().neq('id', '');
+    await supabase.from('teams').delete().neq('id', '');
     
     // Ajouter une entrée dans la table des mises à jour
-    const { error: updateError } = await supabase.from('data_updates').insert([{}]);
-    if (updateError) {
-      console.error("Erreur lors de l'ajout d'une entrée dans data_updates:", updateError);
-    }
+    await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
     
     // Réinitialiser le cache
     loadedTeams = null;
@@ -191,7 +174,7 @@ const saveToDatabase = async (data: {
           blue_win_rate: team.blueWinRate,
           red_win_rate: team.redWinRate,
           average_game_time: team.averageGameTime
-        }))
+        }) as any)
       );
       
       if (teamsError) {
@@ -217,7 +200,7 @@ const saveToDatabase = async (data: {
           damage_share: player.damageShare,
           champion_pool: Array.isArray(player.championPool) ? player.championPool : 
             (typeof player.championPool === 'string' ? player.championPool.split(',').map(c => c.trim()) : [])
-        }))
+        }) as any)
       );
       
       if (playersError) {
@@ -250,7 +233,7 @@ const saveToDatabase = async (data: {
           first_blood: match.result?.firstBlood,
           first_dragon: match.result?.firstDragon,
           first_baron: match.result?.firstBaron
-        }))
+        }) as any)
       );
       
       if (matchesError) {
@@ -262,7 +245,7 @@ const saveToDatabase = async (data: {
     console.log("Matchs insérés avec succès");
     
     // Ajouter une entrée dans la table des mises à jour
-    const { error: updateError } = await supabase.from('data_updates').insert([{}]);
+    const { error: updateError } = await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
     if (updateError) {
       console.error("Erreur lors de l'ajout d'une entrée dans data_updates:", updateError);
     }
@@ -784,30 +767,29 @@ export const getTeams = async (): Promise<Team[]> => {
       .from('teams')
       .select('*');
     
-    if (teamsError) {
+    if (teamsError || !teamsData || teamsData.length === 0) {
       console.error("Erreur lors de la récupération des équipes:", teamsError);
       const { teams } = await import('./mockData');
       return teams;
     }
     
-    if (!teamsData || teamsData.length === 0) {
-      const { teams } = await import('./mockData');
-      return teams;
-    }
-    
-    const { data: playersData } = await supabase
+    const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*');
     
+    if (playersError) {
+      console.error("Erreur lors de la récupération des joueurs:", playersError);
+    }
+    
     const teams: Team[] = teamsData.map(team => ({
-      id: team.id,
-      name: team.name,
-      logo: team.logo,
-      region: team.region,
-      winRate: team.win_rate,
-      blueWinRate: team.blue_win_rate,
-      redWinRate: team.red_win_rate,
-      averageGameTime: team.average_game_time,
+      id: team.id as string,
+      name: team.name as string,
+      logo: team.logo as string,
+      region: team.region as string,
+      winRate: team.win_rate as number,
+      blueWinRate: team.blue_win_rate as number,
+      redWinRate: team.red_win_rate as number,
+      averageGameTime: team.average_game_time as number,
       players: []
     }));
     
@@ -816,15 +798,15 @@ export const getTeams = async (): Promise<Team[]> => {
         team.players = playersData
           .filter(player => player.team_id === team.id)
           .map(player => ({
-            id: player.id,
-            name: player.name,
+            id: player.id as string,
+            name: player.name as string,
             role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
-            image: player.image,
-            team: player.team_id,
-            kda: player.kda,
-            csPerMin: player.cs_per_min,
-            damageShare: player.damage_share,
-            championPool: player.champion_pool || []
+            image: player.image as string,
+            team: player.team_id as string,
+            kda: player.kda as number,
+            csPerMin: player.cs_per_min as number,
+            damageShare: player.damage_share as number,
+            championPool: player.champion_pool as string[] || []
           }));
       });
     }
@@ -846,27 +828,22 @@ export const getPlayers = async (): Promise<Player[]> => {
       .from('players')
       .select('*');
     
-    if (playersError) {
+    if (playersError || !playersData || playersData.length === 0) {
       console.error("Erreur lors de la récupération des joueurs:", playersError);
       const { teams } = await import('./mockData');
       return teams.flatMap(team => team.players);
     }
     
-    if (!playersData || playersData.length === 0) {
-      const { teams } = await import('./mockData');
-      return teams.flatMap(team => team.players);
-    }
-    
     const players: Player[] = playersData.map(player => ({
-      id: player.id,
-      name: player.name,
+      id: player.id as string,
+      name: player.name as string,
       role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
-      image: player.image,
-      team: player.team_id,
-      kda: player.kda,
-      csPerMin: player.cs_per_min,
-      damageShare: player.damage_share,
-      championPool: player.champion_pool || []
+      image: player.image as string,
+      team: player.team_id as string,
+      kda: player.kda as number,
+      csPerMin: player.cs_per_min as number,
+      damageShare: player.damage_share as number,
+      championPool: player.champion_pool as string[] || []
     }));
     
     loadedPlayers = players;
@@ -886,13 +863,8 @@ export const getMatches = async (): Promise<Match[]> => {
       .from('matches')
       .select('*');
     
-    if (matchesError) {
+    if (matchesError || !matchesData || matchesData.length === 0) {
       console.error("Erreur lors de la récupération des matchs:", matchesError);
-      const { matches } = await import('./mockData');
-      return matches;
-    }
-    
-    if (!matchesData || matchesData.length === 0) {
       const { matches } = await import('./mockData');
       return matches;
     }
@@ -904,26 +876,26 @@ export const getMatches = async (): Promise<Match[]> => {
       const teamRed = teams.find(t => t.id === match.team_red_id) || teams[1];
       
       const matchObject: Match = {
-        id: match.id,
-        tournament: match.tournament,
-        date: match.date,
+        id: match.id as string,
+        tournament: match.tournament as string,
+        date: match.date as string,
         teamBlue,
         teamRed,
-        predictedWinner: match.predicted_winner,
-        blueWinOdds: match.blue_win_odds,
-        redWinOdds: match.red_win_odds,
+        predictedWinner: match.predicted_winner as string,
+        blueWinOdds: match.blue_win_odds as number,
+        redWinOdds: match.red_win_odds as number,
         status: match.status as 'Upcoming' | 'Live' | 'Completed'
       };
       
       if (match.status === 'Completed' && match.winner_team_id) {
         matchObject.result = {
-          winner: match.winner_team_id,
+          winner: match.winner_team_id as string,
           score: [match.score_blue || 0, match.score_red || 0],
-          duration: match.duration,
-          mvp: match.mvp,
-          firstBlood: match.first_blood,
-          firstDragon: match.first_dragon,
-          firstBaron: match.first_baron
+          duration: match.duration as string | undefined,
+          mvp: match.mvp as string | undefined,
+          firstBlood: match.first_blood as string | undefined,
+          firstDragon: match.first_dragon as string | undefined,
+          firstBaron: match.first_baron as string | undefined
         };
       }
       
@@ -943,26 +915,29 @@ export const getTournaments = async (): Promise<Tournament[]> => {
   if (loadedTournaments) return loadedTournaments;
   
   try {
-    const { data: matchesData } = await supabase
+    const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
       .select('tournament')
       .order('tournament');
     
-    if (!matchesData || matchesData.length === 0) {
+    if (matchesError || !matchesData || matchesData.length === 0) {
+      console.error("Erreur lors de la récupération des tournois:", matchesError);
       const { tournaments } = await import('./mockData');
       return tournaments;
     }
     
-    const uniqueTournaments = [...new Set(matchesData.map(match => match.tournament))];
+    const uniqueTournaments = [...new Set(matchesData.map(match => match.tournament as string))];
     
-    const tournaments: Tournament[] = uniqueTournaments.map(name => ({
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      logo: `/tournaments/${name.toLowerCase().replace(/\s+/g, '-')}.png`,
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-      region: 'Global'
-    }));
+    const tournaments: Tournament[] = uniqueTournaments
+      .filter(Boolean)
+      .map(name => ({
+        id: name.toLowerCase().replace(/\s+/g, '-'),
+        name,
+        logo: `/tournaments/${name.toLowerCase().replace(/\s+/g, '-')}.png`,
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+        region: 'Global'
+      }));
     
     loadedTournaments = tournaments;
     return tournaments;
