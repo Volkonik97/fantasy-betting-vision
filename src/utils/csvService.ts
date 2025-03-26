@@ -28,6 +28,7 @@ import {
   setLoadedTournaments,
   resetCache
 } from './csvTypes';
+import { getPlayerMatchStats } from './database/matchesService';
 
 // Re-export types
 export type { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
@@ -52,6 +53,7 @@ export {
   getMatches,
   getTournaments,
   getSideStatistics,
+  getPlayerMatchStats,
   // Export the getter/setter functions
   getLoadedTeams,
   getLoadedPlayers,

@@ -229,78 +229,285 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Extraire tous les ID de matchs uniques
-  const gameIds = new Set<string>();
-  data.forEach(row => {
-    if (row.gameid) {
-      gameIds.add(row.gameid);
-    }
-  });
-
-  console.log(`Nombre de matchs uniques identifiés: ${gameIds.size}`);
-
-  const uniqueMatches = new Map<string, { 
-    gameId: string, 
-    date: string, 
+  // Create map for tracking match data
+  const uniqueGames = new Map<string, {
+    id: string,
+    date: string,
+    league: string,
+    year: string,
+    split: string,
+    patch: string,
+    playoffs: boolean,
     teams: { blue: string, red: string },
-    result?: string,
-    duration?: string,
-    tournament?: string
+    result: string | undefined,
+    duration: string | undefined,
   }>();
   
+  // Prepare for detailed match & player stats
+  const matchPlayerStats = new Map<string, Map<string, any>>();
+  
+  // Collect match data
   data.forEach(row => {
     if (!row.gameid) return;
     
     const gameId = row.gameid;
-    if (!uniqueMatches.has(gameId)) {
-      uniqueMatches.set(gameId, { 
-        gameId,
+    
+    if (!uniqueGames.has(gameId)) {
+      uniqueGames.set(gameId, {
+        id: gameId,
         date: row.date || new Date().toISOString(),
-        teams: { 
-          blue: '', 
-          red: '' 
-        },
-        tournament: `${row.league || 'Unknown'} ${row.year || ''} ${row.split || ''}`
+        league: row.league || '',
+        year: row.year || '',
+        split: row.split || '',
+        patch: row.patch || '',
+        playoffs: row.playoffs === 'yes' || row.playoffs === '1',
+        teams: { blue: '', red: '' },
+        result: undefined,
+        duration: row.gamelength,
       });
     }
     
-    const match = uniqueMatches.get(gameId)!;
+    const game = uniqueGames.get(gameId)!;
+    
+    // Track team sides
     if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
-      match.teams.blue = row.teamid;
+      game.teams.blue = row.teamid;
     } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
-      match.teams.red = row.teamid;
+      game.teams.red = row.teamid;
     }
     
-    match.duration = row.gamelength;
-    
+    // Track game result
     if (row.result === '1' && row.teamid) {
-      match.result = row.teamid;
+      game.result = row.teamid;
+    }
+    
+    // Collect detailed player stats for this match
+    if (row.playerid && row.teamid) {
+      // Initialize nested maps if they don't exist
+      if (!matchPlayerStats.has(gameId)) {
+        matchPlayerStats.set(gameId, new Map<string, any>());
+      }
+      
+      const playersMap = matchPlayerStats.get(gameId)!;
+      
+      if (!playersMap.has(row.playerid)) {
+        playersMap.set(row.playerid, {
+          participant_id: row.participantid || '',
+          player_id: row.playerid,
+          team_id: row.teamid,
+          match_id: gameId,
+          side: row.side || '',
+          position: row.position || '',
+          champion: row.champion || '',
+          
+          // Combat stats
+          kills: parseInt(row.kills || '0') || 0,
+          deaths: parseInt(row.deaths || '0') || 0,
+          assists: parseInt(row.assists || '0') || 0,
+          double_kills: parseInt(row.doublekills || '0') || 0,
+          triple_kills: parseInt(row.triplekills || '0') || 0,
+          quadra_kills: parseInt(row.quadrakills || '0') || 0,
+          penta_kills: parseInt(row.pentakills || '0') || 0,
+          first_blood_kill: row.firstbloodkill === '1',
+          first_blood_assist: row.firstbloodassist === '1',
+          first_blood_victim: row.firstbloodvictim === '1',
+          
+          // Damage stats
+          damage_to_champions: parseInt(row.damagetochampions || '0') || 0,
+          dpm: parseFloat(row.dpm || '0') || 0,
+          damage_share: parseFloat(row.damageshare || '0') || 0,
+          damage_taken_per_minute: parseFloat(row.damagetakenperminute || '0') || 0,
+          damage_mitigated_per_minute: parseFloat(row.damagemitigatedperminute || '0') || 0,
+          
+          // Vision stats
+          wards_placed: parseInt(row.wardsplaced || '0') || 0,
+          wpm: parseFloat(row.wpm || '0') || 0,
+          wards_killed: parseInt(row.wardskilled || '0') || 0,
+          wcpm: parseFloat(row.wcpm || '0') || 0,
+          control_wards_bought: parseInt(row.controlwardsbought || '0') || 0,
+          vision_score: parseInt(row.visionscore || '0') || 0,
+          vspm: parseFloat(row.vspm || '0') || 0,
+          
+          // Gold stats
+          total_gold: parseInt(row.totalgold || '0') || 0,
+          earned_gold: parseInt(row.earnedgold || '0') || 0,
+          earned_gpm: parseFloat(row['earned gpm'] || '0') || 0,
+          earned_gold_share: parseFloat(row.earnedgoldshare || '0') || 0,
+          gold_spent: parseInt(row.goldspent || '0') || 0,
+          gspd: parseFloat(row.gspd || '0') || 0,
+          gpr: parseFloat(row.gpr || '0') || 0,
+          
+          // CS stats
+          total_cs: parseInt(row['total cs'] || '0') || 0,
+          minion_kills: parseInt(row.minionkills || '0') || 0,
+          monster_kills: parseInt(row.monsterkills || '0') || 0,
+          monster_kills_own_jungle: parseInt(row.monsterkillsownjungle || '0') || 0,
+          monster_kills_enemy_jungle: parseInt(row.monsterkillsenemyjungle || '0') || 0,
+          cspm: parseFloat(row.cspm || '0') || 0,
+          
+          // Timeline stats: 10 min
+          gold_at_10: parseInt(row.goldat10 || '0') || 0,
+          xp_at_10: parseInt(row.xpat10 || '0') || 0,
+          cs_at_10: parseInt(row.csat10 || '0') || 0,
+          opp_gold_at_10: parseInt(row.opp_goldat10 || '0') || 0,
+          opp_xp_at_10: parseInt(row.opp_xpat10 || '0') || 0,
+          opp_cs_at_10: parseInt(row.opp_csat10 || '0') || 0,
+          gold_diff_at_10: parseInt(row.golddiffat10 || '0') || 0,
+          xp_diff_at_10: parseInt(row.xpdiffat10 || '0') || 0,
+          cs_diff_at_10: parseInt(row.csdiffat10 || '0') || 0,
+          kills_at_10: parseInt(row.killsat10 || '0') || 0,
+          assists_at_10: parseInt(row.assistsat10 || '0') || 0,
+          deaths_at_10: parseInt(row.deathsat10 || '0') || 0,
+          opp_kills_at_10: parseInt(row.opp_killsat10 || '0') || 0,
+          opp_assists_at_10: parseInt(row.opp_assistsat10 || '0') || 0,
+          opp_deaths_at_10: parseInt(row.opp_deathsat10 || '0') || 0,
+          
+          // Timeline stats: 15 min
+          gold_at_15: parseInt(row.goldat15 || '0') || 0,
+          xp_at_15: parseInt(row.xpat15 || '0') || 0,
+          cs_at_15: parseInt(row.csat15 || '0') || 0,
+          opp_gold_at_15: parseInt(row.opp_goldat15 || '0') || 0,
+          opp_xp_at_15: parseInt(row.opp_xpat15 || '0') || 0,
+          opp_cs_at_15: parseInt(row.opp_csat15 || '0') || 0,
+          gold_diff_at_15: parseInt(row.golddiffat15 || '0') || 0,
+          xp_diff_at_15: parseInt(row.xpdiffat15 || '0') || 0,
+          cs_diff_at_15: parseInt(row.csdiffat15 || '0') || 0,
+          kills_at_15: parseInt(row.killsat15 || '0') || 0,
+          assists_at_15: parseInt(row.assistsat15 || '0') || 0,
+          deaths_at_15: parseInt(row.deathsat15 || '0') || 0,
+          opp_kills_at_15: parseInt(row.opp_killsat15 || '0') || 0,
+          opp_assists_at_15: parseInt(row.opp_assistsat15 || '0') || 0,
+          opp_deaths_at_15: parseInt(row.opp_deathsat15 || '0') || 0,
+          
+          // Timeline stats: 20 min
+          gold_at_20: parseInt(row.goldat20 || '0') || 0,
+          xp_at_20: parseInt(row.xpat20 || '0') || 0,
+          cs_at_20: parseInt(row.csat20 || '0') || 0,
+          opp_gold_at_20: parseInt(row.opp_goldat20 || '0') || 0,
+          opp_xp_at_20: parseInt(row.opp_xpat20 || '0') || 0,
+          opp_cs_at_20: parseInt(row.opp_csat20 || '0') || 0,
+          gold_diff_at_20: parseInt(row.golddiffat20 || '0') || 0,
+          xp_diff_at_20: parseInt(row.xpdiffat20 || '0') || 0,
+          cs_diff_at_20: parseInt(row.csdiffat20 || '0') || 0,
+          kills_at_20: parseInt(row.killsat20 || '0') || 0,
+          assists_at_20: parseInt(row.assistsat20 || '0') || 0,
+          deaths_at_20: parseInt(row.deathsat20 || '0') || 0,
+          opp_kills_at_20: parseInt(row.opp_killsat20 || '0') || 0,
+          opp_assists_at_20: parseInt(row.opp_assistsat20 || '0') || 0,
+          opp_deaths_at_20: parseInt(row.opp_deathsat20 || '0') || 0,
+          
+          // Timeline stats: 25 min
+          gold_at_25: parseInt(row.goldat25 || '0') || 0,
+          xp_at_25: parseInt(row.xpat25 || '0') || 0,
+          cs_at_25: parseInt(row.csat25 || '0') || 0,
+          opp_gold_at_25: parseInt(row.opp_goldat25 || '0') || 0,
+          opp_xp_at_25: parseInt(row.opp_xpat25 || '0') || 0,
+          opp_cs_at_25: parseInt(row.opp_csat25 || '0') || 0,
+          gold_diff_at_25: parseInt(row.golddiffat25 || '0') || 0,
+          xp_diff_at_25: parseInt(row.xpdiffat25 || '0') || 0,
+          cs_diff_at_25: parseInt(row.csdiffat25 || '0') || 0,
+          kills_at_25: parseInt(row.killsat25 || '0') || 0,
+          assists_at_25: parseInt(row.assistsat25 || '0') || 0,
+          deaths_at_25: parseInt(row.deathsat25 || '0') || 0,
+          opp_kills_at_25: parseInt(row.opp_killsat25 || '0') || 0,
+          opp_assists_at_25: parseInt(row.opp_assistsat25 || '0') || 0,
+          opp_deaths_at_25: parseInt(row.opp_deathsat25 || '0') || 0,
+        });
+      }
     }
   });
 
-  const teams = Array.from(uniqueTeams.values());
-  const teamsConverted = convertTeamData(teams);
+  // Gather match-level statistics
+  const matchStats = new Map<string, any>();
   
-  const players = Array.from(uniquePlayers.values());
-  const playersConverted = convertPlayerData(players);
-  
-  teamsConverted.forEach(team => {
-    team.players = playersConverted.filter(player => player.team === team.id);
+  data.forEach(row => {
+    if (!row.gameid || !row.teamid) return;
+    
+    const gameId = row.gameid;
+    const teamId = row.teamid;
+    
+    if (!matchStats.has(gameId)) {
+      matchStats.set(gameId, new Map<string, any>());
+    }
+    
+    const teamStats = matchStats.get(gameId)!;
+    
+    if (!teamStats.has(teamId)) {
+      teamStats.set(teamId, {
+        team_id: teamId,
+        match_id: gameId,
+        side: row.side || '',
+        is_winner: row.result === '1',
+        team_kpm: parseFloat(row['team kpm'] || '0') || 0,
+        ckpm: parseFloat(row.ckpm || '0') || 0,
+        first_blood: row.firstblood === '1',
+        team_kills: parseInt(row.teamkills || '0') || 0,
+        team_deaths: parseInt(row.teamdeaths || '0') || 0,
+        
+        // Dragon stats
+        first_dragon: row.firstdragon === '1',
+        dragons: parseInt(row.dragons || '0') || 0,
+        opp_dragons: parseInt(row.opp_dragons || '0') || 0,
+        elemental_drakes: parseInt(row.elementaldrakes || '0') || 0,
+        opp_elemental_drakes: parseInt(row.opp_elementaldrakes || '0') || 0,
+        infernals: parseInt(row.infernals || '0') || 0,
+        mountains: parseInt(row.mountains || '0') || 0,
+        clouds: parseInt(row.clouds || '0') || 0,
+        oceans: parseInt(row.oceans || '0') || 0,
+        chemtechs: parseInt(row.chemtechs || '0') || 0,
+        hextechs: parseInt(row.hextechs || '0') || 0,
+        drakes_unknown: parseInt(row['dragons (type unknown)'] || '0') || 0,
+        elders: parseInt(row.elders || '0') || 0,
+        opp_elders: parseInt(row.opp_elders || '0') || 0,
+        
+        // Herald and Baron
+        first_herald: row.firstherald === '1',
+        heralds: parseInt(row.heralds || '0') || 0,
+        opp_heralds: parseInt(row.opp_heralds || '0') || 0,
+        first_baron: row.firstbaron === '1',
+        barons: parseInt(row.barons || '0') || 0,
+        opp_barons: parseInt(row.opp_barons || '0') || 0,
+        
+        // New creatures
+        void_grubs: parseInt(row.void_grubs || '0') || 0,
+        opp_void_grubs: parseInt(row.opp_void_grubs || '0') || 0,
+        
+        // Tower stats
+        first_tower: row.firsttower === '1',
+        first_mid_tower: row.firstmidtower === '1',
+        first_three_towers: row.firsttothreetowers === '1',
+        towers: parseInt(row.towers || '0') || 0,
+        opp_towers: parseInt(row.opp_towers || '0') || 0,
+        turret_plates: parseInt(row.turretplates || '0') || 0,
+        opp_turret_plates: parseInt(row.opp_turretplates || '0') || 0,
+        inhibitors: parseInt(row.inhibitors || '0') || 0,
+        opp_inhibitors: parseInt(row.opp_inhibitors || '0') || 0,
+      });
+    }
   });
-  
-  const matchesArray: MatchCSV[] = Array.from(uniqueMatches.values())
-    .filter(match => match.teams.blue && match.teams.red) // S'assurer que les équipes bleue et rouge sont définies
+
+  // Extraire tous les ID de matchs uniques  
+  console.log(`Nombre de matchs uniques identifiés: ${uniqueGames.size}`);
+
+  // Prepare match data for final conversion
+  const matchesArray: MatchCSV[] = Array.from(uniqueGames.values())
+    .filter(match => match.teams.blue && match.teams.red) // Make sure both teams are defined
     .map(match => {
       const matchCSV: MatchCSV = {
-        id: match.gameId,
-        tournament: match.tournament || 'Unknown Tournament',
+        id: match.id,
+        tournament: `${match.league || 'Unknown'} ${match.year || ''} ${match.split || ''}`,
         date: match.date,
         teamBlueId: match.teams.blue,
         teamRedId: match.teams.red,
-        predictedWinner: match.teams.blue,
+        predictedWinner: match.teams.blue, // Default predicted winner to blue side
         blueWinOdds: '0.5',
         redWinOdds: '0.5',
-        status: match.result ? 'Completed' : 'Upcoming'
+        status: match.result ? 'Completed' : 'Upcoming',
+        // Add new fields for the expanded matches table
+        patch: match.patch,
+        year: match.year,
+        split: match.split,
+        playoffs: match.playoffs ? 'yes' : 'no'
       };
       
       if (match.result) {
@@ -312,7 +519,47 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     });
   
   console.log(`Conversion finale en ${matchesArray.length} matchs`);
+  const teams = Array.from(uniqueTeams.values());
+  const teamsConverted = convertTeamData(teams);
+  
+  const players = Array.from(uniquePlayers.values());
+  const playersConverted = convertPlayerData(players);
+  
+  teamsConverted.forEach(team => {
+    team.players = playersConverted.filter(player => player.team === team.id);
+  });
+  
   const matchesConverted = convertMatchData(matchesArray, teamsConverted);
+  
+  // Add additional data to prepare for detailed player match stats
+  matchesConverted.forEach(match => {
+    // Add match-level stats if available
+    const matchTeamStats = matchStats.get(match.id);
+    if (matchTeamStats) {
+      const blueTeamStats = matchTeamStats.get(match.teamBlue.id);
+      const redTeamStats = matchTeamStats.get(match.teamRed.id);
+      
+      if (blueTeamStats) {
+        match.extraStats = {
+          ...match.extraStats,
+          blueTeamStats
+        };
+      }
+      
+      if (redTeamStats) {
+        match.extraStats = {
+          ...match.extraStats,
+          redTeamStats
+        };
+      }
+    }
+    
+    // Add player match stats if available
+    const playerStats = matchPlayerStats.get(match.id);
+    if (playerStats) {
+      match.playerStats = Array.from(playerStats.values());
+    }
+  });
   
   return {
     teams: teamsConverted,

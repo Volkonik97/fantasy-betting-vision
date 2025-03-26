@@ -26,61 +26,187 @@ export type Database = {
       }
       matches: {
         Row: {
+          bans: Json | null
+          barons: number | null
           blue_win_odds: number | null
+          chemtechs: number | null
+          ckpm: number | null
+          clouds: number | null
           date: string | null
+          dragons: number | null
+          drakes_unknown: number | null
           duration: string | null
+          elders: number | null
+          elemental_drakes: number | null
           first_baron: string | null
           first_blood: string | null
           first_dragon: string | null
+          first_herald: string | null
+          first_mid_tower: string | null
+          first_three_towers: string | null
+          first_tower: string | null
+          game_completeness: string | null
+          game_number: string | null
+          heralds: number | null
+          hextechs: number | null
           id: string
+          infernals: number | null
+          inhibitors: number | null
+          mountains: number | null
           mvp: string | null
+          oceans: number | null
+          opp_barons: number | null
+          opp_dragons: number | null
+          opp_elders: number | null
+          opp_elemental_drakes: number | null
+          opp_heralds: number | null
+          opp_inhibitors: number | null
+          opp_towers: number | null
+          opp_turret_plates: number | null
+          opp_void_grubs: number | null
+          patch: string | null
+          picks: Json | null
+          playoffs: boolean | null
           predicted_winner: string | null
           red_win_odds: number | null
           score_blue: number | null
           score_red: number | null
+          split: string | null
           status: string | null
           team_blue_id: string | null
+          team_deaths: number | null
+          team_kills: number | null
+          team_kpm: number | null
           team_red_id: string | null
           tournament: string | null
+          towers: number | null
+          turret_plates: number | null
+          url: string | null
+          void_grubs: number | null
           winner_team_id: string | null
+          year: string | null
         }
         Insert: {
+          bans?: Json | null
+          barons?: number | null
           blue_win_odds?: number | null
+          chemtechs?: number | null
+          ckpm?: number | null
+          clouds?: number | null
           date?: string | null
+          dragons?: number | null
+          drakes_unknown?: number | null
           duration?: string | null
+          elders?: number | null
+          elemental_drakes?: number | null
           first_baron?: string | null
           first_blood?: string | null
           first_dragon?: string | null
+          first_herald?: string | null
+          first_mid_tower?: string | null
+          first_three_towers?: string | null
+          first_tower?: string | null
+          game_completeness?: string | null
+          game_number?: string | null
+          heralds?: number | null
+          hextechs?: number | null
           id: string
+          infernals?: number | null
+          inhibitors?: number | null
+          mountains?: number | null
           mvp?: string | null
+          oceans?: number | null
+          opp_barons?: number | null
+          opp_dragons?: number | null
+          opp_elders?: number | null
+          opp_elemental_drakes?: number | null
+          opp_heralds?: number | null
+          opp_inhibitors?: number | null
+          opp_towers?: number | null
+          opp_turret_plates?: number | null
+          opp_void_grubs?: number | null
+          patch?: string | null
+          picks?: Json | null
+          playoffs?: boolean | null
           predicted_winner?: string | null
           red_win_odds?: number | null
           score_blue?: number | null
           score_red?: number | null
+          split?: string | null
           status?: string | null
           team_blue_id?: string | null
+          team_deaths?: number | null
+          team_kills?: number | null
+          team_kpm?: number | null
           team_red_id?: string | null
           tournament?: string | null
+          towers?: number | null
+          turret_plates?: number | null
+          url?: string | null
+          void_grubs?: number | null
           winner_team_id?: string | null
+          year?: string | null
         }
         Update: {
+          bans?: Json | null
+          barons?: number | null
           blue_win_odds?: number | null
+          chemtechs?: number | null
+          ckpm?: number | null
+          clouds?: number | null
           date?: string | null
+          dragons?: number | null
+          drakes_unknown?: number | null
           duration?: string | null
+          elders?: number | null
+          elemental_drakes?: number | null
           first_baron?: string | null
           first_blood?: string | null
           first_dragon?: string | null
+          first_herald?: string | null
+          first_mid_tower?: string | null
+          first_three_towers?: string | null
+          first_tower?: string | null
+          game_completeness?: string | null
+          game_number?: string | null
+          heralds?: number | null
+          hextechs?: number | null
           id?: string
+          infernals?: number | null
+          inhibitors?: number | null
+          mountains?: number | null
           mvp?: string | null
+          oceans?: number | null
+          opp_barons?: number | null
+          opp_dragons?: number | null
+          opp_elders?: number | null
+          opp_elemental_drakes?: number | null
+          opp_heralds?: number | null
+          opp_inhibitors?: number | null
+          opp_towers?: number | null
+          opp_turret_plates?: number | null
+          opp_void_grubs?: number | null
+          patch?: string | null
+          picks?: Json | null
+          playoffs?: boolean | null
           predicted_winner?: string | null
           red_win_odds?: number | null
           score_blue?: number | null
           score_red?: number | null
+          split?: string | null
           status?: string | null
           team_blue_id?: string | null
+          team_deaths?: number | null
+          team_kills?: number | null
+          team_kpm?: number | null
           team_red_id?: string | null
           tournament?: string | null
+          towers?: number | null
+          turret_plates?: number | null
+          url?: string | null
+          void_grubs?: number | null
           winner_team_id?: string | null
+          year?: string | null
         }
         Relationships: [
           {
@@ -93,6 +219,349 @@ export type Database = {
           {
             foreignKeyName: "matches_team_red_id_fkey"
             columns: ["team_red_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_match_stats: {
+        Row: {
+          assists: number | null
+          assists_at_10: number | null
+          assists_at_15: number | null
+          assists_at_20: number | null
+          assists_at_25: number | null
+          champion: string | null
+          control_wards_bought: number | null
+          created_at: string | null
+          cs_at_10: number | null
+          cs_at_15: number | null
+          cs_at_20: number | null
+          cs_at_25: number | null
+          cs_diff_at_10: number | null
+          cs_diff_at_15: number | null
+          cs_diff_at_20: number | null
+          cs_diff_at_25: number | null
+          cspm: number | null
+          damage_mitigated_per_minute: number | null
+          damage_share: number | null
+          damage_taken_per_minute: number | null
+          damage_to_champions: number | null
+          deaths: number | null
+          deaths_at_10: number | null
+          deaths_at_15: number | null
+          deaths_at_20: number | null
+          deaths_at_25: number | null
+          double_kills: number | null
+          dpm: number | null
+          earned_gold: number | null
+          earned_gold_share: number | null
+          earned_gpm: number | null
+          first_blood_assist: boolean | null
+          first_blood_kill: boolean | null
+          first_blood_victim: boolean | null
+          gold_at_10: number | null
+          gold_at_15: number | null
+          gold_at_20: number | null
+          gold_at_25: number | null
+          gold_diff_at_10: number | null
+          gold_diff_at_15: number | null
+          gold_diff_at_20: number | null
+          gold_diff_at_25: number | null
+          gold_spent: number | null
+          gpr: number | null
+          gspd: number | null
+          id: string
+          kills: number | null
+          kills_at_10: number | null
+          kills_at_15: number | null
+          kills_at_20: number | null
+          kills_at_25: number | null
+          match_id: string | null
+          minion_kills: number | null
+          monster_kills: number | null
+          monster_kills_enemy_jungle: number | null
+          monster_kills_own_jungle: number | null
+          opp_assists_at_10: number | null
+          opp_assists_at_15: number | null
+          opp_assists_at_20: number | null
+          opp_assists_at_25: number | null
+          opp_cs_at_10: number | null
+          opp_cs_at_15: number | null
+          opp_cs_at_20: number | null
+          opp_cs_at_25: number | null
+          opp_deaths_at_10: number | null
+          opp_deaths_at_15: number | null
+          opp_deaths_at_20: number | null
+          opp_deaths_at_25: number | null
+          opp_gold_at_10: number | null
+          opp_gold_at_15: number | null
+          opp_gold_at_20: number | null
+          opp_gold_at_25: number | null
+          opp_kills_at_10: number | null
+          opp_kills_at_15: number | null
+          opp_kills_at_20: number | null
+          opp_kills_at_25: number | null
+          opp_xp_at_10: number | null
+          opp_xp_at_15: number | null
+          opp_xp_at_20: number | null
+          opp_xp_at_25: number | null
+          participant_id: string | null
+          penta_kills: number | null
+          player_id: string | null
+          position: string | null
+          quadra_kills: number | null
+          side: string | null
+          team_id: string | null
+          total_cs: number | null
+          total_gold: number | null
+          triple_kills: number | null
+          vision_score: number | null
+          vspm: number | null
+          wards_killed: number | null
+          wards_placed: number | null
+          wcpm: number | null
+          wpm: number | null
+          xp_at_10: number | null
+          xp_at_15: number | null
+          xp_at_20: number | null
+          xp_at_25: number | null
+          xp_diff_at_10: number | null
+          xp_diff_at_15: number | null
+          xp_diff_at_20: number | null
+          xp_diff_at_25: number | null
+        }
+        Insert: {
+          assists?: number | null
+          assists_at_10?: number | null
+          assists_at_15?: number | null
+          assists_at_20?: number | null
+          assists_at_25?: number | null
+          champion?: string | null
+          control_wards_bought?: number | null
+          created_at?: string | null
+          cs_at_10?: number | null
+          cs_at_15?: number | null
+          cs_at_20?: number | null
+          cs_at_25?: number | null
+          cs_diff_at_10?: number | null
+          cs_diff_at_15?: number | null
+          cs_diff_at_20?: number | null
+          cs_diff_at_25?: number | null
+          cspm?: number | null
+          damage_mitigated_per_minute?: number | null
+          damage_share?: number | null
+          damage_taken_per_minute?: number | null
+          damage_to_champions?: number | null
+          deaths?: number | null
+          deaths_at_10?: number | null
+          deaths_at_15?: number | null
+          deaths_at_20?: number | null
+          deaths_at_25?: number | null
+          double_kills?: number | null
+          dpm?: number | null
+          earned_gold?: number | null
+          earned_gold_share?: number | null
+          earned_gpm?: number | null
+          first_blood_assist?: boolean | null
+          first_blood_kill?: boolean | null
+          first_blood_victim?: boolean | null
+          gold_at_10?: number | null
+          gold_at_15?: number | null
+          gold_at_20?: number | null
+          gold_at_25?: number | null
+          gold_diff_at_10?: number | null
+          gold_diff_at_15?: number | null
+          gold_diff_at_20?: number | null
+          gold_diff_at_25?: number | null
+          gold_spent?: number | null
+          gpr?: number | null
+          gspd?: number | null
+          id?: string
+          kills?: number | null
+          kills_at_10?: number | null
+          kills_at_15?: number | null
+          kills_at_20?: number | null
+          kills_at_25?: number | null
+          match_id?: string | null
+          minion_kills?: number | null
+          monster_kills?: number | null
+          monster_kills_enemy_jungle?: number | null
+          monster_kills_own_jungle?: number | null
+          opp_assists_at_10?: number | null
+          opp_assists_at_15?: number | null
+          opp_assists_at_20?: number | null
+          opp_assists_at_25?: number | null
+          opp_cs_at_10?: number | null
+          opp_cs_at_15?: number | null
+          opp_cs_at_20?: number | null
+          opp_cs_at_25?: number | null
+          opp_deaths_at_10?: number | null
+          opp_deaths_at_15?: number | null
+          opp_deaths_at_20?: number | null
+          opp_deaths_at_25?: number | null
+          opp_gold_at_10?: number | null
+          opp_gold_at_15?: number | null
+          opp_gold_at_20?: number | null
+          opp_gold_at_25?: number | null
+          opp_kills_at_10?: number | null
+          opp_kills_at_15?: number | null
+          opp_kills_at_20?: number | null
+          opp_kills_at_25?: number | null
+          opp_xp_at_10?: number | null
+          opp_xp_at_15?: number | null
+          opp_xp_at_20?: number | null
+          opp_xp_at_25?: number | null
+          participant_id?: string | null
+          penta_kills?: number | null
+          player_id?: string | null
+          position?: string | null
+          quadra_kills?: number | null
+          side?: string | null
+          team_id?: string | null
+          total_cs?: number | null
+          total_gold?: number | null
+          triple_kills?: number | null
+          vision_score?: number | null
+          vspm?: number | null
+          wards_killed?: number | null
+          wards_placed?: number | null
+          wcpm?: number | null
+          wpm?: number | null
+          xp_at_10?: number | null
+          xp_at_15?: number | null
+          xp_at_20?: number | null
+          xp_at_25?: number | null
+          xp_diff_at_10?: number | null
+          xp_diff_at_15?: number | null
+          xp_diff_at_20?: number | null
+          xp_diff_at_25?: number | null
+        }
+        Update: {
+          assists?: number | null
+          assists_at_10?: number | null
+          assists_at_15?: number | null
+          assists_at_20?: number | null
+          assists_at_25?: number | null
+          champion?: string | null
+          control_wards_bought?: number | null
+          created_at?: string | null
+          cs_at_10?: number | null
+          cs_at_15?: number | null
+          cs_at_20?: number | null
+          cs_at_25?: number | null
+          cs_diff_at_10?: number | null
+          cs_diff_at_15?: number | null
+          cs_diff_at_20?: number | null
+          cs_diff_at_25?: number | null
+          cspm?: number | null
+          damage_mitigated_per_minute?: number | null
+          damage_share?: number | null
+          damage_taken_per_minute?: number | null
+          damage_to_champions?: number | null
+          deaths?: number | null
+          deaths_at_10?: number | null
+          deaths_at_15?: number | null
+          deaths_at_20?: number | null
+          deaths_at_25?: number | null
+          double_kills?: number | null
+          dpm?: number | null
+          earned_gold?: number | null
+          earned_gold_share?: number | null
+          earned_gpm?: number | null
+          first_blood_assist?: boolean | null
+          first_blood_kill?: boolean | null
+          first_blood_victim?: boolean | null
+          gold_at_10?: number | null
+          gold_at_15?: number | null
+          gold_at_20?: number | null
+          gold_at_25?: number | null
+          gold_diff_at_10?: number | null
+          gold_diff_at_15?: number | null
+          gold_diff_at_20?: number | null
+          gold_diff_at_25?: number | null
+          gold_spent?: number | null
+          gpr?: number | null
+          gspd?: number | null
+          id?: string
+          kills?: number | null
+          kills_at_10?: number | null
+          kills_at_15?: number | null
+          kills_at_20?: number | null
+          kills_at_25?: number | null
+          match_id?: string | null
+          minion_kills?: number | null
+          monster_kills?: number | null
+          monster_kills_enemy_jungle?: number | null
+          monster_kills_own_jungle?: number | null
+          opp_assists_at_10?: number | null
+          opp_assists_at_15?: number | null
+          opp_assists_at_20?: number | null
+          opp_assists_at_25?: number | null
+          opp_cs_at_10?: number | null
+          opp_cs_at_15?: number | null
+          opp_cs_at_20?: number | null
+          opp_cs_at_25?: number | null
+          opp_deaths_at_10?: number | null
+          opp_deaths_at_15?: number | null
+          opp_deaths_at_20?: number | null
+          opp_deaths_at_25?: number | null
+          opp_gold_at_10?: number | null
+          opp_gold_at_15?: number | null
+          opp_gold_at_20?: number | null
+          opp_gold_at_25?: number | null
+          opp_kills_at_10?: number | null
+          opp_kills_at_15?: number | null
+          opp_kills_at_20?: number | null
+          opp_kills_at_25?: number | null
+          opp_xp_at_10?: number | null
+          opp_xp_at_15?: number | null
+          opp_xp_at_20?: number | null
+          opp_xp_at_25?: number | null
+          participant_id?: string | null
+          penta_kills?: number | null
+          player_id?: string | null
+          position?: string | null
+          quadra_kills?: number | null
+          side?: string | null
+          team_id?: string | null
+          total_cs?: number | null
+          total_gold?: number | null
+          triple_kills?: number | null
+          vision_score?: number | null
+          vspm?: number | null
+          wards_killed?: number | null
+          wards_placed?: number | null
+          wcpm?: number | null
+          wpm?: number | null
+          xp_at_10?: number | null
+          xp_at_15?: number | null
+          xp_at_20?: number | null
+          xp_at_25?: number | null
+          xp_diff_at_10?: number | null
+          xp_diff_at_15?: number | null
+          xp_diff_at_20?: number | null
+          xp_diff_at_25?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_match_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_team_id_fkey"
+            columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]

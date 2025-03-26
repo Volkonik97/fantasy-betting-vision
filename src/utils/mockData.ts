@@ -41,6 +41,48 @@ export interface Match {
     firstDragon?: string;
     firstBaron?: string;
   };
+  extraStats?: {
+    patch?: string;
+    year?: string;
+    split?: string;
+    playoffs?: boolean;
+    team_kpm?: number;
+    ckpm?: number;
+    team_kills?: number;
+    team_deaths?: number;
+    dragons?: number;
+    opp_dragons?: number;
+    elemental_drakes?: number;
+    opp_elemental_drakes?: number;
+    infernals?: number;
+    mountains?: number;
+    clouds?: number;
+    oceans?: number;
+    chemtechs?: number;
+    hextechs?: number;
+    drakes_unknown?: number;
+    elders?: number;
+    opp_elders?: number;
+    first_herald?: string;
+    heralds?: number;
+    opp_heralds?: number;
+    barons?: number;
+    opp_barons?: number;
+    first_tower?: string;
+    first_mid_tower?: string;
+    first_three_towers?: string;
+    towers?: number;
+    opp_towers?: number;
+    turret_plates?: number;
+    opp_turret_plates?: number;
+    inhibitors?: number;
+    opp_inhibitors?: number;
+    void_grubs?: number;
+    opp_void_grubs?: number;
+    blueTeamStats?: any;
+    redTeamStats?: any;
+  };
+  playerStats?: any[];
 }
 
 export interface Tournament {
