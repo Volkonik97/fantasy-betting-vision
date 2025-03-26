@@ -518,26 +518,26 @@ export const loadCsvData = async (
 // Modified getter functions to properly handle async imports
 export const getTeams = async (): Promise<Team[]> => {
   if (loadedTeams) return loadedTeams;
-  const mockDataModule = await import('./mockData');
-  return mockDataModule.teams;
+  const { teams } = await import('./mockData');
+  return teams;
 };
 
 export const getPlayers = async (): Promise<Player[]> => {
   if (loadedPlayers) return loadedPlayers;
-  const mockDataModule = await import('./mockData');
-  return mockDataModule.players;
+  const { players } = await import('./mockData');
+  return players;
 };
 
 export const getMatches = async (): Promise<Match[]> => {
   if (loadedMatches) return loadedMatches;
-  const mockDataModule = await import('./mockData');
-  return mockDataModule.matches;
+  const { matches } = await import('./mockData');
+  return matches;
 };
 
 export const getTournaments = async (): Promise<Tournament[]> => {
   if (loadedTournaments) return loadedTournaments;
-  const mockDataModule = await import('./mockData');
-  return mockDataModule.tournaments;
+  const { tournaments } = await import('./mockData');
+  return tournaments;
 };
 
 // Fonction supplémentaire également mise à jour pour gérer les promesses
@@ -560,6 +560,6 @@ export const getSideStatistics = async (teamId: string) => {
     }
   }
   
-  const mockDataModule = await import('./mockData');
-  return mockDataModule.getSideStatistics(teamId);
+  const { getSideStatistics: getMockSideStatistics } = await import('./mockData');
+  return getMockSideStatistics(teamId);
 };
