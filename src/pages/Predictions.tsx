@@ -18,6 +18,16 @@ import PredictionChart from "@/components/PredictionChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  BarChart as RechartBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip as RechartTooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from "recharts";
 
 const Predictions = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -445,7 +455,7 @@ const Predictions = () => {
                       <ul className="space-y-2 text-sm">
                         <li className="flex items-start gap-2">
                           <div className="w-2 h-2 mt-1.5 bg-red-500 rounded-full"></div>
-                          <span>Stronger late game scaling (win rate > 35 min: 65%)</span>
+                          <span>Stronger late game scaling (win rate {'>'} 35 min: 65%)</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <div className="w-2 h-2 mt-1.5 bg-red-500 rounded-full"></div>
@@ -518,7 +528,7 @@ const Predictions = () => {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis type="number" />
                           <YAxis type="category" dataKey="name" />
-                          <Tooltip />
+                          <RechartTooltip />
                           <Legend />
                           <Bar dataKey="blue" fill="#1E88E5" name={featuredMatch.teamBlue.name} />
                           <Bar dataKey="red" fill="#E53935" name={featuredMatch.teamRed.name} />
