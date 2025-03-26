@@ -1,4 +1,3 @@
-
 import Papa, { ParseResult } from 'papaparse';
 import { Team, Player, Match, Tournament } from './mockData';
 
@@ -519,26 +518,26 @@ export const loadCsvData = async (
 // Modified getter functions to properly handle async imports
 export const getTeams = async (): Promise<Team[]> => {
   if (loadedTeams) return loadedTeams;
-  const mockData = await import('./mockData');
-  return mockData.teams;
+  const mockDataModule = await import('./mockData');
+  return mockDataModule.teams;
 };
 
 export const getPlayers = async (): Promise<Player[]> => {
   if (loadedPlayers) return loadedPlayers;
-  const mockData = await import('./mockData');
-  return mockData.players;
+  const mockDataModule = await import('./mockData');
+  return mockDataModule.players;
 };
 
 export const getMatches = async (): Promise<Match[]> => {
   if (loadedMatches) return loadedMatches;
-  const mockData = await import('./mockData');
-  return mockData.matches;
+  const mockDataModule = await import('./mockData');
+  return mockDataModule.matches;
 };
 
 export const getTournaments = async (): Promise<Tournament[]> => {
   if (loadedTournaments) return loadedTournaments;
-  const mockData = await import('./mockData');
-  return mockData.tournaments;
+  const mockDataModule = await import('./mockData');
+  return mockDataModule.tournaments;
 };
 
 // Fonction supplémentaire également mise à jour pour gérer les promesses
@@ -561,6 +560,6 @@ export const getSideStatistics = async (teamId: string) => {
     }
   }
   
-  const mockData = await import('./mockData');
-  return mockData.getSideStatistics(teamId);
+  const mockDataModule = await import('./mockData');
+  return mockDataModule.getSideStatistics(teamId);
 };

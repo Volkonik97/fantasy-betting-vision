@@ -1,30 +1,36 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { teams as mockTeams, Team } from "@/utils/mockData";
+import { Link } from "react-router-dom";
+import { Team } from "@/utils/mockData";
 import { getTeams } from "@/utils/csvService";
 import Navbar from "@/components/Navbar";
-import TeamStatistics from "@/components/TeamStatistics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/SearchBar";
+import { toast } from "sonner";
 
 const Teams = () => {
-  const [teams, setTeams] = useState<Team[]>(mockTeams);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
   const [isLoading, setIsLoading] = useState(true);
-  
-  const regions = ["All", "LCK", "LPL", "LEC", "LCS"];
+  const [regions, setRegions] = useState<string[]>(["All"]);
   
   useEffect(() => {
     const loadTeams = async () => {
       try {
+        setIsLoading(true);
         const loadedTeams = await getTeams();
         if (Array.isArray(loadedTeams)) {
           setTeams(loadedTeams);
+          
+          // Extract unique regions
+          const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
+          setRegions(uniqueRegions);
         }
       } catch (error) {
         console.error("Erreur lors du chargement des équipes:", error);
+        toast.error("Erreur lors du chargement des équipes");
       } finally {
         setIsLoading(false);
       }
@@ -80,15 +86,21 @@ const Teams = () => {
           <div className="flex justify-center items-center h-60">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
           </div>
-        ) : (
+        ) : filteredTeams.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTeams.length > 0 ? (
-              filteredTeams.map((team) => (
-                <TeamCard key={team.id} team={team} />
-              ))
-            ) : (
-              <div className="col-span-3 text-center py-10">
-                <p className="text-gray-500">Aucune équipe trouvée avec ces critères.</p>
+            {filteredTeams.map((team) => (
+              <TeamCard key={team.id} team={team} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-500">Aucune équipe trouvée avec ces critères.</p>
+            {teams.length === 0 && (
+              <div className="mt-4">
+                <p className="text-gray-500 mb-4">Aucune donnée n'a été importée.</p>
+                <Link to="/data-import" className="text-lol-blue hover:underline">
+                  Importer des données
+                </Link>
               </div>
             )}
           </div>
@@ -143,12 +155,12 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           </div>
           
           <div className="flex justify-between mt-4">
-            <a 
-              href={`/teams/${team.id}`} 
+            <Link 
+              to={`/teams/${team.id}`} 
               className="text-sm text-lol-blue hover:underline"
             >
               View Team Details
-            </a>
+            </Link>
             <span className="text-sm text-gray-500">
               {team.players.length} Players
             </span>

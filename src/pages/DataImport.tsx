@@ -96,7 +96,7 @@ const DataImport = () => {
             </div>
             
             <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
-              <p className="text-sm font-medium mb-2">Colonnes supportées:</p>
+              <p className="text-sm font-medium mb-2">Exemple de colonnes supportées:</p>
               <pre className="text-xs text-gray-600 whitespace-normal">
                 gameid, league, year, split, playoffs, date, game, patch, participantid, side, position, playername, playerid, 
                 teamname, teamid, champion, gamelength, result, kills, deaths, assists, teamkills, teamdeaths, doublekills, 
