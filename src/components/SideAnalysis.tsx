@@ -2,7 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-interface SideAnalysisProps {
+export interface SideAnalysisProps {
   statistics: {
     blueWins: number;
     redWins: number;

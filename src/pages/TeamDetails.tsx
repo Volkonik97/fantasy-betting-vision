@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -117,7 +116,7 @@ const TeamDetails = () => {
         {sideStats && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Side Performance Analysis</h2>
-            <SideAnalysis sideStats={sideStats} />
+            <SideAnalysis statistics={sideStats} />
           </div>
         )}
         
