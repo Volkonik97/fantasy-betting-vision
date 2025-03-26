@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -150,7 +151,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Avg. Game Time</p>
-              <p className="text-lg font-semibold">{team.averageGameTime.toFixed(1)} min</p>
+              <p className="text-lg font-semibold">{formatSecondsToMinutesSeconds(team.averageGameTime * 60)}</p>
             </div>
           </div>
           

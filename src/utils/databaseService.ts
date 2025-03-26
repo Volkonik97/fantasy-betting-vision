@@ -128,9 +128,10 @@ export const saveToDatabase = async (data: {
           
           if (player.championPool) {
             if (Array.isArray(player.championPool)) {
-              championPoolArray = player.championPool as string[];
+              championPoolArray = player.championPool;
             } else if (typeof player.championPool === 'string') {
-              championPoolArray = player.championPool.split(',').map(c => c.trim());
+              // Use String() to ensure it's a string before calling split
+              championPoolArray = String(player.championPool).split(',').map(c => c.trim());
             }
           }
           
