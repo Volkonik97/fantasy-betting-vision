@@ -1,28 +1,86 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, Percent, Clock, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import { teams, matches, getSideStatistics } from "@/utils/mockData";
+import { Team, Match, Player } from "@/utils/mockData";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import TeamStatistics from "@/components/TeamStatistics";
 import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
+import { supabase } from "@/integrations/supabase/client";
+import { getTeams, getMatches, getSideStatistics } from "@/utils/csvService";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const team = teams.find(team => team.id === id);
+  const [team, setTeam] = useState<Team | null>(null);
+  const [teamMatches, setTeamMatches] = useState<Match[]>([]);
+  const [sideStats, setSideStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  if (!team) {
-    return <div className="p-10 text-center">Team not found</div>;
+  useEffect(() => {
+    const loadTeamData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Charger l'équipe depuis Supabase
+        const teams = await getTeams();
+        const foundTeam = teams.find(t => t.id === id);
+        
+        if (!foundTeam) {
+          setError("Équipe non trouvée");
+          setIsLoading(false);
+          return;
+        }
+        
+        setTeam(foundTeam);
+        
+        // Charger les matchs associés à cette équipe
+        const matches = await getMatches();
+        const filteredMatches = matches.filter(
+          match => match.teamBlue.id === id || match.teamRed.id === id
+        );
+        setTeamMatches(filteredMatches);
+        
+        // Charger les statistiques par côté
+        const stats = await getSideStatistics(foundTeam.id);
+        setSideStats(stats);
+      } catch (err) {
+        console.error("Erreur lors du chargement des données:", err);
+        setError("Erreur lors du chargement des données");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (id) {
+      loadTeamData();
+    }
+  }, [id]);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+      </div>
+    );
   }
   
-  const teamMatches = matches.filter(
-    match => match.teamBlue.id === id || match.teamRed.id === id
-  );
-  
-  const sideStats = getSideStatistics(team.id);
+  if (error || !team) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">{error || "Équipe non trouvée"}</h2>
+          <Link to="/teams" className="text-lol-blue hover:underline">
+            Retour à la liste des équipes
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -34,7 +92,7 @@ const TeamDetails = () => {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-lol-blue transition-colors mb-6"
         >
           <ArrowLeft size={16} />
-          <span>Back to Teams</span>
+          <span>Retour aux équipes</span>
         </Link>
         
         <motion.div
