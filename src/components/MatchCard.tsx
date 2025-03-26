@@ -3,13 +3,17 @@ import React from "react";
 import { format, isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/mockData";
 import { cn } from "@/lib/utils";
+import { Clock, TrendingUp, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { SideAnalysisProps } from "@/components/SideAnalysis";
 
 interface MatchCardProps {
   match: Match;
   className?: string;
+  showDetails?: boolean;
 }
 
-const MatchCard = ({ match, className }: MatchCardProps) => {
+const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => {
   const matchDate = new Date(match.date);
   const isPastMatch = isPast(matchDate);
   const isUpcoming = isFuture(matchDate);
@@ -101,22 +105,22 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
         
         <div className="mt-5 pt-5 border-t border-gray-100">
           <div className="flex justify-between items-center">
-            <div>
+            <div className="w-full">
               <span className="text-xs text-gray-500 block mb-1">Win Prediction</span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0">
                 <div 
                   className={cn(
                     "h-2 rounded-l-full",
                     match.predictedWinner === match.teamBlue.id ? "bg-lol-blue" : "bg-blue-200"
                   )}
-                  style={{ width: `${match.blueWinOdds * 100}px` }}
+                  style={{ width: `${match.blueWinOdds * 100}%` }}
                 />
                 <div 
                   className={cn(
                     "h-2 rounded-r-full",
                     match.predictedWinner === match.teamRed.id ? "bg-lol-red" : "bg-red-200"
                   )}
-                  style={{ width: `${match.redWinOdds * 100}px` }}
+                  style={{ width: `${match.redWinOdds * 100}%` }}
                 />
               </div>
               <div className="flex justify-between mt-1">
@@ -125,11 +129,43 @@ const MatchCard = ({ match, className }: MatchCardProps) => {
               </div>
             </div>
             
-            <button className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium rounded-md transition-colors duration-200">
-              Details
-            </button>
+            {showDetails && (
+              <Link 
+                to={`/matches/${match.id}`} 
+                className="flex-shrink-0 ml-4 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-medium rounded-md transition-colors duration-200"
+              >
+                Details
+              </Link>
+            )}
           </div>
         </div>
+        
+        {match.status === "Upcoming" && (
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span>{format(matchDate, "h:mm a")} local time</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 justify-end">
+              <TrendingUp className="w-4 h-4 text-gray-400" />
+              <span>High stakes match</span>
+            </div>
+          </div>
+        )}
+        
+        {match.status === "Completed" && match.result && (
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">{match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}</span> won in {match.result.duration || "31:42"}
+            </div>
+            {match.result.mvp && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Users className="w-4 h-4 text-gray-400" />
+                <span>MVP: {match.result.mvp}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

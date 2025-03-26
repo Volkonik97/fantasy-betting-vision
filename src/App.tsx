@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Teams from "./pages/Teams";
 import TeamDetails from "./pages/TeamDetails";
 import Matches from "./pages/Matches";
+import MatchDetails from "./pages/MatchDetails";
 import Players from "./pages/Players";
 import Tournaments from "./pages/Tournaments";
 import Analysis from "./pages/Analysis";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/teams" element={<Teams />} />
             <Route path="/teams/:id" element={<TeamDetails />} />
             <Route path="/matches" element={<Matches />} />
+            <Route path="/matches/:id" element={<MatchDetails />} />
             <Route path="/players" element={<Players />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/analysis" element={<Analysis />} />
