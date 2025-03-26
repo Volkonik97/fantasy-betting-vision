@@ -1,9 +1,10 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Clock, Trophy, Users } from "lucide-react";
 import { format } from "date-fns";
-import { matches, getSideStatistics } from "@/utils/mockData";
+import { matches, getSideStatistics } from "@/utils/models";
 import Navbar from "@/components/Navbar";
 import SideAnalysis from "@/components/SideAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

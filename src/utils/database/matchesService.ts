@@ -1,6 +1,6 @@
 
-import { Match, Team } from '../mockData';
 import { supabase } from '@/integrations/supabase/client';
+import { Team, Match, Player } from '../models/types';
 
 // Get all matches from the database
 export const getMatches = async (): Promise<Match[]> => {
@@ -15,7 +15,7 @@ export const getMatches = async (): Promise<Match[]> => {
     }
     
     // Fetch teams separately to populate the match data
-    const { data: teams, error: teamsError } = await supabase
+    const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
       .select('*');
     
@@ -26,20 +26,45 @@ export const getMatches = async (): Promise<Match[]> => {
     
     // Convert database format to application format
     const formattedMatches: Match[] = matches.map(match => {
-      const teamBlue = teams.find(team => team.id === match.team_blue_id);
-      const teamRed = teams.find(team => team.id === match.team_red_id);
+      const teamBlueData = teamsData.find(team => team.id === match.team_blue_id);
+      const teamRedData = teamsData.find(team => team.id === match.team_red_id);
       
-      if (!teamBlue || !teamRed) {
+      if (!teamBlueData || !teamRedData) {
         console.error(`Équipes non trouvées pour le match ${match.id}`);
         return null;
       }
+      
+      // Convert team data to Team type
+      const teamBlue: Team = {
+        id: teamBlueData.id,
+        name: teamBlueData.name,
+        logo: teamBlueData.logo,
+        region: teamBlueData.region,
+        winRate: Number(teamBlueData.win_rate) || 0,
+        blueWinRate: Number(teamBlueData.blue_win_rate) || 0,
+        redWinRate: Number(teamBlueData.red_win_rate) || 0,
+        averageGameTime: Number(teamBlueData.average_game_time) || 0,
+        players: []
+      };
+      
+      const teamRed: Team = {
+        id: teamRedData.id,
+        name: teamRedData.name,
+        logo: teamRedData.logo,
+        region: teamRedData.region,
+        winRate: Number(teamRedData.win_rate) || 0,
+        blueWinRate: Number(teamRedData.blue_win_rate) || 0,
+        redWinRate: Number(teamRedData.red_win_rate) || 0,
+        averageGameTime: Number(teamRedData.average_game_time) || 0,
+        players: []
+      };
       
       const formattedMatch: Match = {
         id: match.id,
         tournament: match.tournament,
         date: match.date,
-        teamBlue: teamBlue as Team,
-        teamRed: teamRed as Team,
+        teamBlue,
+        teamRed,
         predictedWinner: match.predicted_winner,
         blueWinOdds: match.blue_win_odds,
         redWinOdds: match.red_win_odds,
@@ -89,8 +114,8 @@ export const getMatches = async (): Promise<Match[]> => {
         formattedMatch.result = {
           winner: match.winner_team_id,
           score: [
-            parseInt(match.score_blue || '0'), 
-            parseInt(match.score_red || '0')
+            match.score_blue ? parseInt(match.score_blue) : 0, 
+            match.score_red ? parseInt(match.score_red) : 0
           ],
           duration: match.duration,
           mvp: match.mvp,
@@ -210,14 +235,16 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
       };
     });
     
-    // Insert matches
-    const { error } = await supabase
-      .from('matches')
-      .upsert(dbMatches);
-    
-    if (error) {
-      console.error("Erreur lors de la sauvegarde des matchs:", error);
-      return false;
+    // Insert matches one by one to avoid the error with the upsert operation
+    for (const dbMatch of dbMatches) {
+      const { error } = await supabase
+        .from('matches')
+        .upsert(dbMatch);
+      
+      if (error) {
+        console.error("Erreur lors de la sauvegarde du match:", error);
+        return false;
+      }
     }
     
     // Save player match stats if available

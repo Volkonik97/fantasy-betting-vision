@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Player } from '../mockData';
+import { Player } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
 

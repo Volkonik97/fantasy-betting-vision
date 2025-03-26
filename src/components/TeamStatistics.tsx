@@ -1,5 +1,6 @@
+
 import React from "react";
-import { Team } from "@/utils/mockData";
+import { Team } from "@/utils/models/types";
 import { motion } from "framer-motion";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 

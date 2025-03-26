@@ -1,9 +1,9 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { Team } from '../mockData';
+import { Team } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedTeams, setLoadedTeams } from '../csvTypes';
 import { getPlayers } from './playersService';
+import { getSideStatistics as getMockSideStatistics } from '../models';
 
 // Save teams to database
 export const saveTeams = async (teams: Team[]): Promise<boolean> => {
@@ -122,11 +122,9 @@ export const getSideStatistics = async (teamId: string) => {
       };
     }
     
-    const { getSideStatistics: getMockSideStatistics } = await import('../mockData');
     return getMockSideStatistics(teamId);
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques:", error);
-    const { getSideStatistics: getMockSideStatistics } = await import('../mockData');
     return getMockSideStatistics(teamId);
   }
 };

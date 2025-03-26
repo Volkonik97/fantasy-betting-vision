@@ -1,5 +1,5 @@
 
-import { Team, Player, Match } from '../mockData';
+import { Team, Player, Match } from '../models/types';
 import { LeagueGameDataRow } from '../csvTypes';
 import { processTeamData } from './teamProcessor';
 import { processPlayerData } from './playerProcessor';

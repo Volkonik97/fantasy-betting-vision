@@ -1,6 +1,6 @@
 
 import { LeagueGameDataRow } from './csvTypes';
-import { Team, Player, Match } from './mockData';
+import { Team, Player, Match } from './models/types';
 import { assembleLeagueData } from './leagueData/dataAssembler';
 
 // Process League data and convert it to our application format

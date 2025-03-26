@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { matches, tournaments } from "@/utils/mockData";
+import { matches, tournaments } from "@/utils/models";
 import Navbar from "@/components/Navbar";
 import MatchCard from "@/components/MatchCard";
 import SearchBar from "@/components/SearchBar";

@@ -1,7 +1,7 @@
 
 import React from "react";
 import { format, isPast, isFuture } from "date-fns";
-import { Match } from "@/utils/mockData";
+import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
 import { Clock, TrendingUp, Users } from "lucide-react";
 import { Link } from "react-router-dom";

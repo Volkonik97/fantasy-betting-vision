@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
-import { Player } from "@/utils/mockData";
+import { Player } from "@/utils/models/types";
 import { getTeams } from "@/utils/csvService";
 
 const Players = () => {

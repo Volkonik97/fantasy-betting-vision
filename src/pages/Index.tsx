@@ -8,7 +8,7 @@ import PredictionChart from "@/components/PredictionChart";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import SideAnalysis from "@/components/SideAnalysis";
-import { matches, teams, getSideStatistics } from "@/utils/mockData";
+import { matches, teams, getSideStatistics } from "@/utils/models";
 
 const Index = () => {
   const [analysisTarget, setAnalysisTarget] = useState(null);
