@@ -23,6 +23,17 @@ export const supabase = createClient<Database>(
       headers: {
         'x-application-name': 'lol-analytics'
       },
+    },
+    realtime: {
+      timeout: 60000 // Increased timeout for larger operations
+    },
+    // Enhanced fetch parameters for better reliability with large datasets
+    fetch: (url, options) => {
+      const customOptions = {
+        ...options,
+        timeout: 120000 // 2 minutes timeout for larger data transfers
+      };
+      return fetch(url, customOptions);
     }
   }
 );

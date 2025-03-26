@@ -1,4 +1,3 @@
-
 import Papa, { ParseResult } from 'papaparse';
 import { Team, Player, Match, Tournament } from './mockData';
 import { supabase } from "@/integrations/supabase/client";
@@ -509,8 +508,8 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     stats.assists += parseInt(row.assists) || 0;
     stats.games++;
     
-    const minionKills = parseInt(row.minions) || 0;
-    const monsterKills = parseInt(row.monsters) || 0;
+    const minionKills = parseInt(row.minionkills || '0') || 0;
+    const monsterKills = parseInt(row.monsterkills || '0') || 0;
     stats.cs += minionKills + monsterKills;
     
     if (row.champion) {
