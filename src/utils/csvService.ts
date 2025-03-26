@@ -68,15 +68,99 @@ export interface LeagueGameDataRow {
   kills: string;
   deaths: string;
   assists: string;
-  // Ajoutez d'autres colonnes au besoin
-  [key: string]: string; // Pour permettre l'accès aux autres colonnes
+  [key: string]: string;
 }
+
+// Constants for localStorage keys
+const DB_TEAMS_KEY = 'esports_db_teams';
+const DB_PLAYERS_KEY = 'esports_db_players';
+const DB_MATCHES_KEY = 'esports_db_matches';
+const DB_TOURNAMENTS_KEY = 'esports_db_tournaments';
+const DB_LAST_UPDATE_KEY = 'esports_db_last_update';
 
 // Cache pour stocker les données chargées
 let loadedTeams: Team[] | null = null;
 let loadedPlayers: Player[] | null = null;
 let loadedMatches: Match[] | null = null;
 let loadedTournaments: Tournament[] | null = null;
+
+// Functions to save data to localStorage
+const saveToDatabase = (data: {
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
+  tournaments?: Tournament[];
+}) => {
+  try {
+    localStorage.setItem(DB_TEAMS_KEY, JSON.stringify(data.teams));
+    localStorage.setItem(DB_PLAYERS_KEY, JSON.stringify(data.players));
+    localStorage.setItem(DB_MATCHES_KEY, JSON.stringify(data.matches));
+    
+    if (data.tournaments) {
+      localStorage.setItem(DB_TOURNAMENTS_KEY, JSON.stringify(data.tournaments));
+    }
+    
+    localStorage.setItem(DB_LAST_UPDATE_KEY, new Date().toISOString());
+    
+    console.log("Données sauvegardées dans la base de données locale");
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde des données:", error);
+    return false;
+  }
+};
+
+// Function to load data from localStorage
+const loadFromDatabase = (): {
+  teams: Team[] | null;
+  players: Player[] | null;
+  matches: Match[] | null;
+  tournaments: Tournament[] | null;
+  lastUpdate: string | null;
+} => {
+  try {
+    const teamsJson = localStorage.getItem(DB_TEAMS_KEY);
+    const playersJson = localStorage.getItem(DB_PLAYERS_KEY);
+    const matchesJson = localStorage.getItem(DB_MATCHES_KEY);
+    const tournamentsJson = localStorage.getItem(DB_TOURNAMENTS_KEY);
+    const lastUpdate = localStorage.getItem(DB_LAST_UPDATE_KEY);
+    
+    return {
+      teams: teamsJson ? JSON.parse(teamsJson) : null,
+      players: playersJson ? JSON.parse(playersJson) : null,
+      matches: matchesJson ? JSON.parse(matchesJson) : null,
+      tournaments: tournamentsJson ? JSON.parse(tournamentsJson) : null,
+      lastUpdate
+    };
+  } catch (error) {
+    console.error("Erreur lors du chargement des données:", error);
+    return {
+      teams: null,
+      players: null,
+      matches: null,
+      tournaments: null,
+      lastUpdate: null
+    };
+  }
+};
+
+// Function to check if database has data
+export const hasDatabaseData = (): boolean => {
+  try {
+    return !!localStorage.getItem(DB_TEAMS_KEY);
+  } catch (error) {
+    return false;
+  }
+};
+
+// Function to get last database update time
+export const getLastDatabaseUpdate = (): string | null => {
+  try {
+    return localStorage.getItem(DB_LAST_UPDATE_KEY);
+  } catch (error) {
+    return null;
+  }
+};
 
 // Fonction pour charger un fichier CSV
 export const parseCSVFile = (file: File): Promise<ParseResult<any>> => {
@@ -186,7 +270,6 @@ export const getGSheetCSVUrl = (sheetId: string, sheetName: string = ''): string
   if (sheetName) {
     return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
   }
-  // Si aucun nom de feuille n'est fourni, on exporte la première feuille
   return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
 };
 
@@ -196,14 +279,13 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
   players: Player[];
   matches: Match[];
 } => {
-  // Extraire les équipes uniques
   const uniqueTeams = new Map<string, TeamCSV>();
   data.forEach(row => {
     if (!uniqueTeams.has(row.teamid)) {
       uniqueTeams.set(row.teamid, {
         id: row.teamid,
         name: row.teamname,
-        logo: '', // A remplir si disponible
+        logo: '',
         region: row.league,
         winRate: '0',
         blueWinRate: '0',
@@ -213,7 +295,6 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Calculer les statistiques des équipes
   const teamStats = new Map<string, { wins: number, losses: number, blueWins: number, blueLosses: number, redWins: number, redLosses: number, gameTimes: number[] }>();
   data.forEach(row => {
     const teamId = row.teamid;
@@ -241,7 +322,6 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Mettre à jour les stats des équipes
   teamStats.forEach((stats, teamId) => {
     const team = uniqueTeams.get(teamId);
     if (team) {
@@ -260,7 +340,6 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Extraire les joueurs uniques
   const uniquePlayers = new Map<string, PlayerCSV>();
   data.forEach(row => {
     if (!uniquePlayers.has(row.playerid)) {
@@ -268,7 +347,7 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
         id: row.playerid,
         name: row.playername,
         role: row.position,
-        image: '', // A remplir si disponible
+        image: '',
         team: row.teamid,
         kda: '0',
         csPerMin: '0',
@@ -278,7 +357,6 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
-  // Calculer les statistiques des joueurs
   const playerStats = new Map<string, { kills: number, deaths: number, assists: number, games: number, cs: number, championsPlayed: Set<string> }>();
   data.forEach(row => {
     const playerId = row.playerid;
@@ -292,7 +370,6 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     stats.assists += parseInt(row.assists) || 0;
     stats.games++;
     
-    // CS = minions + monstres
     const minionKills = parseInt(row.minionkills) || 0;
     const monsterKills = parseInt(row.monsterkills) || 0;
     stats.cs += minionKills + monsterKills;
@@ -300,21 +377,19 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     stats.championsPlayed.add(row.champion);
   });
 
-  // Mettre à jour les stats des joueurs
   playerStats.forEach((stats, playerId) => {
     const player = uniquePlayers.get(playerId);
     if (player) {
       const kda = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths).toFixed(2) : ((stats.kills + stats.assists) * 1).toFixed(2);
-      const csPerMin = stats.games > 0 ? (stats.cs / stats.games / 30).toFixed(2) : '0'; // Hypothèse de 30 min par partie en moyenne
+      const csPerMin = stats.games > 0 ? (stats.cs / stats.games / 30).toFixed(2) : '0';
       
       player.kda = kda;
       player.csPerMin = csPerMin;
-      player.damageShare = '0.25'; // Valeur par défaut, à calculer avec les données réelles si disponibles
+      player.damageShare = '0.25';
       player.championPool = Array.from(stats.championsPlayed).join(',');
     }
   });
 
-  // Extraire les matchs uniques
   const uniqueMatches = new Map<string, { 
     gameId: string, 
     date: string, 
@@ -343,28 +418,23 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
       match.teams.red = row.teamid;
     }
     
-    // Ajouter les résultats
     match.duration = row.gamelength;
     
-    // On considère que le match est terminé si on a un résultat
     if (row.result === '1') {
       match.result = row.teamid;
     }
   });
 
-  // Convertir en format attendu
   const teams = Array.from(uniqueTeams.values());
   const teamsConverted = convertTeamData(teams);
   
   const players = Array.from(uniquePlayers.values());
   const playersConverted = convertPlayerData(players);
   
-  // Associer les joueurs aux équipes
   teamsConverted.forEach(team => {
     team.players = playersConverted.filter(player => player.team === team.id);
   });
   
-  // Convertir les matchs en format attendu
   const matchesArray: MatchCSV[] = Array.from(uniqueMatches.values()).map(match => {
     const tournamentName = `${data[0]?.league || 'Unknown'} ${data[0]?.year || ''} ${data[0]?.split || ''}`;
     
@@ -374,7 +444,7 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
       date: match.date,
       teamBlueId: match.teams.blue,
       teamRedId: match.teams.red,
-      predictedWinner: match.teams.blue, // Par défaut, on prédit l'équipe bleue gagnante
+      predictedWinner: match.teams.blue,
       blueWinOdds: '0.5',
       redWinOdds: '0.5',
       status: match.result ? 'Completed' : 'Upcoming'
@@ -406,19 +476,17 @@ export const loadFromSingleGoogleSheet = async (sheetUrl: string): Promise<{
   try {
     const sheetId = extractSheetId(sheetUrl);
     
-    // Obtenir l'URL CSV pour la feuille principale
     const csvUrl = getGSheetCSVUrl(sheetId);
     
-    // Charger les données
     const results = await parseCSVFromURL(csvUrl);
     
-    // Traiter les données au format League of Legends
     const data = processLeagueData(results.data as LeagueGameDataRow[]);
     
-    // Mettre en cache les données
     loadedTeams = data.teams;
     loadedPlayers = data.players;
     loadedMatches = data.matches;
+    
+    saveToDatabase(data);
     
     return data;
   } catch (error) {
@@ -436,38 +504,32 @@ export const loadFromGoogleSheets = async (sheetUrl: string): Promise<{
   try {
     const sheetId = extractSheetId(sheetUrl);
     
-    // Vérifier si c'est un format à onglet unique ou multiple
     try {
-      // Essayer d'abord le format à onglet unique
       return await loadFromSingleGoogleSheet(sheetUrl);
     } catch (error) {
       console.log("Essai du format à onglets multiples...");
       
-      // Si ça échoue, essayer le format à onglets multiples
-      // Obtenir les URLs CSV pour chaque onglet
       const teamsUrl = getGSheetCSVUrl(sheetId, 'teams');
       const playersUrl = getGSheetCSVUrl(sheetId, 'players');
       const matchesUrl = getGSheetCSVUrl(sheetId, 'matches');
       
-      // Charger les données
       const teamsResults = await parseCSVFromURL(teamsUrl);
       const playersResults = await parseCSVFromURL(playersUrl);
       const matchesResults = await parseCSVFromURL(matchesUrl);
       
-      // Convertir les données
       const teams = convertTeamData(teamsResults.data as TeamCSV[]);
       const players = convertPlayerData(playersResults.data as PlayerCSV[]);
       const matches = convertMatchData(matchesResults.data as MatchCSV[], teams);
       
-      // Associer les joueurs aux équipes
       teams.forEach(team => {
         team.players = players.filter(player => player.team === team.id);
       });
       
-      // Mettre en cache les données
       loadedTeams = teams;
       loadedPlayers = players;
       loadedMatches = matches;
+      
+      saveToDatabase({ teams, players, matches });
       
       return { teams, players, matches };
     }
@@ -488,25 +550,23 @@ export const loadCsvData = async (
   matches: Match[];
 }> => {
   try {
-    // Analyser les fichiers CSV
     const teamResults = await parseCSVFile(teamFile);
     const playerResults = await parseCSVFile(playerFile);
     const matchResults = await parseCSVFile(matchFile);
     
-    // Convertir les données
     const teams = convertTeamData(teamResults.data as TeamCSV[]);
     const players = convertPlayerData(playerResults.data as PlayerCSV[]);
     const matches = convertMatchData(matchResults.data as MatchCSV[], teams);
     
-    // Associer les joueurs aux équipes
     teams.forEach(team => {
       team.players = players.filter(player => player.team === team.id);
     });
     
-    // Mettre en cache les données
     loadedTeams = teams;
     loadedPlayers = players;
     loadedMatches = matches;
+    
+    saveToDatabase({ teams, players, matches });
     
     return { teams, players, matches };
   } catch (error) {
@@ -518,29 +578,68 @@ export const loadCsvData = async (
 // Modified getter functions to properly handle async imports
 export const getTeams = async (): Promise<Team[]> => {
   if (loadedTeams) return loadedTeams;
+  
+  const dbData = loadFromDatabase();
+  if (dbData.teams) {
+    loadedTeams = dbData.teams;
+    loadedPlayers = dbData.players;
+    loadedMatches = dbData.matches;
+    loadedTournaments = dbData.tournaments;
+    return dbData.teams;
+  }
+  
   const { teams } = await import('./mockData');
   return teams;
 };
 
 export const getPlayers = async (): Promise<Player[]> => {
   if (loadedPlayers) return loadedPlayers;
+  
+  const dbData = loadFromDatabase();
+  if (dbData.players) {
+    loadedTeams = dbData.teams;
+    loadedPlayers = dbData.players;
+    loadedMatches = dbData.matches;
+    loadedTournaments = dbData.tournaments;
+    return dbData.players;
+  }
+  
   const { teams } = await import('./mockData');
   return teams.flatMap(team => team.players);
 };
 
 export const getMatches = async (): Promise<Match[]> => {
   if (loadedMatches) return loadedMatches;
+  
+  const dbData = loadFromDatabase();
+  if (dbData.matches) {
+    loadedTeams = dbData.teams;
+    loadedPlayers = dbData.players;
+    loadedMatches = dbData.matches;
+    loadedTournaments = dbData.tournaments;
+    return dbData.matches;
+  }
+  
   const { matches } = await import('./mockData');
   return matches;
 };
 
 export const getTournaments = async (): Promise<Tournament[]> => {
   if (loadedTournaments) return loadedTournaments;
+  
+  const dbData = loadFromDatabase();
+  if (dbData.tournaments) {
+    loadedTeams = dbData.teams;
+    loadedPlayers = dbData.players;
+    loadedMatches = dbData.matches;
+    loadedTournaments = dbData.tournaments;
+    return dbData.tournaments;
+  }
+  
   const { tournaments } = await import('./mockData');
   return tournaments;
 };
 
-// Fonction supplémentaire également mise à jour pour gérer les promesses
 export const getSideStatistics = async (teamId: string) => {
   if (loadedTeams) {
     const team = loadedTeams.find(t => t.id === teamId);
@@ -560,6 +659,45 @@ export const getSideStatistics = async (teamId: string) => {
     }
   }
   
+  const dbData = loadFromDatabase();
+  if (dbData.teams) {
+    const team = dbData.teams.find(t => t.id === teamId);
+    if (team) {
+      return {
+        blueWins: Math.round(team.blueWinRate * 100),
+        redWins: Math.round(team.redWinRate * 100),
+        blueFirstBlood: 62,
+        redFirstBlood: 58,
+        blueFirstDragon: 71,
+        redFirstDragon: 65,
+        blueFirstHerald: 68,
+        redFirstHerald: 59,
+        blueFirstTower: 65,
+        redFirstTower: 62
+      };
+    }
+  }
+  
   const { getSideStatistics: getMockSideStatistics } = await import('./mockData');
   return getMockSideStatistics(teamId);
+};
+
+export const clearDatabase = (): boolean => {
+  try {
+    localStorage.removeItem(DB_TEAMS_KEY);
+    localStorage.removeItem(DB_PLAYERS_KEY);
+    localStorage.removeItem(DB_MATCHES_KEY);
+    localStorage.removeItem(DB_TOURNAMENTS_KEY);
+    localStorage.removeItem(DB_LAST_UPDATE_KEY);
+    
+    loadedTeams = null;
+    loadedPlayers = null;
+    loadedMatches = null;
+    loadedTournaments = null;
+    
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la suppression des données:", error);
+    return false;
+  }
 };

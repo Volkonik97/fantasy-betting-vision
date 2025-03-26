@@ -1,19 +1,28 @@
 
-import React, { useState } from "react";
-import { loadCsvData, loadFromGoogleSheets } from "@/utils/csvService";
+import React, { useState, useEffect } from "react";
+import { loadCsvData, loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, FileUp, CheckCircle2, Link } from "lucide-react";
+import { Upload, FileUp, CheckCircle2, Link, Database } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const CsvDataManager = () => {
+interface CsvDataManagerProps {
+  onDataImported?: () => void;
+}
+
+const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [teamsFile, setTeamsFile] = useState<File | null>(null);
   const [playersFile, setPlayersFile] = useState<File | null>(null);
   const [matchesFile, setMatchesFile] = useState<File | null>(null);
   const [sheetsUrl, setSheetsUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasDataInDb, setHasDataInDb] = useState(false);
+
+  useEffect(() => {
+    setHasDataInDb(hasDatabaseData());
+  }, []);
 
   const handleTeamsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -45,6 +54,12 @@ const CsvDataManager = () => {
       
       toast.success(`Données chargées avec succès: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
       
+      if (onDataImported) {
+        onDataImported();
+      }
+      
+      setHasDataInDb(true);
+      
       // Rediriger vers la page d'accueil après chargement
       setTimeout(() => {
         window.location.href = '/';
@@ -69,6 +84,12 @@ const CsvDataManager = () => {
       
       toast.success(`Données chargées avec succès depuis Google Sheets: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
       
+      if (onDataImported) {
+        onDataImported();
+      }
+      
+      setHasDataInDb(true);
+      
       // Rediriger vers la page d'accueil après chargement
       setTimeout(() => {
         window.location.href = '/';
@@ -90,6 +111,18 @@ const CsvDataManager = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {hasDataInDb && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center text-blue-700">
+              <Database className="mr-2 h-5 w-5" />
+              <p className="text-sm font-medium">
+                Les données sont stockées dans la base de données locale.
+                Les nouvelles données importées remplaceront les données existantes.
+              </p>
+            </div>
+          </div>
+        )}
+        
         <Tabs defaultValue="files">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="files">Fichiers CSV</TabsTrigger>

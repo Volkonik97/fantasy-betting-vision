@@ -1,10 +1,43 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CsvDataManager from "@/components/CsvDataManager";
+import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase } from "@/utils/csvService";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const DataImport = () => {
+  const [hasData, setHasData] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if there's data in the database
+    setHasData(hasDatabaseData());
+    setLastUpdate(getLastDatabaseUpdate());
+  }, []);
+
+  const handleClearDatabase = () => {
+    if (clearDatabase()) {
+      toast.success("Base de données vidée avec succès");
+      setHasData(false);
+      setLastUpdate(null);
+    } else {
+      toast.error("Erreur lors de la suppression des données");
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "d MMMM yyyy à HH:mm", { locale: fr });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -22,12 +55,43 @@ const DataImport = () => {
           </p>
         </motion.div>
         
+        {hasData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-green-800 font-medium text-lg">Base de données active</h2>
+                {lastUpdate && (
+                  <p className="text-green-700 text-sm">
+                    Dernière mise à jour: {formatDate(lastUpdate)}
+                  </p>
+                )}
+              </div>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleClearDatabase}
+                className="ml-4"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Vider la base
+              </Button>
+            </div>
+          </motion.div>
+        )}
+        
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <CsvDataManager />
+          <CsvDataManager onDataImported={() => {
+            setHasData(true);
+            setLastUpdate(getLastDatabaseUpdate());
+          }} />
         </motion.div>
         
         <motion.div
