@@ -29,12 +29,30 @@ import {
   ResponsiveContainer 
 } from "recharts";
 
+// Add the odds property to match the usage in the component
+interface ExtendedMatch extends Omit<import('@/utils/mockData').Match, 'status'> {
+  status: 'Upcoming' | 'Live' | 'Completed' | 'Scheduled';
+  odds?: {
+    blue: number;
+    red: number;
+  };
+}
+
 const Predictions = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   
-  // Filter matches
-  const upcomingMatches = matches.filter(match => match.status === "Scheduled");
+  // Ensure every match has an odds property
+  const matchesWithOdds: ExtendedMatch[] = matches.map(match => ({
+    ...match,
+    odds: {
+      blue: 1 / (match.blueWinOdds || 0.5),
+      red: 1 / (match.redWinOdds || 0.5)
+    }
+  }));
+  
+  // Filter matches - changed 'Scheduled' to 'Upcoming' to match the type
+  const upcomingMatches = matchesWithOdds.filter(match => match.status === "Upcoming");
   
   // Handle search
   const handleSearch = (query: string) => {
@@ -55,15 +73,18 @@ const Predictions = () => {
   });
   
   // Important match (for featured prediction)
-  const featuredMatch = matches.find(match => match.id === "match-001") || matches[0];
+  const featuredMatch = matchesWithOdds.find(match => match.id === "match-001") || matchesWithOdds[0];
   
   // Value bet detection - identify matches where our prediction differs significantly from implied odds
-  const valueBets = matches
-    .filter(match => match.status === "Scheduled")
+  const valueBets = matchesWithOdds
+    .filter(match => match.status === "Upcoming")
     .map(match => {
+      // Make sure match.odds exists before accessing its properties
+      const matchOdds = match.odds || { blue: 2, red: 2 };
+      
       // Calculate the difference between our prediction and the implied odds
-      const blueImpliedOdds = 1 / match.odds.blue;
-      const redImpliedOdds = 1 / match.odds.red;
+      const blueImpliedOdds = 1 / matchOdds.blue;
+      const redImpliedOdds = 1 / matchOdds.red;
       
       // Normalize implied odds to percentages
       const totalImplied = blueImpliedOdds + redImpliedOdds;
@@ -171,6 +192,9 @@ const Predictions = () => {
                   const valuePercent = isBlueBetterValue ? match.valueBlueSide : match.valueRedSide;
                   const valuePositive = valuePercent > 0;
                   
+                  // Safely access match.odds
+                  const matchOdds = match.odds || { blue: 2, red: 2 };
+                  
                   return (
                     <Card key={match.id} className="overflow-hidden">
                       <div className={`h-1 ${valuePositive ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -234,8 +258,8 @@ const Predictions = () => {
                                 <span className="text-gray-600">Decimal odds:</span>
                                 <span className="font-medium">
                                   {isBlueBetterValue 
-                                    ? match.odds.blue.toFixed(2) 
-                                    : match.odds.red.toFixed(2)}
+                                    ? matchOdds.blue.toFixed(2) 
+                                    : matchOdds.red.toFixed(2)}
                                 </span>
                               </div>
                             </div>
@@ -259,8 +283,8 @@ const Predictions = () => {
                                 <div className="font-medium mb-1">Bet recommendation:</div>
                                 {valuePositive ? (
                                   <p>Back {valueTeam.name} to win at odds of {isBlueBetterValue 
-                                    ? match.odds.blue.toFixed(2) 
-                                    : match.odds.red.toFixed(2)}</p>
+                                    ? matchOdds.blue.toFixed(2) 
+                                    : matchOdds.red.toFixed(2)}</p>
                                 ) : (
                                   <p>Lay {valueTeam.name} (bet against) at current odds</p>
                                 )}
@@ -348,12 +372,16 @@ const Predictions = () => {
                         
                         <div className="bg-gray-50 p-3 rounded-lg text-center">
                           <p className="text-sm text-gray-500 mb-1">Blue Side Odds</p>
-                          <p className="text-xl font-bold">{featuredMatch.odds.blue.toFixed(2)}</p>
+                          <p className="text-xl font-bold">
+                            {featuredMatch.odds ? featuredMatch.odds.blue.toFixed(2) : "N/A"}
+                          </p>
                         </div>
                         
                         <div className="bg-gray-50 p-3 rounded-lg text-center">
                           <p className="text-sm text-gray-500 mb-1">Red Side Odds</p>
-                          <p className="text-xl font-bold">{featuredMatch.odds.red.toFixed(2)}</p>
+                          <p className="text-xl font-bold">
+                            {featuredMatch.odds ? featuredMatch.odds.red.toFixed(2) : "N/A"}
+                          </p>
                         </div>
                       </div>
                       
