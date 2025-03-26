@@ -1,18 +1,36 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
+  value?: string; // Make value optional
 }
 
-const SearchBar = ({ onSearch }: SearchBarProps) => {
-  const [query, setQuery] = useState("");
+const SearchBar = ({ onSearch, value }: SearchBarProps) => {
+  const [query, setQuery] = useState(value || "");
   const [isFocused, setIsFocused] = useState(false);
+
+  // Add effect to sync internal state with external value
+  useEffect(() => {
+    if (value !== undefined) {
+      setQuery(value);
+    }
+  }, [value]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(query);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setQuery(newValue);
+    
+    // If there's no external value control, we can update on change
+    if (value === undefined) {
+      onSearch(newValue);
+    }
   };
 
   return (
@@ -24,7 +42,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleChange}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Search for teams, players, or tournaments..."
@@ -52,7 +70,10 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
           {query && (
             <motion.button
               type="reset"
-              onClick={() => setQuery("")}
+              onClick={() => {
+                setQuery("");
+                onSearch("");
+              }}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
