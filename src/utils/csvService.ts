@@ -125,12 +125,29 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
 export const clearDatabase = async (): Promise<boolean> => {
   try {
     // Supprimer d'abord les tables avec des références (dans l'ordre)
-    await supabase.from('matches').delete().neq('id', '');
-    await supabase.from('players').delete().neq('id', '');
-    await supabase.from('teams').delete().neq('id', '');
+    const { error: matchesError } = await supabase.from('matches').delete().neq('id', '');
+    if (matchesError) {
+      console.error("Erreur lors de la suppression des matchs:", matchesError);
+      return false;
+    }
+    
+    const { error: playersError } = await supabase.from('players').delete().neq('id', '');
+    if (playersError) {
+      console.error("Erreur lors de la suppression des joueurs:", playersError);
+      return false;
+    }
+    
+    const { error: teamsError } = await supabase.from('teams').delete().neq('id', '');
+    if (teamsError) {
+      console.error("Erreur lors de la suppression des équipes:", teamsError);
+      return false;
+    }
     
     // Ajouter une entrée dans la table des mises à jour
-    await supabase.from('data_updates').insert([{}]);
+    const { error: updateError } = await supabase.from('data_updates').insert([{}]);
+    if (updateError) {
+      console.error("Erreur lors de l'ajout d'une entrée dans data_updates:", updateError);
+    }
     
     // Réinitialiser le cache
     loadedTeams = null;
@@ -153,86 +170,120 @@ const saveToDatabase = async (data: {
   tournaments?: Tournament[];
 }): Promise<boolean> => {
   try {
+    console.log("Début de la sauvegarde dans Supabase:", {
+      teamsCount: data.teams.length,
+      playersCount: data.players.length,
+      matchesCount: data.matches.length
+    });
+    
     // Vider d'abord la base de données
     await clearDatabase();
     
-    // Insérer les équipes
-    const { error: teamsError } = await supabase.from('teams').insert(
-      data.teams.map(team => ({
-        id: team.id,
-        name: team.name,
-        logo: team.logo,
-        region: team.region,
-        win_rate: team.winRate,
-        blue_win_rate: team.blueWinRate,
-        red_win_rate: team.redWinRate,
-        average_game_time: team.averageGameTime
-      }))
-    );
-    
-    if (teamsError) {
-      console.error("Erreur lors de l'insertion des équipes:", teamsError);
-      return false;
+    // Insérer les équipes par lots de 100
+    const teamChunks = chunk(data.teams, 100);
+    for (const teamChunk of teamChunks) {
+      const { error: teamsError } = await supabase.from('teams').insert(
+        teamChunk.map(team => ({
+          id: team.id,
+          name: team.name,
+          logo: team.logo,
+          region: team.region,
+          win_rate: team.winRate,
+          blue_win_rate: team.blueWinRate,
+          red_win_rate: team.redWinRate,
+          average_game_time: team.averageGameTime
+        }))
+      );
+      
+      if (teamsError) {
+        console.error("Erreur lors de l'insertion des équipes:", teamsError);
+        return false;
+      }
     }
     
-    // Insérer les joueurs
-    const { error: playersError } = await supabase.from('players').insert(
-      data.players.map(player => ({
-        id: player.id,
-        name: player.name,
-        role: player.role,
-        image: player.image,
-        team_id: player.team,
-        kda: player.kda,
-        cs_per_min: player.csPerMin,
-        damage_share: player.damageShare,
-        champion_pool: player.championPool
-      }))
-    );
+    console.log("Équipes insérées avec succès");
     
-    if (playersError) {
-      console.error("Erreur lors de l'insertion des joueurs:", playersError);
-      return false;
+    // Insérer les joueurs par lots de 100
+    const playerChunks = chunk(data.players, 100);
+    for (const playerChunk of playerChunks) {
+      const { error: playersError } = await supabase.from('players').insert(
+        playerChunk.map(player => ({
+          id: player.id,
+          name: player.name,
+          role: player.role,
+          image: player.image,
+          team_id: player.team,
+          kda: player.kda,
+          cs_per_min: player.csPerMin,
+          damage_share: player.damageShare,
+          champion_pool: Array.isArray(player.championPool) ? player.championPool : 
+            (typeof player.championPool === 'string' ? player.championPool.split(',').map(c => c.trim()) : [])
+        }))
+      );
+      
+      if (playersError) {
+        console.error("Erreur lors de l'insertion des joueurs:", playersError);
+        return false;
+      }
     }
     
-    // Insérer les matchs
-    const { error: matchesError } = await supabase.from('matches').insert(
-      data.matches.map(match => ({
-        id: match.id,
-        tournament: match.tournament,
-        date: match.date,
-        team_blue_id: match.teamBlue.id,
-        team_red_id: match.teamRed.id,
-        predicted_winner: match.predictedWinner,
-        blue_win_odds: match.blueWinOdds,
-        red_win_odds: match.redWinOdds,
-        status: match.status,
-        winner_team_id: match.result?.winner,
-        score_blue: match.result?.score ? match.result.score[0] : null,
-        score_red: match.result?.score ? match.result.score[1] : null,
-        duration: match.result?.duration,
-        mvp: match.result?.mvp,
-        first_blood: match.result?.firstBlood,
-        first_dragon: match.result?.firstDragon,
-        first_baron: match.result?.firstBaron
-      }))
-    );
+    console.log("Joueurs insérés avec succès");
     
-    if (matchesError) {
-      console.error("Erreur lors de l'insertion des matchs:", matchesError);
-      return false;
+    // Insérer les matchs par lots de 100
+    const matchChunks = chunk(data.matches, 100);
+    for (const matchChunk of matchChunks) {
+      const { error: matchesError } = await supabase.from('matches').insert(
+        matchChunk.map(match => ({
+          id: match.id,
+          tournament: match.tournament,
+          date: match.date,
+          team_blue_id: match.teamBlue.id,
+          team_red_id: match.teamRed.id,
+          predicted_winner: match.predictedWinner,
+          blue_win_odds: match.blueWinOdds,
+          red_win_odds: match.redWinOdds,
+          status: match.status,
+          winner_team_id: match.result?.winner,
+          score_blue: match.result?.score ? match.result.score[0] : null,
+          score_red: match.result?.score ? match.result.score[1] : null,
+          duration: match.result?.duration,
+          mvp: match.result?.mvp,
+          first_blood: match.result?.firstBlood,
+          first_dragon: match.result?.firstDragon,
+          first_baron: match.result?.firstBaron
+        }))
+      );
+      
+      if (matchesError) {
+        console.error("Erreur lors de l'insertion des matchs:", matchesError);
+        return false;
+      }
     }
+    
+    console.log("Matchs insérés avec succès");
     
     // Ajouter une entrée dans la table des mises à jour
-    await supabase.from('data_updates').insert([{}]);
+    const { error: updateError } = await supabase.from('data_updates').insert([{}]);
+    if (updateError) {
+      console.error("Erreur lors de l'ajout d'une entrée dans data_updates:", updateError);
+    }
     
-    console.log("Données sauvegardées dans Supabase");
+    console.log("Données sauvegardées dans Supabase avec succès");
     return true;
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des données:", error);
     return false;
   }
 };
+
+// Fonction pour diviser un tableau en morceaux (chunks)
+function chunk<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
 
 // Fonction pour charger un fichier CSV
 export const parseCSVFile = (file: File): Promise<ParseResult<any>> => {
@@ -272,10 +323,10 @@ export const convertTeamData = (teamsCSV: TeamCSV[]): Team[] => {
     name: team.name,
     logo: team.logo,
     region: team.region,
-    winRate: parseFloat(team.winRate),
-    blueWinRate: parseFloat(team.blueWinRate),
-    redWinRate: parseFloat(team.redWinRate),
-    averageGameTime: parseFloat(team.averageGameTime),
+    winRate: parseFloat(team.winRate) || 0,
+    blueWinRate: parseFloat(team.blueWinRate) || 0,
+    redWinRate: parseFloat(team.redWinRate) || 0,
+    averageGameTime: parseFloat(team.averageGameTime) || 0,
     players: []
   }));
 };
@@ -287,10 +338,10 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
     role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
     image: player.image,
     team: player.team,
-    kda: parseFloat(player.kda),
-    csPerMin: parseFloat(player.csPerMin),
-    damageShare: parseFloat(player.damageShare),
-    championPool: player.championPool.split(',').map(champ => champ.trim())
+    kda: parseFloat(player.kda) || 0,
+    csPerMin: parseFloat(player.csPerMin) || 0,
+    damageShare: parseFloat(player.damageShare) || 0,
+    championPool: player.championPool ? player.championPool.split(',').map(champ => champ.trim()) : []
   }));
 };
 
@@ -306,8 +357,8 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
       teamBlue,
       teamRed,
       predictedWinner: match.predictedWinner,
-      blueWinOdds: parseFloat(match.blueWinOdds),
-      redWinOdds: parseFloat(match.redWinOdds),
+      blueWinOdds: parseFloat(match.blueWinOdds) || 0.5,
+      redWinOdds: parseFloat(match.redWinOdds) || 0.5,
       status: match.status as 'Upcoming' | 'Live' | 'Completed'
     };
 
@@ -340,7 +391,7 @@ export const extractSheetId = (url: string): string => {
 // Fonction pour obtenir l'URL CSV exportable d'une feuille Google Sheets
 export const getGSheetCSVUrl = (sheetId: string, sheetName: string = ''): string => {
   if (sheetName) {
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
   }
   return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
 };
@@ -351,14 +402,22 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
   players: Player[];
   matches: Match[];
 } => {
+  // Vérifier si les données sont valides
+  if (!data || data.length === 0) {
+    console.error("Aucune donnée League à traiter");
+    return { teams: [], players: [], matches: [] };
+  }
+  
+  console.log(`Traitement de ${data.length} lignes de données League`);
+  
   const uniqueTeams = new Map<string, TeamCSV>();
   data.forEach(row => {
-    if (!uniqueTeams.has(row.teamid)) {
+    if (row.teamid && !uniqueTeams.has(row.teamid)) {
       uniqueTeams.set(row.teamid, {
         id: row.teamid,
-        name: row.teamname,
+        name: row.teamname || row.teamid,
         logo: '',
-        region: row.league,
+        region: row.league || '',
         winRate: '0',
         blueWinRate: '0',
         redWinRate: '0',
@@ -367,8 +426,12 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
+  console.log(`Nombre d'équipes uniques identifiées: ${uniqueTeams.size}`);
+
   const teamStats = new Map<string, { wins: number, losses: number, blueWins: number, blueLosses: number, redWins: number, redLosses: number, gameTimes: number[] }>();
   data.forEach(row => {
+    if (!row.teamid) return;
+    
     const teamId = row.teamid;
     if (!teamStats.has(teamId)) {
       teamStats.set(teamId, { wins: 0, losses: 0, blueWins: 0, blueLosses: 0, redWins: 0, redLosses: 0, gameTimes: [] });
@@ -381,10 +444,10 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     if (isWin) stats.wins++;
     else stats.losses++;
     
-    if (row.side === 'Blue') {
+    if (row.side && row.side.toLowerCase() === 'blue') {
       if (isWin) stats.blueWins++;
       else stats.blueLosses++;
-    } else {
+    } else if (row.side && row.side.toLowerCase() === 'red') {
       if (isWin) stats.redWins++;
       else stats.redLosses++;
     }
@@ -414,13 +477,13 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
 
   const uniquePlayers = new Map<string, PlayerCSV>();
   data.forEach(row => {
-    if (!uniquePlayers.has(row.playerid)) {
+    if (row.playerid && !uniquePlayers.has(row.playerid)) {
       uniquePlayers.set(row.playerid, {
         id: row.playerid,
-        name: row.playername,
-        role: row.position,
+        name: row.playername || row.playerid,
+        role: row.position || 'Jungle',
         image: '',
-        team: row.teamid,
+        team: row.teamid || '',
         kda: '0',
         csPerMin: '0',
         damageShare: '0',
@@ -429,8 +492,12 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
+  console.log(`Nombre de joueurs uniques identifiés: ${uniquePlayers.size}`);
+
   const playerStats = new Map<string, { kills: number, deaths: number, assists: number, games: number, cs: number, championsPlayed: Set<string> }>();
   data.forEach(row => {
+    if (!row.playerid) return;
+    
     const playerId = row.playerid;
     if (!playerStats.has(playerId)) {
       playerStats.set(playerId, { kills: 0, deaths: 0, assists: 0, games: 0, cs: 0, championsPlayed: new Set() });
@@ -442,11 +509,13 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     stats.assists += parseInt(row.assists) || 0;
     stats.games++;
     
-    const minionKills = parseInt(row.minionkills) || 0;
-    const monsterKills = parseInt(row.monsterkills) || 0;
+    const minionKills = parseInt(row.minions) || 0;
+    const monsterKills = parseInt(row.monsters) || 0;
     stats.cs += minionKills + monsterKills;
     
-    stats.championsPlayed.add(row.champion);
+    if (row.champion) {
+      stats.championsPlayed.add(row.champion);
+    }
   });
 
   playerStats.forEach((stats, playerId) => {
@@ -462,37 +531,51 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     }
   });
 
+  // Extraire tous les ID de matchs uniques
+  const gameIds = new Set<string>();
+  data.forEach(row => {
+    if (row.gameid) {
+      gameIds.add(row.gameid);
+    }
+  });
+
+  console.log(`Nombre de matchs uniques identifiés: ${gameIds.size}`);
+
   const uniqueMatches = new Map<string, { 
     gameId: string, 
     date: string, 
     teams: { blue: string, red: string },
     result?: string,
-    duration?: string
+    duration?: string,
+    tournament?: string
   }>();
   
   data.forEach(row => {
+    if (!row.gameid) return;
+    
     const gameId = row.gameid;
     if (!uniqueMatches.has(gameId)) {
       uniqueMatches.set(gameId, { 
         gameId,
-        date: row.date,
+        date: row.date || new Date().toISOString(),
         teams: { 
           blue: '', 
           red: '' 
-        }
+        },
+        tournament: `${row.league || 'Unknown'} ${row.year || ''} ${row.split || ''}`
       });
     }
     
     const match = uniqueMatches.get(gameId)!;
-    if (row.side === 'Blue') {
+    if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
       match.teams.blue = row.teamid;
-    } else if (row.side === 'Red') {
+    } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
       match.teams.red = row.teamid;
     }
     
     match.duration = row.gamelength;
     
-    if (row.result === '1') {
+    if (row.result === '1' && row.teamid) {
       match.result = row.teamid;
     }
   });
@@ -507,29 +590,30 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     team.players = playersConverted.filter(player => player.team === team.id);
   });
   
-  const matchesArray: MatchCSV[] = Array.from(uniqueMatches.values()).map(match => {
-    const tournamentName = `${data[0]?.league || 'Unknown'} ${data[0]?.year || ''} ${data[0]?.split || ''}`;
-    
-    const matchCSV: MatchCSV = {
-      id: match.gameId,
-      tournament: tournamentName,
-      date: match.date,
-      teamBlueId: match.teams.blue,
-      teamRedId: match.teams.red,
-      predictedWinner: match.teams.blue,
-      blueWinOdds: '0.5',
-      redWinOdds: '0.5',
-      status: match.result ? 'Completed' : 'Upcoming'
-    };
-    
-    if (match.result) {
-      matchCSV.winnerTeamId = match.result;
-      matchCSV.duration = match.duration;
-    }
-    
-    return matchCSV;
-  });
+  const matchesArray: MatchCSV[] = Array.from(uniqueMatches.values())
+    .filter(match => match.teams.blue && match.teams.red) // S'assurer que les équipes bleue et rouge sont définies
+    .map(match => {
+      const matchCSV: MatchCSV = {
+        id: match.gameId,
+        tournament: match.tournament || 'Unknown Tournament',
+        date: match.date,
+        teamBlueId: match.teams.blue,
+        teamRedId: match.teams.red,
+        predictedWinner: match.teams.blue,
+        blueWinOdds: '0.5',
+        redWinOdds: '0.5',
+        status: match.result ? 'Completed' : 'Upcoming'
+      };
+      
+      if (match.result) {
+        matchCSV.winnerTeamId = match.result;
+        matchCSV.duration = match.duration;
+      }
+      
+      return matchCSV;
+    });
   
+  console.log(`Conversion finale en ${matchesArray.length} matchs`);
   const matchesConverted = convertMatchData(matchesArray, teamsConverted);
   
   return {
@@ -546,13 +630,30 @@ export const loadFromSingleGoogleSheet = async (sheetUrl: string): Promise<{
   matches: Match[];
 }> => {
   try {
+    console.log("Début du chargement depuis Google Sheets (format unique):", sheetUrl);
     const sheetId = extractSheetId(sheetUrl);
     
     const csvUrl = getGSheetCSVUrl(sheetId);
+    console.log("URL CSV générée:", csvUrl);
     
     const results = await parseCSVFromURL(csvUrl);
+    console.log(`Données chargées: ${results.data.length} lignes, ${Object.keys(results.data[0] || {}).length} colonnes`);
+    
+    // Vérifier si les données semblent être au format League
+    const firstRow = results.data[0] as any;
+    const isLeagueFormat = firstRow && (firstRow.gameid || firstRow.teamid || firstRow.playerid);
+    
+    if (!isLeagueFormat) {
+      throw new Error("Format de données non reconnu. Assurez-vous d'utiliser un format compatible.");
+    }
     
     const data = processLeagueData(results.data as LeagueGameDataRow[]);
+    
+    console.log("Données traitées:", {
+      teams: data.teams.length,
+      players: data.players.length, 
+      matches: data.matches.length
+    });
     
     loadedTeams = data.teams;
     loadedPlayers = data.players;
@@ -574,24 +675,40 @@ export const loadFromGoogleSheets = async (sheetUrl: string): Promise<{
   matches: Match[];
 }> => {
   try {
+    console.log("Tentative de chargement depuis Google Sheets:", sheetUrl);
     const sheetId = extractSheetId(sheetUrl);
     
     try {
+      // D'abord essayer le format à feuille unique (Oracle's Elixir)
+      console.log("Essai du format à feuille unique...");
       return await loadFromSingleGoogleSheet(sheetUrl);
     } catch (error) {
-      console.log("Essai du format à onglets multiples...");
+      console.log("Le format à feuille unique a échoué, essai du format à onglets multiples...");
       
       const teamsUrl = getGSheetCSVUrl(sheetId, 'teams');
       const playersUrl = getGSheetCSVUrl(sheetId, 'players');
       const matchesUrl = getGSheetCSVUrl(sheetId, 'matches');
       
+      console.log("URLs générées pour les onglets:", { teamsUrl, playersUrl, matchesUrl });
+      
       const teamsResults = await parseCSVFromURL(teamsUrl);
+      console.log(`Données des équipes chargées: ${teamsResults.data.length} lignes`);
+      
       const playersResults = await parseCSVFromURL(playersUrl);
+      console.log(`Données des joueurs chargées: ${playersResults.data.length} lignes`);
+      
       const matchesResults = await parseCSVFromURL(matchesUrl);
+      console.log(`Données des matchs chargées: ${matchesResults.data.length} lignes`);
       
       const teams = convertTeamData(teamsResults.data as TeamCSV[]);
       const players = convertPlayerData(playersResults.data as PlayerCSV[]);
       const matches = convertMatchData(matchesResults.data as MatchCSV[], teams);
+      
+      console.log("Données converties:", { 
+        teams: teams.length, 
+        players: players.length, 
+        matches: matches.length
+      });
       
       teams.forEach(team => {
         team.players = players.filter(player => player.team === team.id);
@@ -626,9 +743,21 @@ export const loadCsvData = async (
     const playerResults = await parseCSVFile(playerFile);
     const matchResults = await parseCSVFile(matchFile);
     
+    console.log("Données CSV chargées:", {
+      teams: teamResults.data.length,
+      players: playerResults.data.length,
+      matches: matchResults.data.length
+    });
+    
     const teams = convertTeamData(teamResults.data as TeamCSV[]);
     const players = convertPlayerData(playerResults.data as PlayerCSV[]);
     const matches = convertMatchData(matchResults.data as MatchCSV[], teams);
+    
+    console.log("Données converties:", {
+      teams: teams.length,
+      players: players.length,
+      matches: matches.length
+    });
     
     teams.forEach(team => {
       team.players = players.filter(player => player.team === team.id);

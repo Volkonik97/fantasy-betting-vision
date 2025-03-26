@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { loadCsvData, loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,7 +84,15 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
 
     try {
       setIsLoading(true);
+      console.log("Début de l'importation depuis Google Sheets:", sheetsUrl);
+      
       const data = await loadFromGoogleSheets(sheetsUrl);
+      
+      console.log("Résultat de l'importation:", {
+        teams: data.teams.length,
+        players: data.players.length, 
+        matches: data.matches.length
+      });
       
       toast.success(`Données chargées avec succès depuis Google Sheets: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
       
@@ -101,7 +108,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       }, 1500);
     } catch (error) {
       console.error("Erreur de chargement:", error);
-      toast.error("Erreur lors du chargement des données depuis Google Sheets");
+      toast.error(`Erreur lors du chargement des données depuis Google Sheets: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
