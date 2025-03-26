@@ -122,18 +122,28 @@ export const saveToDatabase = async (data: {
     const playerChunks = chunk(data.players, 100);
     for (const playerChunk of playerChunks) {
       const { error: playersError } = await supabase.from('players').insert(
-        playerChunk.map(player => ({
-          id: player.id,
-          name: player.name,
-          role: player.role,
-          image: player.image,
-          team_id: player.team,
-          kda: player.kda,
-          cs_per_min: player.csPerMin,
-          damage_share: player.damageShare,
-          champion_pool: Array.isArray(player.championPool) ? player.championPool : 
-            (typeof player.championPool === 'string' ? player.championPool.split(',').map(c => c.trim()) : [])
-        }))
+        playerChunk.map(player => {
+          // Handle champion pool parsing
+          let championPoolArray: string[] = [];
+          
+          if (Array.isArray(player.championPool)) {
+            championPoolArray = player.championPool;
+          } else if (typeof player.championPool === 'string') {
+            championPoolArray = player.championPool.split(',').map(c => c.trim());
+          }
+          
+          return {
+            id: player.id,
+            name: player.name,
+            role: player.role,
+            image: player.image,
+            team_id: player.team,
+            kda: player.kda,
+            cs_per_min: player.csPerMin,
+            damage_share: player.damageShare,
+            champion_pool: championPoolArray
+          };
+        })
       );
       
       if (playersError) {
