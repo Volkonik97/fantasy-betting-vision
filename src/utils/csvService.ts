@@ -16,7 +16,7 @@ import {
   getMatches,
   getTournaments,
   getSideStatistics
-} from './databaseService';
+} from './database/databaseService';
 import { 
   getLoadedTeams,
   getLoadedPlayers,
