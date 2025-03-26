@@ -15,6 +15,7 @@ import Tournaments from "./pages/Tournaments";
 import Analysis from "./pages/Analysis";
 import Predictions from "./pages/Predictions";
 import TeamComparison from "./pages/TeamComparison";
+import DataImport from "./pages/DataImport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/predictions" element={<Predictions />} />
             <Route path="/compare-teams" element={<TeamComparison />} />
+            <Route path="/data-import" element={<DataImport />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

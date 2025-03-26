@@ -1,18 +1,37 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
-import { teams, Team } from "@/utils/mockData";
+import { teams as mockTeams, Team } from "@/utils/mockData";
+import { getTeams } from "@/utils/csvService";
 import Navbar from "@/components/Navbar";
 import TeamStatistics from "@/components/TeamStatistics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/SearchBar";
 
 const Teams = () => {
+  const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
+  const [isLoading, setIsLoading] = useState(true);
   
   const regions = ["All", "LCK", "LPL", "LEC", "LCS"];
+  
+  useEffect(() => {
+    const loadTeams = async () => {
+      try {
+        const loadedTeams = await getTeams();
+        if (Array.isArray(loadedTeams)) {
+          setTeams(loadedTeams);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des équipes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadTeams();
+  }, []);
   
   const filteredTeams = teams.filter(team => 
     (selectedRegion === "All" || team.region === selectedRegion) &&
@@ -57,11 +76,23 @@ const Teams = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTeams.map((team) => (
-            <TeamCard key={team.id} team={team} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-60">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTeams.length > 0 ? (
+              filteredTeams.map((team) => (
+                <TeamCard key={team.id} team={team} />
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-10">
+                <p className="text-gray-500">Aucune équipe trouvée avec ces critères.</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
