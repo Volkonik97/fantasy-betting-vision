@@ -27,6 +27,5 @@ export const supabase = createClient<Database>(
     realtime: {
       timeout: 60000 // Increased timeout for larger operations
     }
-    // Removed invalid 'fetch' option that was causing TypeScript errors
   }
 );

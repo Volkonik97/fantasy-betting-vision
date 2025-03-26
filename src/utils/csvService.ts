@@ -83,15 +83,14 @@ export const hasDatabaseData = async (): Promise<boolean> => {
   try {
     const { data, error } = await supabase
       .from('teams')
-      .select('count')
-      .single();
+      .select('count');
     
     if (error) {
       console.error("Erreur lors de la vérification des données:", error);
       return false;
     }
     
-    return data && typeof data.count === 'number' && data.count > 0;
+    return data && data.length > 0 && data[0].count > 0;
   } catch (error) {
     console.error("Erreur lors de la vérification des données:", error);
     return false;
@@ -105,15 +104,14 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
       .from('data_updates')
       .select('updated_at')
       .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
     
-    if (error) {
+    if (error || !data || data.length === 0) {
       console.error("Erreur lors de la récupération de la date de mise à jour:", error);
       return null;
     }
     
-    return data && data.updated_at ? data.updated_at : null;
+    return data[0].updated_at || null;
   } catch (error) {
     console.error("Erreur lors de la récupération de la date de mise à jour:", error);
     return null;
@@ -124,9 +122,9 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
 export const clearDatabase = async (): Promise<boolean> => {
   try {
     // Supprimer d'abord les tables avec des références (dans l'ordre)
-    await supabase.from('matches').delete().neq('id', '');
-    await supabase.from('players').delete().neq('id', '');
-    await supabase.from('teams').delete().neq('id', '');
+    await supabase.from('matches').delete().gt('id', '');
+    await supabase.from('players').delete().gt('id', '');
+    await supabase.from('teams').delete().gt('id', '');
     
     // Ajouter une entrée dans la table des mises à jour
     await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
@@ -174,7 +172,7 @@ const saveToDatabase = async (data: {
           blue_win_rate: team.blueWinRate,
           red_win_rate: team.redWinRate,
           average_game_time: team.averageGameTime
-        }) as any)
+        }))
       );
       
       if (teamsError) {
@@ -200,7 +198,7 @@ const saveToDatabase = async (data: {
           damage_share: player.damageShare,
           champion_pool: Array.isArray(player.championPool) ? player.championPool : 
             (typeof player.championPool === 'string' ? player.championPool.split(',').map(c => c.trim()) : [])
-        }) as any)
+        }))
       );
       
       if (playersError) {
@@ -233,7 +231,7 @@ const saveToDatabase = async (data: {
           first_blood: match.result?.firstBlood,
           first_dragon: match.result?.firstDragon,
           first_baron: match.result?.firstBaron
-        }) as any)
+        }))
       );
       
       if (matchesError) {
@@ -786,10 +784,10 @@ export const getTeams = async (): Promise<Team[]> => {
       name: team.name as string,
       logo: team.logo as string,
       region: team.region as string,
-      winRate: team.win_rate as number,
-      blueWinRate: team.blue_win_rate as number,
-      redWinRate: team.red_win_rate as number,
-      averageGameTime: team.average_game_time as number,
+      winRate: Number(team.win_rate) || 0,
+      blueWinRate: Number(team.blue_win_rate) || 0,
+      redWinRate: Number(team.red_win_rate) || 0,
+      averageGameTime: Number(team.average_game_time) || 0,
       players: []
     }));
     
@@ -800,12 +798,12 @@ export const getTeams = async (): Promise<Team[]> => {
           .map(player => ({
             id: player.id as string,
             name: player.name as string,
-            role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+            role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
             image: player.image as string,
             team: player.team_id as string,
-            kda: player.kda as number,
-            csPerMin: player.cs_per_min as number,
-            damageShare: player.damage_share as number,
+            kda: Number(player.kda) || 0,
+            csPerMin: Number(player.cs_per_min) || 0,
+            damageShare: Number(player.damage_share) || 0,
             championPool: player.champion_pool as string[] || []
           }));
       });
@@ -837,12 +835,12 @@ export const getPlayers = async (): Promise<Player[]> => {
     const players: Player[] = playersData.map(player => ({
       id: player.id as string,
       name: player.name as string,
-      role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+      role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
       image: player.image as string,
       team: player.team_id as string,
-      kda: player.kda as number,
-      csPerMin: player.cs_per_min as number,
-      damageShare: player.damage_share as number,
+      kda: Number(player.kda) || 0,
+      csPerMin: Number(player.cs_per_min) || 0,
+      damageShare: Number(player.damage_share) || 0,
       championPool: player.champion_pool as string[] || []
     }));
     
@@ -882,15 +880,15 @@ export const getMatches = async (): Promise<Match[]> => {
         teamBlue,
         teamRed,
         predictedWinner: match.predicted_winner as string,
-        blueWinOdds: match.blue_win_odds as number,
-        redWinOdds: match.red_win_odds as number,
-        status: match.status as 'Upcoming' | 'Live' | 'Completed'
+        blueWinOdds: Number(match.blue_win_odds) || 0.5,
+        redWinOdds: Number(match.red_win_odds) || 0.5,
+        status: (match.status || 'Upcoming') as 'Upcoming' | 'Live' | 'Completed'
       };
       
       if (match.status === 'Completed' && match.winner_team_id) {
         matchObject.result = {
           winner: match.winner_team_id as string,
-          score: [match.score_blue || 0, match.score_red || 0],
+          score: [Number(match.score_blue) || 0, Number(match.score_red) || 0],
           duration: match.duration as string | undefined,
           mvp: match.mvp as string | undefined,
           firstBlood: match.first_blood as string | undefined,
@@ -917,8 +915,7 @@ export const getTournaments = async (): Promise<Tournament[]> => {
   try {
     const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
-      .select('tournament')
-      .order('tournament');
+      .select('tournament');
     
     if (matchesError || !matchesData || matchesData.length === 0) {
       console.error("Erreur lors de la récupération des tournois:", matchesError);
@@ -926,14 +923,15 @@ export const getTournaments = async (): Promise<Tournament[]> => {
       return tournaments;
     }
     
-    const uniqueTournaments = [...new Set(matchesData.map(match => match.tournament as string))];
+    const tournamentNames = matchesData.map(match => match.tournament).filter(Boolean);
+    const uniqueTournaments = [...new Set(tournamentNames)];
     
     const tournaments: Tournament[] = uniqueTournaments
       .filter(Boolean)
       .map(name => ({
-        id: name.toLowerCase().replace(/\s+/g, '-'),
-        name,
-        logo: `/tournaments/${name.toLowerCase().replace(/\s+/g, '-')}.png`,
+        id: name!.toLowerCase().replace(/\s+/g, '-'),
+        name: name!,
+        logo: `/tournaments/${name!.toLowerCase().replace(/\s+/g, '-')}.png`,
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
         region: 'Global'
