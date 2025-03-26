@@ -74,7 +74,7 @@ const DataImport = () => {
         >
           <h1 className="text-3xl font-bold mb-2">Importation de données</h1>
           <p className="text-gray-600">
-            Importez vos données statistiques via fichiers CSV ou Google Sheets pour alimenter le site
+            Importez vos données statistiques via Google Sheets pour alimenter le site
           </p>
         </motion.div>
         
@@ -137,10 +137,10 @@ const DataImport = () => {
             
             <div className="space-y-6">
               <div>
-                <h3 className="font-medium text-blue-600 mb-2">Option 1: Trois fichiers CSV séparés</h3>
+                <h3 className="font-medium text-blue-600 mb-2">Option 1: Document Google Sheets avec trois onglets</h3>
                 
                 <div>
-                  <h4 className="font-medium mb-2">Fichier des équipes (teams)</h4>
+                  <h4 className="font-medium mb-2">Onglet "teams"</h4>
                   <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
                     <pre className="text-sm">
                       id,name,logo,region,winRate,blueWinRate,redWinRate,averageGameTime
@@ -152,7 +152,7 @@ const DataImport = () => {
                 </div>
                 
                 <div className="mt-4">
-                  <h4 className="font-medium mb-2">Fichier des joueurs (players)</h4>
+                  <h4 className="font-medium mb-2">Onglet "players"</h4>
                   <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
                     <pre className="text-sm">
                       id,name,role,image,team,kda,csPerMin,damageShare,championPool
@@ -164,7 +164,7 @@ const DataImport = () => {
                 </div>
                 
                 <div className="mt-4">
-                  <h4 className="font-medium mb-2">Fichier des matchs (matches)</h4>
+                  <h4 className="font-medium mb-2">Onglet "matches"</h4>
                   <div className="bg-gray-50 p-4 rounded-md overflow-x-auto">
                     <pre className="text-sm">
                       id,tournament,date,teamBlueId,teamRedId,predictedWinner,blueWinOdds,redWinOdds,status,winnerTeamId,scoreBlue,scoreRed,duration,mvp,firstBlood,firstDragon,firstBaron
@@ -186,7 +186,7 @@ const DataImport = () => {
             
             <div className="p-4 bg-blue-50 text-blue-700 rounded-md mb-4">
               <p className="text-sm">
-                L'application supporte maintenant le format à feuille unique avec toutes les statistiques de match 
+                L'application supporte le format à feuille unique avec toutes les statistiques de match 
                 au format Oracle's Elixir. Cette option est idéale pour importer des données de matchs professionnels.
               </p>
             </div>
@@ -203,21 +203,12 @@ const DataImport = () => {
             <div className="mt-6 p-4 bg-blue-50 text-blue-700 rounded-md">
               <h3 className="font-medium mb-2">Utilisation avec Google Sheets</h3>
               <p className="text-sm">
-                Pour importer depuis Google Sheets, vous avez deux options:
+                Pour importer depuis Google Sheets, assurez-vous que:
               </p>
               <ul className="list-disc list-inside mt-2 text-sm">
-                <li>
-                  <strong>Option 1:</strong> Un document avec trois onglets nommés "teams", "players" et "matches" 
-                  avec les colonnes décrites ci-dessus.
-                </li>
-                <li>
-                  <strong>Option 2:</strong> Un document avec un onglet unique contenant toutes les statistiques de match 
-                  au format Oracle's Elixir (recommandé).
-                </li>
+                <li>Le document est partagé en lecture publique (option "Toute personne disposant du lien peut consulter")</li>
+                <li>L'URL du document est au format: https://docs.google.com/spreadsheets/d/VOTRE_ID_DE_DOCUMENT/...</li>
               </ul>
-              <p className="text-sm mt-2">
-                Le document doit être partagé en lecture publique (option "Toute personne disposant du lien peut consulter").
-              </p>
             </div>
           </div>
         </motion.div>

@@ -7,7 +7,11 @@ import {
   getLoadedPlayers, 
   getLoadedMatches, 
   getLoadedTournaments, 
-  resetCache 
+  resetCache,
+  setLoadedTeams,
+  setLoadedPlayers,
+  setLoadedMatches,
+  setLoadedTournaments
 } from './csvTypes';
 
 // Database-related functions
@@ -363,15 +367,24 @@ export const getTournaments = async (): Promise<Tournament[]> => {
     
     const tournaments: Tournament[] = uniqueTournaments
       .filter(Boolean)
-      .map(name => ({
-        id: name!.toLowerCase().replace(/\s+/g, '-'),
-        name: name!,
-        logo: `/tournaments/${name!.toLowerCase().replace(/\s+/g, '-')}.png`,
-        startDate: new Date().toISOString(),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
-        region: 'Global'
-      }));
+      .map(name => {
+        if (!name) return null;
+        
+        // Ensure name is a string and has split method
+        const safeName = String(name);
+        
+        return {
+          id: safeName.toLowerCase().replace(/\s+/g, '-'),
+          name: safeName,
+          logo: `/tournaments/${safeName.toLowerCase().replace(/\s+/g, '-')}.png`,
+          startDate: new Date().toISOString(),
+          endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
+          region: 'Global'
+        };
+      })
+      .filter((t): t is Tournament => t !== null);
     
+    setLoadedTournaments(tournaments);
     return tournaments;
   } catch (error) {
     console.error("Erreur lors de la récupération des tournois:", error);
