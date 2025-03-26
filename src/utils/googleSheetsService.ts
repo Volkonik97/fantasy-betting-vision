@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 export const loadFromGoogleSheets = async (
   sheetUrl: string,
   deleteExisting: boolean = false
-): Promise<boolean> => {
+) => {
   try {
     if (!sheetUrl) {
       console.error("URL de feuille Google Sheets non fournie");
@@ -37,7 +37,10 @@ export const loadFromGoogleSheets = async (
     
     // Get CSV URL and parse the data
     const csvUrl = getGSheetCSVUrl(sheetId);
-    const csvData = await parseCSVFromURL(csvUrl);
+    const csvResult = await parseCSVFromURL(csvUrl);
+    
+    // Access the data array from the ParseResult
+    const csvData = csvResult.data;
     
     if (!csvData || csvData.length === 0) {
       console.error("Aucune donnée n'a pu être récupérée depuis Google Sheets");
@@ -72,7 +75,7 @@ export const loadFromGoogleSheets = async (
     
     if (saveResult) {
       toast.success("Données importées avec succès");
-      return true;
+      return processedData; // Return the processed data instead of boolean
     } else {
       toast.error("Erreur lors de la sauvegarde des données");
       return false;

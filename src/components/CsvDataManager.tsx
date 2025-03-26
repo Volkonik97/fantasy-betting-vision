@@ -48,24 +48,32 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         });
       }, 2000);
       
-      const data = await loadFromGoogleSheets(sheetsUrl);
+      const result = await loadFromGoogleSheets(sheetsUrl);
       
       clearInterval(progressInterval);
+      
+      if (result === false) {
+        setImportProgress(0);
+        setIsImportComplete(false);
+        setIsLoading(false);
+        return;
+      }
+      
       setImportProgress(100);
       setIsImportComplete(true);
       setImportStats({
-        teams: data.teams.length,
-        players: data.players.length,
-        matches: data.matches.length
+        teams: result.teams.length,
+        players: result.players.length,
+        matches: result.matches.length
       });
       
       console.log("Résultat de l'importation:", {
-        teams: data.teams.length,
-        players: data.players.length, 
-        matches: data.matches.length
+        teams: result.teams.length,
+        players: result.players.length, 
+        matches: result.matches.length
       });
       
-      toast.success(`Données chargées avec succès depuis Google Sheets: ${data.teams.length} équipes, ${data.players.length} joueurs, ${data.matches.length} matchs`);
+      toast.success(`Données chargées avec succès depuis Google Sheets: ${result.teams.length} équipes, ${result.players.length} joueurs, ${result.matches.length} matchs`);
       
       if (onDataImported) {
         await onDataImported();
