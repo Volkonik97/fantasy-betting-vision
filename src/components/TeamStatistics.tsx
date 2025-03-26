@@ -82,7 +82,7 @@ const TeamStatistics = ({ team }: TeamStatisticsProps) => {
               <div className="text-right">
                 <span className="text-sm font-medium">{player.kda.toFixed(2)} KDA</span>
                 <span className="text-xs text-gray-500 block">
-                  {(player.damageShare * 100).toFixed(0)}% DMG Share
+                  {Math.round(player.damageShare * 100)}% DMG Share
                 </span>
               </div>
             </motion.div>
