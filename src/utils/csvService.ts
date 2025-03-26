@@ -67,6 +67,22 @@ export const parseCSVFile = (file: File): Promise<ParseResult<any>> => {
   });
 };
 
+// Fonction pour charger des données CSV à partir d'une URL
+export const parseCSVFromURL = (url: string): Promise<ParseResult<any>> => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(url, {
+      download: true,
+      header: true,
+      complete: (results) => {
+        resolve(results);
+      },
+      error: (error) => {
+        reject(error);
+      }
+    });
+  });
+};
+
 // Convertir des données CSV en objets pour l'application
 export const convertTeamData = (teamsCSV: TeamCSV[]): Team[] => {
   return teamsCSV.map(team => ({
@@ -127,6 +143,62 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
 
     return matchObject;
   });
+};
+
+// Fonction pour extraire l'ID de la feuille Google depuis l'URL
+export const extractSheetId = (url: string): string => {
+  const regex = /\/d\/([a-zA-Z0-9-_]+)/;
+  const match = url.match(regex);
+  if (match && match[1]) {
+    return match[1];
+  }
+  throw new Error("Format d'URL Google Sheets invalide");
+};
+
+// Fonction pour obtenir l'URL CSV exportable d'une feuille Google Sheets
+export const getGSheetCSVUrl = (sheetId: string, sheetName: string): string => {
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+};
+
+// Fonction pour charger les données depuis Google Sheets
+export const loadFromGoogleSheets = async (sheetUrl: string): Promise<{
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
+}> => {
+  try {
+    const sheetId = extractSheetId(sheetUrl);
+    
+    // Obtenir les URLs CSV pour chaque onglet
+    const teamsUrl = getGSheetCSVUrl(sheetId, 'teams');
+    const playersUrl = getGSheetCSVUrl(sheetId, 'players');
+    const matchesUrl = getGSheetCSVUrl(sheetId, 'matches');
+    
+    // Charger les données
+    const teamsResults = await parseCSVFromURL(teamsUrl);
+    const playersResults = await parseCSVFromURL(playersUrl);
+    const matchesResults = await parseCSVFromURL(matchesUrl);
+    
+    // Convertir les données
+    const teams = convertTeamData(teamsResults.data as TeamCSV[]);
+    const players = convertPlayerData(playersResults.data as PlayerCSV[]);
+    const matches = convertMatchData(matchesResults.data as MatchCSV[], teams);
+    
+    // Associer les joueurs aux équipes
+    teams.forEach(team => {
+      team.players = players.filter(player => player.team === team.id);
+    });
+    
+    // Mettre en cache les données
+    loadedTeams = teams;
+    loadedPlayers = players;
+    loadedMatches = matches;
+    
+    return { teams, players, matches };
+  } catch (error) {
+    console.error('Erreur lors du chargement des données Google Sheets:', error);
+    throw error;
+  }
 };
 
 // Fonction principale pour charger les fichiers CSV
