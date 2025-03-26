@@ -1,7 +1,6 @@
 
-import { LeagueGameDataRow } from './csvTypes';
+import { LeagueGameDataRow, TeamCSV, PlayerCSV, MatchCSV } from './csvTypes';
 import { Team, Player, Match } from './mockData';
-import { TeamCSV } from './csvTypes';
 import { convertTeamData, convertPlayerData, convertMatchData } from './dataConverter';
 
 // Process League data and convert it to our application format

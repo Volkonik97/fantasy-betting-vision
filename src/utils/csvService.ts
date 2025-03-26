@@ -18,15 +18,19 @@ import {
   getSideStatistics
 } from './databaseService';
 import { 
-  TeamCSV, 
-  PlayerCSV, 
-  MatchCSV, 
-  LeagueGameDataRow, 
-  loadedTeams, 
-  loadedPlayers, 
-  loadedMatches, 
-  loadedTournaments 
+  getLoadedTeams,
+  getLoadedPlayers,
+  getLoadedMatches,
+  getLoadedTournaments,
+  setLoadedTeams,
+  setLoadedPlayers,
+  setLoadedMatches,
+  setLoadedTournaments,
+  resetCache
 } from './csvTypes';
+
+// Re-export types
+export type { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
 
 // Function to load CSV files
 export const loadCsvData = async (
@@ -45,9 +49,9 @@ export const loadCsvData = async (
       matches: matchResults.data.length
     });
     
-    const teams = convertTeamData(teamResults.data as TeamCSV[]);
-    const players = convertPlayerData(playerResults.data as PlayerCSV[]);
-    const matches = convertMatchData(matchResults.data as MatchCSV[], teams);
+    const teams = convertTeamData(teamResults.data as any);
+    const players = convertPlayerData(playerResults.data as any);
+    const matches = convertMatchData(matchResults.data as any, teams);
     
     console.log("Données converties:", {
       teams: teams.length,
@@ -70,10 +74,6 @@ export const loadCsvData = async (
 
 // Re-export everything for backward compatibility
 export {
-  TeamCSV,
-  PlayerCSV,
-  MatchCSV,
-  LeagueGameDataRow,
   parseCSVFile,
   parseCSVFromURL,
   extractSheetId,
@@ -93,5 +93,15 @@ export {
   getPlayers,
   getMatches,
   getTournaments,
-  getSideStatistics
+  getSideStatistics,
+  // Export the getter/setter functions
+  getLoadedTeams,
+  getLoadedPlayers,
+  getLoadedMatches,
+  getLoadedTournaments,
+  setLoadedTeams,
+  setLoadedPlayers,
+  setLoadedMatches,
+  setLoadedTournaments,
+  resetCache
 };

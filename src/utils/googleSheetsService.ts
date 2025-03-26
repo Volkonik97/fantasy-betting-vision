@@ -1,5 +1,9 @@
 
-import { loadedTeams, loadedPlayers, loadedMatches, loadedTournaments } from './csvTypes';
+import { 
+  setLoadedTeams, 
+  setLoadedPlayers, 
+  setLoadedMatches 
+} from './csvTypes';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
 import { processLeagueData } from './leagueDataProcessor';
 import { convertTeamData, convertPlayerData, convertMatchData } from './dataConverter';
@@ -34,9 +38,9 @@ export const loadFromSingleGoogleSheet = async (sheetUrl: string) => {
       matches: data.matches.length
     });
     
-    loadedTeams = data.teams;
-    loadedPlayers = data.players;
-    loadedMatches = data.matches;
+    setLoadedTeams(data.teams);
+    setLoadedPlayers(data.players);
+    setLoadedMatches(data.matches);
     
     await saveToDatabase(data);
     
@@ -89,9 +93,9 @@ export const loadFromGoogleSheets = async (sheetUrl: string) => {
         team.players = players.filter(player => player.team === team.id);
       });
       
-      loadedTeams = teams;
-      loadedPlayers = players;
-      loadedMatches = matches;
+      setLoadedTeams(teams);
+      setLoadedPlayers(players);
+      setLoadedMatches(matches);
       
       await saveToDatabase({ teams, players, matches });
       

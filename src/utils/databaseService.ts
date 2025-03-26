@@ -2,7 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player, Match, Tournament } from './mockData';
 import { chunk } from './dataConverter';
-import { resetCache } from './csvTypes';
+import { 
+  getLoadedTeams, 
+  getLoadedPlayers, 
+  getLoadedMatches, 
+  getLoadedTournaments, 
+  resetCache 
+} from './csvTypes';
 
 // Database-related functions
 
@@ -183,6 +189,7 @@ export const saveToDatabase = async (data: {
 
 // Get teams from database
 export const getTeams = async (): Promise<Team[]> => {
+  const loadedTeams = getLoadedTeams();
   if (loadedTeams) return loadedTeams;
   
   try {
@@ -244,6 +251,7 @@ export const getTeams = async (): Promise<Team[]> => {
 
 // Get players from database
 export const getPlayers = async (): Promise<Player[]> => {
+  const loadedPlayers = getLoadedPlayers();
   if (loadedPlayers) return loadedPlayers;
   
   try {
@@ -279,6 +287,7 @@ export const getPlayers = async (): Promise<Player[]> => {
 
 // Get matches from database
 export const getMatches = async (): Promise<Match[]> => {
+  const loadedMatches = getLoadedMatches();
   if (loadedMatches) return loadedMatches;
   
   try {
@@ -335,6 +344,7 @@ export const getMatches = async (): Promise<Match[]> => {
 
 // Get tournaments from database
 export const getTournaments = async (): Promise<Tournament[]> => {
+  const loadedTournaments = getLoadedTournaments();
   if (loadedTournaments) return loadedTournaments;
   
   try {
