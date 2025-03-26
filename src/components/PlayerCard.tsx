@@ -71,7 +71,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           
           <div className="text-center p-2 bg-gray-50 rounded-md">
             <span className="text-xs text-gray-500 block mb-1">DMG Share</span>
-            <span className="text-lg font-semibold">{(player.damageShare * 100).toFixed(0)}%</span>
+            <span className="text-lg font-semibold">{Math.round(player.damageShare * 100)}%</span>
           </div>
         </div>
         

@@ -101,13 +101,32 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
 
   console.log(`Nombre de joueurs uniques identifiés: ${uniquePlayers.size}`);
 
-  const playerStats = new Map<string, { kills: number, deaths: number, assists: number, games: number, cs: number, championsPlayed: Set<string> }>();
+  // Calculate player stats including damage share
+  const playerStats = new Map<string, { 
+    kills: number, 
+    deaths: number, 
+    assists: number, 
+    games: number, 
+    cs: number, 
+    totalDamage: number,
+    championsPlayed: Set<string> 
+  }>();
+  
+  // First pass to collect player stats
   data.forEach(row => {
     if (!row.playerid) return;
     
     const playerId = row.playerid;
     if (!playerStats.has(playerId)) {
-      playerStats.set(playerId, { kills: 0, deaths: 0, assists: 0, games: 0, cs: 0, championsPlayed: new Set() });
+      playerStats.set(playerId, { 
+        kills: 0, 
+        deaths: 0, 
+        assists: 0, 
+        games: 0, 
+        cs: 0, 
+        totalDamage: 0,
+        championsPlayed: new Set() 
+      });
     }
     
     const stats = playerStats.get(playerId)!;
@@ -120,20 +139,49 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
     const monsterKills = parseInt(row.monsterkills || '0') || 0;
     stats.cs += minionKills + monsterKills;
     
+    // Calculate damage
+    const damageDone = parseInt(row.damagetochampions || '0') || 0;
+    stats.totalDamage += damageDone;
+    
     if (row.champion) {
       stats.championsPlayed.add(row.champion);
     }
   });
 
+  // Calculate team total damage for damage share computation
+  const teamTotalDamage = new Map<string, number>();
+  data.forEach(row => {
+    if (!row.teamid || !row.playerid) return;
+    
+    const teamId = row.teamid;
+    const damageDone = parseInt(row.damagetochampions || '0') || 0;
+    
+    if (!teamTotalDamage.has(teamId)) {
+      teamTotalDamage.set(teamId, 0);
+    }
+    
+    teamTotalDamage.set(teamId, teamTotalDamage.get(teamId)! + damageDone);
+  });
+
+  // Second pass to calculate individual damage share
   playerStats.forEach((stats, playerId) => {
     const player = uniquePlayers.get(playerId);
     if (player) {
+      const teamId = player.team;
+      const teamDamage = teamTotalDamage.get(teamId) || 0;
+      
       const kda = stats.deaths > 0 ? ((stats.kills + stats.assists) / stats.deaths).toFixed(2) : ((stats.kills + stats.assists) * 1).toFixed(2);
       const csPerMin = stats.games > 0 ? (stats.cs / stats.games / 30).toFixed(2) : '0';
       
+      // Calculate damage share
+      let damageShare = 0;
+      if (teamDamage > 0 && stats.totalDamage > 0) {
+        damageShare = stats.totalDamage / teamDamage;
+      }
+      
       player.kda = kda;
       player.csPerMin = csPerMin;
-      player.damageShare = '0.25';
+      player.damageShare = damageShare.toFixed(2);
       player.championPool = Array.from(stats.championsPlayed).join(',');
     }
   });
