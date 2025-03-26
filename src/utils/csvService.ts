@@ -167,25 +167,51 @@ export const loadCsvData = async (
   }
 };
 
-// Méthodes pour obtenir les données (retourne les mockData si aucune donnée CSV n'est chargée)
-export const getTeams = (): Team[] => {
-  return loadedTeams || import('./mockData').then(m => m.teams);
+// Modified getter functions to properly handle async imports
+export const getTeams = async (): Promise<Team[]> => {
+  if (loadedTeams) return loadedTeams;
+  const mockData = await import('./mockData');
+  return mockData.teams;
 };
 
-export const getPlayers = (): Player[] => {
-  return loadedPlayers || import('./mockData').then(m => m.players);
+export const getPlayers = async (): Promise<Player[]> => {
+  if (loadedPlayers) return loadedPlayers;
+  const mockData = await import('./mockData');
+  return mockData.players;
 };
 
-export const getMatches = (): Match[] => {
-  return loadedMatches || import('./mockData').then(m => m.matches);
+export const getMatches = async (): Promise<Match[]> => {
+  if (loadedMatches) return loadedMatches;
+  const mockData = await import('./mockData');
+  return mockData.matches;
 };
 
-export const getTournaments = (): Tournament[] => {
-  return loadedTournaments || import('./mockData').then(m => m.tournaments);
+export const getTournaments = async (): Promise<Tournament[]> => {
+  if (loadedTournaments) return loadedTournaments;
+  const mockData = await import('./mockData');
+  return mockData.tournaments;
 };
 
-// Fonctions supplémentaires
-export const getSideStatistics = (teamId: string) => {
-  const teams = loadedTeams || import('./mockData').then(m => m.teams);
-  return import('./mockData').then(m => m.getSideStatistics(teamId));
+// Fonction supplémentaire également mise à jour pour gérer les promesses
+export const getSideStatistics = async (teamId: string) => {
+  if (loadedTeams) {
+    const team = loadedTeams.find(t => t.id === teamId);
+    if (team) {
+      return {
+        blueWins: Math.round(team.blueWinRate * 100),
+        redWins: Math.round(team.redWinRate * 100),
+        blueFirstBlood: 62,
+        redFirstBlood: 58,
+        blueFirstDragon: 71,
+        redFirstDragon: 65,
+        blueFirstHerald: 68,
+        redFirstHerald: 59,
+        blueFirstTower: 65,
+        redFirstTower: 62
+      };
+    }
+  }
+  
+  const mockData = await import('./mockData');
+  return mockData.getSideStatistics(teamId);
 };

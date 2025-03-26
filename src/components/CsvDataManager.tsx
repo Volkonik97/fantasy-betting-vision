@@ -4,7 +4,7 @@ import { loadCsvData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, FileUp, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileUp, CheckCircle2 } from "lucide-react";
 
 const CsvDataManager = () => {
   const [teamsFile, setTeamsFile] = useState<File | null>(null);
