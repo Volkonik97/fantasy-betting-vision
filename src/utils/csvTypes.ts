@@ -43,6 +43,10 @@ export interface MatchCSV {
   firstBlood?: string;
   firstDragon?: string;
   firstBaron?: string;
+  patch?: string;
+  year?: string;
+  split?: string;
+  playoffs?: string;
 }
 
 // Interface for League of Legends data

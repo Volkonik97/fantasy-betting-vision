@@ -1,265 +1,131 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { Match } from '../mockData';
-import { chunk } from '../dataConverter';
-import { getLoadedMatches, setLoadedMatches } from '../csvTypes';
-import { getTeams } from './teamsService';
+import { Match, Team } from '../mockData';
+import { supabase } from '@/integrations/supabase/client';
 
-// Save matches to database
-export const saveMatches = async (matches: Match[]): Promise<boolean> => {
-  try {
-    // Insérer les matchs par lots de 100
-    const matchChunks = chunk(matches, 100);
-    
-    for (const matchChunk of matchChunks) {
-      const { error: matchesError } = await supabase.from('matches').insert(
-        matchChunk.map(match => {
-          const baseMatchData = {
-            id: match.id,
-            tournament: match.tournament,
-            date: match.date,
-            team_blue_id: match.teamBlue.id,
-            team_red_id: match.teamRed.id,
-            predicted_winner: match.predictedWinner,
-            blue_win_odds: match.blueWinOdds,
-            red_win_odds: match.redWinOdds,
-            status: match.status,
-            winner_team_id: match.result?.winner,
-            score_blue: match.result?.score ? match.result.score[0] : null,
-            score_red: match.result?.score ? match.result.score[1] : null,
-            duration: match.result?.duration,
-            mvp: match.result?.mvp,
-            first_blood: match.result?.firstBlood,
-            first_dragon: match.result?.firstDragon,
-            first_baron: match.result?.firstBaron
-          };
-          
-          // Add additional fields from the extended schema
-          if (match.extraStats?.blueTeamStats) {
-            const blueStats = match.extraStats.blueTeamStats;
-            baseMatchData['team_kpm'] = blueStats.team_kpm;
-            baseMatchData['ckpm'] = blueStats.ckpm;
-            baseMatchData['team_kills'] = blueStats.team_kills;
-            baseMatchData['team_deaths'] = blueStats.team_deaths;
-            
-            // Dragon stats
-            baseMatchData['dragons'] = blueStats.dragons;
-            baseMatchData['opp_dragons'] = blueStats.opp_dragons;
-            baseMatchData['elemental_drakes'] = blueStats.elemental_drakes;
-            baseMatchData['opp_elemental_drakes'] = blueStats.opp_elemental_drakes;
-            baseMatchData['infernals'] = blueStats.infernals;
-            baseMatchData['mountains'] = blueStats.mountains;
-            baseMatchData['clouds'] = blueStats.clouds;
-            baseMatchData['oceans'] = blueStats.oceans;
-            baseMatchData['chemtechs'] = blueStats.chemtechs;
-            baseMatchData['hextechs'] = blueStats.hextechs;
-            baseMatchData['drakes_unknown'] = blueStats.drakes_unknown;
-            baseMatchData['elders'] = blueStats.elders;
-            baseMatchData['opp_elders'] = blueStats.opp_elders;
-            
-            // Herald and Baron
-            baseMatchData['first_herald'] = blueStats.first_herald ? match.teamBlue.id : null;
-            baseMatchData['heralds'] = blueStats.heralds;
-            baseMatchData['opp_heralds'] = blueStats.opp_heralds;
-            baseMatchData['barons'] = blueStats.barons;
-            baseMatchData['opp_barons'] = blueStats.opp_barons;
-            
-            // Tower stats
-            baseMatchData['first_tower'] = blueStats.first_tower ? match.teamBlue.id : null;
-            baseMatchData['first_mid_tower'] = blueStats.first_mid_tower ? match.teamBlue.id : null;
-            baseMatchData['first_three_towers'] = blueStats.first_three_towers ? match.teamBlue.id : null;
-            baseMatchData['towers'] = blueStats.towers;
-            baseMatchData['opp_towers'] = blueStats.opp_towers;
-            baseMatchData['turret_plates'] = blueStats.turret_plates;
-            baseMatchData['opp_turret_plates'] = blueStats.opp_turret_plates;
-            baseMatchData['inhibitors'] = blueStats.inhibitors;
-            baseMatchData['opp_inhibitors'] = blueStats.opp_inhibitors;
-            
-            // New creatures
-            baseMatchData['void_grubs'] = blueStats.void_grubs;
-            baseMatchData['opp_void_grubs'] = blueStats.opp_void_grubs;
-          }
-          
-          return baseMatchData;
-        })
-      );
-      
-      if (matchesError) {
-        console.error("Erreur lors de l'insertion des matchs:", matchesError);
-        return false;
-      }
-    }
-    
-    // Save player match stats if available
-    let playerStatsToSave = [];
-    
-    for (const match of matches) {
-      if (match.playerStats && match.playerStats.length > 0) {
-        playerStatsToSave = [...playerStatsToSave, ...match.playerStats];
-      }
-    }
-    
-    if (playerStatsToSave.length > 0) {
-      const playerStatsChunks = chunk(playerStatsToSave, 100);
-      
-      for (const statsChunk of playerStatsChunks) {
-        const { error: statsError } = await supabase.from('player_match_stats').insert(statsChunk);
-        
-        if (statsError) {
-          console.error("Erreur lors de l'insertion des statistiques de joueurs:", statsError);
-          // Continue with the process even if player stats insertion fails
-        }
-      }
-      
-      console.log(`${playerStatsToSave.length} statistiques de joueurs par match insérées`);
-    }
-    
-    console.log("Matchs insérés avec succès");
-    return true;
-  } catch (error) {
-    console.error("Erreur lors de la sauvegarde des matchs:", error);
-    return false;
-  }
-};
-
-// Get matches from database
+// Get all matches from the database
 export const getMatches = async (): Promise<Match[]> => {
-  const loadedMatches = getLoadedMatches();
-  if (loadedMatches) return loadedMatches;
-  
   try {
-    const { data: matchesData, error: matchesError } = await supabase
+    const { data: matches, error } = await supabase
       .from('matches')
       .select('*');
     
-    if (matchesError || !matchesData || matchesData.length === 0) {
-      console.error("Erreur lors de la récupération des matchs:", matchesError);
-      const { matches } = await import('../mockData');
-      return matches;
+    if (error) {
+      console.error("Erreur lors de la récupération des matchs:", error);
+      return [];
     }
     
-    const teams = await getTeams();
+    // Fetch teams separately to populate the match data
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('*');
     
-    const matches: Match[] = matchesData.map(match => {
-      const teamBlue = teams.find(t => t.id === match.team_blue_id) || teams[0];
-      const teamRed = teams.find(t => t.id === match.team_red_id) || teams[1];
+    if (teamsError) {
+      console.error("Erreur lors de la récupération des équipes:", teamsError);
+      return [];
+    }
+    
+    // Convert database format to application format
+    const formattedMatches: Match[] = matches.map(match => {
+      const teamBlue = teams.find(team => team.id === match.team_blue_id);
+      const teamRed = teams.find(team => team.id === match.team_red_id);
       
-      const matchObject: Match = {
-        id: match.id as string,
-        tournament: match.tournament as string,
-        date: match.date as string,
-        teamBlue,
-        teamRed,
-        predictedWinner: match.predicted_winner as string,
-        blueWinOdds: Number(match.blue_win_odds) || 0.5,
-        redWinOdds: Number(match.red_win_odds) || 0.5,
-        status: (match.status || 'Upcoming') as 'Upcoming' | 'Live' | 'Completed'
+      if (!teamBlue || !teamRed) {
+        console.error(`Équipes non trouvées pour le match ${match.id}`);
+        return null;
+      }
+      
+      const formattedMatch: Match = {
+        id: match.id,
+        tournament: match.tournament,
+        date: match.date,
+        teamBlue: teamBlue as Team,
+        teamRed: teamRed as Team,
+        predictedWinner: match.predicted_winner,
+        blueWinOdds: match.blue_win_odds,
+        redWinOdds: match.red_win_odds,
+        status: match.status as 'Upcoming' | 'Live' | 'Completed',
+        extraStats: {
+          patch: match.patch,
+          year: match.year,
+          split: match.split,
+          playoffs: match.playoffs === true,
+          team_kpm: match.team_kpm,
+          ckpm: match.ckpm,
+          team_kills: match.team_kills,
+          team_deaths: match.team_deaths,
+          dragons: match.dragons,
+          opp_dragons: match.opp_dragons,
+          elemental_drakes: match.elemental_drakes,
+          opp_elemental_drakes: match.opp_elemental_drakes,
+          infernals: match.infernals,
+          mountains: match.mountains,
+          clouds: match.clouds,
+          oceans: match.oceans,
+          chemtechs: match.chemtechs,
+          hextechs: match.hextechs,
+          drakes_unknown: match.drakes_unknown,
+          elders: match.elders,
+          opp_elders: match.opp_elders,
+          first_herald: match.first_herald,
+          heralds: match.heralds,
+          opp_heralds: match.opp_heralds,
+          barons: match.barons,
+          opp_barons: match.opp_barons,
+          void_grubs: match.void_grubs,
+          opp_void_grubs: match.opp_void_grubs,
+          first_tower: match.first_tower,
+          first_mid_tower: match.first_mid_tower,
+          first_three_towers: match.first_three_towers,
+          towers: match.towers,
+          opp_towers: match.opp_towers,
+          turret_plates: match.turret_plates,
+          opp_turret_plates: match.opp_turret_plates,
+          inhibitors: match.inhibitors,
+          opp_inhibitors: match.opp_inhibitors
+        }
       };
       
       if (match.status === 'Completed' && match.winner_team_id) {
-        matchObject.result = {
-          winner: match.winner_team_id as string,
-          score: [Number(match.score_blue) || 0, Number(match.score_red) || 0],
-          duration: match.duration as string | undefined,
-          mvp: match.mvp as string | undefined,
-          firstBlood: match.first_blood as string | undefined,
-          firstDragon: match.first_dragon as string | undefined,
-          firstBaron: match.first_baron as string | undefined
+        formattedMatch.result = {
+          winner: match.winner_team_id,
+          score: [
+            parseInt(match.score_blue || '0'), 
+            parseInt(match.score_red || '0')
+          ],
+          duration: match.duration,
+          mvp: match.mvp,
+          firstBlood: match.first_blood,
+          firstDragon: match.first_dragon,
+          firstBaron: match.first_baron
         };
       }
       
-      // Add extended stats if available
-      if (match.team_kpm || match.dragons || match.first_tower) {
-        matchObject.extraStats = {
-          patch: match.patch as string,
-          year: match.year as string,
-          split: match.split as string,
-          playoffs: match.playoffs === 'yes',
-          team_kpm: Number(match.team_kpm) || 0,
-          ckpm: Number(match.ckpm) || 0,
-          team_kills: Number(match.team_kills) || 0,
-          team_deaths: Number(match.team_deaths) || 0,
-          
-          // Dragon stats
-          dragons: Number(match.dragons) || 0,
-          opp_dragons: Number(match.opp_dragons) || 0,
-          elemental_drakes: Number(match.elemental_drakes) || 0,
-          opp_elemental_drakes: Number(match.opp_elemental_drakes) || 0,
-          infernals: Number(match.infernals) || 0,
-          mountains: Number(match.mountains) || 0,
-          clouds: Number(match.clouds) || 0,
-          oceans: Number(match.oceans) || 0,
-          chemtechs: Number(match.chemtechs) || 0,
-          hextechs: Number(match.hextechs) || 0,
-          drakes_unknown: Number(match.drakes_unknown) || 0,
-          elders: Number(match.elders) || 0,
-          opp_elders: Number(match.opp_elders) || 0,
-          
-          // Herald and Baron
-          first_herald: match.first_herald as string,
-          heralds: Number(match.heralds) || 0,
-          opp_heralds: Number(match.opp_heralds) || 0,
-          barons: Number(match.barons) || 0,
-          opp_barons: Number(match.opp_barons) || 0,
-          
-          // Tower stats
-          first_tower: match.first_tower as string,
-          first_mid_tower: match.first_mid_tower as string,
-          first_three_towers: match.first_three_towers as string,
-          towers: Number(match.towers) || 0,
-          opp_towers: Number(match.opp_towers) || 0,
-          turret_plates: Number(match.turret_plates) || 0,
-          opp_turret_plates: Number(match.opp_turret_plates) || 0,
-          inhibitors: Number(match.inhibitors) || 0,
-          opp_inhibitors: Number(match.opp_inhibitors) || 0,
-          
-          // New creatures
-          void_grubs: Number(match.void_grubs) || 0,
-          opp_void_grubs: Number(match.opp_void_grubs) || 0,
-        };
-      }
-      
-      return matchObject;
-    });
+      return formattedMatch;
+    }).filter(match => match !== null) as Match[];
     
-    // Get player match stats
-    try {
-      const { data: playerStatsData } = await supabase
+    // Fetch player match stats
+    for (const match of formattedMatches) {
+      const { data: playerStats, error: statsError } = await supabase
         .from('player_match_stats')
-        .select('*');
+        .select('*')
+        .eq('match_id', match.id);
       
-      if (playerStatsData && playerStatsData.length > 0) {
-        // Group player stats by match ID
-        const playerStatsByMatch = playerStatsData.reduce((acc, stat) => {
-          if (!acc[stat.match_id]) {
-            acc[stat.match_id] = [];
-          }
-          acc[stat.match_id].push(stat);
-          return acc;
-        }, {});
-        
-        // Attach player stats to matches
-        matches.forEach(match => {
-          if (playerStatsByMatch[match.id]) {
-            match.playerStats = playerStatsByMatch[match.id];
-          }
-        });
+      if (statsError) {
+        console.error(`Erreur lors de la récupération des stats des joueurs pour le match ${match.id}:`, statsError);
+      } else if (playerStats && playerStats.length > 0) {
+        match.playerStats = playerStats;
       }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des statistiques de joueurs:", error);
     }
     
-    setLoadedMatches(matches);
-    return matches;
+    return formattedMatches;
   } catch (error) {
     console.error("Erreur lors de la récupération des matchs:", error);
-    const { matches } = await import('../mockData');
-    return matches;
+    return [];
   }
 };
 
-// Get player match stats for a specific player
-export const getPlayerMatchStats = async (playerId: string) => {
+// Get player match statistics
+export const getPlayerMatchStats = async (playerId: string): Promise<any[]> => {
   try {
     const { data, error } = await supabase
       .from('player_match_stats')
@@ -275,5 +141,210 @@ export const getPlayerMatchStats = async (playerId: string) => {
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques du joueur:", error);
     return [];
+  }
+};
+
+// Save matches to the database
+export const saveMatches = async (matches: Match[]): Promise<boolean> => {
+  try {
+    console.log(`Sauvegarde de ${matches.length} matchs dans la base de données`);
+    
+    // Prepare matches for database insertion
+    const dbMatches = matches.map(match => {
+      return {
+        id: match.id,
+        tournament: match.tournament,
+        date: match.date,
+        team_blue_id: match.teamBlue.id,
+        team_red_id: match.teamRed.id,
+        predicted_winner: match.predictedWinner,
+        blue_win_odds: match.blueWinOdds,
+        red_win_odds: match.redWinOdds,
+        status: match.status,
+        winner_team_id: match.result?.winner,
+        score_blue: match.result?.score[0]?.toString(),
+        score_red: match.result?.score[1]?.toString(),
+        duration: match.result?.duration,
+        mvp: match.result?.mvp,
+        first_blood: match.result?.firstBlood,
+        first_dragon: match.result?.firstDragon,
+        first_baron: match.result?.firstBaron,
+        // Add extra stats if available
+        patch: match.extraStats?.patch,
+        year: match.extraStats?.year,
+        split: match.extraStats?.split,
+        playoffs: match.extraStats?.playoffs || false,
+        team_kpm: match.extraStats?.team_kpm,
+        ckpm: match.extraStats?.ckpm,
+        team_kills: match.extraStats?.team_kills,
+        team_deaths: match.extraStats?.team_deaths,
+        dragons: match.extraStats?.dragons,
+        opp_dragons: match.extraStats?.opp_dragons,
+        elemental_drakes: match.extraStats?.elemental_drakes,
+        opp_elemental_drakes: match.extraStats?.opp_elemental_drakes,
+        infernals: match.extraStats?.infernals,
+        mountains: match.extraStats?.mountains,
+        clouds: match.extraStats?.clouds,
+        oceans: match.extraStats?.oceans,
+        chemtechs: match.extraStats?.chemtechs,
+        hextechs: match.extraStats?.hextechs,
+        drakes_unknown: match.extraStats?.drakes_unknown,
+        elders: match.extraStats?.elders,
+        opp_elders: match.extraStats?.opp_elders,
+        first_herald: match.extraStats?.first_herald,
+        heralds: match.extraStats?.heralds,
+        opp_heralds: match.extraStats?.opp_heralds,
+        barons: match.extraStats?.barons,
+        opp_barons: match.extraStats?.opp_barons,
+        void_grubs: match.extraStats?.void_grubs,
+        opp_void_grubs: match.extraStats?.opp_void_grubs,
+        first_tower: match.extraStats?.first_tower,
+        first_mid_tower: match.extraStats?.first_mid_tower,
+        first_three_towers: match.extraStats?.first_three_towers,
+        towers: match.extraStats?.towers,
+        opp_towers: match.extraStats?.opp_towers,
+        turret_plates: match.extraStats?.turret_plates,
+        opp_turret_plates: match.extraStats?.opp_turret_plates,
+        inhibitors: match.extraStats?.inhibitors,
+        opp_inhibitors: match.extraStats?.opp_inhibitors
+      };
+    });
+    
+    // Insert matches
+    const { error } = await supabase
+      .from('matches')
+      .upsert(dbMatches);
+    
+    if (error) {
+      console.error("Erreur lors de la sauvegarde des matchs:", error);
+      return false;
+    }
+    
+    // Save player match stats if available
+    let playerStatsSuccess = true;
+    for (const match of matches) {
+      if (match.playerStats && match.playerStats.length > 0) {
+        // Prepare player stats for database insertion
+        const dbPlayerStats = match.playerStats.map(stat => ({
+          match_id: match.id,
+          player_id: stat.player_id,
+          team_id: stat.team_id,
+          participant_id: stat.participant_id,
+          side: stat.side,
+          position: stat.position,
+          champion: stat.champion,
+          kills: stat.kills,
+          deaths: stat.deaths,
+          assists: stat.assists,
+          double_kills: stat.double_kills,
+          triple_kills: stat.triple_kills,
+          quadra_kills: stat.quadra_kills,
+          penta_kills: stat.penta_kills,
+          first_blood_kill: stat.first_blood_kill,
+          first_blood_assist: stat.first_blood_assist,
+          first_blood_victim: stat.first_blood_victim,
+          damage_to_champions: stat.damage_to_champions,
+          dpm: stat.dpm,
+          damage_share: stat.damage_share,
+          damage_taken_per_minute: stat.damage_taken_per_minute,
+          damage_mitigated_per_minute: stat.damage_mitigated_per_minute,
+          wards_placed: stat.wards_placed,
+          wpm: stat.wpm,
+          wards_killed: stat.wards_killed,
+          wcpm: stat.wcpm,
+          control_wards_bought: stat.control_wards_bought,
+          vision_score: stat.vision_score,
+          vspm: stat.vspm,
+          total_gold: stat.total_gold,
+          earned_gold: stat.earned_gold,
+          earned_gpm: stat.earned_gpm,
+          earned_gold_share: stat.earned_gold_share,
+          gold_spent: stat.gold_spent,
+          gspd: stat.gspd,
+          gpr: stat.gpr,
+          total_cs: stat.total_cs,
+          minion_kills: stat.minion_kills,
+          monster_kills: stat.monster_kills,
+          monster_kills_own_jungle: stat.monster_kills_own_jungle,
+          monster_kills_enemy_jungle: stat.monster_kills_enemy_jungle,
+          cspm: stat.cspm,
+          gold_at_10: stat.gold_at_10,
+          xp_at_10: stat.xp_at_10,
+          cs_at_10: stat.cs_at_10,
+          opp_gold_at_10: stat.opp_gold_at_10,
+          opp_xp_at_10: stat.opp_xp_at_10,
+          opp_cs_at_10: stat.opp_cs_at_10,
+          gold_diff_at_10: stat.gold_diff_at_10,
+          xp_diff_at_10: stat.xp_diff_at_10,
+          cs_diff_at_10: stat.cs_diff_at_10,
+          kills_at_10: stat.kills_at_10,
+          assists_at_10: stat.assists_at_10,
+          deaths_at_10: stat.deaths_at_10,
+          opp_kills_at_10: stat.opp_kills_at_10,
+          opp_assists_at_10: stat.opp_assists_at_10,
+          opp_deaths_at_10: stat.opp_deaths_at_10,
+          gold_at_15: stat.gold_at_15,
+          xp_at_15: stat.xp_at_15,
+          cs_at_15: stat.cs_at_15,
+          opp_gold_at_15: stat.opp_gold_at_15,
+          opp_xp_at_15: stat.opp_xp_at_15,
+          opp_cs_at_15: stat.opp_cs_at_15,
+          gold_diff_at_15: stat.gold_diff_at_15,
+          xp_diff_at_15: stat.xp_diff_at_15,
+          cs_diff_at_15: stat.cs_diff_at_15,
+          kills_at_15: stat.kills_at_15,
+          assists_at_15: stat.assists_at_15,
+          deaths_at_15: stat.deaths_at_15,
+          opp_kills_at_15: stat.opp_kills_at_15,
+          opp_assists_at_15: stat.opp_assists_at_15,
+          opp_deaths_at_15: stat.opp_deaths_at_15,
+          gold_at_20: stat.gold_at_20,
+          xp_at_20: stat.xp_at_20,
+          cs_at_20: stat.cs_at_20,
+          opp_gold_at_20: stat.opp_gold_at_20,
+          opp_xp_at_20: stat.opp_xp_at_20,
+          opp_cs_at_20: stat.opp_cs_at_20,
+          gold_diff_at_20: stat.gold_diff_at_20,
+          xp_diff_at_20: stat.xp_diff_at_20,
+          cs_diff_at_20: stat.cs_diff_at_20,
+          kills_at_20: stat.kills_at_20,
+          assists_at_20: stat.assists_at_20,
+          deaths_at_20: stat.deaths_at_20,
+          opp_kills_at_20: stat.opp_kills_at_20,
+          opp_assists_at_20: stat.opp_assists_at_20,
+          opp_deaths_at_20: stat.opp_deaths_at_20,
+          gold_at_25: stat.gold_at_25,
+          xp_at_25: stat.xp_at_25,
+          cs_at_25: stat.cs_at_25,
+          opp_gold_at_25: stat.opp_gold_at_25,
+          opp_xp_at_25: stat.opp_xp_at_25,
+          opp_cs_at_25: stat.opp_cs_at_25,
+          gold_diff_at_25: stat.gold_diff_at_25,
+          xp_diff_at_25: stat.xp_diff_at_25,
+          cs_diff_at_25: stat.cs_diff_at_25,
+          kills_at_25: stat.kills_at_25,
+          assists_at_25: stat.assists_at_25,
+          deaths_at_25: stat.deaths_at_25,
+          opp_kills_at_25: stat.opp_kills_at_25,
+          opp_assists_at_25: stat.opp_assists_at_25,
+          opp_deaths_at_25: stat.opp_deaths_at_25
+        }));
+        
+        // Insert player stats
+        const { error: statsError } = await supabase
+          .from('player_match_stats')
+          .upsert(dbPlayerStats);
+        
+        if (statsError) {
+          console.error("Erreur lors de la sauvegarde des statistiques des joueurs:", statsError);
+          playerStatsSuccess = false;
+        }
+      }
+    }
+    
+    return playerStatsSuccess;
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde des matchs:", error);
+    return false;
   }
 };
