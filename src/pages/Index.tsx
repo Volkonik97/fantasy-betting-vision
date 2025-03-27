@@ -10,7 +10,7 @@ import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import SideAnalysis from "@/components/SideAnalysis";
 import { matches, teams } from "@/utils/models";
-import { getSideStatistics } from "@/utils/models/statistics";
+import { getSideStatistics } from "@/utils/statistics"; // Updated import path
 import { SideStatistics } from "@/utils/models/types";
 
 const Index = () => {
