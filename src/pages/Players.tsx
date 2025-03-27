@@ -11,11 +11,15 @@ const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
+  const [selectedSubRegion, setSelectedSubRegion] = useState<string>("All");
   const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const [loading, setLoading] = useState(true);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
   const regions = ["All", "LCK", "LPL", "LEC", "LTA", "LFL2"];
+  const subRegions = {
+    LTA: ["All", "LTA N", "LTA S"]
+  };
   
   useEffect(() => {
     const fetchData = async () => {
@@ -42,6 +46,11 @@ const Players = () => {
     
     fetchData();
   }, []);
+
+  // Reset sub-region when region changes
+  useEffect(() => {
+    setSelectedSubRegion("All");
+  }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
     // Case-insensitive role matching
@@ -49,9 +58,17 @@ const Players = () => {
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
     // Case-insensitive region matching with support for LTA N and LTA S
-    const regionMatches = selectedRegion === "All" || 
-      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase() ||
-      (selectedRegion === "LTA" && (player.teamRegion.startsWith("LTA N") || player.teamRegion.startsWith("LTA S")));
+    let regionMatches = selectedRegion === "All" || 
+      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+    
+    // If LTA is selected, check sub-regions
+    if (selectedRegion === "LTA") {
+      if (selectedSubRegion === "All") {
+        regionMatches = player.teamRegion.startsWith("LTA N") || player.teamRegion.startsWith("LTA S");
+      } else {
+        regionMatches = player.teamRegion.startsWith(selectedSubRegion);
+      }
+    }
     
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -118,6 +135,27 @@ const Players = () => {
               ))}
             </div>
           </div>
+          
+          {selectedRegion === "LTA" && (
+            <div className="w-full sm:w-auto">
+              <h3 className="font-medium mb-2">Filter by Sub-Region</h3>
+              <div className="flex flex-wrap gap-2">
+                {subRegions.LTA.map(subRegion => (
+                  <button
+                    key={subRegion}
+                    onClick={() => setSelectedSubRegion(subRegion)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      selectedSubRegion === subRegion
+                        ? "bg-lol-blue text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    {subRegion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         {loading ? (
