@@ -33,6 +33,7 @@ const PlayerDetails = () => {
           return;
         }
         
+        console.log("Player data:", playerData);
         setPlayer(playerData);
         
         // Get team name
@@ -48,6 +49,7 @@ const PlayerDetails = () => {
           const stats = await getPlayerMatchStats(playerData.team);
           // Filter stats for this player only
           const playerStats = stats.filter(stat => stat.player_id === id);
+          console.log("Player match stats:", playerStats);
           setMatchStats(playerStats);
         }
       } catch (error) {
@@ -93,9 +95,21 @@ const PlayerDetails = () => {
     }
   };
   
+  // Ensure player stats are properly handled for both number and string types
+  const playerKda = typeof player.kda === 'number' ? player.kda : parseFloat(player.kda.toString() || '0');
+  const playerCsPerMin = typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(player.csPerMin.toString() || '0');
+  const playerDamageShare = typeof player.damageShare === 'number' ? player.damageShare : parseFloat(player.damageShare.toString() || '0');
+  
+  // Handle champion pool properly
+  const championPool = Array.isArray(player.championPool) 
+    ? player.championPool 
+    : typeof player.championPool === 'string' 
+      ? player.championPool.split(',').map(c => c.trim()).filter(c => c)
+      : [];
+  
   // Calculate average stats
   const calculateAverages = () => {
-    if (matchStats.length === 0) return null;
+    if (!matchStats || matchStats.length === 0) return null;
     
     return {
       kills: matchStats.reduce((sum, stat) => sum + (stat.kills || 0), 0) / matchStats.length,
@@ -120,7 +134,7 @@ const PlayerDetails = () => {
   
   // Get champion statistics
   const getChampionStats = () => {
-    if (matchStats.length === 0) return [];
+    if (!matchStats || matchStats.length === 0) return [];
     
     const champStats: Record<string, {
       champion: string,
@@ -146,9 +160,8 @@ const PlayerDetails = () => {
       }
       
       champStats[stat.champion].games += 1;
-      // Assuming we can determine win/loss from the match data
-      // This is a placeholder logic
-      if (stat.winner === player.team) {
+      // Determine win/loss - this might need to be adjusted based on your data structure
+      if (stat.winner === player.team || (stat.team_id === player.team && stat.is_winner)) {
         champStats[stat.champion].wins += 1;
       }
       champStats[stat.champion].kills += (stat.kills || 0);
@@ -206,7 +219,7 @@ const PlayerDetails = () => {
                 <div className="flex justify-center mb-1">
                   <Activity size={18} className="text-lol-blue" />
                 </div>
-                <p className="text-2xl font-bold">{player.kda.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{playerKda.toFixed(2)}</p>
                 <p className="text-xs text-gray-500">KDA</p>
               </div>
               
@@ -214,7 +227,7 @@ const PlayerDetails = () => {
                 <div className="flex justify-center mb-1">
                   <Trophy size={18} className="text-lol-blue" />
                 </div>
-                <p className="text-2xl font-bold">{player.csPerMin.toFixed(1)}</p>
+                <p className="text-2xl font-bold">{playerCsPerMin.toFixed(1)}</p>
                 <p className="text-xs text-gray-500">CS/Min</p>
               </div>
               
@@ -222,7 +235,7 @@ const PlayerDetails = () => {
                 <div className="flex justify-center mb-1">
                   <Award size={18} className="text-lol-blue" />
                 </div>
-                <p className="text-2xl font-bold">{Math.round(player.damageShare * 100)}%</p>
+                <p className="text-2xl font-bold">{Math.round(playerDamageShare * 100)}%</p>
                 <p className="text-xs text-gray-500">Damage Share</p>
               </div>
             </div>
@@ -274,7 +287,7 @@ const PlayerDetails = () => {
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-sm text-gray-500 mb-2">Vision Score</h3>
                       <div className="flex justify-between items-baseline">
-                        <span className="text-2xl font-bold">{Math.round(averageStats.visionScore)}</span>
+                        <span className="text-2xl font-bold">{Math.round(averageStats.visionScore || 0)}</span>
                       </div>
                     </div>
                     
@@ -324,7 +337,9 @@ const PlayerDetails = () => {
                             <TableRow key={champ.champion}>
                               <TableCell className="font-medium">{champ.champion}</TableCell>
                               <TableCell>{champ.games}</TableCell>
-                              <TableCell>{champ.wins} ({Math.round(champ.wins / champ.games * 100)}%)</TableCell>
+                              <TableCell>
+                                {champ.wins} ({Math.round((champ.wins / champ.games) * 100)}%)
+                              </TableCell>
                               <TableCell>{kda.toFixed(2)}</TableCell>
                               <TableCell>
                                 {(champ.kills / champ.games).toFixed(1)} / {(champ.deaths / champ.games).toFixed(1)} / {(champ.assists / champ.games).toFixed(1)}
@@ -359,8 +374,8 @@ const PlayerDetails = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {matchStats.map((stat) => (
-                          <TableRow key={stat.id}>
+                        {matchStats.map((stat, index) => (
+                          <TableRow key={stat.id || index}>
                             <TableCell className="font-medium">
                               {stat.match_id ? (
                                 <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
@@ -372,7 +387,7 @@ const PlayerDetails = () => {
                             <TableCell>
                               {stat.kills || 0}/{stat.deaths || 0}/{stat.assists || 0}
                             </TableCell>
-                            <TableCell>{stat.cspm?.toFixed(1) || "N/A"}</TableCell>
+                            <TableCell>{stat.cspm ? stat.cspm.toFixed(1) : "N/A"}</TableCell>
                             <TableCell>{stat.vision_score || "N/A"}</TableCell>
                             <TableCell>
                               {stat.damage_share ? `${Math.round(stat.damage_share * 100)}%` : "N/A"}
