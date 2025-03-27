@@ -34,8 +34,24 @@ const MatchDetails = () => {
           const blue = await getSideStatistics(match.teamBlue.id);
           const red = await getSideStatistics(match.teamRed.id);
           
-          setBlueTeamStats(blue);
-          setRedTeamStats(red);
+          // Add team IDs to the stats objects
+          const blueWithId: SideStatistics = {
+            ...blue,
+            teamId: match.teamBlue.id
+          };
+          
+          const redWithId: SideStatistics = {
+            ...red,
+            teamId: match.teamRed.id
+          };
+          
+          setBlueTeamStats(blueWithId);
+          setRedTeamStats(redWithId);
+          
+          console.log("Loaded team stats with IDs:", {
+            blueTeamId: blueWithId.teamId,
+            redTeamId: redWithId.teamId
+          });
         }
       } catch (error) {
         console.error("Error loading team statistics:", error);

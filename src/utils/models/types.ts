@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -96,6 +97,7 @@ export interface Tournament {
 }
 
 export interface SideStatistics {
+  teamId?: string; // Added to track which team these stats belong to
   blueWins: number;
   redWins: number;
   blueFirstBlood: number;
