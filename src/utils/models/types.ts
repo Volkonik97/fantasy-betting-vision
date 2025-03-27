@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -21,7 +20,7 @@ export interface Player {
   kda: number;
   csPerMin: number;
   damageShare: number;
-  championPool: string[];
+  championPool: string[] | string;
 }
 
 export interface Match {

@@ -16,7 +16,7 @@ const TeamPlayersList = ({ players }: TeamPlayersListProps) => {
       transition={{ duration: 0.3, delay: 0.2 }}
     >
       <h2 className="text-2xl font-bold mb-4">Joueurs</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {players.length > 0 ? (
           players.map(player => (
             <PlayerCard key={player.id} player={player} />

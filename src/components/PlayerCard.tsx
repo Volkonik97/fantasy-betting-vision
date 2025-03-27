@@ -26,6 +26,13 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
     }
   };
 
+  // Assurer que championPool est un tableau
+  const championPoolArray = Array.isArray(player.championPool) 
+    ? player.championPool 
+    : typeof player.championPool === 'string' 
+      ? player.championPool.split(',').map(c => c.trim()).filter(c => c) 
+      : [];
+
   return (
     <Link to={`/players/${player.id}`}>
       <motion.div 
@@ -38,6 +45,10 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             src={player.image} 
             alt={player.name} 
             className="w-full h-full object-cover object-top"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = "/placeholder.svg";
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
@@ -63,31 +74,44 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">KDA</span>
-              <span className="text-lg font-semibold">{player.kda.toFixed(1)}</span>
+              <span className="text-lg font-semibold">{typeof player.kda === 'number' ? player.kda.toFixed(1) : player.kda}</span>
             </div>
             
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">CS/Min</span>
-              <span className="text-lg font-semibold">{player.csPerMin.toFixed(1)}</span>
+              <span className="text-lg font-semibold">{typeof player.csPerMin === 'number' ? player.csPerMin.toFixed(1) : player.csPerMin}</span>
             </div>
             
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">DMG Share</span>
-              <span className="text-lg font-semibold">{Math.round(player.damageShare * 100)}%</span>
+              <span className="text-lg font-semibold">{typeof player.damageShare === 'number' 
+                ? Math.round(player.damageShare * 100) 
+                : typeof player.damageShare === 'string' 
+                  ? Math.round(parseFloat(player.damageShare) * 100) 
+                  : 0}%</span>
             </div>
           </div>
           
           <div className="mt-4">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
             <div className="flex flex-wrap gap-2">
-              {player.championPool.map((champion) => (
-                <span 
-                  key={champion}
-                  className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md"
-                >
-                  {champion}
+              {championPoolArray.length > 0 ? (
+                championPoolArray.slice(0, 3).map((champion, index) => (
+                  <span 
+                    key={index}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md"
+                  >
+                    {champion}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-400">Aucun champion</span>
+              )}
+              {championPoolArray.length > 3 && (
+                <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded-md">
+                  +{championPoolArray.length - 3}
                 </span>
-              ))}
+              )}
             </div>
           </div>
         </div>
