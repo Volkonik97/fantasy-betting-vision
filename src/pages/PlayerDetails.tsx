@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -95,19 +94,16 @@ const PlayerDetails = () => {
     }
   };
   
-  // Ensure player stats are properly handled for both number and string types
-  const playerKda = typeof player.kda === 'number' ? player.kda : parseFloat(player.kda.toString() || '0');
-  const playerCsPerMin = typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(player.csPerMin.toString() || '0');
-  const playerDamageShare = typeof player.damageShare === 'number' ? player.damageShare : parseFloat(player.damageShare.toString() || '0');
+  const playerKda = typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0');
+  const playerCsPerMin = typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0');
+  const playerDamageShare = typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0');
   
-  // Handle champion pool properly
   const championPool = Array.isArray(player.championPool) 
     ? player.championPool 
     : typeof player.championPool === 'string' 
       ? player.championPool.split(',').map(c => c.trim()).filter(c => c)
       : [];
   
-  // Calculate average stats
   const calculateAverages = () => {
     if (!matchStats || matchStats.length === 0) return null;
     
@@ -132,7 +128,6 @@ const PlayerDetails = () => {
   
   const averageStats = calculateAverages();
   
-  // Get champion statistics
   const getChampionStats = () => {
     if (!matchStats || matchStats.length === 0) return [];
     
@@ -160,7 +155,6 @@ const PlayerDetails = () => {
       }
       
       champStats[stat.champion].games += 1;
-      // Determine win/loss - this might need to be adjusted based on your data structure
       if (stat.winner === player.team || (stat.team_id === player.team && stat.is_winner)) {
         champStats[stat.champion].wins += 1;
       }
