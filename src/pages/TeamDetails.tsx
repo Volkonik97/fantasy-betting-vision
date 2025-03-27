@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -100,8 +101,8 @@ const TeamDetails = () => {
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                 <img 
-                  src={team.logo} 
-                  alt={`${team.name} logo`} 
+                  src={team?.logo} 
+                  alt={`${team?.name} logo`} 
                   className="w-16 h-16 object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
@@ -111,8 +112,8 @@ const TeamDetails = () => {
               </div>
               
               <div>
-                <h1 className="text-3xl font-bold mb-1">{team.name}</h1>
-                <p className="text-gray-600">{team.region}</p>
+                <h1 className="text-3xl font-bold mb-1">{team?.name}</h1>
+                <p className="text-gray-600">{team?.region}</p>
               </div>
               
               <div className="ml-auto grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -120,7 +121,7 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <Percent size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{(team.winRate * 100).toFixed(0)}%</p>
+                  <p className="text-2xl font-bold">{team ? (team.winRate * 100).toFixed(0) : 0}%</p>
                   <p className="text-xs text-gray-500">Win Rate</p>
                 </div>
                 
@@ -128,7 +129,7 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <Clock size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{formatSecondsToMinutesSeconds(team.averageGameTime)}</p>
+                  <p className="text-2xl font-bold">{team ? formatSecondsToMinutesSeconds(team.averageGameTime) : "00:00"}</p>
                   <p className="text-xs text-gray-500">Avg. Game Time</p>
                 </div>
                 
@@ -136,7 +137,7 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <TrendingUp size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{(team.blueWinRate * 100).toFixed(0)}%</p>
+                  <p className="text-2xl font-bold">{team ? (team.blueWinRate * 100).toFixed(0) : 0}%</p>
                   <p className="text-xs text-gray-500">Blue Side Wins</p>
                 </div>
                 
@@ -144,7 +145,7 @@ const TeamDetails = () => {
                   <div className="flex justify-center mb-1">
                     <TrendingUp size={18} className="text-lol-blue" />
                   </div>
-                  <p className="text-2xl font-bold">{(team.redWinRate * 100).toFixed(0)}%</p>
+                  <p className="text-2xl font-bold">{team ? (team.redWinRate * 100).toFixed(0) : 0}%</p>
                   <p className="text-xs text-gray-500">Red Side Wins</p>
                 </div>
               </div>
@@ -154,16 +155,18 @@ const TeamDetails = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2">
-            <TeamStatistics team={team} />
+            {team && <TeamStatistics team={team} />}
           </div>
           
           <div>
-            <PredictionChart 
-              blueWinRate={team.blueWinRate * 100} 
-              redWinRate={team.redWinRate * 100} 
-              teamBlueName="Blue Side" 
-              teamRedName="Red Side" 
-            />
+            {team && (
+              <PredictionChart 
+                blueWinRate={team.blueWinRate * 100} 
+                redWinRate={team.redWinRate * 100} 
+                teamBlueName="Blue Side" 
+                teamRedName="Red Side" 
+              />
+            )}
           </div>
         </div>
         

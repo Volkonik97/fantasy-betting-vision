@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -107,4 +106,14 @@ export interface SideStatistics {
   redFirstHerald: number;
   blueFirstTower: number;
   redFirstTower: number;
+  timelineStats?: {
+    [key: string]: {
+      avgGold: number;
+      avgXp: number;
+      avgCs: number;
+      avgGoldDiff: number;
+      avgKills: number;
+      avgDeaths: number;
+    }
+  };
 }
