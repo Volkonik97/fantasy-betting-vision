@@ -36,7 +36,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                 ...stat,
                 opponent_team_name: opponentTeam.name,
                 opponent_team_id: opponentTeam.id,
-                match_date: match.date // Store the match date for sorting
+                match_date: match.date, // Store the match date for sorting
+                parsedDate: new Date(match.date) // Store as actual Date object for better sorting
               };
             } catch (error) {
               console.error(`Error loading match data for ${stat.match_id}:`, error);
@@ -48,17 +49,27 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         // Log the first result to debug
         if (statsWithOpponents.length > 0) {
           console.log("First match with opponent:", statsWithOpponents[0]);
+          if (statsWithOpponents[0].match_date) {
+            console.log("Match date:", statsWithOpponents[0].match_date);
+            console.log("Parsed date:", statsWithOpponents[0].parsedDate);
+          }
         }
         
         // Sort matches by date (newest first)
         const sortedMatches = [...statsWithOpponents].sort((a, b) => {
-          // If no date is available, put those matches at the end
-          if (!a.match_date) return 1;
-          if (!b.match_date) return -1;
+          // If no parsedDate is available, put those matches at the end
+          if (!a.parsedDate || isNaN(a.parsedDate.getTime())) return 1;
+          if (!b.parsedDate || isNaN(b.parsedDate.getTime())) return -1;
           
           // Compare dates in descending order (newest first)
-          return new Date(b.match_date).getTime() - new Date(a.match_date).getTime();
+          return b.parsedDate.getTime() - a.parsedDate.getTime();
         });
+        
+        console.log("Sorted matches (first 3):", sortedMatches.slice(0, 3).map(m => ({
+          match_id: m.match_id,
+          date: m.match_date,
+          parsed: m.parsedDate
+        })));
         
         setMatchesWithOpponents(sortedMatches);
       } catch (error) {
