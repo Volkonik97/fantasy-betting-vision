@@ -32,12 +32,31 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
               const isBlueTeam = stat.team_id === match.teamBlue.id;
               const opponentTeam = isBlueTeam ? match.teamRed : match.teamBlue;
               
+              // Convert match date string to a proper Date object
+              // Log the date information for debugging
+              console.log(`Match ${stat.match_id} date from DB:`, match.date);
+              
+              let parsedDate;
+              try {
+                // Try to parse the date (handles various formats)
+                parsedDate = new Date(match.date);
+                if (isNaN(parsedDate.getTime())) {
+                  console.warn(`Invalid date format for match ${stat.match_id}: ${match.date}`);
+                  parsedDate = null;
+                } else {
+                  console.log(`Successfully parsed date for match ${stat.match_id}:`, parsedDate);
+                }
+              } catch (dateError) {
+                console.error(`Error parsing date for match ${stat.match_id}:`, dateError);
+                parsedDate = null;
+              }
+              
               return {
                 ...stat,
                 opponent_team_name: opponentTeam.name,
                 opponent_team_id: opponentTeam.id,
-                match_date: match.date, // Store the match date for sorting
-                parsedDate: new Date(match.date) // Store as actual Date object for better sorting
+                match_date: match.date,
+                parsedDate: parsedDate
               };
             } catch (error) {
               console.error(`Error loading match data for ${stat.match_id}:`, error);
@@ -58,8 +77,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         // Sort matches by date (newest first)
         const sortedMatches = [...statsWithOpponents].sort((a, b) => {
           // If no parsedDate is available, put those matches at the end
-          if (!a.parsedDate || isNaN(a.parsedDate.getTime())) return 1;
-          if (!b.parsedDate || isNaN(b.parsedDate.getTime())) return -1;
+          if (!a.parsedDate || isNaN(a.parsedDate?.getTime())) return 1;
+          if (!b.parsedDate || isNaN(b.parsedDate?.getTime())) return -1;
           
           // Compare dates in descending order (newest first)
           return b.parsedDate.getTime() - a.parsedDate.getTime();
