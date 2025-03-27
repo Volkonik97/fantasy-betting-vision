@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/csvService";
+import { getTeams } from "@/utils/database/teamsService";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +24,7 @@ const Players = () => {
         // Fetch teams which also contain players
         const teams = await getTeams();
         
-        // Flatten player array from all teams
+        // Flatten player array from all teams and add team information
         const players = teams.flatMap(team => 
           team.players.map(player => ({
             ...player,
@@ -33,6 +33,7 @@ const Players = () => {
           }))
         );
         
+        console.log("Players with team data:", players);
         setAllPlayers(players);
       } catch (error) {
         console.error("Error fetching player data:", error);
