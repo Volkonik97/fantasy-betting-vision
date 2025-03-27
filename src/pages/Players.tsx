@@ -15,7 +15,7 @@ const Players = () => {
   const [loading, setLoading] = useState(true);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
-  const regions = ["All", "LCK", "LPL", "LEC", "LCS", "LFL2"];
+  const regions = ["All", "LCK", "LPL", "LEC", "LTA", "LFL2"];
   
   useEffect(() => {
     const fetchData = async () => {
@@ -48,9 +48,10 @@ const Players = () => {
     const roleMatches = selectedRole === "All" || 
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
-    // Case-insensitive region matching
+    // Case-insensitive region matching with support for LTA N and LTA S
     const regionMatches = selectedRegion === "All" || 
-      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase() ||
+      (selectedRegion === "LTA" && (player.teamRegion.startsWith("LTA N") || player.teamRegion.startsWith("LTA S")));
     
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 

@@ -50,7 +50,7 @@ export const teams: Team[] = [
     id: 'c9',
     name: 'Cloud9',
     logo: 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/8/88/Cloud9logo_profile.png',
-    region: 'LCS',
+    region: 'LTA N',
     winRate: 0.70,
     blueWinRate: 0.68,
     redWinRate: 0.72,
