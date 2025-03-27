@@ -59,10 +59,11 @@ export const savePlayerMatchStats = async (
         `(match_id.eq.${id.match_id}.and.player_id.eq.${id.player_id})`
       ).join(',');
       
-      // Query existing records using the OR conditions
-      const { data: existingRecords } = await supabase
+      // Query existing records using the OR conditions - only select id, player_id, and match_id
+      // Remove 'updated_at' since it doesn't exist in the table definition
+      const { data: existingRecords, error } = await supabase
         .from('player_match_stats')
-        .select('id, player_id, match_id, updated_at')
+        .select('id, player_id, match_id')
         .or(filterConditions);
       
       // Add the existing records to our map
@@ -71,6 +72,8 @@ export const savePlayerMatchStats = async (
           const key = `${record.player_id}_${record.match_id}`;
           existingRecordsMap.set(key, record);
         });
+      } else if (error) {
+        console.error("Error fetching existing records:", error);
       }
     }
     
