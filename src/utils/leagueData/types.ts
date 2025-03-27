@@ -1,4 +1,3 @@
-
 import { LeagueGameDataRow } from '../csvTypes';
 
 // Types for team statistics tracking
@@ -97,6 +96,7 @@ export interface PlayerMatchStats {
   side: string;
   position: string;
   champion: string;
+  is_winner: boolean;
   
   // Combat stats
   kills: number;

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
@@ -25,6 +24,13 @@ export const savePlayerMatchStats = async (
         // Generate a participant_id if it doesn't exist
         stat.participant_id = `${stat.player_id}_${stat.match_id}`;
       }
+      
+      // Important: Ensure is_winner is passed to the database
+      if (typeof stat.is_winner !== 'boolean') {
+        console.log("Setting default is_winner to false for", stat.player_id, stat.match_id);
+        stat.is_winner = false;
+      }
+      
       return stat;
     }).filter(stat => stat.player_id && stat.match_id);
     

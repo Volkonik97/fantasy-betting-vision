@@ -1,5 +1,4 @@
-
-import { LeagueGameDataRow, MatchCSV } from '../csvTypes';
+import { LeagueGameDataRow } from '../csvTypes';
 import { 
   GameTracker, 
   MatchTeamStats, 
@@ -124,7 +123,8 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       const playersMap = matchPlayerStats.get(gameId)!;
       
       if (!playersMap.has(row.playerid)) {
-        playersMap.set(row.playerid, {
+        // Create a new player match stats entry
+        const newPlayerMatchStat: PlayerMatchStats = {
           participant_id: row.participantid || '',
           player_id: row.playerid,
           team_id: row.teamid,
@@ -132,6 +132,9 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           side: row.side || '',
           position: row.position || '',
           champion: row.champion || '',
+          
+          // Important: Add the is_winner field based on the result column
+          is_winner: row.result === '1',
           
           // Combat stats
           kills: safeParseInt(row.kills),
@@ -245,7 +248,15 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_kills_at_25: safeParseInt(row.opp_killsat25),
           opp_assists_at_25: safeParseInt(row.opp_assistsat25),
           opp_deaths_at_25: safeParseInt(row.opp_deathsat25)
-        });
+        };
+        
+        playersMap.set(row.playerid, newPlayerMatchStat);
+      } else {
+        // If this player already has stats for this match, update the result
+        // This handles the case where result might be defined in different rows
+        if (row.result === '1') {
+          playersMap.get(row.playerid)!.is_winner = true;
+        }
       }
     }
   });

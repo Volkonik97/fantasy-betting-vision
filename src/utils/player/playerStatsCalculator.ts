@@ -17,7 +17,7 @@ export const isWinForPlayer = (playerStat: any, playerTeamId?: string): boolean 
   const playerSide = playerStat.side?.toLowerCase();
   
   // For backward compatibility, try to determine the result from multiple sources
-  // 1. Check direct win field if available
+  // 1. Check direct win field if available - THIS IS THE MOST RELIABLE SOURCE
   if (typeof playerStat.is_winner === 'boolean') {
     return playerStat.is_winner;
   }

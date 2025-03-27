@@ -24,8 +24,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             </TooltipTrigger>
             <TooltipContent>
               <p className="text-sm max-w-xs">
-                Les résultats sont déterminés en comparant l'équipe du joueur 
-                et l'équipe gagnante du match.
+                Les résultats sont déterminés en utilisant directement la colonne "result" 
+                du fichier de données qui indique si l'équipe du joueur a gagné le match.
               </p>
             </TooltipContent>
           </Tooltip>
@@ -48,7 +48,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             </TableHeader>
             <TableBody>
               {matchStats.map((stat) => {
-                const isWin = isWinForPlayer(stat);
+                // Utilize the is_winner field directly when available
+                const isWin = typeof stat.is_winner === 'boolean' ? stat.is_winner : isWinForPlayer(stat);
                 
                 return (
                   <TableRow key={stat.id} className={isWin ? "bg-green-50/30" : "bg-red-50/30"}>
