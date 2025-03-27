@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teams";
+import { getTeams } from "@/utils/database/teamsService";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,7 +15,7 @@ const Players = () => {
   const [loading, setLoading] = useState(true);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
-  const regions = ["All", "LCK", "LPL", "LEC", "LCS"];
+  const regions = ["All", "LCK", "LPL", "LEC", "LCS", "LFL2"];
   
   useEffect(() => {
     const fetchData = async () => {
@@ -43,11 +44,13 @@ const Players = () => {
   }, []);
   
   const filteredPlayers = allPlayers.filter(player => {
+    // Case-insensitive role matching
     const roleMatches = selectedRole === "All" || 
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
+    // Case-insensitive region matching
     const regionMatches = selectedRegion === "All" || 
-      player.teamRegion === selectedRegion;
+      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
     
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
