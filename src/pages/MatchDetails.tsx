@@ -1,15 +1,17 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Clock, Trophy, Users } from "lucide-react";
 import { format } from "date-fns";
-import { matches, getSideStatistics } from "@/utils/models";
+import { matches } from "@/utils/models";
+import { getSideStatistics } from "@/utils/models/statistics"; 
 import Navbar from "@/components/Navbar";
 import SideAnalysis from "@/components/SideAnalysis";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { SideStatistics } from "@/utils/models/types";
 
 const MatchDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,30 @@ const MatchDetails = () => {
   const match = matches.find(m => m.id === id);
   
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [blueTeamStats, setBlueTeamStats] = useState<SideStatistics | null>(null);
+  const [redTeamStats, setRedTeamStats] = useState<SideStatistics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadTeamStats = async () => {
+      setIsLoading(true);
+      try {
+        if (match) {
+          const blue = await getSideStatistics(match.teamBlue.id);
+          const red = await getSideStatistics(match.teamRed.id);
+          
+          setBlueTeamStats(blue);
+          setRedTeamStats(red);
+        }
+      } catch (error) {
+        console.error("Error loading team statistics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadTeamStats();
+  }, [match]);
   
   if (!match) {
     return (
@@ -32,11 +58,29 @@ const MatchDetails = () => {
   }
   
   const matchDate = new Date(match.date);
-  const blueTeamStats = getSideStatistics(match.teamBlue.id);
-  const redTeamStats = getSideStatistics(match.teamRed.id);
   
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeam(teamId === selectedTeam ? null : teamId);
+  };
+  
+  const renderTeamStats = (teamStats: SideStatistics | null, tabValue: string) => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+        </div>
+      );
+    }
+    
+    if (!teamStats) {
+      return (
+        <div className="text-center p-8 bg-white rounded-xl border border-gray-100 shadow-subtle">
+          <p className="text-gray-500">No statistics available</p>
+        </div>
+      );
+    }
+    
+    return <SideAnalysis statistics={teamStats} />;
   };
   
   return (
@@ -258,15 +302,11 @@ const MatchDetails = () => {
                 </TabsList>
                 
                 <TabsContent value="blueTeam">
-                  {blueTeamStats && (
-                    <SideAnalysis statistics={blueTeamStats} />
-                  )}
+                  {renderTeamStats(blueTeamStats, "blueTeam")}
                 </TabsContent>
                 
                 <TabsContent value="redTeam">
-                  {redTeamStats && (
-                    <SideAnalysis statistics={redTeamStats} />
-                  )}
+                  {renderTeamStats(redTeamStats, "redTeam")}
                 </TabsContent>
               </Tabs>
             </motion.div>

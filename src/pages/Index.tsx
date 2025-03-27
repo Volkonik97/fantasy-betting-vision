@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
@@ -8,10 +9,32 @@ import PredictionChart from "@/components/PredictionChart";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import SideAnalysis from "@/components/SideAnalysis";
-import { matches, teams, getSideStatistics } from "@/utils/models";
+import { matches, teams } from "@/utils/models";
+import { getSideStatistics } from "@/utils/models/statistics";
+import { SideStatistics } from "@/utils/models/types";
 
 const Index = () => {
   const [analysisTarget, setAnalysisTarget] = useState(null);
+  const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const loadSideStats = async () => {
+      setIsLoading(true);
+      try {
+        if (teams && teams.length > 0) {
+          const stats = await getSideStatistics(teams[0].id);
+          setSideStats(stats);
+        }
+      } catch (error) {
+        console.error("Error loading side statistics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadSideStats();
+  }, []);
   
   const handleStartAnalysis = () => {
     const analysisSection = document.getElementById("analysis-section");
@@ -107,18 +130,17 @@ const Index = () => {
               viewport={{ once: true }}
             >
               <div className="h-full">
-                <SideAnalysis statistics={getSideStatistics(teams[0].id) || {
-                  blueWins: 0,
-                  redWins: 0,
-                  blueFirstBlood: 0,
-                  redFirstBlood: 0,
-                  blueFirstDragon: 0,
-                  redFirstDragon: 0,
-                  blueFirstHerald: 0,
-                  redFirstHerald: 0,
-                  blueFirstTower: 0,
-                  redFirstTower: 0
-                }} />
+                {isLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+                  </div>
+                ) : sideStats ? (
+                  <SideAnalysis statistics={sideStats} />
+                ) : (
+                  <div className="text-center p-8 bg-white rounded-xl border border-gray-100 shadow-subtle">
+                    <p className="text-gray-500">No statistics available</p>
+                  </div>
+                )}
               </div>
             </motion.div>
             
