@@ -49,6 +49,7 @@ const Players = () => {
         
         console.log("Players with team data:", players);
         console.log("Players in AL region:", players.filter(player => player.teamRegion === "AL").length);
+        console.log("AL players sample:", players.filter(player => player.teamRegion === "AL").slice(0, 3));
         setAllPlayers(players);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -70,8 +71,11 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
+    // Debug for AL region filtering
+    const isAL = player.teamRegion === "AL";
+    
     const roleMatches = selectedRole === "All" || 
-      player.role.toLowerCase() === selectedRole.toLowerCase();
+      player.role === selectedRole;
     
     let regionMatches = true;
     
@@ -81,20 +85,38 @@ const Players = () => {
         regionMatches = regionCategories[selectedCategory].some(region => 
           region === "All" || player.teamRegion === region
         );
+        
+        // Debug log for AL players in ERL category
+        if (isAL && selectedCategory === "ERL") {
+          console.log("AL player being filtered for ERL category:", 
+            { name: player.name, region: player.teamRegion, matches: regionMatches });
+        }
       } else {
         // If both category and region are selected, show only players in that specific region
         regionMatches = player.teamRegion === selectedRegion;
+        
+        // Debug log for AL region specific selection
+        if (selectedRegion === "AL") {
+          console.log("AL player being filtered for AL region:", 
+            { name: player.name, region: player.teamRegion, matches: regionMatches });
+        }
       }
     } else if (selectedRegion !== "All") {
       // If only a region is selected (no category), show players in that region
       regionMatches = player.teamRegion === selectedRegion;
+      
+      // Debug log for AL region specific selection
+      if (selectedRegion === "AL") {
+        console.log("AL player being filtered (no category):", 
+          { name: player.name, region: player.teamRegion, matches: regionMatches });
+      }
     }
     
     if (selectedRegion === "LTA") {
       if (selectedSubRegion === "All") {
-        regionMatches = player.teamRegion.startsWith("LTA N") || player.teamRegion.startsWith("LTA S");
+        regionMatches = player.teamRegion.startsWith("LTA");
       } else {
-        regionMatches = player.teamRegion.startsWith(selectedSubRegion);
+        regionMatches = player.teamRegion === selectedSubRegion;
       }
     }
     
@@ -116,6 +138,12 @@ const Players = () => {
 
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region);
+    
+    // Debug log when selecting AL region
+    if (region === "AL") {
+      console.log("AL region selected");
+      console.log("Players in AL region:", allPlayers.filter(p => p.teamRegion === "AL").length);
+    }
   };
 
   return (

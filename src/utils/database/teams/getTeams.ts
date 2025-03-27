@@ -40,6 +40,10 @@ export const getTeams = async (): Promise<Team[]> => {
       return acc;
     }, {} as Record<string, number>));
     
+    // Log each team from AL region to debug
+    const alTeams = teamsData.filter(team => team.region === "AL");
+    console.log("AL region teams:", alTeams.map(team => ({ id: team.id, name: team.name })));
+    
     // Fetch players for these teams
     const { data: playersData, error: playersError } = await supabase
       .from('players')
@@ -73,6 +77,12 @@ export const getTeams = async (): Promise<Team[]> => {
         return acc;
       }, {} as Record<string, number>);
       console.log("Players by team:", playersByTeam);
+      
+      // Log AL region team players specifically to debug
+      const alTeamIds = alTeams.map(team => team.id);
+      const alPlayers = playersData.filter(player => alTeamIds.includes(player.team_id));
+      console.log("AL region team players:", alPlayers.length);
+      console.log("AL players sample:", alPlayers.slice(0, 3).map(p => ({ name: p.name, team_id: p.team_id })));
       
       teams.forEach(team => {
         team.players = playersData
