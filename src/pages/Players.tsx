@@ -18,16 +18,14 @@ const Players = () => {
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
   
-  // Organized regions by category
   const regionCategories = {
     "All": ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
-    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
     "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
     "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
   };
   
-  // All regions flattened for direct searching
   const allRegions = Object.values(regionCategories).flat();
   
   const subRegions = {
@@ -51,7 +49,6 @@ const Players = () => {
         console.log("Players with team data:", players);
         setAllPlayers(players);
         
-        // Extract unique regions from the teams data
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
         console.log("Available regions in database:", uniqueRegions);
         setAvailableRegions(uniqueRegions);
@@ -66,36 +63,28 @@ const Players = () => {
     fetchData();
   }, []);
 
-  // Reset sub-region when region changes
   useEffect(() => {
     setSelectedSubRegion("All");
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
-    // Case-insensitive role matching
     const roleMatches = selectedRole === "All" || 
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
-    // Case-insensitive region matching with category support
     let regionMatches = true;
     
     if (selectedCategory !== "All") {
-      // If a category is selected but no specific region
       if (selectedRegion === "All") {
-        // Check if player's region is in the selected category
         regionMatches = regionCategories[selectedCategory].some(region => 
           region === "All" || player.teamRegion.toUpperCase() === region.toUpperCase()
         );
       } else {
-        // Specific region selected
         regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
       }
     } else if (selectedRegion !== "All") {
-      // Direct region selection when no category is chosen
       regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
     }
     
-    // If LTA is selected, check sub-regions
     if (selectedRegion === "LTA") {
       if (selectedSubRegion === "All") {
         regionMatches = player.teamRegion.startsWith("LTA N") || player.teamRegion.startsWith("LTA S");
@@ -117,7 +106,7 @@ const Players = () => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
-    setSelectedRegion("All"); // Reset region when changing category
+    setSelectedRegion("All");
   };
 
   const handleRegionSelect = (region: string) => {
