@@ -50,6 +50,8 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
+  console.log("First Objective Data:", firstObjectiveData);
+  
   // On vérifie à la fois que timelineStats existe ET qu'il n'a pas été explicitement mis à null
   const hasTimeline = statistics.timelineStats && 
     statistics.timelineStats !== null &&
@@ -93,6 +95,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               colors={["#3b82f6", "#ef4444"]}
               layout="vertical"
               barSize={20}
+              showYAxis={true}
             >
               <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
@@ -139,8 +142,9 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
                       <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
                         <div className="font-semibold">{stats.avgCs}</div>
-                        <div className="text-xs mt-1 text-gray-600">
-                          {(stats.avgCs / parseInt(time)).toFixed(1)} CS/min
+                        <div className={`text-xs mt-1 ${stats.avgCsDiff && stats.avgCsDiff > 0 ? 'text-green-600' : (stats.avgCsDiff && stats.avgCsDiff < 0) ? 'text-red-600' : 'text-gray-600'}`}>
+                          {stats.avgCsDiff ? (stats.avgCsDiff > 0 ? '+' : '') + stats.avgCsDiff : ''}
+                          <span className="text-gray-600 ml-1">({(stats.avgCs / parseInt(time)).toFixed(1)} CS/min)</span>
                         </div>
                       </div>
                     ))}
@@ -155,7 +159,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
                       <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
                         <div className="font-semibold">
-                          {stats.avgKills} / {stats.avgDeaths}
+                          {stats.avgKills.toFixed(1)} / {stats.avgDeaths.toFixed(1)} {stats.avgAssists && `/ ${stats.avgAssists.toFixed(1)}`}
                         </div>
                         <div className="text-xs mt-1 text-gray-600">
                           {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA

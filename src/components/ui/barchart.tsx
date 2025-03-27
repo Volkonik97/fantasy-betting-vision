@@ -57,6 +57,13 @@ export const BarChart = ({
     return {};
   }, [children, colors]);
 
+  // Add debug logging
+  React.useEffect(() => {
+    console.log("BarChart data:", data);
+    console.log("BarChart config:", config);
+    console.log("BarChart layout:", layout);
+  }, [data, config, layout]);
+
   return (
     <ChartContainer config={config}>
       <ResponsiveContainer width="100%" height={height}>
@@ -82,6 +89,7 @@ export const BarChart = ({
                   tick={{ fill: '#6b7280', fontSize: 12 }}
                   axisLine={{ stroke: '#e5e7eb' }}
                   tickLine={{ stroke: '#e5e7eb' }}
+                  domain={[0, 100]}
                 />
               )}
             </>
@@ -92,6 +100,7 @@ export const BarChart = ({
                 tick={{ fill: '#6b7280', fontSize: 12 }}
                 axisLine={{ stroke: '#e5e7eb' }}
                 tickLine={{ stroke: '#e5e7eb' }}
+                domain={[0, 100]}
               />
               <YAxis 
                 dataKey={xAxisKey} 
@@ -111,6 +120,7 @@ export const BarChart = ({
               borderRadius: '0.375rem',
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
             }}
+            formatter={(value) => [value, '']}
           />
           <Legend 
             verticalAlign="top" 

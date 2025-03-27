@@ -11,6 +11,8 @@ interface TeamAnalysisSectionProps {
 }
 
 const TeamAnalysisSection = ({ team, sideStats }: TeamAnalysisSectionProps) => {
+  console.log("TeamAnalysisSection rendering with sideStats:", sideStats);
+  
   return (
     <>
       <div className="lg:col-span-2">
