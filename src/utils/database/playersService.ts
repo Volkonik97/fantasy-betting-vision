@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -93,5 +92,50 @@ export const getPlayers = async (): Promise<Player[]> => {
     console.error("Erreur lors de la récupération des joueurs:", error);
     const { teams } = await import('../mockData');
     return teams.flatMap(team => team.players);
+  }
+};
+
+// Get player by ID
+export const getPlayerById = async (playerId: string): Promise<Player | null> => {
+  try {
+    // Check loaded players first
+    const loadedPlayers = getLoadedPlayers();
+    if (loadedPlayers) {
+      const player = loadedPlayers.find(p => p.id === playerId);
+      if (player) return player;
+    }
+    
+    // If not found in loaded players, query the database
+    const { data: playerData, error } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', playerId)
+      .single();
+    
+    if (error || !playerData) {
+      console.error("Error fetching player by ID:", error);
+      return null;
+    }
+    
+    // Convert database format to application format
+    const player: Player = {
+      id: playerData.id as string,
+      name: playerData.name as string,
+      role: (playerData.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+      image: playerData.image as string,
+      team: playerData.team_id as string,
+      kda: Number(playerData.kda) || 0,
+      csPerMin: Number(playerData.cs_per_min) || 0,
+      damageShare: Number(playerData.damage_share) || 0,
+      championPool: playerData.champion_pool as string[] || []
+    };
+    
+    return player;
+  } catch (error) {
+    console.error("Error retrieving player by ID:", error);
+    
+    // Fallback to mock data if database query fails
+    const { players } = await import('../models/mockPlayers');
+    return players.find(p => p.id === playerId) || null;
   }
 };
