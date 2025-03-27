@@ -12,13 +12,13 @@ interface PlayerMatchStatsProps {
 }
 
 const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps) => {
-  const [matchesWithOpponents, setMatchesWithOpponents] = useState<any[]>([]);
+  const [enhancedStats, setEnhancedStats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
-    const loadMatchesWithDetails = async () => {
+    const fetchMatchDetails = async () => {
       if (matchStats.length === 0) {
-        setMatchesWithOpponents([]);
+        setEnhancedStats([]);
         return;
       }
       
@@ -27,100 +27,70 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
       try {
         console.log(`Chargement des détails pour ${matchStats.length} matchs...`);
         
-        // Parcourir toutes les statistiques de match pour récupérer les données complètes
-        const enhancedStats = await Promise.all(
-          matchStats.map(async (stat) => {
-            try {
-              // Récupérer les données complètes du match à partir de son ID
-              console.log(`Récupération des données pour le match ${stat.match_id}`);
-              const matchData = await getMatchById(stat.match_id);
-              
-              if (!matchData) {
-                console.warn(`Aucune donnée trouvée pour le match ${stat.match_id}`);
-                return { ...stat, match_date: null, parsedDate: null };
-              }
-              
-              // Déterminer l'équipe adverse
-              const isBlueTeam = stat.team_id === matchData.teamBlue.id;
-              const opponentTeam = isBlueTeam ? matchData.teamRed : matchData.teamBlue;
-              
-              // Extraire et analyser la date du match
-              const matchDate = matchData.date;
-              console.log(`Match ${stat.match_id} date: ${matchDate}`);
-              
-              let parsedDate = null;
-              try {
-                if (matchDate) {
-                  parsedDate = new Date(matchDate);
-                  if (isNaN(parsedDate.getTime())) {
-                    console.warn(`Format de date invalide pour ${stat.match_id}: ${matchDate}`);
-                    parsedDate = null;
-                  } else {
-                    console.log(`Date analysée avec succès pour ${stat.match_id}: ${parsedDate.toISOString()}`);
-                  }
-                }
-              } catch (dateError) {
-                console.error(`Erreur d'analyse de la date pour ${stat.match_id}:`, dateError);
-              }
-              
-              return {
-                ...stat,
-                opponent_team_name: opponentTeam.name,
-                opponent_team_id: opponentTeam.id,
-                match_date: matchDate,
-                parsedDate: parsedDate
-              };
-            } catch (error) {
-              console.error(`Erreur lors du traitement du match ${stat.match_id}:`, error);
-              return { ...stat, match_date: null, parsedDate: null };
-            }
-          })
-        );
+        // Récupérer les détails des matchs un par un
+        const matchesWithDetails = [];
         
-        // Journaliser les résultats pour le débogage
-        if (enhancedStats.length > 0) {
-          console.log("Premier match enrichi:", enhancedStats[0]);
-          if (enhancedStats[0].match_date) {
-            console.log("Date brute:", enhancedStats[0].match_date);
-            console.log("Date analysée:", enhancedStats[0].parsedDate);
+        for (const stat of matchStats) {
+          try {
+            // Récupérer les données du match
+            const matchData = await getMatchById(stat.match_id);
+            
+            if (!matchData) {
+              console.warn(`Aucune donnée trouvée pour le match ${stat.match_id}`);
+              matchesWithDetails.push({
+                ...stat,
+                matchDate: null
+              });
+              continue;
+            }
+            
+            // Déterminer l'équipe adverse
+            const isBlueTeam = stat.team_id === matchData.teamBlue.id;
+            const opponentTeam = isBlueTeam ? matchData.teamRed : matchData.teamBlue;
+            
+            // Ajouter les informations au stat
+            matchesWithDetails.push({
+              ...stat,
+              opponentTeamName: opponentTeam.name,
+              opponentTeamId: opponentTeam.id,
+              matchDate: matchData.date ? new Date(matchData.date) : null
+            });
+            
+          } catch (error) {
+            console.error(`Erreur lors du traitement du match ${stat.match_id}:`, error);
+            matchesWithDetails.push({
+              ...stat,
+              matchDate: null
+            });
           }
         }
         
         // Trier les matchs par date (du plus récent au plus ancien)
-        const sortedMatches = [...enhancedStats].sort((a, b) => {
-          // Placer les matchs sans date valide à la fin
-          if (!a.parsedDate) return 1;
-          if (!b.parsedDate) return -1;
+        const sortedMatches = matchesWithDetails.sort((a, b) => {
+          // Si une date est manquante, la placer à la fin
+          if (!a.matchDate) return 1;
+          if (!b.matchDate) return -1;
           
-          // Trier par ordre décroissant de date
-          return b.parsedDate.getTime() - a.parsedDate.getTime();
+          // Trier du plus récent au plus ancien
+          return b.matchDate.getTime() - a.matchDate.getTime();
         });
         
-        console.log("Tri des matchs effectué:", sortedMatches.length, "matchs triés");
-        console.log("3 premiers matchs après tri:", sortedMatches.slice(0, 3).map(m => ({
-          match_id: m.match_id,
-          date: m.match_date,
-          parsed: m.parsedDate ? m.parsedDate.toISOString() : 'N/A'
-        })));
-        
-        setMatchesWithOpponents(sortedMatches);
+        console.log(`Matchs triés: ${sortedMatches.length} matchs`);
+        setEnhancedStats(sortedMatches);
       } catch (error) {
-        console.error("Erreur lors du chargement des données des matchs:", error);
+        console.error("Erreur lors du chargement des détails des matchs:", error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadMatchesWithDetails();
+    fetchMatchDetails();
   }, [matchStats]);
-
-  // Utiliser les données enrichies si disponibles, sinon utiliser les données brutes
-  const statsToDisplay = matchesWithOpponents.length > 0 ? matchesWithOpponents : matchStats;
   
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6">
       <h2 className="text-xl font-bold mb-4">
-        Statistiques par match ({statsToDisplay.length} matchs)
+        Statistiques par match ({enhancedStats.length} matchs)
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -144,7 +114,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lol-blue mx-auto"></div>
           <p className="mt-2 text-gray-500">Chargement des données...</p>
         </div>
-      ) : statsToDisplay.length > 0 ? (
+      ) : enhancedStats.length > 0 ? (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -159,16 +129,17 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {statsToDisplay.map((stat) => {
+              {enhancedStats.map((stat) => {
                 // Utiliser directement le champ is_winner lorsqu'il est disponible
                 const isWin = typeof stat.is_winner === 'boolean' ? stat.is_winner : isWinForPlayer(stat);
+                const formattedDate = stat.matchDate ? stat.matchDate.toLocaleDateString() : '';
                 
                 return (
                   <TableRow key={stat.id || stat.match_id} className={isWin ? "bg-green-50/30" : "bg-red-50/30"}>
                     <TableCell className="font-medium">
-                      {stat.opponent_team_name ? (
+                      {stat.opponentTeamName ? (
                         <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
-                          {stat.opponent_team_name}
+                          {stat.opponentTeamName}
                         </Link>
                       ) : (
                         <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
@@ -177,13 +148,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                       )}
                       <div className="text-xs text-gray-500">
                         {stat.side || "N/A"}
-                        {stat.match_date && (
-                          <span className="ml-2">
-                            {stat.parsedDate 
-                              ? stat.parsedDate.toLocaleDateString() 
-                              : stat.match_date.substring(0, 10)}
-                          </span>
-                        )}
+                        {formattedDate && <span className="ml-2">{formattedDate}</span>}
                       </div>
                     </TableCell>
                     <TableCell>{stat.champion || "N/A"}</TableCell>
