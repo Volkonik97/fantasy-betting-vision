@@ -3,8 +3,10 @@ import React, { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+import { Info, AlertCircle } from "lucide-react";
 import { getMatchById } from "@/utils/database/matchesService";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PlayerMatchStatsProps {
   matchStats: any[];
@@ -28,18 +30,56 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
       try {
         console.log(`Chargement des détails pour ${matchStats.length} matchs...`);
         
-        // Récupérer les détails des matchs un par un
+        // Récupérer directement tous les matchs en une seule requête
+        const matchIds = matchStats.map(stat => stat.match_id);
+        console.log("IDs des matchs à récupérer:", matchIds);
+        
+        const { data: matchesData, error: matchesError } = await supabase
+          .from('matches')
+          .select('*')
+          .in('id', matchIds);
+        
+        if (matchesError) {
+          console.error("Erreur lors de la récupération des matchs:", matchesError);
+          toast.error("Erreur lors du chargement des matchs");
+          setIsLoading(false);
+          return;
+        }
+        
+        console.log(`${matchesData?.length || 0} matchs trouvés sur ${matchIds.length} demandés`);
+        
+        // Créer un Map pour un accès plus rapide aux données des matchs
+        const matchesMap = new Map();
+        matchesData?.forEach(match => {
+          matchesMap.set(match.id, match);
+        });
+        
+        // Traitement de chaque statistique de joueur
         const matchesWithDetails = [];
         const errorsByMatchId: Record<string, string> = {};
         
         for (const stat of matchStats) {
           try {
-            // Récupérer les données du match
-            const matchData = await getMatchById(stat.match_id);
+            // Récupérer les données du match depuis le Map
+            const matchData = matchesMap.get(stat.match_id);
             
             if (!matchData) {
-              console.warn(`Aucune donnée trouvée pour le match ${stat.match_id}`);
-              errorsByMatchId[stat.match_id] = "Match non trouvé dans la base de données";
+              console.warn(`Match ${stat.match_id} non trouvé parmi les ${matchesData?.length || 0} matchs récupérés`);
+              errorsByMatchId[stat.match_id] = "Match non trouvé dans la réponse de la base de données";
+              
+              // Vérifier si le match existe vraiment dans la base de données
+              const { data: singleMatch, error: singleMatchError } = await supabase
+                .from('matches')
+                .select('*')
+                .eq('id', stat.match_id)
+                .maybeSingle();
+                
+              if (singleMatchError) {
+                console.error(`Erreur lors de la vérification du match ${stat.match_id}:`, singleMatchError);
+              } else if (singleMatch) {
+                console.log(`Le match ${stat.match_id} existe dans la base de données mais n'a pas été récupéré correctement:`, singleMatch);
+                errorsByMatchId[stat.match_id] = "Match existe mais n'a pas été récupéré correctement";
+              }
               
               matchesWithDetails.push({
                 ...stat,
@@ -50,8 +90,20 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             }
             
             // Déterminer l'équipe adverse
-            const isBlueTeam = stat.team_id === matchData.teamBlue.id;
-            const opponentTeam = isBlueTeam ? matchData.teamRed : matchData.teamBlue;
+            const isBlueTeam = stat.team_id === matchData.team_blue_id;
+            const opponentTeamId = isBlueTeam ? matchData.team_red_id : matchData.team_blue_id;
+            
+            // Récupérer le nom de l'équipe adverse
+            const { data: opponentTeam, error: opponentError } = await supabase
+              .from('teams')
+              .select('name')
+              .eq('id', opponentTeamId)
+              .maybeSingle();
+              
+            if (opponentError) {
+              console.error(`Erreur lors de la récupération de l'équipe adverse (${opponentTeamId}):`, opponentError);
+              errorsByMatchId[stat.match_id] = `Équipe adverse non trouvée: ${opponentError.message}`;
+            }
             
             // Formater la date si elle existe
             let formattedDate = null;
@@ -76,14 +128,15 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             // Ajouter les informations au stat
             matchesWithDetails.push({
               ...stat,
-              opponentTeamName: opponentTeam.name,
-              opponentTeamId: opponentTeam.id,
-              matchDate: formattedDate
+              opponentTeamName: opponentTeam?.name || `Équipe ${opponentTeamId}`,
+              opponentTeamId: opponentTeamId,
+              matchDate: formattedDate,
+              tournament: matchData.tournament || "Tournoi inconnu"
             });
             
           } catch (error) {
             console.error(`Erreur lors du traitement du match ${stat.match_id}:`, error);
-            errorsByMatchId[stat.match_id] = `Erreur: ${error}`;
+            errorsByMatchId[stat.match_id] = `Erreur lors du traitement: ${error}`;
             matchesWithDetails.push({
               ...stat,
               matchDate: null,
@@ -112,6 +165,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         setEnhancedStats(sortedMatches);
       } catch (error) {
         console.error("Erreur lors du chargement des détails des matchs:", error);
+        toast.error("Erreur lors du chargement des détails des matchs");
       } finally {
         setIsLoading(false);
       }
@@ -144,23 +198,28 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
       
       {Object.keys(matchErrors).length > 0 && (
         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
-          <p className="text-amber-700 text-sm font-medium">
-            Certains matchs n'ont pas pu être correctement chargés. Vérifiez que tous les matchs existent dans la base de données.
-          </p>
-          <details className="mt-1">
-            <summary className="text-xs text-amber-600 cursor-pointer">
-              Voir les détails ({Object.keys(matchErrors).length} erreurs)
-            </summary>
-            <div className="mt-2 text-xs text-amber-800 max-h-40 overflow-y-auto">
-              <ul className="list-disc pl-5">
-                {Object.entries(matchErrors).map(([matchId, error]) => (
-                  <li key={matchId}>
-                    Match {matchId}: {error}
-                  </li>
-                ))}
-              </ul>
+          <div className="flex items-start">
+            <AlertCircle className="text-amber-500 mr-2 flex-shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-amber-700 text-sm font-medium">
+                Certains matchs n'ont pas pu être correctement chargés ({Object.keys(matchErrors).length} erreurs)
+              </p>
+              <details className="mt-1">
+                <summary className="text-xs text-amber-600 cursor-pointer">
+                  Voir les détails
+                </summary>
+                <div className="mt-2 text-xs text-amber-800 max-h-40 overflow-y-auto">
+                  <ul className="list-disc pl-5">
+                    {Object.entries(matchErrors).map(([matchId, error]) => (
+                      <li key={matchId}>
+                        Match {matchId}: {error}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </details>
             </div>
-          </details>
+          </div>
         </div>
       )}
       
@@ -188,6 +247,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                 // Utiliser directement le champ is_winner lorsqu'il est disponible
                 const isWin = typeof stat.is_winner === 'boolean' ? stat.is_winner : isWinForPlayer(stat);
                 const formattedDate = stat.matchDate ? stat.matchDate.toLocaleDateString() : '';
+                const tournamentInfo = stat.tournament ? stat.tournament.substring(0, 20) : '';
                 
                 return (
                   <TableRow key={stat.id || stat.match_id} className={isWin ? "bg-green-50/30" : "bg-red-50/30"}>
@@ -216,6 +276,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                       <div className="text-xs text-gray-500">
                         {stat.side || "N/A"}
                         {formattedDate && <span className="ml-2">{formattedDate}</span>}
+                        {tournamentInfo && <span className="ml-2 opacity-75 hidden sm:inline">({tournamentInfo})</span>}
                       </div>
                     </TableCell>
                     <TableCell>{stat.champion || "N/A"}</TableCell>
