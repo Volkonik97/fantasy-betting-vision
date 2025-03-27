@@ -50,7 +50,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
           <CardDescription>Performance on blue vs red side</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-60">
+          <div className="h-60 w-full">
             <BarChart
               data={sideWinRateData}
               xAxisKey="name"
@@ -71,7 +71,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
           <CardDescription>Percentage of securing objectives first</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-60">
+          <div className="h-60 w-full">
             <BarChart
               data={firstObjectiveData}
               xAxisKey="name"

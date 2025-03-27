@@ -57,13 +57,14 @@ export const BarChart = ({
         <RechartsBarChart 
           data={data} 
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          barGap={4}
+          barGap={8}
+          layout="vertical"
         >
           {grid && <CartesianGrid strokeDasharray="3 3" />}
-          <XAxis dataKey={xAxisKey} />
-          {showYAxis && <YAxis />}
+          <XAxis type="number" />
+          <YAxis dataKey={xAxisKey} type="category" width={100} />
           <Tooltip />
-          <Legend />
+          <Legend verticalAlign="top" height={36} />
           {children}
         </RechartsBarChart>
       </ResponsiveContainer>
