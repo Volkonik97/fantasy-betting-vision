@@ -50,7 +50,9 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
+  // On vérifie à la fois que timelineStats existe ET qu'il n'a pas été explicitement mis à null
   const hasTimeline = statistics.timelineStats && 
+    statistics.timelineStats !== null &&
     Object.keys(statistics.timelineStats).length > 0;
   
   return (
@@ -99,6 +101,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
         </CardContent>
       </Card>
       
+      {/* On n'affiche cette section que si hasTimeline est vrai */}
       {hasTimeline && (
         <Card>
           <CardHeader className="pb-2">
