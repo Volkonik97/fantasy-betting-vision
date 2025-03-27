@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -72,12 +73,13 @@ const Players = () => {
   const filteredPlayers = allPlayers.filter(player => {
     const isAL = player.teamRegion === "AL";
     
+    // Improve role matching to handle more variations of Jungle role
     const roleMatches = selectedRole === "All" || (
       player.role && (
         player.role.toLowerCase() === selectedRole.toLowerCase() ||
         (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(player.role.toLowerCase())) ||
         (selectedRole === "Support" && ["support", "sup", "supp"].includes(player.role.toLowerCase())) ||
-        (selectedRole === "Jungle" && ["jungle", "jg", "jgl"].includes(player.role.toLowerCase()))
+        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(player.role.toLowerCase()))
       )
     );
     

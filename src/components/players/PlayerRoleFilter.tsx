@@ -18,6 +18,14 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
     "Support": "Support"
   };
 
+  // Use this function to normalize role values for comparison
+  const normalizeRoleValue = (role: string): string => {
+    if (role.toLowerCase() === "jungle" || role.toLowerCase() === "jgl" || role.toLowerCase() === "jg") {
+      return "Jungle";
+    }
+    return roleMapping[role] || role;
+  };
+
   return (
     <div className="w-full md:w-auto">
       <h3 className="font-medium mb-2">Filter by Role</h3>
@@ -31,7 +39,7 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
                 ? "bg-lol-blue text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
             }`}
-            data-role-value={roleMapping[role] || role}
+            data-role-value={normalizeRoleValue(role)}
           >
             {role}
           </button>
