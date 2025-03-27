@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -23,7 +22,7 @@ const Players = () => {
   const regionCategories = {
     "All": ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
-    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL"],
     "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
     "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
   };
