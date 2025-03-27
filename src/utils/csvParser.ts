@@ -21,6 +21,7 @@ export const parseCSVFile = (file: File): Promise<ParseResult<any>> => {
 // Function to parse CSV from URL
 export const parseCSVFromURL = (url: string): Promise<ParseResult<any>> => {
   return new Promise((resolve, reject) => {
+    // This is the correct way to use Papa.parse with a URL
     Papa.parse(url, {
       download: true,
       header: true,
@@ -35,7 +36,6 @@ export const parseCSVFromURL = (url: string): Promise<ParseResult<any>> => {
         reject(error);
       },
       // Ensure we get all data
-      download_limit: 0, // No limit
       worker: true, // Use worker thread for better performance with large files
       delimiter: ",", // Explicitly set delimiter
       newline: "\n" // Explicitly set newline

@@ -38,8 +38,10 @@ export const loadFromGoogleSheets = async (
     // Get CSV URL and parse the data
     const csvUrl = getGSheetCSVUrl(sheetId);
     
+    console.log("Fetching data from URL:", csvUrl);
+    
     // Set up complete config for CSV parsing to ensure we get all rows
-    const csvResult = await new Promise((resolve, reject) => {
+    const csvResult = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
       Papa.parse(csvUrl, {
         download: true,
         header: true,
@@ -48,7 +50,6 @@ export const loadFromGoogleSheets = async (
         complete: (result) => resolve(result),
         error: (error) => reject(error),
         // Set a generous limit to ensure we get all rows
-        download_limit: 0, // No limit
         worker: true, // Use worker thread for better performance with large files
         delimiter: ",", // Explicitly set delimiter
         newline: "\n" // Explicitly set newline
@@ -56,7 +57,7 @@ export const loadFromGoogleSheets = async (
     });
     
     // Access the data array from the ParseResult
-    const csvData = (csvResult as Papa.ParseResult<any>).data;
+    const csvData = csvResult.data;
     
     if (!csvData || csvData.length === 0) {
       console.error("Aucune donnée n'a pu être récupérée depuis Google Sheets");
