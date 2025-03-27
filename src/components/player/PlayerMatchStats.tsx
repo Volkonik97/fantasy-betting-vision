@@ -37,7 +37,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Match</TableHead>
+                <TableHead>Adversaire</TableHead>
                 <TableHead>Champion</TableHead>
                 <TableHead>Résultat</TableHead>
                 <TableHead>K/D/A</TableHead>
@@ -54,11 +54,15 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                 return (
                   <TableRow key={stat.id} className={isWin ? "bg-green-50/30" : "bg-red-50/30"}>
                     <TableCell className="font-medium">
-                      {stat.match_id ? (
+                      {stat.opponent_team_name ? (
                         <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
-                          {stat.match_id.substring(0, 8)}...
+                          {stat.opponent_team_name}
                         </Link>
-                      ) : "N/A"}
+                      ) : (
+                        <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
+                          {stat.match_id ? stat.match_id.substring(0, 8) + "..." : "N/A"}
+                        </Link>
+                      )}
                       <div className="text-xs text-gray-500">{stat.side || "N/A"}</div>
                     </TableCell>
                     <TableCell>{stat.champion || "N/A"}</TableCell>
