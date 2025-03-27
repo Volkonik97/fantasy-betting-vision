@@ -2,10 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
+import { toast } from "sonner";
 
 // Save players to database
 export const savePlayers = async (players: Player[]): Promise<boolean> => {
   try {
+    console.log(`Saving ${players.length} players to Supabase`);
+    
     // Filter out players with no team ID to prevent foreign key constraint violations
     const validPlayers = players.filter(player => player.team && player.team.trim() !== '');
     
@@ -13,47 +16,85 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
       console.log(`Filtered out ${players.length - validPlayers.length} players with missing team IDs`);
     }
     
-    // Insérer les joueurs par lots de 100
-    const playerChunks = chunk(validPlayers, 100);
-    for (const playerChunk of playerChunks) {
-      const { error: playersError } = await supabase.from('players').insert(
-        playerChunk.map(player => {
-          // Handle champion pool parsing
-          let championPoolArray: string[] = [];
-          
-          if (player.championPool) {
-            if (Array.isArray(player.championPool)) {
-              championPoolArray = player.championPool;
-            } else if (typeof player.championPool === 'string') {
-              // Use String() to ensure it's a string before calling split
-              championPoolArray = String(player.championPool).split(',').map(c => c.trim());
-            }
-          }
-          
-          return {
-            id: player.id,
-            name: player.name,
-            role: player.role,
-            image: player.image,
-            team_id: player.team,
-            kda: player.kda,
-            cs_per_min: player.csPerMin,
-            damage_share: player.damageShare,
-            champion_pool: championPoolArray
-          };
-        })
-      );
+    // Check for duplicate player IDs
+    const playerIds = validPlayers.map(player => player.id);
+    const uniquePlayerIds = new Set(playerIds);
+    
+    if (uniquePlayerIds.size !== validPlayers.length) {
+      console.warn(`Found ${validPlayers.length - uniquePlayerIds.size} duplicate player IDs`);
       
-      if (playersError) {
-        console.error("Erreur lors de l'insertion des joueurs:", playersError);
-        return false;
+      // Filter out duplicates, keeping only the first occurrence of each ID
+      const seenIds = new Set<string>();
+      const uniquePlayers = validPlayers.filter(player => {
+        if (seenIds.has(player.id)) {
+          return false;
+        }
+        seenIds.add(player.id);
+        return true;
+      });
+      
+      console.log(`Filtered down to ${uniquePlayers.length} unique players`);
+      
+      // Use the filtered list
+      validPlayers.length = 0;
+      validPlayers.push(...uniquePlayers);
+    }
+    
+    // Insérer les joueurs par lots de 50 using upsert
+    let successCount = 0;
+    const playerChunks = chunk(validPlayers, 50);
+    
+    for (const playerChunk of playerChunks) {
+      try {
+        const { error: playersError } = await supabase
+          .from('players')
+          .upsert(
+            playerChunk.map(player => {
+              // Handle champion pool parsing
+              let championPoolArray: string[] = [];
+              
+              if (player.championPool) {
+                if (Array.isArray(player.championPool)) {
+                  championPoolArray = player.championPool;
+                } else if (typeof player.championPool === 'string') {
+                  // Use String() to ensure it's a string before calling split
+                  championPoolArray = String(player.championPool).split(',').map(c => c.trim());
+                }
+              }
+              
+              return {
+                id: player.id,
+                name: player.name,
+                role: player.role,
+                image: player.image,
+                team_id: player.team,
+                kda: player.kda,
+                cs_per_min: player.csPerMin,
+                damage_share: player.damageShare,
+                champion_pool: championPoolArray
+              };
+            }),
+            { onConflict: 'id' }
+          );
+        
+        if (playersError) {
+          console.error("Erreur lors de l'upsert des joueurs:", playersError);
+          toast.error(`Erreur lors de la mise à jour des joueurs: ${playersError.message}`);
+          continue; // Continue with the next batch
+        }
+        
+        successCount += playerChunk.length;
+      } catch (error) {
+        console.error("Erreur lors du traitement d'un lot de joueurs:", error);
+        continue; // Continue with next batch
       }
     }
     
-    console.log("Joueurs insérés avec succès");
-    return true;
+    console.log(`Successfully upserted ${successCount}/${validPlayers.length} players`);
+    return successCount > 0;
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des joueurs:", error);
+    toast.error("Une erreur s'est produite lors de l'enregistrement des joueurs");
     return false;
   }
 };

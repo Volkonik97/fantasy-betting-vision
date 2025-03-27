@@ -4,6 +4,7 @@ import { chunk } from '../dataConverter';
 import { 
   resetCache,
 } from '../csvTypes';
+import { toast } from "sonner";
 
 // Database-related functions
 
@@ -61,9 +62,11 @@ export const clearDatabase = async (): Promise<boolean> => {
     
     if (statsError) {
       console.error("Erreur lors de la suppression des statistiques:", statsError);
+      toast.error(`Erreur lors de la suppression des statistiques: ${statsError.message}`);
+      return false;
     }
     
-    // Then clear matches (no FK constraints to players or teams for deletion)
+    // Then clear matches (depends on team_blue_id and team_red_id)
     console.log("Suppression des matchs...");
     const { error: matchesError } = await supabase
       .from('matches')
@@ -72,6 +75,8 @@ export const clearDatabase = async (): Promise<boolean> => {
     
     if (matchesError) {
       console.error("Erreur lors de la suppression des matchs:", matchesError);
+      toast.error(`Erreur lors de la suppression des matchs: ${matchesError.message}`);
+      return false;
     }
     
     // Then clear players as they reference teams
@@ -83,6 +88,8 @@ export const clearDatabase = async (): Promise<boolean> => {
     
     if (playersError) {
       console.error("Erreur lors de la suppression des joueurs:", playersError);
+      toast.error(`Erreur lors de la suppression des joueurs: ${playersError.message}`);
+      return false;
     }
     
     // Finally clear teams
@@ -94,6 +101,8 @@ export const clearDatabase = async (): Promise<boolean> => {
     
     if (teamsError) {
       console.error("Erreur lors de la suppression des équipes:", teamsError);
+      toast.error(`Erreur lors de la suppression des équipes: ${teamsError.message}`);
+      return false;
     }
     
     // Add a data update entry
@@ -105,9 +114,11 @@ export const clearDatabase = async (): Promise<boolean> => {
     resetCache();
     
     console.log("Suppression des données terminée avec succès");
+    toast.success("Base de données vidée avec succès");
     return true;
   } catch (error) {
     console.error("Erreur lors de la suppression des données:", error);
+    toast.error(`Erreur lors de la suppression des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     return false;
   }
 };
