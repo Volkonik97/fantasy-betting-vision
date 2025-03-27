@@ -14,6 +14,7 @@ import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import TeamAnalysisSection from "@/components/team/TeamAnalysisSection";
+import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
