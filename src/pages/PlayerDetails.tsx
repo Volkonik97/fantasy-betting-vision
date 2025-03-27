@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/utils/models/types";
 import { getPlayerById } from "@/utils/database/playersService";
-import { getPlayerMatchStats } from "@/utils/database/matches/playerStats";
+import { getPlayerStats } from "@/utils/database/matches/playerStats";
 import { getTeamById } from "@/utils/database/teamsService";
 import { toast } from "sonner";
 
@@ -43,14 +44,11 @@ const PlayerDetails = () => {
           }
         }
         
-        // Get match statistics
-        if (playerData.team) {
-          const stats = await getPlayerMatchStats(playerData.team);
-          // Filter stats for this player only
-          const playerStats = stats.filter(stat => stat.player_id === id);
-          console.log("Player match stats:", playerStats);
-          setMatchStats(playerStats);
-        }
+        // Get match statistics directly for this player
+        const stats = await getPlayerStats(id);
+        console.log("Player match stats:", stats);
+        setMatchStats(stats);
+        
       } catch (error) {
         console.error("Error loading player data:", error);
         toast.error("Erreur lors du chargement des données du joueur");
@@ -352,7 +350,7 @@ const PlayerDetails = () => {
             
             <TabsContent value="matches">
               <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6">
-                <h2 className="text-xl font-bold mb-4">Statistiques par match</h2>
+                <h2 className="text-xl font-bold mb-4">Statistiques par match ({matchStats.length} matchs)</h2>
                 
                 {matchStats.length > 0 ? (
                   <div className="overflow-x-auto">
@@ -368,8 +366,8 @@ const PlayerDetails = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {matchStats.map((stat, index) => (
-                          <TableRow key={stat.id || index}>
+                        {matchStats.map((stat) => (
+                          <TableRow key={stat.id}>
                             <TableCell className="font-medium">
                               {stat.match_id ? (
                                 <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">

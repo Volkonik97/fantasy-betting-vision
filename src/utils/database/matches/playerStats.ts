@@ -10,9 +10,9 @@ const lastFetch: Record<string, number> = {};
 /**
  * Get player match statistics for a team
  */
-export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): Promise<any[]> => {
+export const getPlayerMatchStats = async (teamId: string, matchIds?: string[], limit?: number): Promise<any[]> => {
   try {
-    const cacheKey = `team_${teamId}_${matchIds?.join('_') || 'all'}`;
+    const cacheKey = `team_${teamId}_${matchIds?.join('_') || 'all'}_${limit || 'unlimited'}`;
     const now = Date.now();
     
     // Check cache first
@@ -21,7 +21,7 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): 
       return playerStatsCache[cacheKey];
     }
     
-    console.log(`Fetching player stats for team ${teamId}`);
+    console.log(`Fetching player stats for team ${teamId}, limit: ${limit || 'unlimited'}`);
     
     // Build query
     let query = supabase
@@ -32,6 +32,14 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): 
     // Filter by match IDs if provided
     if (matchIds && matchIds.length > 0) {
       query = query.in('match_id', matchIds);
+    }
+    
+    // Order by more recent matches first
+    query = query.order('created_at', { ascending: false });
+    
+    // Apply limit if provided
+    if (limit && limit > 0) {
+      query = query.limit(limit);
     }
     
     // Execute query
@@ -56,6 +64,47 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): 
     return playerStats;
   } catch (error) {
     console.error(`Error in getPlayerMatchStats for team ${teamId}:`, error);
+    return [];
+  }
+};
+
+/**
+ * Get player match statistics for a specific player
+ */
+export const getPlayerStats = async (playerId: string, limit?: number): Promise<any[]> => {
+  try {
+    console.log(`Fetching player stats for player ${playerId}`);
+    
+    // Build query
+    let query = supabase
+      .from('player_match_stats')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+    
+    // Apply limit if provided
+    if (limit && limit > 0) {
+      query = query.limit(limit);
+    }
+    
+    // Execute query
+    const { data: playerStats, error } = await query;
+    
+    if (error) {
+      console.error(`Error fetching player stats for player ${playerId}:`, error);
+      return [];
+    }
+    
+    if (!playerStats || playerStats.length === 0) {
+      console.log(`No player stats found for player ${playerId}`);
+      return [];
+    }
+    
+    console.log(`Found ${playerStats.length} player stats for player ${playerId}`);
+    return playerStats;
+    
+  } catch (error) {
+    console.error(`Error in getPlayerStats for player ${playerId}:`, error);
     return [];
   }
 };
