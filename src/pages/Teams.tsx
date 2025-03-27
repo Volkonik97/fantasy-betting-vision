@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Team } from "@/utils/mockData";
+import { Team } from "@/utils/models/types";
 import { getTeams } from "@/utils/csvService";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,15 +21,18 @@ const Teams = () => {
       try {
         setIsLoading(true);
         const loadedTeams = await getTeams();
-        if (Array.isArray(loadedTeams)) {
+        
+        if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
           setTeams(loadedTeams);
           
           const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
           setRegions(uniqueRegions);
+        } else {
+          toast.error("No team data found");
         }
       } catch (error) {
-        console.error("Erreur lors du chargement des équipes:", error);
-        toast.error("Erreur lors du chargement des équipes");
+        console.error("Error loading teams:", error);
+        toast.error("Error loading teams");
       } finally {
         setIsLoading(false);
       }

@@ -9,31 +9,44 @@ import PredictionChart from "@/components/PredictionChart";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import SideAnalysis from "@/components/SideAnalysis";
-import { matches, teams } from "@/utils/models";
+import { getTeams, getMatches } from "@/utils/csvService";
 import { getSideStatistics } from "@/utils/statistics"; // Updated import path
-import { SideStatistics } from "@/utils/models/types";
+import { SideStatistics, Team, Match } from "@/utils/models/types";
+import { toast } from "sonner";
 
 const Index = () => {
   const [analysisTarget, setAnalysisTarget] = useState(null);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   
   useEffect(() => {
-    const loadSideStats = async () => {
+    const loadData = async () => {
       setIsLoading(true);
       try {
-        if (teams && teams.length > 0) {
-          const stats = await getSideStatistics(teams[0].id);
+        // Load teams from database
+        const loadedTeams = await getTeams();
+        setTeams(loadedTeams);
+        
+        // Load matches from database
+        const loadedMatches = await getMatches();
+        setMatches(loadedMatches);
+        
+        // Load side statistics for the first team if available
+        if (loadedTeams && loadedTeams.length > 0) {
+          const stats = await getSideStatistics(loadedTeams[0].id);
           setSideStats(stats);
         }
       } catch (error) {
-        console.error("Error loading side statistics:", error);
+        console.error("Error loading data:", error);
+        toast.error("Error loading data. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadSideStats();
+    loadData();
   }, []);
   
   const handleStartAnalysis = () => {
@@ -45,6 +58,29 @@ const Index = () => {
     console.log("Searching for:", query);
     // Would implement search functionality here
   };
+
+  // Early return for loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 flex items-center justify-center">
+        <Navbar />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+      </div>
+    );
+  }
+
+  // Early return if no data is available
+  if (!teams.length || !matches.length) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-6 py-20 text-center">
+          <h2 className="text-2xl font-bold mb-4">No data available</h2>
+          <p className="text-gray-600 mb-6">Please import data or check your database connection.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
@@ -79,7 +115,7 @@ const Index = () => {
           <div className="mb-16">
             <h3 className="text-xl font-semibold mb-6">Upcoming Matches</h3>
             <div className="grid md:grid-cols-2 gap-6">
-              {matches.map((match) => (
+              {matches.slice(0, 4).map((match) => (
                 <motion.div
                   key={match.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -112,12 +148,14 @@ const Index = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 viewport={{ once: true }}
               >
-                <PredictionChart 
-                  blueWinRate={matches[0].blueWinOdds * 100}
-                  redWinRate={matches[0].redWinOdds * 100}
-                  teamBlueName={matches[0].teamBlue.name}
-                  teamRedName={matches[0].teamRed.name}
-                />
+                {matches.length > 0 && (
+                  <PredictionChart 
+                    blueWinRate={matches[0].blueWinOdds * 100}
+                    redWinRate={matches[0].redWinOdds * 100}
+                    teamBlueName={matches[0].teamBlue.name}
+                    teamRedName={matches[0].teamRed.name}
+                  />
+                )}
               </motion.div>
             </div>
           </div>
@@ -161,19 +199,19 @@ const Index = () => {
                   </div>
                   
                   <p className="text-sm text-gray-700 mb-3">
-                    Statistical model suggests T1 has a 58% chance to win, but bookmakers are offering odds equivalent to 41%.
+                    Statistical model suggests {teams[0]?.name || "Team"} has a 58% chance to win, but bookmakers are offering odds equivalent to 41%.
                   </p>
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-white rounded-full p-1">
                         <img 
-                          src={teams[0].logo} 
-                          alt={teams[0].name} 
+                          src={teams[0]?.logo || "/placeholder.svg"} 
+                          alt={teams[0]?.name || "Team"} 
                           className="w-full h-full object-contain"
                         />
                       </div>
-                      <span className="text-sm font-medium">{teams[0].name}</span>
+                      <span className="text-sm font-medium">{teams[0]?.name || "Team"}</span>
                     </div>
                     
                     <span className="font-bold text-green-600">+2.45</span>
@@ -204,26 +242,28 @@ const Index = () => {
             </motion.div>
           </div>
           
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold">Top Players</h3>
-              <button className="text-sm text-lol-blue hover:underline">View All</button>
+          {teams.length > 0 && teams[0].players && teams[0].players.length > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold">Top Players</h3>
+                <button className="text-sm text-lol-blue hover:underline">View All</button>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {teams[0].players.slice(0, 3).map((player, index) => (
+                  <motion.div
+                    key={player.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <PlayerCard player={player} />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teams[0].players.slice(0, 3).map((player, index) => (
-                <motion.div
-                  key={player.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <PlayerCard player={player} />
-                </motion.div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </section>
       

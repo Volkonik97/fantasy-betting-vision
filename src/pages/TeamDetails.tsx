@@ -10,10 +10,10 @@ import PlayerCard from "@/components/PlayerCard";
 import TeamStatistics from "@/components/TeamStatistics";
 import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
-import { supabase } from "@/integrations/supabase/client";
 import { getTeams, getMatches } from "@/utils/csvService";
-import { getSideStatistics } from "@/utils/statistics"; // Updated import
+import { getSideStatistics } from "@/utils/statistics"; // Updated import path
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { toast } from "sonner";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,33 +28,39 @@ const TeamDetails = () => {
       try {
         setIsLoading(true);
         
-        // Charger l'équipe depuis Supabase
+        // Load team from database
         const teams = await getTeams();
         const foundTeam = teams.find(t => t.id === id);
         
         if (!foundTeam) {
-          setError("Équipe non trouvée");
+          setError("Team not found");
           setIsLoading(false);
           return;
         }
         
         setTeam(foundTeam);
         
-        // Charger les matchs associés à cette équipe
+        // Load matches associated with this team
         const matches = await getMatches();
         const filteredMatches = matches.filter(
           match => match.teamBlue.id === id || match.teamRed.id === id
         );
         setTeamMatches(filteredMatches);
         
-        // Charger les statistiques par côté
+        // Load side statistics
         if (foundTeam.id) {
-          const stats = await getSideStatistics(foundTeam.id);
-          setSideStats(stats);
+          try {
+            const stats = await getSideStatistics(foundTeam.id);
+            setSideStats(stats);
+          } catch (statsError) {
+            console.error("Error loading side statistics:", statsError);
+            // Continue without side stats
+          }
         }
       } catch (err) {
-        console.error("Erreur lors du chargement des données:", err);
-        setError("Erreur lors du chargement des données");
+        console.error("Error loading team data:", err);
+        setError("Error loading team data");
+        toast.error("Failed to load team details");
       } finally {
         setIsLoading(false);
       }
@@ -77,9 +83,9 @@ const TeamDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">{error || "Équipe non trouvée"}</h2>
+          <h2 className="text-2xl font-bold mb-4">{error || "Team not found"}</h2>
           <Link to="/teams" className="text-lol-blue hover:underline">
-            Retour à la liste des équipes
+            Return to teams list
           </Link>
         </div>
       </div>

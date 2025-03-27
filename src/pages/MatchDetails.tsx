@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { matches } from "@/utils/models";
-import { getSideStatistics } from "@/utils/statistics"; // Updated import
+import { getMatches } from "@/utils/csvService";
+import { getSideStatistics } from "@/utils/statistics"; // Updated import path
+import { Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { SideStatistics } from "@/utils/models/types";
+import { toast } from "sonner";
 
-// Import our new components
+// Import our components
 import MatchHeader from "@/components/match/MatchHeader";
 import MatchTeams from "@/components/match/MatchTeams";
 import MatchPrediction from "@/components/match/MatchPrediction";
@@ -19,7 +20,7 @@ import TeamAnalysisTabs from "@/components/match/TeamAnalysisTabs";
 const MatchDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const match = matches.find(m => m.id === id);
+  const [match, setMatch] = useState<Match | null>(null);
   
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [blueTeamStats, setBlueTeamStats] = useState<SideStatistics | null>(null);
@@ -27,41 +28,63 @@ const MatchDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const loadTeamStats = async () => {
+    const loadMatchData = async () => {
       setIsLoading(true);
       try {
-        if (match) {
-          const blue = await getSideStatistics(match.teamBlue.id);
-          const red = await getSideStatistics(match.teamRed.id);
+        // Load match from database
+        const matches = await getMatches();
+        const foundMatch = matches.find(m => m.id === id);
+        
+        if (!foundMatch) {
+          toast.error("Match not found");
+          setIsLoading(false);
+          return;
+        }
+        
+        setMatch(foundMatch);
+        
+        // Load team stats
+        try {
+          const blue = await getSideStatistics(foundMatch.teamBlue.id);
+          const red = await getSideStatistics(foundMatch.teamRed.id);
           
           // Add team IDs to the stats objects
           const blueWithId: SideStatistics = {
             ...blue,
-            teamId: match.teamBlue.id
+            teamId: foundMatch.teamBlue.id
           };
           
           const redWithId: SideStatistics = {
             ...red,
-            teamId: match.teamRed.id
+            teamId: foundMatch.teamRed.id
           };
           
           setBlueTeamStats(blueWithId);
           setRedTeamStats(redWithId);
-          
-          console.log("Loaded team stats with IDs:", {
-            blueTeamId: blueWithId.teamId,
-            redTeamId: redWithId.teamId
-          });
+        } catch (statsError) {
+          console.error("Error loading team statistics:", statsError);
+          // Continue without team stats
         }
       } catch (error) {
-        console.error("Error loading team statistics:", error);
+        console.error("Error loading match data:", error);
+        toast.error("Failed to load match details");
       } finally {
         setIsLoading(false);
       }
     };
     
-    loadTeamStats();
-  }, [match]);
+    if (id) {
+      loadMatchData();
+    }
+  }, [id]);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+      </div>
+    );
+  }
   
   if (!match) {
     return (

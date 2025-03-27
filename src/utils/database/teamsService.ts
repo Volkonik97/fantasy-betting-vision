@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedTeams, setLoadedTeams } from '../csvTypes';
-import { getSideStatistics } from './sideStatisticsService';
+import { toast } from "sonner";
 
 // Save teams to database
 export const saveTeams = async (teams: Team[]): Promise<boolean> => {
@@ -40,28 +40,45 @@ export const saveTeams = async (teams: Team[]): Promise<boolean> => {
 
 // Get teams from database
 export const getTeams = async (): Promise<Team[]> => {
+  // Check if we already have loaded teams in memory
   const loadedTeams = getLoadedTeams();
-  if (loadedTeams) return loadedTeams;
+  if (loadedTeams && loadedTeams.length > 0) {
+    console.log("Using cached teams data");
+    return loadedTeams;
+  }
   
   try {
+    console.log("Fetching teams from Supabase");
+    
+    // Fetch teams from database
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
       .select('*');
     
-    if (teamsError || !teamsData || teamsData.length === 0) {
+    if (teamsError) {
       console.error("Error retrieving teams:", teamsError);
+      throw teamsError;
+    }
+    
+    if (!teamsData || teamsData.length === 0) {
+      console.warn("No teams found in database, using mock data");
       const { teams } = await import('../mockData');
       return teams;
     }
     
+    console.log(`Found ${teamsData.length} teams in database`);
+    
+    // Fetch players for these teams
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*');
     
     if (playersError) {
       console.error("Error retrieving players:", playersError);
+      // Continue without players
     }
     
+    // Convert database format to application format
     const teams: Team[] = teamsData.map(team => ({
       id: team.id as string,
       name: team.name as string,
@@ -74,7 +91,8 @@ export const getTeams = async (): Promise<Team[]> => {
       players: []
     }));
     
-    if (playersData) {
+    // Assign players to their teams
+    if (playersData && playersData.length > 0) {
       teams.forEach(team => {
         team.players = playersData
           .filter(player => player.team_id === team.id)
@@ -92,14 +110,15 @@ export const getTeams = async (): Promise<Team[]> => {
       });
     }
     
+    // Cache the loaded teams
     setLoadedTeams(teams);
     return teams;
   } catch (error) {
     console.error("Error retrieving teams:", error);
+    toast.error("Failed to load teams data");
+    
+    // Fall back to mock data
     const { teams } = await import('../mockData');
     return teams;
   }
 };
-
-// Export side statistics for backward compatibility
-export { getSideStatistics };
