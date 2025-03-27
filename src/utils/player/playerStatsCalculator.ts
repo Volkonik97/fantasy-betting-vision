@@ -50,17 +50,19 @@ export const calculateAverages = (matchStats: any[]): PlayerAverageStats | null 
   const totalWins = matchStats.reduce((count, stat) => count + (isWinForPlayer(stat) ? 1 : 0), 0);
   const winRate = matchStats.length > 0 ? (totalWins / matchStats.length) * 100 : 0;
   
+  // Calculate total kills, deaths, and assists
+  const totalKills = matchStats.reduce((sum, stat) => sum + (stat.kills || 0), 0);
+  const totalDeaths = matchStats.reduce((sum, stat) => sum + (stat.deaths || 0), 0);
+  const totalAssists = matchStats.reduce((sum, stat) => sum + (stat.assists || 0), 0);
+  
+  // Calculate KDA directly using totals, not averaging individual KDAs
+  const kda = totalDeaths > 0 ? (totalKills + totalAssists) / totalDeaths : totalKills + totalAssists;
+  
   return {
-    kills: matchStats.reduce((sum, stat) => sum + (stat.kills || 0), 0) / matchStats.length,
-    deaths: matchStats.reduce((sum, stat) => sum + (stat.deaths || 0), 0) / matchStats.length,
-    assists: matchStats.reduce((sum, stat) => sum + (stat.assists || 0), 0) / matchStats.length,
-    kda: matchStats.reduce((sum, stat) => {
-      const kills = stat.kills || 0;
-      const deaths = stat.deaths || 0;
-      const assists = stat.assists || 0;
-      const kda = deaths > 0 ? (kills + assists) / deaths : kills + assists;
-      return sum + kda;
-    }, 0) / matchStats.length,
+    kills: totalKills / matchStats.length,
+    deaths: totalDeaths / matchStats.length,
+    assists: totalAssists / matchStats.length,
+    kda: kda, // This is now calculated from totals, not averaged
     csPerMin: matchStats.reduce((sum, stat) => sum + (stat.cspm || 0), 0) / matchStats.length,
     damageShare: matchStats.reduce((sum, stat) => sum + (stat.damage_share || 0), 0) / matchStats.length,
     visionScore: matchStats.reduce((sum, stat) => sum + (stat.vision_score || 0), 0) / matchStats.length,

@@ -29,6 +29,11 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     );
   }
 
+  // Calculate the actual total values for display
+  const totalKills = averageStats.kills * averageStats.games;
+  const totalDeaths = averageStats.deaths * averageStats.games;
+  const totalAssists = averageStats.assists * averageStats.games;
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6">
       <h2 className="text-xl font-bold mb-4">Statistiques générales</h2>
@@ -41,6 +46,9 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             <span className="text-sm text-gray-600">
               {averageStats.kills.toFixed(1)} / {averageStats.deaths.toFixed(1)} / {averageStats.assists.toFixed(1)}
             </span>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Total: {Math.round(totalKills)} / {Math.round(totalDeaths)} / {Math.round(totalAssists)}
           </div>
         </div>
         

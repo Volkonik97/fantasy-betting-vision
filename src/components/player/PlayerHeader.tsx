@@ -7,9 +7,18 @@ import { motion } from "framer-motion";
 interface PlayerHeaderProps {
   player: Player;
   teamName: string;
+  kdaOverride?: number | null; // Optional KDA override from match stats
+  cspmOverride?: number | null; // Optional CSPM override
+  damageShareOverride?: number | null; // Optional damage share override
 }
 
-const PlayerHeader = ({ player, teamName }: PlayerHeaderProps) => {
+const PlayerHeader = ({ 
+  player, 
+  teamName, 
+  kdaOverride = null, 
+  cspmOverride = null, 
+  damageShareOverride = null 
+}: PlayerHeaderProps) => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "Top": return "bg-yellow-500";
@@ -21,9 +30,15 @@ const PlayerHeader = ({ player, teamName }: PlayerHeaderProps) => {
     }
   };
   
-  const playerKda = typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0');
-  const playerCsPerMin = typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0');
-  const playerDamageShare = typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0');
+  // Use overrides if provided, otherwise fall back to player data
+  const playerKda = kdaOverride !== null ? kdaOverride : 
+    (typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0'));
+  
+  const playerCsPerMin = cspmOverride !== null ? cspmOverride : 
+    (typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0'));
+  
+  const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
+    (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
 
   return (
     <motion.div 

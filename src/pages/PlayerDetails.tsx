@@ -11,7 +11,7 @@ import { getPlayerStats } from "@/utils/database/matches/playerStats";
 import { getTeamById } from "@/utils/database/teamsService";
 import { toast } from "sonner";
 
-// Import our new components
+// Import our components
 import PlayerHeader from "@/components/player/PlayerHeader";
 import PlayerStatsOverview from "@/components/player/PlayerStatsOverview";
 import PlayerChampionStats from "@/components/player/PlayerChampionStats";
@@ -111,8 +111,14 @@ const PlayerDetails = () => {
           <span>Retour aux joueurs</span>
         </Link>
         
-        {/* Player Header */}
-        <PlayerHeader player={player} teamName={teamName} />
+        {/* Player Header - Pass calculated stats if available */}
+        <PlayerHeader 
+          player={player} 
+          teamName={teamName} 
+          kdaOverride={averageStats?.kda}
+          cspmOverride={averageStats?.csPerMin}
+          damageShareOverride={averageStats?.damageShare}
+        />
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
