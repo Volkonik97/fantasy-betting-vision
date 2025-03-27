@@ -4,7 +4,7 @@ import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase } from './coreSer
 import { getTeams, saveTeams } from './teamsService';
 import { getSideStatistics } from './sideStatisticsService';
 import { getPlayers, savePlayers } from './playersService';
-import { getMatches, saveMatches } from './matchesService';
+import { getMatches, saveMatches } from './matches/matchesService';
 import { getTournaments } from './tournamentsService';
 
 // Save data to database
