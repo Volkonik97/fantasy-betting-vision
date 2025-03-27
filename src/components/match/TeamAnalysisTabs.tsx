@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SideAnalysis from "@/components/SideAnalysis";
 import { SideStatistics } from "@/utils/models/types";
-import { getPlayerMatchStats, getTeamTimelineStats } from "@/utils/database/matches/playerStats";
+import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
 
 interface TeamAnalysisTabsProps {
@@ -19,8 +19,11 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
   const [redTeamDynamicStats, setRedTeamDynamicStats] = useState<SideStatistics | null>(redTeamStats);
 
   // Function to get player match statistics and calculate team stats
-  const getTeamPlayerStats = async (teamId: string | undefined) => {
-    if (!teamId) return null;
+  const getTeamPlayerStats = async (teamId: string | undefined, originalStats: SideStatistics | null) => {
+    if (!teamId || !originalStats) {
+      console.log(`Cannot get player stats: teamId=${teamId}, originalStats=${!!originalStats}`);
+      return originalStats;
+    }
     
     console.log(`Fetching player match stats for team ${teamId}`);
     
@@ -29,32 +32,24 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
       const timelineStats = await getTeamTimelineStats(teamId);
       
       if (!timelineStats) {
-        console.log(`No timeline stats found for team ${teamId}`);
-        return null;
+        console.log(`No timeline stats found for team ${teamId}, using original data`);
+        return originalStats;
       }
       
-      // Use base stats from the props and only update timeline
+      console.log(`Found timeline stats for team ${teamId}:`, timelineStats);
+      
+      // Merge the original stats with the dynamic timeline stats
       return {
-        teamId,
-        blueWins: blueTeamStats?.blueWins || 50,
-        redWins: redTeamStats?.redWins || 50,
-        blueFirstBlood: blueTeamStats?.blueFirstBlood || 50,
-        redFirstBlood: redTeamStats?.redFirstBlood || 50,
-        blueFirstDragon: blueTeamStats?.blueFirstDragon || 50,
-        redFirstDragon: redTeamStats?.redFirstDragon || 50,
-        blueFirstHerald: blueTeamStats?.blueFirstHerald || 50,
-        redFirstHerald: redTeamStats?.redFirstHerald || 50,
-        blueFirstTower: blueTeamStats?.blueFirstTower || 50,
-        redFirstTower: redTeamStats?.redFirstTower || 50,
+        ...originalStats,
         timelineStats
       };
     } catch (error) {
-      console.error("Error calculating team stats:", error);
-      return null;
+      console.error(`Error calculating team stats for ${teamId}:`, error);
+      return originalStats;
     }
   };
   
-  // Load team stats when component mounts
+  // Load team stats when component mounts or when props change
   useEffect(() => {
     const loadTeamStats = async () => {
       setIsLoadingData(true);
@@ -66,31 +61,28 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
         
         console.log("Loading dynamic team stats for:", { blueTeamId, redTeamId });
         
-        // Process both teams in parallel
-        const [dynamicBlueStats, dynamicRedStats] = await Promise.all([
-          blueTeamId ? getTeamPlayerStats(blueTeamId) : null,
-          redTeamId ? getTeamPlayerStats(redTeamId) : null
-        ]);
+        if (!blueTeamId && !redTeamId) {
+          console.log("No team IDs available, using static data");
+          setBlueTeamDynamicStats(blueTeamStats);
+          setRedTeamDynamicStats(redTeamStats);
+          setIsLoadingData(false);
+          return;
+        }
         
-        if (dynamicBlueStats) {
-          console.log("Dynamic blue team stats loaded");
-          setBlueTeamDynamicStats({
-            ...blueTeamStats,
-            timelineStats: dynamicBlueStats.timelineStats
-          });
+        // Process teams sequentially to avoid overwhelming the database
+        if (blueTeamId) {
+          const dynamicBlueStats = await getTeamPlayerStats(blueTeamId, blueTeamStats);
+          console.log("Dynamic blue team stats loaded:", !!dynamicBlueStats);
+          setBlueTeamDynamicStats(dynamicBlueStats);
         } else {
-          console.log("Using fallback blue team stats");
           setBlueTeamDynamicStats(blueTeamStats);
         }
         
-        if (dynamicRedStats) {
-          console.log("Dynamic red team stats loaded");
-          setRedTeamDynamicStats({
-            ...redTeamStats,
-            timelineStats: dynamicRedStats.timelineStats
-          });
+        if (redTeamId) {
+          const dynamicRedStats = await getTeamPlayerStats(redTeamId, redTeamStats);
+          console.log("Dynamic red team stats loaded:", !!dynamicRedStats);
+          setRedTeamDynamicStats(dynamicRedStats);
         } else {
-          console.log("Using fallback red team stats");
           setRedTeamDynamicStats(redTeamStats);
         }
       } catch (error) {
@@ -105,12 +97,7 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
       }
     };
     
-    // Only load if we have team IDs
-    if (blueTeamStats?.teamId || redTeamStats?.teamId) {
-      loadTeamStats();
-    } else {
-      setIsLoadingData(false);
-    }
+    loadTeamStats();
   }, [blueTeamStats, redTeamStats]);
   
   const renderTeamStats = (teamStats: SideStatistics | null, tabValue: string) => {

@@ -47,6 +47,8 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): 
       return [];
     }
     
+    console.log(`Found ${playerStats.length} player stats for team ${teamId}`);
+    
     // Update cache
     playerStatsCache[cacheKey] = playerStats;
     lastFetch[cacheKey] = now;
@@ -63,15 +65,34 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[]): 
  */
 export const getTeamTimelineStats = async (teamId: string): Promise<any> => {
   try {
+    console.log(`Getting timeline stats for team ${teamId}`);
     const playerStats = await getPlayerMatchStats(teamId);
     
     if (!playerStats || playerStats.length === 0) {
+      console.log(`No player stats found for team ${teamId}, returning null`);
       return null;
     }
     
-    return getTimelineStats(playerStats);
+    console.log(`Processing ${playerStats.length} player stats for timeline data`);
+    const timelineStats = getTimelineStats(playerStats);
+    
+    // Log the generated timeline stats for debugging
+    console.log(`Generated timeline stats for team ${teamId}:`, timelineStats);
+    
+    return timelineStats;
   } catch (error) {
     console.error(`Error getting timeline stats for team ${teamId}:`, error);
     return null;
   }
+};
+
+/**
+ * Clear player stats cache
+ */
+export const clearPlayerStatsCache = () => {
+  Object.keys(playerStatsCache).forEach(key => {
+    delete playerStatsCache[key];
+    delete lastFetch[key];
+  });
+  console.log('Player stats cache cleared');
 };

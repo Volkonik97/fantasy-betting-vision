@@ -1,10 +1,16 @@
 
 import { getSideStatistics } from './sideStatistics';
-import { getTimelineStats } from './timelineStats';
+import { getTimelineStats, calculateTimelineStats } from './timelineStats';
 import { getMockSideStatistics } from './mockStats';
+import { calculateAverage, calculatePercentage, throttlePromises, defaultSideStats } from './helpers';
 
 export {
   getSideStatistics,
   getTimelineStats,
-  getMockSideStatistics
+  calculateTimelineStats,
+  getMockSideStatistics,
+  calculateAverage,
+  calculatePercentage,
+  throttlePromises,
+  defaultSideStats
 };
