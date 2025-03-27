@@ -113,8 +113,10 @@ export interface SideStatistics {
       avgXp: number;
       avgCs: number;
       avgGoldDiff: number;
+      avgCsDiff?: number;
       avgKills: number;
       avgDeaths: number;
+      avgAssists?: number;
     }
   };
 }

@@ -40,8 +40,10 @@ const PlayerTimelineStats = ({ timelineStats }: TimelineStatsProps) => {
       xp: timelineStats[time]?.avgXp || 0,
       cs: timelineStats[time]?.avgCs || 0,
       goldDiff: timelineStats[time]?.avgGoldDiff || 0,
+      csDiff: timelineStats[time]?.avgCsDiff || 0,
       kills: timelineStats[time]?.avgKills || 0,
-      deaths: timelineStats[time]?.avgDeaths || 0
+      deaths: timelineStats[time]?.avgDeaths || 0,
+      assists: timelineStats[time]?.avgAssists || 0
     }));
   };
   
@@ -137,6 +139,13 @@ const PlayerTimelineStats = ({ timelineStats }: TimelineStatsProps) => {
                     stroke="#D32F2F" 
                     strokeWidth={2} 
                   />
+                  <Line 
+                    type="monotone" 
+                    dataKey="assists" 
+                    name="Assistances" 
+                    stroke="#7CB342" 
+                    strokeWidth={2} 
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -165,6 +174,13 @@ const PlayerTimelineStats = ({ timelineStats }: TimelineStatsProps) => {
                     strokeWidth={2} 
                     activeDot={{ r: 8 }} 
                   />
+                  <Line 
+                    type="monotone" 
+                    dataKey="csDiff" 
+                    name="Différence de CS" 
+                    stroke="#00897B" 
+                    strokeWidth={2} 
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -185,9 +201,15 @@ const PlayerTimelineStats = ({ timelineStats }: TimelineStatsProps) => {
                   <span className="font-medium">{timelineStats[time]?.avgCs || 0}</span>
                 </p>
                 <p className="text-xs flex justify-between">
-                  <span>K/D:</span> 
+                  <span>CS Diff:</span> 
+                  <span className={`font-medium ${timelineStats[time]?.avgCsDiff > 0 ? 'text-green-600' : timelineStats[time]?.avgCsDiff < 0 ? 'text-red-600' : ''}`}>
+                    {timelineStats[time]?.avgCsDiff > 0 ? '+' : ''}{timelineStats[time]?.avgCsDiff || 0}
+                  </span>
+                </p>
+                <p className="text-xs flex justify-between">
+                  <span>K/D/A:</span> 
                   <span className="font-medium">
-                    {timelineStats[time]?.avgKills?.toFixed(1) || 0}/{timelineStats[time]?.avgDeaths?.toFixed(1) || 0}
+                    {timelineStats[time]?.avgKills?.toFixed(1) || 0}/{timelineStats[time]?.avgDeaths?.toFixed(1) || 0}/{timelineStats[time]?.avgAssists?.toFixed(1) || 0}
                   </span>
                 </p>
                 <p className="text-xs flex justify-between">
