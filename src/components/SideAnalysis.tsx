@@ -19,6 +19,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     console.log("SideAnalysis rendering with stats:", statistics);
   }, [statistics]);
   
+  // Win rate data
   const sideWinRateData = [
     {
       name: "Win Rate",
@@ -27,6 +28,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
+  // First objective data
   const firstObjectiveData = [
     {
       name: "First Blood",
@@ -50,15 +52,16 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
-  console.log("First Objective Data:", firstObjectiveData);
+  console.log("First Objective Data (rebuilt):", firstObjectiveData);
   
-  // On vérifie à la fois que timelineStats existe ET qu'il n'a pas été explicitement mis à null
+  // Check if timeline stats exist and are not null
   const hasTimeline = statistics.timelineStats && 
     statistics.timelineStats !== null &&
     Object.keys(statistics.timelineStats).length > 0;
   
   return (
     <div className="space-y-6">
+      {/* Win Rate Card */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Side Win Rate</CardTitle>
@@ -81,6 +84,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
         </CardContent>
       </Card>
       
+      {/* First Objectives Card */}
       <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">First Objectives</CardTitle>
@@ -96,6 +100,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               layout="vertical"
               barSize={20}
               showYAxis={true}
+              height={300}
             >
               <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
@@ -104,7 +109,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
         </CardContent>
       </Card>
       
-      {/* On n'affiche cette section que si hasTimeline est vrai */}
+      {/* Timeline Statistics Card - Only shown if timeline data exists */}
       {hasTimeline && (
         <Card>
           <CardHeader className="pb-2">
@@ -121,7 +126,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               
               <TabsContent value="gold">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {Object.entries(statistics.timelineStats).map(([time, stats]) => (
                       <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
@@ -137,7 +142,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               
               <TabsContent value="cs">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {Object.entries(statistics.timelineStats).map(([time, stats]) => (
                       <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
@@ -154,7 +159,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               
               <TabsContent value="kda">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {Object.entries(statistics.timelineStats).map(([time, stats]) => (
                       <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>

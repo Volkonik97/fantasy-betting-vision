@@ -120,7 +120,7 @@ export const BarChart = ({
               borderRadius: '0.375rem',
               boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
             }}
-            formatter={(value) => [value, '']}
+            formatter={(value) => [`${value}%`, '']}
           />
           <Legend 
             verticalAlign="top" 

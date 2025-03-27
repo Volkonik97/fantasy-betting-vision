@@ -11,6 +11,7 @@ interface TeamAnalysisSectionProps {
 }
 
 const TeamAnalysisSection = ({ team, sideStats }: TeamAnalysisSectionProps) => {
+  console.log("TeamAnalysisSection rendering with team:", team);
   console.log("TeamAnalysisSection rendering with sideStats:", sideStats);
   
   return (
@@ -27,7 +28,7 @@ const TeamAnalysisSection = ({ team, sideStats }: TeamAnalysisSectionProps) => {
       </div>
       
       {sideStats && (
-        <div className="mb-8">
+        <div className="space-y-6">
           <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
           <SideAnalysis statistics={sideStats} />
         </div>
