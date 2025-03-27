@@ -51,13 +51,25 @@ export const saveToDatabase = async (data: {
     // Insert player match statistics if available
     if (data.playerMatchStats && data.playerMatchStats.length > 0) {
       console.log(`Saving ${data.playerMatchStats.length} player match statistics...`);
-      const statsSuccess = await savePlayerMatchStats(data.playerMatchStats);
-      if (!statsSuccess) {
-        console.error("Échec lors de l'enregistrement des statistiques des joueurs");
-        toast.error("Erreur lors de l'enregistrement des statistiques des joueurs");
-        // Continue even if player stats failed, since the core data was saved
+      
+      // Ensure all player match stats have valid player_id and match_id
+      const validPlayerStats = data.playerMatchStats.filter(stat => 
+        stat && stat.player_id && stat.match_id
+      );
+      
+      console.log(`${validPlayerStats.length} valid player stats out of ${data.playerMatchStats.length}`);
+      
+      if (validPlayerStats.length > 0) {
+        const statsSuccess = await savePlayerMatchStats(validPlayerStats);
+        if (!statsSuccess) {
+          console.error("Échec lors de l'enregistrement des statistiques des joueurs");
+          toast.error("Erreur lors de l'enregistrement des statistiques des joueurs");
+          // Continue even if player stats failed, since the core data was saved
+        } else {
+          console.log("Statistiques des joueurs enregistrées avec succès");
+        }
       } else {
-        console.log("Statistiques des joueurs enregistrées avec succès");
+        console.warn("No valid player match statistics to save");
       }
     }
     

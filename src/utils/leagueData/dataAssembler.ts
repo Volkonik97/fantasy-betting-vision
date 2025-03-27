@@ -1,3 +1,4 @@
+
 import { LeagueGameDataRow } from '../csvTypes';
 import { Team, Player, Match } from '../models/types';
 import { processTeamData } from './teamProcessor';
@@ -99,8 +100,16 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
   
   // Convert player match stats from nested maps to an array for database storage
   const playerMatchStatsArray: any[] = [];
+  
+  // Debug log for matchPlayerStats
+  console.log(`matchPlayerStats has data for ${matchPlayerStats.size} matches`);
+  
+  // Process player match stats
   matchPlayerStats.forEach((playerStatsMap, matchId) => {
+    console.log(`Processing match ${matchId} with ${playerStatsMap.size} player stats`);
+    
     playerStatsMap.forEach((stats, playerId) => {
+      // Add the key matching fields to ensure proper database operations
       playerMatchStatsArray.push({
         ...stats,
         match_id: matchId,
