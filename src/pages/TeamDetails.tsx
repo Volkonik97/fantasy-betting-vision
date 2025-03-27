@@ -1,24 +1,21 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, TrendingUp, Percent, Clock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Team, Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
-import PlayerCard from "@/components/PlayerCard";
-import TeamStatistics from "@/components/TeamStatistics";
-import SideAnalysis from "@/components/SideAnalysis";
-import PredictionChart from "@/components/PredictionChart";
 import { getTeamById } from "@/utils/database/teamsService";
 import { getMatches } from "@/utils/database/matchesService";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 import { toast } from "sonner";
+import TeamHeader from "@/components/team/TeamHeader";
+import TeamPlayersList from "@/components/team/TeamPlayersList";
+import TeamRecentMatches from "@/components/team/TeamRecentMatches";
+import TeamAnalysisSection from "@/components/team/TeamAnalysisSection";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
@@ -111,191 +108,14 @@ const TeamDetails = () => {
         </Link>
         
         <motion.div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                <img 
-                  src={team?.logo} 
-                  alt={`${team?.name} logo`} 
-                  className="w-16 h-16 object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/placeholder.svg";
-                  }}
-                />
-              </div>
-              
-              <div>
-                <h1 className="text-3xl font-bold mb-1">{team?.name}</h1>
-                <p className="text-gray-600">{team?.region}</p>
-              </div>
-              
-              <div className="ml-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="flex justify-center mb-1">
-                    <Percent size={18} className="text-lol-blue" />
-                  </div>
-                  <p className="text-2xl font-bold">{team ? (team.winRate * 100).toFixed(0) : 0}%</p>
-                  <p className="text-xs text-gray-500">Win Rate</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex justify-center mb-1">
-                    <Clock size={18} className="text-lol-blue" />
-                  </div>
-                  <p className="text-2xl font-bold">{team ? formatSecondsToMinutesSeconds(team.averageGameTime) : "00:00"}</p>
-                  <p className="text-xs text-gray-500">Avg. Game Time</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex justify-center mb-1">
-                    <TrendingUp size={18} className="text-lol-blue" />
-                  </div>
-                  <p className="text-2xl font-bold">{team ? (team.blueWinRate * 100).toFixed(0) : 0}%</p>
-                  <p className="text-xs text-gray-500">Blue Side Wins</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex justify-center mb-1">
-                    <TrendingUp size={18} className="text-lol-blue" />
-                  </div>
-                  <p className="text-2xl font-bold">{team ? (team.redWinRate * 100).toFixed(0) : 0}%</p>
-                  <p className="text-xs text-gray-500">Red Side Wins</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TeamHeader team={team} />
         </motion.div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2">
-            {team && <TeamStatistics team={team} />}
-          </div>
-          
-          <div>
-            {team && (
-              <PredictionChart 
-                blueWinRate={team.blueWinRate * 100} 
-                redWinRate={team.redWinRate * 100} 
-                teamBlueName="Blue Side" 
-                teamRedName="Red Side" 
-              />
-            )}
-          </div>
-        </div>
+        <TeamAnalysisSection team={team} sideStats={sideStats} />
         
-        {sideStats && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
-            <SideAnalysis statistics={sideStats} />
-          </div>
-        )}
+        <TeamPlayersList players={team.players} />
         
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <h2 className="text-2xl font-bold mb-4">Joueurs</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {team.players.length > 0 ? (
-              team.players.map(player => (
-                <PlayerCard key={player.id} player={player} />
-              ))
-            ) : (
-              <p className="col-span-full text-gray-500 text-center py-8">
-                Aucun joueur trouvé pour cette équipe
-              </p>
-            )}
-          </div>
-        </motion.div>
-        
-        {teamMatches.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            className="mt-8"
-          >
-            <h2 className="text-2xl font-bold mb-4">Matchs récents</h2>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-4 py-3 text-left">Date</th>
-                    <th className="px-4 py-3 text-left">Tournoi</th>
-                    <th className="px-4 py-3 text-left">Adversaire</th>
-                    <th className="px-4 py-3 text-left">Résultat</th>
-                    <th className="px-4 py-3 text-left">Prédiction</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamMatches.map(match => {
-                    const isBlue = match.teamBlue.id === team.id;
-                    const opponent = isBlue ? match.teamRed : match.teamBlue;
-                    const result = match.result 
-                      ? (isBlue 
-                          ? (match.result.winner === team.id ? 'Victoire' : 'Défaite')
-                          : (match.result.winner === team.id ? 'Victoire' : 'Défaite'))
-                      : '-';
-                    const predictionAccurate = match.result 
-                      ? match.predictedWinner === match.result.winner 
-                      : null;
-                    
-                    return (
-                      <tr key={match.id} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          {new Date(match.date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">{match.tournament}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-                              <img 
-                                src={opponent.logo} 
-                                alt={`${opponent.name} logo`} 
-                                className="w-4 h-4 object-contain"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = "/placeholder.svg";
-                                }}
-                              />
-                            </div>
-                            <span>{opponent.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`font-medium ${
-                            result === 'Victoire' ? 'text-green-600' : 
-                            result === 'Défaite' ? 'text-red-600' : 'text-gray-500'
-                          }`}>
-                            {result}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {match.status === 'Completed' ? (
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              predictionAccurate ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {predictionAccurate ? 'Correcte' : 'Incorrecte'}
-                            </span>
-                          ) : (
-                            <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                              {match.predictedWinner === team.id ? 'Victoire' : 'Défaite'} 
-                              ({isBlue 
-                                ? Math.round(match.blueWinOdds * 100)
-                                : Math.round(match.redWinOdds * 100)}%)
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        )}
+        <TeamRecentMatches team={team} matches={teamMatches} />
       </main>
     </div>
   );
