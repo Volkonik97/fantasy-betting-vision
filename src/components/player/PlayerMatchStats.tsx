@@ -23,31 +23,31 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         const statsWithOpponents = await Promise.all(
           matchStats.map(async (stat) => {
             try {
+              // Récupérer les données du match à partir de son ID
               const match = await getMatchById(stat.match_id);
               
-              // If match isn't found, just return the original stat
+              // Si le match n'est pas trouvé, retourner la statistique d'origine
               if (!match) return stat;
               
-              // Determine opponent team based on the player's team_id
+              // Déterminer l'équipe adverse en fonction de l'équipe du joueur
               const isBlueTeam = stat.team_id === match.teamBlue.id;
               const opponentTeam = isBlueTeam ? match.teamRed : match.teamBlue;
               
-              // Convert match date string to a proper Date object
-              // Log the date information for debugging
+              // Traitement de la date du match
               console.log(`Match ${stat.match_id} date from DB:`, match.date);
               
               let parsedDate;
               try {
-                // Try to parse the date (handles various formats)
+                // Essayer de parser la date (gère différents formats)
                 parsedDate = new Date(match.date);
                 if (isNaN(parsedDate.getTime())) {
-                  console.warn(`Invalid date format for match ${stat.match_id}: ${match.date}`);
+                  console.warn(`Format de date invalide pour le match ${stat.match_id}: ${match.date}`);
                   parsedDate = null;
                 } else {
-                  console.log(`Successfully parsed date for match ${stat.match_id}:`, parsedDate);
+                  console.log(`Date analysée avec succès pour le match ${stat.match_id}:`, parsedDate);
                 }
               } catch (dateError) {
-                console.error(`Error parsing date for match ${stat.match_id}:`, dateError);
+                console.error(`Erreur d'analyse de la date pour le match ${stat.match_id}:`, dateError);
                 parsedDate = null;
               }
               
@@ -59,32 +59,32 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                 parsedDate: parsedDate
               };
             } catch (error) {
-              console.error(`Error loading match data for ${stat.match_id}:`, error);
+              console.error(`Erreur lors du chargement des données du match ${stat.match_id}:`, error);
               return stat;
             }
           })
         );
         
-        // Log the first result to debug
+        // Journaliser le premier résultat pour le débogage
         if (statsWithOpponents.length > 0) {
-          console.log("First match with opponent:", statsWithOpponents[0]);
+          console.log("Premier match avec adversaire:", statsWithOpponents[0]);
           if (statsWithOpponents[0].match_date) {
-            console.log("Match date:", statsWithOpponents[0].match_date);
-            console.log("Parsed date:", statsWithOpponents[0].parsedDate);
+            console.log("Date du match:", statsWithOpponents[0].match_date);
+            console.log("Date analysée:", statsWithOpponents[0].parsedDate);
           }
         }
         
-        // Sort matches by date (newest first)
+        // Trier les matchs par date (les plus récents d'abord)
         const sortedMatches = [...statsWithOpponents].sort((a, b) => {
-          // If no parsedDate is available, put those matches at the end
+          // Si aucune date analysée n'est disponible, placer ces matchs à la fin
           if (!a.parsedDate || isNaN(a.parsedDate?.getTime())) return 1;
           if (!b.parsedDate || isNaN(b.parsedDate?.getTime())) return -1;
           
-          // Compare dates in descending order (newest first)
+          // Comparer les dates par ordre décroissant (les plus récents d'abord)
           return b.parsedDate.getTime() - a.parsedDate.getTime();
         });
         
-        console.log("Sorted matches (first 3):", sortedMatches.slice(0, 3).map(m => ({
+        console.log("Matchs triés (3 premiers):", sortedMatches.slice(0, 3).map(m => ({
           match_id: m.match_id,
           date: m.match_date,
           parsed: m.parsedDate
@@ -92,7 +92,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         
         setMatchesWithOpponents(sortedMatches);
       } catch (error) {
-        console.error("Error loading opponent teams:", error);
+        console.error("Erreur lors du chargement des équipes adverses:", error);
       } finally {
         setIsLoading(false);
       }
@@ -149,7 +149,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             </TableHeader>
             <TableBody>
               {statsToDisplay.map((stat) => {
-                // Utilize the is_winner field directly when available
+                // Utiliser directement le champ is_winner lorsqu'il est disponible
                 const isWin = typeof stat.is_winner === 'boolean' ? stat.is_winner : isWinForPlayer(stat);
                 
                 return (
