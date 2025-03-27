@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import Papa from 'papaparse';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
@@ -52,12 +51,24 @@ export const loadFromGoogleSheets = async (
         header: true,
         skipEmptyLines: true,
         dynamicTyping: false, // Keep everything as strings to avoid data loss
-        complete: (result) => resolve(result),
-        error: (error) => reject(error),
+        complete: (result) => {
+          console.log(`Papa parse complete with ${result.data.length} rows`);
+          resolve(result);
+        },
+        error: (error) => {
+          console.error("Papa parse error:", error);
+          reject(error);
+        },
         // Set a generous limit to ensure we get all rows
-        worker: true, // Use worker thread for better performance with large files
+        worker: false, // Disable worker to avoid timeouts with large files
         delimiter: ",", // Explicitly set delimiter
-        newline: "\n" // Explicitly set newline
+        newline: "\n", // Explicitly set newline
+        fastMode: false, // Disable fast mode for more reliable parsing
+        chunkSize: 100000, // Increase chunk size for better performance
+        beforeFirstChunk: (chunk) => {
+          console.log("Received first chunk");
+          return chunk;
+        }
       });
     });
     
@@ -101,9 +112,14 @@ export const loadFromGoogleSheets = async (
     console.log("Données traitées:", {
       teamsCount: processedData.teams.length,
       playersCount: processedData.players.length,
-      matchesCount: processedData.matches.length
+      matchesCount: processedData.matches.length,
+      playerStatsCount: processedData.playerMatchStats.length
     });
     progressCallback?.("Traitement terminé", 50);
+    
+    // Keep track of player stats count for accurate progress
+    const totalPlayerStats = processedData.playerMatchStats.length;
+    console.log(`Total player match stats to save: ${totalPlayerStats}`);
     
     // Save the processed data to Supabase in steps to show progress
     progressCallback?.("Enregistrement des équipes", 55);
@@ -113,20 +129,20 @@ export const loadFromGoogleSheets = async (
       // Map the database phase to an overall progress percentage
       switch (phase) {
         case 'teams':
-          totalProgress = 55 + percent * 0.15; // 55-70%
+          totalProgress = 55 + percent * 0.1; // 55-65%
           progressCallback?.("Enregistrement des équipes", totalProgress);
           break;
         case 'players':
-          totalProgress = 70 + percent * 0.15; // 70-85%
+          totalProgress = 65 + percent * 0.1; // 65-75%
           progressCallback?.("Enregistrement des joueurs", totalProgress);
           break;
         case 'matches':
-          totalProgress = 85 + percent * 0.05; // 85-90%
+          totalProgress = 75 + percent * 0.05; // 75-80%
           progressCallback?.("Enregistrement des matchs", totalProgress);
           break;
         case 'playerStats':
-          totalProgress = 90 + percent * 0.1; // 90-100%
-          progressCallback?.("Enregistrement des statistiques", totalProgress);
+          totalProgress = 80 + percent * 0.2; // 80-100% - give more weight to player stats
+          progressCallback?.(`Enregistrement des statistiques (${Math.floor(percent * totalPlayerStats / 100)} sur ${totalPlayerStats})`, totalProgress);
           break;
       }
     });

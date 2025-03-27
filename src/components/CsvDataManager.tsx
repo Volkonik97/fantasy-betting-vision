@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Link, Database, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface CsvDataManagerProps {
   onDataImported?: () => void;
@@ -20,6 +22,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [hasDataInDb, setHasDataInDb] = useState(false);
   const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number, playerStats: number} | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(true);
+  const [progressStep, setProgressStep] = useState<string>("");
 
   useEffect(() => {
     const checkData = async () => {
@@ -39,10 +42,13 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
     try {
       setIsLoading(true);
       setImportProgress(10);
+      setIsImportComplete(false);
+      setImportStats(null);
       console.log("Début de l'importation depuis Google Sheets:", sheetsUrl);
       
       const progressCallback = (step: string, progress: number) => {
         console.log(`Import progress: ${step} - ${progress}%`);
+        setProgressStep(step);
         setImportProgress(progress);
       };
       
@@ -57,6 +63,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       
       setImportProgress(100);
       setIsImportComplete(true);
+      setProgressStep("Importation terminée");
       setImportStats({
         teams: result.teams.length,
         players: result.players.length,
@@ -79,9 +86,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       
       setHasDataInDb(true);
       
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 3000);
+      // Removed redirect to home page
     } catch (error) {
       console.error("Erreur de chargement:", error);
       toast.error(`Erreur lors du chargement des données depuis Google Sheets: ${error instanceof Error ? error.message : String(error)}`);
@@ -95,18 +100,17 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const renderImportStatus = () => {
     if (isImportComplete && importStats) {
       return (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <h3 className="font-medium text-green-800 mb-2">Importation terminée !</h3>
-          <ul className="text-sm text-green-700">
-            <li>• {importStats.teams} équipes importées</li>
-            <li>• {importStats.players} joueurs importés</li>
-            <li>• {importStats.matches} matchs importés</li>
-            <li>• {importStats.playerStats} statistiques de joueurs importées</li>
-          </ul>
-          <p className="text-sm mt-2 text-green-700">
-            Redirection vers la page d'accueil...
-          </p>
-        </div>
+        <Alert className="mt-4 bg-green-50 border border-green-200">
+          <AlertTitle className="text-green-800">Importation terminée !</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-2 space-y-1 text-sm text-green-700">
+              <li>• {importStats.teams} équipes importées</li>
+              <li>• {importStats.players} joueurs importés</li>
+              <li>• {importStats.matches} matchs importés</li>
+              <li>• {importStats.playerStats} statistiques de joueurs importées</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
       );
     }
     
@@ -114,7 +118,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       return (
         <div className="mt-4">
           <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-500">Importation en cours...</span>
+            <span className="text-sm text-gray-500">{progressStep}</span>
             <span className="text-sm font-medium">{importProgress}%</span>
           </div>
           <Progress value={importProgress} className="h-2" />

@@ -27,67 +27,83 @@ export const savePlayerMatchStats = async (playerStats: any[]): Promise<boolean>
     
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
-    // Insert player match stats in batches of 25 (smaller batch size to prevent timeouts)
-    const statsChunks = chunk(validStats, 25);
+    // Reduce batch size even further to prevent timeouts
+    const statsChunks = chunk(validStats, 10); // Smaller batch size for better reliability
     let successCount = 0;
     let errorCount = 0;
     
     for (const [index, statsChunk] of statsChunks.entries()) {
       try {
-        // Log progress every 10 batches
-        if (index % 10 === 0) {
+        // Log progress more frequently to track imports better
+        if (index % 5 === 0) {
           console.log(`Processing batch ${index + 1}/${statsChunks.length} of player match statistics`);
         }
         
-        // Instead of deleting first, we'll use upsert with onConflict strategy
-        const { error: statsError, data } = await supabase
-          .from('player_match_stats')
-          .upsert(statsChunk, { 
-            onConflict: 'player_id,match_id',
-            ignoreDuplicates: false
-          });
-        
-        if (statsError) {
-          console.error("Error upserting player match stats:", statsError);
-          
-          // If upsert fails due to conflict handling, fall back to delete-then-insert approach
-          if (statsError.message.includes("conflict") || statsError.message.includes("duplicate")) {
-            console.log("Falling back to delete-then-insert approach for this batch");
-            
-            // Delete existing records for these player/match combinations
-            for (const stat of statsChunk) {
-              await supabase
-                .from('player_match_stats')
-                .delete()
-                .match({ player_id: stat.player_id, match_id: stat.match_id });
-            }
-            
-            // Now insert the new records
-            const { error: insertError } = await supabase
-              .from('player_match_stats')
-              .insert(statsChunk);
-              
-            if (insertError) {
-              console.error("Error in fallback insert of player match stats:", insertError);
-              errorCount += statsChunk.length;
-              continue;
-            }
-          } else {
-            errorCount += statsChunk.length;
-            continue; // Continue with the next batch
-          }
+        // First try to delete existing records to avoid conflicts
+        for (const stat of statsChunk) {
+          await supabase
+            .from('player_match_stats')
+            .delete()
+            .match({ player_id: stat.player_id, match_id: stat.match_id });
         }
         
-        successCount += statsChunk.length;
+        // Insert the new records after deletion
+        const { error: insertError } = await supabase
+          .from('player_match_stats')
+          .insert(statsChunk);
+          
+        if (insertError) {
+          console.error("Error inserting player match stats:", insertError);
+          
+          // Try to insert records one by one if batch insert fails
+          for (const stat of statsChunk) {
+            const { error: singleInsertError } = await supabase
+              .from('player_match_stats')
+              .insert([stat]);
+              
+            if (singleInsertError) {
+              console.error(`Error inserting single player match stat for player ${stat.player_id} in match ${stat.match_id}:`, singleInsertError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          }
+        } else {
+          successCount += statsChunk.length;
+        }
         
-        // Log success every 10 batches
-        if (index % 10 === 0) {
+        // Log success more frequently
+        if (index % 5 === 0 || index === statsChunks.length - 1) {
           console.log(`Successfully processed batch ${index + 1}/${statsChunks.length} (${successCount} records so far)`);
         }
       } catch (error) {
         console.error("Error processing player match stats batch:", error);
-        errorCount += statsChunk.length;
-        continue; // Continue with next batch
+        
+        // Try to save each record individually on batch error
+        for (const stat of statsChunk) {
+          try {
+            // Delete if exists
+            await supabase
+              .from('player_match_stats')
+              .delete()
+              .match({ player_id: stat.player_id, match_id: stat.match_id });
+              
+            // Insert new
+            const { error: singleError } = await supabase
+              .from('player_match_stats')
+              .insert([stat]);
+              
+            if (singleError) {
+              console.error(`Error on individual insert for player ${stat.player_id} in match ${stat.match_id}:`, singleError);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          } catch (individualError) {
+            console.error(`Failed to process stat for player ${stat.player_id} in match ${stat.match_id}:`, individualError);
+            errorCount++;
+          }
+        }
       }
     }
     
