@@ -2,7 +2,7 @@
 import { calculateAverage } from './helpers';
 
 // Calculate timeline stats from player data
-export const calculateTimelineStats = (playerStats: any[]) => {
+export const getTimelineStats = (playerStats: any[]) => {
   // Group stats by time points
   const timePoints = ['10', '15', '20', '25'];
   const result: any = {};
@@ -51,3 +51,7 @@ export const calculateTimelineStats = (playerStats: any[]) => {
   
   return result;
 };
+
+// For backward compatibility, also export the original function name
+export const calculateTimelineStats = getTimelineStats;
+
