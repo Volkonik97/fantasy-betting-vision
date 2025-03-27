@@ -126,11 +126,16 @@ const TeamDetails = () => {
         
         <TeamAnalysisSection team={team} sideStats={sideStats} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          <TeamStatistics team={team} timelineStats={timelineStats} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+          <div className="lg:col-span-1">
+            <TeamStatistics team={team} timelineStats={timelineStats} />
+          </div>
           
-          <div className="lg:row-span-2">
-            <TeamRecentMatches team={team} matches={teamMatches} />
+          <div className="lg:col-span-2">
+            <TeamPlayersList players={team.players} />
+            <div className="mt-8">
+              <TeamRecentMatches team={team} matches={teamMatches} />
+            </div>
           </div>
         </div>
       </main>
