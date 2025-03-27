@@ -13,8 +13,7 @@ import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
-import TeamAnalysisSection from "@/components/team/TeamAnalysisSection";
-import TeamStatistics from "@/components/TeamStatistics";
+import SideAnalysis from "@/components/SideAnalysis";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -124,26 +123,23 @@ const TeamDetails = () => {
           <TeamHeader team={team} />
         </motion.div>
         
-        {/* Suppression de l'affichage des statistiques timeline dans TeamAnalysisSection */}
-        <TeamAnalysisSection 
-          team={team} 
-          sideStats={sideStats ? {
-            ...sideStats,
-            timelineStats: null // On supprime les timeline stats ici pour éviter la duplication
-          } : null} 
-        />
-        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          <div className="lg:col-span-1">
-            {/* On garde uniquement ici les statistiques timeline */}
-            <TeamStatistics team={team} timelineStats={timelineStats} />
+          <div className="lg:col-span-2 space-y-8">
+            <TeamPlayersList players={team.players} />
+            <TeamRecentMatches team={team} matches={teamMatches} />
           </div>
           
-          <div className="lg:col-span-2">
-            <TeamPlayersList players={team.players} />
-            <div className="mt-8">
-              <TeamRecentMatches team={team} matches={teamMatches} />
-            </div>
+          <div className="space-y-8">
+            {/* Affichage des statistiques par côté avec timeline */}
+            {sideStats && (
+              <div>
+                <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
+                <SideAnalysis statistics={{
+                  ...sideStats,
+                  timelineStats: timelineStats // On utilise les timelineStats ici
+                }} />
+              </div>
+            )}
           </div>
         </div>
       </main>

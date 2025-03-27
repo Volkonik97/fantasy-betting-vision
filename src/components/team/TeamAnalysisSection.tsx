@@ -2,7 +2,6 @@
 import React from "react";
 import { Team } from "@/utils/models/types";
 import { SideStatistics } from "@/utils/models/types";
-import TeamStatistics from "@/components/TeamStatistics";
 import PredictionChart from "@/components/PredictionChart";
 import SideAnalysis from "@/components/SideAnalysis";
 
@@ -14,21 +13,15 @@ interface TeamAnalysisSectionProps {
 const TeamAnalysisSection = ({ team, sideStats }: TeamAnalysisSectionProps) => {
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        <div className="lg:col-span-2">
-          {team && <TeamStatistics team={team} />}
-        </div>
-        
-        <div>
-          {team && (
-            <PredictionChart 
-              blueWinRate={team.blueWinRate * 100} 
-              redWinRate={team.redWinRate * 100} 
-              teamBlueName="Blue Side" 
-              teamRedName="Red Side" 
-            />
-          )}
-        </div>
+      <div className="lg:col-span-2">
+        {team && (
+          <PredictionChart 
+            blueWinRate={team.blueWinRate * 100} 
+            redWinRate={team.redWinRate * 100} 
+            teamBlueName="Blue Side" 
+            teamRedName="Red Side" 
+          />
+        )}
       </div>
       
       {sideStats && (
