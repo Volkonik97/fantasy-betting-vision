@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
+import { getMatchById } from "@/utils/database/matchesService";
 
 interface PlayerMatchStatsProps {
   matchStats: any[];
@@ -11,10 +12,50 @@ interface PlayerMatchStatsProps {
 }
 
 const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps) => {
+  const [matchesWithOpponents, setMatchesWithOpponents] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadOpponentTeams = async () => {
+      const statsWithOpponents = await Promise.all(
+        matchStats.map(async (stat) => {
+          try {
+            const match = await getMatchById(stat.match_id);
+            
+            // If match isn't found, just return the original stat
+            if (!match) return stat;
+            
+            // Determine opponent team based on the player's team_id
+            const isBlueTeam = stat.team_id === match.teamBlue.id;
+            const opponentTeam = isBlueTeam ? match.teamRed : match.teamBlue;
+            
+            return {
+              ...stat,
+              opponent_team_name: opponentTeam.name,
+              opponent_team_id: opponentTeam.id
+            };
+          } catch (error) {
+            console.error(`Error loading match data for ${stat.match_id}:`, error);
+            return stat;
+          }
+        })
+      );
+      
+      setMatchesWithOpponents(statsWithOpponents);
+    };
+    
+    if (matchStats.length > 0) {
+      loadOpponentTeams();
+    } else {
+      setMatchesWithOpponents([]);
+    }
+  }, [matchStats]);
+
+  const statsToDisplay = matchesWithOpponents.length > 0 ? matchesWithOpponents : matchStats;
+  
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6">
       <h2 className="text-xl font-bold mb-4">
-        Statistiques par match ({matchStats.length} matchs)
+        Statistiques par match ({statsToDisplay.length} matchs)
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -32,7 +73,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         </TooltipProvider>
       </h2>
       
-      {matchStats.length > 0 ? (
+      {statsToDisplay.length > 0 ? (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -47,7 +88,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {matchStats.map((stat) => {
+              {statsToDisplay.map((stat) => {
                 // Utilize the is_winner field directly when available
                 const isWin = typeof stat.is_winner === 'boolean' ? stat.is_winner : isWinForPlayer(stat);
                 
