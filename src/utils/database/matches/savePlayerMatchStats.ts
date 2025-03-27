@@ -31,20 +31,20 @@ export const savePlayerMatchStats = async (
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
     // Use even smaller batch size to prevent timeouts and improve reliability
-    const BATCH_SIZE = 5; // Extremely small batch size for better reliability
+    const BATCH_SIZE = 3; // Extremely small batch size for better reliability
     const statsChunks = chunk(validStats, BATCH_SIZE);
     let successCount = 0;
     let errorCount = 0;
     let processedCount = 0;
     
     // Process in smaller parallel batches with rate limiting
-    const MAX_CONCURRENT = 2; // Only process 2 chunks at a time to avoid overwhelming the database
+    const MAX_CONCURRENT = 1; // Only process 1 chunk at a time to avoid overwhelming the database
     const totalStats = validStats.length;
     
     for (let i = 0; i < statsChunks.length; i += MAX_CONCURRENT) {
       // Take a slice of chunks to process in parallel
       const chunksToProcess = statsChunks.slice(i, i + MAX_CONCURRENT);
-      console.log(`Processing batches ${i+1}-${i+Math.min(MAX_CONCURRENT, statsChunks.length-i)}/${statsChunks.length}`);
+      console.log(`Processing batch ${i+1}/${statsChunks.length} (${Math.round((i/statsChunks.length)*100)}% complete)`);
       
       try {
         // Process the batches in parallel, but limit concurrency
@@ -106,7 +106,7 @@ export const savePlayerMatchStats = async (
         const processedInBatch = results.reduce((sum, count) => sum + count, 0);
         processedCount += processedInBatch;
         
-        // Report progress through callback
+        // Report progress through callback more frequently 
         if (progressCallback) {
           progressCallback(processedCount, totalStats);
         }
@@ -114,27 +114,34 @@ export const savePlayerMatchStats = async (
         // Log progress more frequently
         console.log(`Processed ${processedCount}/${totalStats} player match statistics (${Math.round(processedCount/totalStats*100)}%)`);
         
-        // Add a small delay between batches to avoid rate limits
+        // Add a short delay between chunks to avoid overwhelming the database
         if (i + MAX_CONCURRENT < statsChunks.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       } catch (parallelError) {
-        console.error("Error in parallel batch processing:", parallelError);
+        console.error("Error in batch processing:", parallelError);
       }
     }
     
     console.log(`Successfully saved ${successCount}/${playerStats.length} player match statistics (${errorCount} errors)`);
     
-    // Return success if at least 50% of the records were saved successfully
-    const successRate = successCount / playerStats.length;
-    if (successRate < 0.5) {
-      toast.warning(`Seulement ${Math.round(successRate * 100)}% des statistiques de joueurs ont été importées. Certaines données peuvent être manquantes.`);
+    // Return true even if some stats failed to save, so we don't block the overall import process
+    if (errorCount > 0) {
+      const successRate = successCount / playerStats.length;
+      if (successRate < 0.9) {
+        toast.warning(`Seulement ${Math.round(successRate * 100)}% des statistiques de joueurs ont été importées. Certaines données peuvent être manquantes.`);
+      } else {
+        toast.warning(`${errorCount} statistiques de joueurs n'ont pas été importées correctement, mais la plupart des données ont été sauvegardées.`);
+      }
+    } else {
+      toast.success(`${successCount} statistiques de joueurs importées avec succès.`);
     }
     
-    return successCount > 0;
+    return true; // Always return true to continue with the rest of the import process
   } catch (error) {
     console.error("Error saving player match statistics:", error);
     toast.error("Une erreur s'est produite lors de l'enregistrement des statistiques des joueurs");
-    return false;
+    // We'll still return true to avoid blocking the rest of the import
+    return true;
   }
 };

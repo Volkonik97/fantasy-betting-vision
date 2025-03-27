@@ -48,6 +48,25 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
   }
 };
 
+// Update the last database update timestamp
+export const updateLastUpdate = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('data_updates')
+      .insert([{ updated_at: new Date().toISOString() }]);
+    
+    if (error) {
+      console.error("Erreur lors de la mise à jour de la date:", error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la date:", error);
+    return false;
+  }
+};
+
 // Clear database - improved to handle foreign key constraints properly
 export const clearDatabase = async (): Promise<boolean> => {
   try {
@@ -110,7 +129,7 @@ export const clearDatabase = async (): Promise<boolean> => {
       .from('data_updates')
       .insert([{ updated_at: new Date().toISOString() }]);
     
-    // Reset the cache
+    // Reset the cache - properly export and use it
     resetCache();
     
     console.log("Suppression des données terminée avec succès");
@@ -122,3 +141,6 @@ export const clearDatabase = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// Export resetCache to make it available to other modules
+export { resetCache };
