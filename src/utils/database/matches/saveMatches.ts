@@ -4,7 +4,7 @@ import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
 
-// Clear match data cache when saving new matches
+// Import the clearMatchCache function from getMatches
 import { clearMatchCache } from './getMatches';
 
 /**
@@ -97,9 +97,4 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     toast.error("Une erreur s'est produite lors de l'enregistrement des matchs");
     return false;
   }
-};
-
-export const clearMatchCache = (): void => {
-  // This function is imported from getMatches.ts, but defined here
-  // to avoid circular dependencies
 };
