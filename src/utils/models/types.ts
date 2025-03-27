@@ -18,6 +18,8 @@ export interface Player {
   role: 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
   image: string;
   team: string;
+  teamName?: string;  // Added teamName as an optional property
+  teamRegion?: string; // Added teamRegion as an optional property
   kda: number;
   csPerMin: number;
   damageShare: number;
