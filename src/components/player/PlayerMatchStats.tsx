@@ -13,34 +13,48 @@ interface PlayerMatchStatsProps {
 
 const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps) => {
   const [matchesWithOpponents, setMatchesWithOpponents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     const loadOpponentTeams = async () => {
-      const statsWithOpponents = await Promise.all(
-        matchStats.map(async (stat) => {
-          try {
-            const match = await getMatchById(stat.match_id);
-            
-            // If match isn't found, just return the original stat
-            if (!match) return stat;
-            
-            // Determine opponent team based on the player's team_id
-            const isBlueTeam = stat.team_id === match.teamBlue.id;
-            const opponentTeam = isBlueTeam ? match.teamRed : match.teamBlue;
-            
-            return {
-              ...stat,
-              opponent_team_name: opponentTeam.name,
-              opponent_team_id: opponentTeam.id
-            };
-          } catch (error) {
-            console.error(`Error loading match data for ${stat.match_id}:`, error);
-            return stat;
-          }
-        })
-      );
+      setIsLoading(true);
       
-      setMatchesWithOpponents(statsWithOpponents);
+      try {
+        const statsWithOpponents = await Promise.all(
+          matchStats.map(async (stat) => {
+            try {
+              const match = await getMatchById(stat.match_id);
+              
+              // If match isn't found, just return the original stat
+              if (!match) return stat;
+              
+              // Determine opponent team based on the player's team_id
+              const isBlueTeam = stat.team_id === match.teamBlue.id;
+              const opponentTeam = isBlueTeam ? match.teamRed : match.teamBlue;
+              
+              return {
+                ...stat,
+                opponent_team_name: opponentTeam.name,
+                opponent_team_id: opponentTeam.id
+              };
+            } catch (error) {
+              console.error(`Error loading match data for ${stat.match_id}:`, error);
+              return stat;
+            }
+          })
+        );
+        
+        // Log the first result to debug
+        if (statsWithOpponents.length > 0) {
+          console.log("First match with opponent:", statsWithOpponents[0]);
+        }
+        
+        setMatchesWithOpponents(statsWithOpponents);
+      } catch (error) {
+        console.error("Error loading opponent teams:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     if (matchStats.length > 0) {
@@ -73,7 +87,12 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         </TooltipProvider>
       </h2>
       
-      {statsToDisplay.length > 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lol-blue mx-auto"></div>
+          <p className="mt-2 text-gray-500">Chargement des données...</p>
+        </div>
+      ) : statsToDisplay.length > 0 ? (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
