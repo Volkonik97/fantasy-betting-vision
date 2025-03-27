@@ -8,6 +8,7 @@ export const processLeagueData = (data: LeagueGameDataRow[]): {
   teams: Team[];
   players: Player[];
   matches: Match[];
+  playerMatchStats: any[];
 } => {
   return assembleLeagueData(data);
 };

@@ -3,6 +3,7 @@
 import { getMatches, getMatchById, clearMatchCache } from './getMatches';
 import { saveMatches } from './saveMatches';
 import { getPlayerMatchStats, getPlayerStats, getTeamTimelineStats, clearPlayerStatsCache } from './playerStats';
+import { savePlayerMatchStats } from './savePlayerMatchStats';
 
 export {
   getMatches,
@@ -12,5 +13,6 @@ export {
   getPlayerStats,
   getTeamTimelineStats,
   clearPlayerStatsCache,
-  clearMatchCache
+  clearMatchCache,
+  savePlayerMatchStats
 };

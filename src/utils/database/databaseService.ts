@@ -4,7 +4,7 @@ import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase } from './coreSer
 import { getTeams, saveTeams } from './teamsService';
 import { getSideStatistics } from './sideStatisticsService';
 import { getPlayers, savePlayers } from './playersService';
-import { getMatches, saveMatches } from './matches/matchesService';
+import { getMatches, saveMatches, savePlayerMatchStats } from './matches/matchesService';
 import { getTournaments } from './tournamentsService';
 import { toast } from "sonner";
 
@@ -13,13 +13,15 @@ export const saveToDatabase = async (data: {
   teams: Team[];
   players: Player[];
   matches: Match[];
+  playerMatchStats?: any[];
   tournaments?: any[];
 }): Promise<boolean> => {
   try {
     console.log("Starting to save to Supabase:", {
       teamsCount: data.teams.length,
       playersCount: data.players.length,
-      matchesCount: data.matches.length
+      matchesCount: data.matches.length,
+      playerStatsCount: data.playerMatchStats?.length || 0
     });
     
     // Insert teams
@@ -44,6 +46,19 @@ export const saveToDatabase = async (data: {
       console.error("Échec lors de l'enregistrement des matchs");
       toast.error("Erreur lors de l'enregistrement des matchs");
       return false;
+    }
+    
+    // Insert player match statistics if available
+    if (data.playerMatchStats && data.playerMatchStats.length > 0) {
+      console.log(`Saving ${data.playerMatchStats.length} player match statistics...`);
+      const statsSuccess = await savePlayerMatchStats(data.playerMatchStats);
+      if (!statsSuccess) {
+        console.error("Échec lors de l'enregistrement des statistiques des joueurs");
+        toast.error("Erreur lors de l'enregistrement des statistiques des joueurs");
+        // Continue even if player stats failed, since the core data was saved
+      } else {
+        console.log("Statistiques des joueurs enregistrées avec succès");
+      }
     }
     
     console.log("Données enregistrées avec succès dans Supabase");

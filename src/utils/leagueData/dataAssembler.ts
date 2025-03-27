@@ -1,86 +1,120 @@
-
-import { Team, Player, Match } from '../models/types';
 import { LeagueGameDataRow } from '../csvTypes';
+import { Team, Player, Match } from '../models/types';
 import { processTeamData } from './teamProcessor';
 import { processPlayerData } from './playerProcessor';
 import { processMatchData } from './matchProcessor';
-import { convertTeamData, convertPlayerData, convertMatchData } from '../dataConverter';
 
-// Main function to process and assemble data
-export const assembleLeagueData = (data: LeagueGameDataRow[]): {
+export function assembleLeagueData(data: LeagueGameDataRow[]): {
   teams: Team[];
   players: Player[];
   matches: Match[];
-} => {
-  if (!data || data.length === 0) {
-    console.error("Aucune donnée League à traiter");
-    return { teams: [], players: [], matches: [] };
-  }
-  
-  console.log(`Traitement de ${data.length} lignes de données League`);
+  playerMatchStats: any[]; // Add playerMatchStats to the return type
+} {
+  console.log(`Started processing ${data.length} rows of league data`);
   
   // Process team data
-  const { uniqueTeams } = processTeamData(data);
+  const { uniqueTeams, teamStats } = processTeamData(data);
   
   // Process player data
-  const { uniquePlayers, playerDamageShares } = processPlayerData(data);
+  const { uniquePlayers } = processPlayerData(data);
   
   // Process match data
-  const { matchStats, matchPlayerStats, matchesArray } = processMatchData(data);
+  const { uniqueGames, matchStats, matchPlayerStats, matchesArray } = processMatchData(data);
   
-  // Convert to application format
-  const teams = Array.from(uniqueTeams.values());
-  const teamsConverted = convertTeamData(teams);
+  // Convert Map to array for teams
+  const teamsArray = Array.from(uniqueTeams.values()).map(team => ({
+    id: team.id,
+    name: team.name,
+    logo: team.logo || '',
+    region: team.region || '',
+    winRate: teamStats.get(team.id)?.wins 
+      ? teamStats.get(team.id)!.wins / (teamStats.get(team.id)!.wins + teamStats.get(team.id)!.losses) 
+      : 0,
+    blueWinRate: teamStats.get(team.id)?.blueWins && (teamStats.get(team.id)!.blueWins + teamStats.get(team.id)!.blueLosses) > 0
+      ? teamStats.get(team.id)!.blueWins / (teamStats.get(team.id)!.blueWins + teamStats.get(team.id)!.blueLosses)
+      : 0,
+    redWinRate: teamStats.get(team.id)?.redWins && (teamStats.get(team.id)!.redWins + teamStats.get(team.id)!.redLosses) > 0
+      ? teamStats.get(team.id)!.redWins / (teamStats.get(team.id)!.redWins + teamStats.get(team.id)!.redLosses)
+      : 0,
+    averageGameTime: teamStats.get(team.id)?.gameTimes && teamStats.get(team.id)!.gameTimes.length > 0
+      ? teamStats.get(team.id)!.gameTimes.reduce((sum, time) => sum + time, 0) / teamStats.get(team.id)!.gameTimes.length
+      : 0,
+    players: [] 
+  }));
   
-  const players = Array.from(uniquePlayers.values());
-  const playersConverted = convertPlayerData(players);
+  // Convert Map to array for players
+  const playersArray = Array.from(uniquePlayers.values()).map(player => ({
+    id: player.id,
+    name: player.name,
+    role: player.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+    image: player.image || '',
+    team: player.team,
+    kda: Number(player.kda) || 0,
+    csPerMin: Number(player.csPerMin) || 0,
+    damageShare: Number(player.damageShare) || 0,
+    championPool: player.championPool ? player.championPool.split(',') : []
+  }));
   
-  // Assign players to teams
-  teamsConverted.forEach(team => {
-    team.players = playersConverted.filter(player => player.team === team.id);
-  });
-  
-  // Convert matches
-  const matchesConverted = convertMatchData(matchesArray, teamsConverted);
-  
-  // Add additional match data
-  matchesConverted.forEach(match => {
-    // Add match-level team stats if available
-    const matchTeamStats = matchStats.get(match.id);
-    if (matchTeamStats) {
-      const blueTeamStats = matchTeamStats.get(match.teamBlue.id);
-      const redTeamStats = matchTeamStats.get(match.teamRed.id);
-      
-      match.extraStats = {
-        patch: match.extraStats?.patch || '',
-        year: match.extraStats?.year || '',
-        split: match.extraStats?.split || '',
-        playoffs: match.extraStats?.playoffs || false,
-        team_kpm: match.extraStats?.team_kpm || 0,
-        ckpm: match.extraStats?.ckpm || 0,
-        team_kills: match.extraStats?.team_kills || 0,
-        team_deaths: match.extraStats?.team_deaths || 0
-      };
-      
-      if (blueTeamStats) {
-        match.extraStats.blueTeamStats = blueTeamStats;
-      }
-      
-      if (redTeamStats) {
-        match.extraStats.redTeamStats = redTeamStats;
-      }
+  // Format matches with references to team objects
+  const matches = matchesArray.map(match => {
+    const blueTeam = teamsArray.find(team => team.id === match.teamBlueId);
+    const redTeam = teamsArray.find(team => team.id === match.teamRedId);
+    
+    if (!blueTeam || !redTeam) {
+      console.warn(`Match ${match.id} references non-existent teams: blue=${match.teamBlueId}, red=${match.teamRedId}`);
+      return null;
     }
     
-    // Add player match stats if available
-    const playerStats = matchPlayerStats.get(match.id);
-    if (playerStats) {
-      match.playerStats = Array.from(playerStats.values());
-    }
+    const matchResult = match.winnerTeamId ? {
+      winner: match.winnerTeamId,
+      score: [match.scoreBlue || 0, match.scoreRed || 0] as [number, number],
+      duration: match.duration || '',
+      mvp: match.mvp || '',
+      firstBlood: match.firstBlood || '',
+      firstDragon: match.firstDragon || '',
+      firstBaron: match.firstBaron || ''
+    } : undefined;
+    
+    const gameId = match.id;
+    const extraStats = {
+      // Extract match team stats for this game
+      blueTeamStats: matchStats.get(gameId)?.get(match.teamBlueId) || null,
+      redTeamStats: matchStats.get(gameId)?.get(match.teamRedId) || null
+    };
+    
+    return {
+      id: match.id,
+      tournament: match.tournament,
+      date: match.date,
+      teamBlue: blueTeam,
+      teamRed: redTeam,
+      predictedWinner: match.predictedWinner || blueTeam.id, // Default to blue team if no prediction
+      blueWinOdds: Number(match.blueWinOdds) || 0.5,
+      redWinOdds: Number(match.redWinOdds) || 0.5,
+      status: match.status as 'Upcoming' | 'Live' | 'Completed',
+      result: matchResult,
+      extraStats
+    };
+  }).filter(match => match !== null) as Match[];
+  
+  // Convert player match stats from nested maps to an array for database storage
+  const playerMatchStatsArray: any[] = [];
+  matchPlayerStats.forEach((playerStatsMap, matchId) => {
+    playerStatsMap.forEach((stats, playerId) => {
+      playerMatchStatsArray.push({
+        ...stats,
+        match_id: matchId,
+        player_id: playerId
+      });
+    });
   });
   
-  return {
-    teams: teamsConverted,
-    players: playersConverted,
-    matches: matchesConverted
+  console.log(`Processed ${teamsArray.length} teams, ${playersArray.length} players, ${matches.length} matches, and ${playerMatchStatsArray.length} player match statistics`);
+  
+  return { 
+    teams: teamsArray, 
+    players: playersArray, 
+    matches, 
+    playerMatchStats: playerMatchStatsArray 
   };
-};
+}
