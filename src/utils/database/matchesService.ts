@@ -261,8 +261,18 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     let playerStatsSuccess = true;
     for (const match of matches) {
       if (match.playerStats && match.playerStats.length > 0) {
+        // Filter out player stats with missing player_id or team_id
+        const validPlayerStats = match.playerStats.filter(
+          stat => stat.player_id && stat.player_id.trim() !== '' && 
+                 stat.team_id && stat.team_id.trim() !== ''
+        );
+        
+        if (validPlayerStats.length !== match.playerStats.length) {
+          console.log(`Match ${match.id}: Filtered out ${match.playerStats.length - validPlayerStats.length} player stats with missing IDs`);
+        }
+        
         // Prepare player stats for database insertion
-        const dbPlayerStats = match.playerStats.map(stat => ({
+        const dbPlayerStats = validPlayerStats.map(stat => ({
           match_id: match.id,
           player_id: stat.player_id,
           team_id: stat.team_id,
@@ -367,14 +377,19 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
           opp_deaths_at_25: stat.opp_deaths_at_25
         }));
         
-        // Insert player stats
-        const { error: statsError } = await supabase
-          .from('player_match_stats')
-          .upsert(dbPlayerStats);
-        
-        if (statsError) {
-          console.error("Erreur lors de la sauvegarde des statistiques des joueurs:", statsError);
-          playerStatsSuccess = false;
+        if (dbPlayerStats.length > 0) {
+          // Insert player stats
+          const { error: statsError } = await supabase
+            .from('player_match_stats')
+            .upsert(dbPlayerStats);
+          
+          if (statsError) {
+            console.error("Erreur lors de la sauvegarde des statistiques des joueurs:", statsError);
+            console.error("Détails de l'erreur:", statsError.details);
+            playerStatsSuccess = false;
+          } else {
+            console.log(`Match ${match.id}: ${dbPlayerStats.length} player stats inserted successfully`);
+          }
         }
       }
     }

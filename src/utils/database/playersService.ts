@@ -7,8 +7,15 @@ import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
 // Save players to database
 export const savePlayers = async (players: Player[]): Promise<boolean> => {
   try {
+    // Filter out players with no team ID to prevent foreign key constraint violations
+    const validPlayers = players.filter(player => player.team && player.team.trim() !== '');
+    
+    if (validPlayers.length !== players.length) {
+      console.log(`Filtered out ${players.length - validPlayers.length} players with missing team IDs`);
+    }
+    
     // Insérer les joueurs par lots de 100
-    const playerChunks = chunk(players, 100);
+    const playerChunks = chunk(validPlayers, 100);
     for (const playerChunk of playerChunks) {
       const { error: playersError } = await supabase.from('players').insert(
         playerChunk.map(player => {

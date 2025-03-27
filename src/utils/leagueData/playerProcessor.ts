@@ -17,13 +17,14 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
   // Extract unique players
   const uniquePlayers = new Map<string, PlayerCSV>();
   data.forEach(row => {
-    if (row.playerid && !uniquePlayers.has(row.playerid)) {
+    // Only add players with both a player ID and a team ID
+    if (row.playerid && row.teamid && !uniquePlayers.has(row.playerid)) {
       uniquePlayers.set(row.playerid, {
         id: row.playerid,
         name: row.playername || row.playerid,
         role: row.position || 'Jungle',
         image: '',
-        team: row.teamid || '',
+        team: row.teamid,
         kda: '0',
         csPerMin: '0',
         damageShare: '0',
@@ -39,7 +40,7 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
   
   // First pass to collect player stats
   data.forEach(row => {
-    if (!row.playerid) return;
+    if (!row.playerid || !row.teamid) return; // Skip rows without player ID or team ID
     
     const playerId = row.playerid;
     if (!playerStats.has(playerId)) {

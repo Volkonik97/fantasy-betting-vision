@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +47,8 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         });
       }, 2000);
       
-      const result = await loadFromGoogleSheets(sheetsUrl);
+      // Pass deleteExisting=true to ensure clean imports
+      const result = await loadFromGoogleSheets(sheetsUrl, true);
       
       clearInterval(progressInterval);
       
