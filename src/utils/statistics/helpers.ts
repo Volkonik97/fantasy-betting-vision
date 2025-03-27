@@ -43,21 +43,49 @@ export const throttlePromises = async <T>(
 
 // Default side statistics object for initialization
 export const defaultSideStats = {
+  teamId: '',
   blueWins: 0,
-  blueLosses: 0,
   redWins: 0,
-  redLosses: 0,
-  blueFirstBloods: 0,
-  redFirstBloods: 0,
-  blueFirstTowers: 0,
-  redFirstTowers: 0,
-  blueFirstDragons: 0,
-  redFirstDragons: 0,
-  blueFirstBarons: 0,
-  redFirstBarons: 0,
-  blueFirstHeralds: 0,
-  redFirstHeralds: 0,
-  blueFirstInhibs: 0,
-  redFirstInhibs: 0,
-  totalMatches: 0
+  blueFirstBlood: 0,
+  redFirstBlood: 0,
+  blueFirstDragon: 0,
+  redFirstDragon: 0,
+  blueFirstHerald: 0,
+  redFirstHerald: 0,
+  blueFirstTower: 0,
+  redFirstTower: 0,
+  timelineStats: {
+    '10': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0
+    },
+    '15': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0
+    },
+    '20': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0
+    },
+    '25': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0
+    }
+  }
 };
