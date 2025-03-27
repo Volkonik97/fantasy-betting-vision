@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teamsService";
+import { getTeams } from "@/utils/database/teams";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,10 +20,8 @@ const Players = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch teams which also contain players
         const teams = await getTeams();
         
-        // Flatten player array from all teams and add team information
         const players = teams.flatMap(team => 
           team.players.map(player => ({
             ...player,
@@ -46,15 +43,12 @@ const Players = () => {
   }, []);
   
   const filteredPlayers = allPlayers.filter(player => {
-    // Check if player role matches selected role (case-insensitive)
     const roleMatches = selectedRole === "All" || 
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
-    // Check if team region matches selected region
     const regionMatches = selectedRegion === "All" || 
       player.teamRegion === selectedRegion;
     
-    // Check if search term is in player name or team name
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       player.teamName.toLowerCase().includes(searchTerm.toLowerCase());
