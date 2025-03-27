@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -12,41 +13,24 @@ const Players = () => {
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
-  // Updated with all major LoL competitive regions
-  const regions = [
-    "All", 
-    "LCK", // Korea
-    "LPL", // China
-    "LEC", // Europe
-    "LTA", // Latin America
-    "LCS", // North America
-    "PCS", // Pacific
-    "VCS", // Vietnam
-    "CBLOL", // Brazil
-    "LJL", // Japan
-    "LCO", // Oceania
-    "TCL", // Turkey
-    "LCL", // Commonwealth of Independent States
-    "LLA", // Latin America
-    "LFL", // France
-    "LFL2", // France Division 2
-    "LVP", // Spain
-    "Prime League", // Germany/DACH
-    "NLC", // Northern Europe
-    "PG Nationals", // Italy
-    "Ultraliga", // Poland
-    "Greek Legends", // Greece
-    "Arabian League", // Arabia
-    "Hitpoint Masters", // Czech Republic & Slovakia
-    "Elite Series", // Benelux
-    "Esports Balkan League", // Balkans
-    "Baltic Masters" // Baltic
-  ];
+  
+  // Organized regions by category
+  const regionCategories = {
+    "All": ["All"],
+    "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
+    "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
+  };
+  
+  // All regions flattened for direct searching
+  const allRegions = Object.values(regionCategories).flat();
   
   const subRegions = {
     LTA: ["All", "LTA N", "LTA S"]
@@ -107,9 +91,24 @@ const Players = () => {
     const roleMatches = selectedRole === "All" || 
       player.role.toLowerCase() === selectedRole.toLowerCase();
     
-    // Case-insensitive region matching with support for LTA N and LTA S
-    let regionMatches = selectedRegion === "All" || 
-      player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+    // Case-insensitive region matching with category support
+    let regionMatches = true;
+    
+    if (selectedCategory !== "All") {
+      // If a category is selected but no specific region
+      if (selectedRegion === "All") {
+        // Check if player's region is in the selected category
+        regionMatches = regionCategories[selectedCategory].some(region => 
+          region === "All" || player.teamRegion.toUpperCase() === region.toUpperCase()
+        );
+      } else {
+        // Specific region selected
+        regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+      }
+    } else if (selectedRegion !== "All") {
+      // Direct region selection when no category is chosen
+      regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+    }
     
     // If LTA is selected, check sub-regions
     if (selectedRegion === "LTA") {
@@ -129,6 +128,15 @@ const Players = () => {
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
+  };
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedRegion("All"); // Reset region when changing category
+  };
+
+  const handleRegionSelect = (region: string) => {
+    setSelectedRegion(region);
   };
 
   return (
@@ -160,8 +168,8 @@ const Players = () => {
           <SearchBar onSearch={handleSearch} />
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-6 mb-8">
-          <div className="w-full sm:w-auto">
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          <div className="w-full md:w-auto">
             <h3 className="font-medium mb-2">Filter by Role</h3>
             <div className="flex flex-wrap gap-2">
               {roles.map(role => (
@@ -180,27 +188,48 @@ const Players = () => {
             </div>
           </div>
           
-          <div className="w-full sm:w-auto">
-            <h3 className="font-medium mb-2">Filter by Region</h3>
-            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-              {regions.map(region => (
+          <div className="w-full md:w-auto">
+            <h3 className="font-medium mb-2">Filter by Region Category</h3>
+            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+              {Object.keys(regionCategories).map(category => (
                 <button
-                  key={region}
-                  onClick={() => setSelectedRegion(region)}
+                  key={category}
+                  onClick={() => handleCategorySelect(category)}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    selectedRegion === region
+                    selectedCategory === category
                       ? "bg-lol-blue text-white"
                       : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
-                  {region}
+                  {category}
                 </button>
               ))}
             </div>
           </div>
           
+          {selectedCategory !== "All" && (
+            <div className="w-full md:w-auto">
+              <h3 className="font-medium mb-2">Filter by {selectedCategory} Region</h3>
+              <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+                {regionCategories[selectedCategory].map(region => (
+                  <button
+                    key={region}
+                    onClick={() => handleRegionSelect(region)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      selectedRegion === region
+                        ? "bg-lol-blue text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    {region}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {selectedRegion === "LTA" && (
-            <div className="w-full sm:w-auto">
+            <div className="w-full md:w-auto">
               <h3 className="font-medium mb-2">Filter by Sub-Region</h3>
               <div className="flex flex-wrap gap-2">
                 {subRegions.LTA.map(subRegion => (
