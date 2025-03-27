@@ -68,6 +68,18 @@ export const loadFromGoogleSheets = async (
     console.log(`${csvData.length} lignes de données chargées depuis Google Sheets`);
     toast.info(`${csvData.length} lignes de données chargées`);
     
+    // If we need to delete existing data before inserting new data
+    if (deleteExisting) {
+      console.log("Suppression des données existantes...");
+      const clearResult = await clearDatabase();
+      if (!clearResult) {
+        console.error("Échec de la suppression des données existantes");
+        toast.error("Échec de la suppression des données existantes");
+        return false;
+      }
+      console.log("Données existantes supprimées avec succès");
+    }
+    
     // Process the data into our application format
     const processedData = processLeagueData(csvData as LeagueGameDataRow[]);
     
@@ -83,11 +95,6 @@ export const loadFromGoogleSheets = async (
       matchesCount: processedData.matches.length
     });
     
-    // If we need to delete existing data before inserting new data
-    if (deleteExisting) {
-      await clearDatabase();
-    }
-    
     // Save the processed data to Supabase
     const saveResult = await saveToDatabase(processedData);
     
@@ -100,7 +107,7 @@ export const loadFromGoogleSheets = async (
     }
   } catch (error) {
     console.error("Erreur lors du chargement des données depuis Google Sheets:", error);
-    toast.error("Erreur lors du chargement des données");
+    toast.error(`Erreur lors du chargement des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     return false;
   }
 };

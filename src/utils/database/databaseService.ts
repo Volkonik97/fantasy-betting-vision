@@ -1,11 +1,12 @@
 
-import { Team, Player, Match } from '../mockData';
+import { Team, Player, Match } from '../models/types';
 import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase } from './coreService';
 import { getTeams, saveTeams } from './teamsService';
 import { getSideStatistics } from './sideStatisticsService';
 import { getPlayers, savePlayers } from './playersService';
 import { getMatches, saveMatches } from './matches/matchesService';
 import { getTournaments } from './tournamentsService';
+import { toast } from "sonner";
 
 // Save data to database
 export const saveToDatabase = async (data: {
@@ -21,25 +22,35 @@ export const saveToDatabase = async (data: {
       matchesCount: data.matches.length
     });
     
-    // First clear the database
-    await clearDatabase();
-    
     // Insert teams
     const teamsSuccess = await saveTeams(data.teams);
-    if (!teamsSuccess) return false;
+    if (!teamsSuccess) {
+      console.error("Échec lors de l'enregistrement des équipes");
+      toast.error("Erreur lors de l'enregistrement des équipes");
+      return false;
+    }
     
     // Insert players
     const playersSuccess = await savePlayers(data.players);
-    if (!playersSuccess) return false;
+    if (!playersSuccess) {
+      console.error("Échec lors de l'enregistrement des joueurs");
+      toast.error("Erreur lors de l'enregistrement des joueurs");
+      return false;
+    }
     
     // Insert matches
     const matchesSuccess = await saveMatches(data.matches);
-    if (!matchesSuccess) return false;
+    if (!matchesSuccess) {
+      console.error("Échec lors de l'enregistrement des matchs");
+      toast.error("Erreur lors de l'enregistrement des matchs");
+      return false;
+    }
     
-    console.log("Data saved to Supabase successfully");
+    console.log("Données enregistrées avec succès dans Supabase");
     return true;
   } catch (error) {
-    console.error("Error saving data:", error);
+    console.error("Erreur lors de l'enregistrement des données:", error);
+    toast.error(`Erreur lors de l'enregistrement des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
     return false;
   }
 };

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -12,27 +11,67 @@ let lastCacheUpdate = 0;
 // Save teams to database
 export const saveTeams = async (teams: Team[]): Promise<boolean> => {
   try {
+    console.log(`Saving ${teams.length} teams to Supabase`);
+    
     // Clear cache when saving new teams
     teamsCache = null;
+    
+    // Check for duplicate team IDs
+    const teamIds = teams.map(team => team.id);
+    const uniqueTeamIds = new Set(teamIds);
+    
+    if (uniqueTeamIds.size !== teams.length) {
+      console.warn(`Found ${teams.length - uniqueTeamIds.size} duplicate team IDs in the input data`);
+      
+      // Create a map to find duplicates
+      const idCounts = teamIds.reduce((acc, id) => {
+        acc[id] = (acc[id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Log duplicates
+      Object.entries(idCounts)
+        .filter(([_, count]) => count > 1)
+        .forEach(([id, count]) => {
+          console.warn(`Team ID "${id}" appears ${count} times`);
+        });
+      
+      // Filter out duplicates, keeping only the first occurrence of each ID
+      const seenIds = new Set<string>();
+      teams = teams.filter(team => {
+        if (seenIds.has(team.id)) {
+          return false;
+        }
+        seenIds.add(team.id);
+        return true;
+      });
+      
+      console.log(`Filtered down to ${teams.length} unique teams`);
+    }
     
     // Insert teams in batches of 100
     const teamChunks = chunk(teams, 100);
     for (const teamChunk of teamChunks) {
-      const { error: teamsError } = await supabase.from('teams').insert(
-        teamChunk.map(team => ({
-          id: team.id,
-          name: team.name,
-          logo: team.logo,
-          region: team.region,
-          win_rate: team.winRate,
-          blue_win_rate: team.blueWinRate,
-          red_win_rate: team.redWinRate,
-          average_game_time: team.averageGameTime // Stored in seconds
-        }))
-      );
-      
-      if (teamsError) {
-        console.error("Error inserting teams:", teamsError);
+      try {
+        const { error: teamsError } = await supabase.from('teams').insert(
+          teamChunk.map(team => ({
+            id: team.id,
+            name: team.name,
+            logo: team.logo,
+            region: team.region,
+            win_rate: team.winRate,
+            blue_win_rate: team.blueWinRate,
+            red_win_rate: team.redWinRate,
+            average_game_time: team.averageGameTime // Stored in seconds
+          }))
+        );
+        
+        if (teamsError) {
+          console.error("Error inserting teams batch:", teamsError);
+          return false;
+        }
+      } catch (error) {
+        console.error("Error during team batch insert:", error);
         return false;
       }
     }

@@ -47,20 +47,64 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
   }
 };
 
-// Clear database
+// Clear database - improved to handle foreign key constraints properly
 export const clearDatabase = async (): Promise<boolean> => {
   try {
-    // Supprimer d'abord les tables avec des références (dans l'ordre)
-    await supabase.from('matches').delete().gt('id', '');
-    await supabase.from('players').delete().gt('id', '');
-    await supabase.from('teams').delete().gt('id', '');
+    console.log("Début de la suppression des données...");
     
-    // Ajouter une entrée dans la table des mises à jour
-    await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
+    // First clear player_match_stats as it references both players and matches
+    console.log("Suppression des statistiques de match des joueurs...");
+    const { error: statsError } = await supabase
+      .from('player_match_stats')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
     
-    // Réinitialiser le cache
+    if (statsError) {
+      console.error("Erreur lors de la suppression des statistiques:", statsError);
+    }
+    
+    // Then clear matches (no FK constraints to players or teams for deletion)
+    console.log("Suppression des matchs...");
+    const { error: matchesError } = await supabase
+      .from('matches')
+      .delete()
+      .neq('id', '');
+    
+    if (matchesError) {
+      console.error("Erreur lors de la suppression des matchs:", matchesError);
+    }
+    
+    // Then clear players as they reference teams
+    console.log("Suppression des joueurs...");
+    const { error: playersError } = await supabase
+      .from('players')
+      .delete()
+      .neq('id', '');
+    
+    if (playersError) {
+      console.error("Erreur lors de la suppression des joueurs:", playersError);
+    }
+    
+    // Finally clear teams
+    console.log("Suppression des équipes...");
+    const { error: teamsError } = await supabase
+      .from('teams')
+      .delete()
+      .neq('id', '');
+    
+    if (teamsError) {
+      console.error("Erreur lors de la suppression des équipes:", teamsError);
+    }
+    
+    // Add a data update entry
+    await supabase
+      .from('data_updates')
+      .insert([{ updated_at: new Date().toISOString() }]);
+    
+    // Reset the cache
     resetCache();
     
+    console.log("Suppression des données terminée avec succès");
     return true;
   } catch (error) {
     console.error("Erreur lors de la suppression des données:", error);
