@@ -42,6 +42,12 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
+  console.log("SideAnalysis rendering with stats:", {
+    winRates: sideWinRateData,
+    firstObjectives: firstObjectiveData,
+    timelineStats: statistics.timelineStats
+  });
+  
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">

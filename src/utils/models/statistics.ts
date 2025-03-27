@@ -57,13 +57,15 @@ const defaultSideStats: SideStatistics = {
 
 // Get side statistics with async handling
 export const getSideStatistics = async (teamId: string): Promise<SideStatistics> => {
+  console.log(`Getting side statistics for team ${teamId}`);
+  
   // Try to get stats from the database first
   try {
     const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
       .select('*')
       .or(`team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`)
-      .limit(10);
+      .limit(20);
     
     if (matchesError) {
       console.error("Error fetching matches for side statistics:", matchesError);
@@ -73,6 +75,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     
     // If we have matches data, fetch player stats for these matches
     if (matchesData && matchesData.length > 0) {
+      console.log(`Found ${matchesData.length} matches for team ${teamId}`);
+      
       // Extract match IDs
       const matchIds = matchesData.map(match => match.id);
       
@@ -89,6 +93,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       }
       
       if (playerStatsData && playerStatsData.length > 0) {
+        console.log(`Found ${playerStatsData.length} player stats for team ${teamId}`);
+        
         // Calculate average statistics
         const timelineStats = calculateTimelineStats(playerStatsData);
         
@@ -96,12 +102,15 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
         const blueMatches = matchesData.filter(m => m.team_blue_id === teamId);
         const redMatches = matchesData.filter(m => m.team_red_id === teamId);
         
+        console.log(`Blue matches: ${blueMatches.length}, Red matches: ${redMatches.length}`);
+        
         const blueWins = blueMatches.filter(m => m.winner_team_id === teamId).length;
         const redWins = redMatches.filter(m => m.winner_team_id === teamId).length;
 
         const blueWinRate = blueMatches.length ? (blueWins / blueMatches.length) * 100 : 0;
         const redWinRate = redMatches.length ? (redWins / redMatches.length) * 100 : 0;
         
+        // Count first objective stats
         const firstBloodBlue = blueMatches.filter(m => m.first_blood === teamId).length;
         const firstBloodRed = redMatches.filter(m => m.first_blood === teamId).length;
         
@@ -113,6 +122,9 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
         
         const firstTowerBlue = blueMatches.filter(m => m.first_tower === teamId).length;
         const firstTowerRed = redMatches.filter(m => m.first_tower === teamId).length;
+        
+        console.log(`Blue stats: FirstBlood ${firstBloodBlue}, FirstDragon ${firstDragonBlue}, FirstHerald ${firstHeraldBlue}, FirstTower ${firstTowerBlue}`);
+        console.log(`Red stats: FirstBlood ${firstBloodRed}, FirstDragon ${firstDragonRed}, FirstHerald ${firstHeraldRed}, FirstTower ${firstTowerRed}`);
         
         return {
           blueWins: Math.round(blueWinRate),
@@ -129,6 +141,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
           timelineStats
         };
       }
+    } else {
+      console.log(`No matches found for team ${teamId}, using mock data`);
     }
     
     // If no database data or processing failed, fall back to mock data
@@ -161,6 +175,8 @@ const calculateTimelineStats = (playerStats: any[]) => {
     const killsValues = playerStats.filter(s => s[killsKey] !== null).map(s => s[killsKey]);
     const deathsValues = playerStats.filter(s => s[deathsKey] !== null).map(s => s[deathsKey]);
     
+    console.log(`Timeline ${time}min: Gold values: ${goldValues.length}, XP values: ${xpValues.length}, CS values: ${csValues.length}`);
+    
     const avgGold = goldValues.length ? goldValues.reduce((sum, val) => sum + val, 0) / goldValues.length : 0;
     const avgXp = xpValues.length ? xpValues.reduce((sum, val) => sum + val, 0) / xpValues.length : 0;
     const avgCs = csValues.length ? csValues.reduce((sum, val) => sum + val, 0) / csValues.length : 0;
@@ -183,57 +199,16 @@ const calculateTimelineStats = (playerStats: any[]) => {
 
 // Fallback to mock data if database fails
 const getMockSideStatistics = (teamId: string): SideStatistics => {
+  console.log(`Getting mock side statistics for team ${teamId}`);
+  
   const team = populatedTeams.find(t => t.id === teamId);
   if (!team) {
     // Return default stats if team not found
-    return {
-      blueWins: 50,
-      redWins: 50,
-      blueFirstBlood: 50,
-      redFirstBlood: 50,
-      blueFirstDragon: 50,
-      redFirstDragon: 50,
-      blueFirstHerald: 50,
-      redFirstHerald: 50,
-      blueFirstTower: 50,
-      redFirstTower: 50,
-      timelineStats: {
-        '10': {
-          avgGold: 3250,
-          avgXp: 4120,
-          avgCs: 85,
-          avgGoldDiff: 350,
-          avgKills: 1.2,
-          avgDeaths: 0.8
-        },
-        '15': {
-          avgGold: 5120,
-          avgXp: 6780,
-          avgCs: 130,
-          avgGoldDiff: 580,
-          avgKills: 2.5,
-          avgDeaths: 1.3
-        },
-        '20': {
-          avgGold: 7350,
-          avgXp: 9450,
-          avgCs: 175,
-          avgGoldDiff: 850,
-          avgKills: 3.8,
-          avgDeaths: 2.1
-        },
-        '25': {
-          avgGold: 9780,
-          avgXp: 12400,
-          avgCs: 220,
-          avgGoldDiff: 1250,
-          avgKills: 5.2,
-          avgDeaths: 3.0
-        }
-      }
-    };
+    console.log(`Team ${teamId} not found in mock data, using default stats`);
+    return defaultSideStats;
   }
   
+  // Generate more realistic mock data based on team win rates
   return {
     blueWins: Math.round(team.blueWinRate * 100),
     redWins: Math.round(team.redWinRate * 100),
