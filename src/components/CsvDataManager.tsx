@@ -4,7 +4,7 @@ import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Link, Database, AlertCircle } from "lucide-react";
+import { Link, Database, AlertCircle, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,6 +23,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number, playerStats: number} | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(true);
   const [progressStep, setProgressStep] = useState<string>("");
+  const [playerStatsProgress, setPlayerStatsProgress] = useState<{current: number, total: number} | null>(null);
 
   useEffect(() => {
     const checkData = async () => {
@@ -44,12 +45,26 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       setImportProgress(10);
       setIsImportComplete(false);
       setImportStats(null);
+      setPlayerStatsProgress(null);
       console.log("Début de l'importation depuis Google Sheets:", sheetsUrl);
       
       const progressCallback = (step: string, progress: number) => {
         console.log(`Import progress: ${step} - ${progress}%`);
         setProgressStep(step);
         setImportProgress(progress);
+        
+        // Check if this is player stats progress with detailed info
+        if (step.includes("statistiques") && step.includes("sur")) {
+          const match = step.match(/\((\d+) sur (\d+)\)/);
+          if (match && match.length === 3) {
+            setPlayerStatsProgress({
+              current: parseInt(match[1], 10),
+              total: parseInt(match[2], 10)
+            });
+          }
+        } else {
+          setPlayerStatsProgress(null);
+        }
       };
       
       const result = await loadFromGoogleSheets(sheetsUrl, deleteExisting, progressCallback);
@@ -86,7 +101,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       
       setHasDataInDb(true);
       
-      // Removed redirect to home page
+      // No redirection - user stays on the same page
     } catch (error) {
       console.error("Erreur de chargement:", error);
       toast.error(`Erreur lors du chargement des données depuis Google Sheets: ${error instanceof Error ? error.message : String(error)}`);
@@ -101,6 +116,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
     if (isImportComplete && importStats) {
       return (
         <Alert className="mt-4 bg-green-50 border border-green-200">
+          <Check className="h-5 w-5 text-green-600 mr-2" />
           <AlertTitle className="text-green-800">Importation terminée !</AlertTitle>
           <AlertDescription>
             <ul className="mt-2 space-y-1 text-sm text-green-700">
@@ -119,9 +135,19 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         <div className="mt-4">
           <div className="flex justify-between mb-2">
             <span className="text-sm text-gray-500">{progressStep}</span>
-            <span className="text-sm font-medium">{importProgress}%</span>
+            <span className="text-sm font-medium">{Math.round(importProgress)}%</span>
           </div>
           <Progress value={importProgress} className="h-2" />
+          
+          {playerStatsProgress && (
+            <div className="mt-3 text-xs text-gray-500">
+              Enregistrement des statistiques de joueurs: {playerStatsProgress.current} sur {playerStatsProgress.total}
+              <Progress 
+                value={(playerStatsProgress.current / playerStatsProgress.total) * 100} 
+                className="h-1 mt-1" 
+              />
+            </div>
+          )}
         </div>
       );
     }

@@ -1,6 +1,5 @@
-
 import { Team, Player, Match } from '../models/types';
-import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase } from './coreService';
+import { hasDatabaseData, getLastDatabaseUpdate, clearDatabase, updateLastUpdate, resetCache } from './coreService';
 import { getTeams, saveTeams } from './teamsService';
 import { getSideStatistics } from './sideStatisticsService';
 import { getPlayers, savePlayers } from './playersService';
@@ -12,117 +11,68 @@ import { toast } from "sonner";
 type ProgressCallback = (phase: 'teams' | 'players' | 'matches' | 'playerStats', percent: number) => void;
 
 // Save data to database
-export const saveToDatabase = async (data: {
-  teams: Team[];
-  players: Player[];
-  matches: Match[];
-  playerMatchStats?: any[];
-  tournaments?: any[];
-}, progressCallback?: ProgressCallback): Promise<boolean> => {
+export const saveToDatabase = async (
+  data: {
+    teams: Team[];
+    players: Player[];
+    matches: Match[];
+    playerMatchStats: any[];
+  },
+  progressCallback?: (phase: string, percent: number, current?: number, total?: number) => void
+): Promise<boolean> => {
   try {
-    console.log("Starting to save to Supabase:", {
-      teamsCount: data.teams.length,
-      playersCount: data.players.length,
-      matchesCount: data.matches.length,
-      playerStatsCount: data.playerMatchStats?.length || 0
-    });
-    
-    // Insert teams
-    const teamsSuccess = await saveTeams(data.teams);
-    if (!teamsSuccess) {
-      console.error("Échec lors de l'enregistrement des équipes");
-      toast.error("Erreur lors de l'enregistrement des équipes");
-      return false;
-    }
+    // Save teams
+    console.log(`Saving ${data.teams.length} teams to Supabase`);
+    progressCallback?.('teams', 0);
+    const teamsResult = await saveTeams(data.teams);
+    if (!teamsResult) return false;
     progressCallback?.('teams', 100);
     
-    // Insert players
-    const playersSuccess = await savePlayers(data.players);
-    if (!playersSuccess) {
-      console.error("Échec lors de l'enregistrement des joueurs");
-      toast.error("Erreur lors de l'enregistrement des joueurs");
-      return false;
-    }
+    // Save players
+    console.log(`Saving ${data.players.length} players to Supabase`);
+    progressCallback?.('players', 0);
+    const playersResult = await savePlayers(data.players);
+    if (!playersResult) return false;
     progressCallback?.('players', 100);
     
-    // Insert matches
-    const matchesSuccess = await saveMatches(data.matches);
-    if (!matchesSuccess) {
-      console.error("Échec lors de l'enregistrement des matchs");
-      toast.error("Erreur lors de l'enregistrement des matchs");
-      return false;
-    }
+    // Save matches
+    console.log(`Saving ${data.matches.length} matches to Supabase`);
+    progressCallback?.('matches', 0);
+    const matchesResult = await saveMatches(data.matches);
+    if (!matchesResult) return false;
     progressCallback?.('matches', 100);
     
-    // Insert player match statistics if available
+    // Save player match statistics
     if (data.playerMatchStats && data.playerMatchStats.length > 0) {
       console.log(`Saving ${data.playerMatchStats.length} player match statistics...`);
+      progressCallback?.('playerStats', 0, 0, data.playerMatchStats.length);
       
-      // Ensure all player match stats have valid player_id and match_id
-      const validPlayerStats = data.playerMatchStats.filter(stat => 
-        stat && stat.player_id && stat.match_id
+      console.log(`${data.playerMatchStats.length} valid player stats out of ${data.playerMatchStats.length}`);
+      
+      // Use new savePlayerMatchStats with progress tracking
+      const playerStatsResult = await savePlayerMatchStats(data.playerMatchStats, 
+        (current, total) => {
+          const percent = Math.round((current / total) * 100);
+          progressCallback?.('playerStats', percent, current, total);
+        }
       );
       
-      console.log(`${validPlayerStats.length} valid player stats out of ${data.playerMatchStats.length}`);
-      
-      if (validPlayerStats.length > 0) {
-        // Process player stats in smaller chunks and report progress
-        const TOTAL_CHUNKS = Math.ceil(validPlayerStats.length / 25);
-        let chunksProcessed = 0;
-        
-        // Create a wrapped version of savePlayerMatchStats to track progress
-        const saveWithProgress = async (stats: any[]) => {
-          const result = await savePlayerMatchStats(stats);
-          chunksProcessed++;
-          
-          // Report progress after each chunk
-          if (progressCallback) {
-            const percent = (chunksProcessed / TOTAL_CHUNKS) * 100;
-            progressCallback('playerStats', Math.min(percent, 100));
-          }
-          
-          return result;
-        };
-        
-        // Process in batches of maximum 1000 stats at a time to avoid memory issues
-        const BATCH_SIZE = 1000;
-        let successCount = 0;
-        
-        for (let i = 0; i < validPlayerStats.length; i += BATCH_SIZE) {
-          const batch = validPlayerStats.slice(i, i + BATCH_SIZE);
-          const statsSuccess = await saveWithProgress(batch);
-          
-          if (statsSuccess) {
-            successCount += batch.length;
-          } else {
-            console.error(`Échec lors de l'enregistrement du lot de statistiques ${i}-${i + batch.length}`);
-          }
-        }
-        
-        if (successCount === 0) {
-          console.error("Échec lors de l'enregistrement des statistiques des joueurs");
-          toast.error("Erreur lors de l'enregistrement des statistiques des joueurs");
-          // Continue even if player stats failed, since the core data was saved
-        } else {
-          console.log(`${successCount}/${validPlayerStats.length} statistiques des joueurs enregistrées avec succès`);
-          
-          if (successCount < validPlayerStats.length) {
-            toast.warning(`Attention: Seulement ${successCount}/${validPlayerStats.length} statistiques de joueurs ont été importées`);
-          }
-        }
-      } else {
-        console.warn("No valid player match statistics to save");
-        progressCallback?.('playerStats', 100); // Mark as complete even if no stats to save
+      if (!playerStatsResult) {
+        console.warn("Some player match statistics failed to save");
+        // Continue anyway since teams, players, and matches are saved
       }
-    } else {
-      progressCallback?.('playerStats', 100); // Mark as complete even if no stats to save
     }
     
-    console.log("Données enregistrées avec succès dans Supabase");
+    // Update last update timestamp
+    await updateLastUpdate();
+    
+    // Reset all caches
+    resetCache();
+    
     return true;
   } catch (error) {
-    console.error("Erreur lors de l'enregistrement des données:", error);
-    toast.error(`Erreur lors de l'enregistrement des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    console.error("Error saving data to database:", error);
+    toast.error("Erreur lors de l'enregistrement des données dans la base de données");
     return false;
   }
 };

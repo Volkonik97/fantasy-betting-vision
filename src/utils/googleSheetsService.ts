@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import Papa from 'papaparse';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
@@ -123,7 +124,7 @@ export const loadFromGoogleSheets = async (
     
     // Save the processed data to Supabase in steps to show progress
     progressCallback?.("Enregistrement des équipes", 55);
-    const saveResult = await saveToDatabase(processedData, (phase, percent) => {
+    const saveResult = await saveToDatabase(processedData, (phase, percent, current, total) => {
       let totalProgress = 0;
       
       // Map the database phase to an overall progress percentage
@@ -141,8 +142,9 @@ export const loadFromGoogleSheets = async (
           progressCallback?.("Enregistrement des matchs", totalProgress);
           break;
         case 'playerStats':
-          totalProgress = 80 + percent * 0.2; // 80-100% - give more weight to player stats
-          progressCallback?.(`Enregistrement des statistiques (${Math.floor(percent * totalPlayerStats / 100)} sur ${totalPlayerStats})`, totalProgress);
+          // Instead of percentage, use actual count/total for more precise progress
+          totalProgress = 80 + (current / total) * 0.2; // 80-100% - give more weight to player stats
+          progressCallback?.(`Enregistrement des statistiques (${current} sur ${total})`, totalProgress);
           break;
       }
     });
