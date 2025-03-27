@@ -54,56 +54,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
       ? Math.round(parseFloat(player.damageShare) * 100) 
       : 0;
 
-  // Get team display name
-  const getTeamDisplayName = (teamId: string) => {
-    // Using a more comprehensive mapping of team IDs to readable names
-    const teamNames: Record<string, string> = {
-      "t1": "T1",
-      "geng": "Gen.G",
-      "jdg": "JD Gaming",
-      "fnc": "Fnatic",
-      "c9": "Cloud9",
-      "g2": "G2 Esports",
-      "drx": "DRX",
-      "kt": "KT Rolster",
-      "dwg": "DWG KIA",
-      "mad": "MAD Lions",
-      "tl": "Team Liquid",
-      "100": "100 Thieves",
-      "rng": "Royal Never Give Up",
-      "edg": "EDward Gaming",
-      "tes": "Top Esports",
-      "lng": "LNG Esports",
-      "blg": "Bilibili Gaming",
-      "we": "Team WE",
-      "rge": "Rogue",
-      "xl": "Excel Esports",
-      "vit": "Team Vitality",
-      "sk": "SK Gaming",
-      "msf": "Misfits Gaming",
-      "eg": "Evil Geniuses",
-      "fly": "FlyQuest",
-      "dig": "Dignitas",
-      "clg": "Counter Logic Gaming",
-      "tsm": "TSM",
-      "imt": "Immortals",
-      "gg": "Golden Guardians"
-    };
-    
-    // Try to get the mapped name, otherwise beautify the ID (capitalize first letter of each word)
-    if (teamNames[teamId]) {
-      return teamNames[teamId];
-    }
-    
-    // For unknown teams, display a prettier version of the ID
-    return teamId
-      .split(/[_:-]/) // Split by common separators
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  };
-  
-  // If the player has a teamName property (from a join query), use that directly
-  const teamName = player.teamName || getTeamDisplayName(player.team);
+  // Display the team name directly from the player object if available
+  const teamName = player.teamName || player.team;
 
   return (
     <Link to={`/players/${player.id}`}>
