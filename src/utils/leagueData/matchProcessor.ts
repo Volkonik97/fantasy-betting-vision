@@ -1,4 +1,5 @@
-import { LeagueGameDataRow } from '../csvTypes';
+
+import { LeagueGameDataRow, MatchCSV } from '../csvTypes';
 import { 
   GameTracker, 
   MatchTeamStats, 
