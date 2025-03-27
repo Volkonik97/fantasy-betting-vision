@@ -14,6 +14,7 @@ interface PlayerMatchStatsProps {
 const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps) => {
   const [enhancedStats, setEnhancedStats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [matchErrors, setMatchErrors] = useState<Record<string, string>>({});
   
   useEffect(() => {
     const fetchMatchDetails = async () => {
@@ -29,6 +30,7 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
         
         // Récupérer les détails des matchs un par un
         const matchesWithDetails = [];
+        const errorsByMatchId: Record<string, string> = {};
         
         for (const stat of matchStats) {
           try {
@@ -37,9 +39,12 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             
             if (!matchData) {
               console.warn(`Aucune donnée trouvée pour le match ${stat.match_id}`);
+              errorsByMatchId[stat.match_id] = "Match non trouvé dans la base de données";
+              
               matchesWithDetails.push({
                 ...stat,
-                matchDate: null
+                matchDate: null,
+                matchError: "Match non trouvé"
               });
               continue;
             }
@@ -48,19 +53,41 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
             const isBlueTeam = stat.team_id === matchData.teamBlue.id;
             const opponentTeam = isBlueTeam ? matchData.teamRed : matchData.teamBlue;
             
+            // Formater la date si elle existe
+            let formattedDate = null;
+            if (matchData.date) {
+              try {
+                const dateObj = new Date(matchData.date);
+                if (!isNaN(dateObj.getTime())) {
+                  formattedDate = dateObj;
+                } else {
+                  console.warn(`Format de date invalide pour le match ${stat.match_id}: ${matchData.date}`);
+                  errorsByMatchId[stat.match_id] = `Format de date invalide: ${matchData.date}`;
+                }
+              } catch (dateError) {
+                console.warn(`Erreur de parsing de date pour le match ${stat.match_id}:`, dateError);
+                errorsByMatchId[stat.match_id] = "Erreur de conversion de date";
+              }
+            } else {
+              console.warn(`Date manquante pour le match ${stat.match_id}`);
+              errorsByMatchId[stat.match_id] = "Date manquante dans les données du match";
+            }
+            
             // Ajouter les informations au stat
             matchesWithDetails.push({
               ...stat,
               opponentTeamName: opponentTeam.name,
               opponentTeamId: opponentTeam.id,
-              matchDate: matchData.date ? new Date(matchData.date) : null
+              matchDate: formattedDate
             });
             
           } catch (error) {
             console.error(`Erreur lors du traitement du match ${stat.match_id}:`, error);
+            errorsByMatchId[stat.match_id] = `Erreur: ${error}`;
             matchesWithDetails.push({
               ...stat,
-              matchDate: null
+              matchDate: null,
+              matchError: `Erreur lors du traitement: ${error}`
             });
           }
         }
@@ -74,6 +101,12 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
           // Trier du plus récent au plus ancien
           return b.matchDate.getTime() - a.matchDate.getTime();
         });
+        
+        // Vérifier les erreurs survenues pendant le chargement
+        if (Object.keys(errorsByMatchId).length > 0) {
+          console.warn("Erreurs de chargement pour certains matchs:", errorsByMatchId);
+          setMatchErrors(errorsByMatchId);
+        }
         
         console.log(`Matchs triés: ${sortedMatches.length} matchs`);
         setEnhancedStats(sortedMatches);
@@ -108,6 +141,28 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
           </Tooltip>
         </TooltipProvider>
       </h2>
+      
+      {Object.keys(matchErrors).length > 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+          <p className="text-amber-700 text-sm font-medium">
+            Certains matchs n'ont pas pu être correctement chargés. Vérifiez que tous les matchs existent dans la base de données.
+          </p>
+          <details className="mt-1">
+            <summary className="text-xs text-amber-600 cursor-pointer">
+              Voir les détails ({Object.keys(matchErrors).length} erreurs)
+            </summary>
+            <div className="mt-2 text-xs text-amber-800 max-h-40 overflow-y-auto">
+              <ul className="list-disc pl-5">
+                {Object.entries(matchErrors).map(([matchId, error]) => (
+                  <li key={matchId}>
+                    Match {matchId}: {error}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </details>
+        </div>
+      )}
       
       {isLoading ? (
         <div className="text-center py-8">
@@ -144,6 +199,18 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                       ) : (
                         <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
                           {stat.match_id ? stat.match_id.substring(0, 8) + "..." : "N/A"}
+                          {stat.matchError && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <span className="ml-1 text-amber-500 text-xs">!</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Erreur: {stat.matchError}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </Link>
                       )}
                       <div className="text-xs text-gray-500">
