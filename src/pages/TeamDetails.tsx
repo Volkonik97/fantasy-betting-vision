@@ -127,14 +127,12 @@ const TeamDetails = () => {
         <TeamAnalysisSection team={team} sideStats={sideStats} />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-          <div>
-            <TeamStatistics team={team} timelineStats={timelineStats} />
-          </div>
+          <TeamStatistics team={team} timelineStats={timelineStats} />
           
-          <TeamPlayersList players={team.players} />
+          <div className="lg:row-span-2">
+            <TeamRecentMatches team={team} matches={teamMatches} />
+          </div>
         </div>
-        
-        <TeamRecentMatches team={team} matches={teamMatches} />
       </main>
     </div>
   );

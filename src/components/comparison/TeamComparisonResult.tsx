@@ -49,7 +49,7 @@ const TeamComparisonResult = ({
             team2WinProb={team2WinProb} 
           />
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <Button variant="outline" className="w-full" onClick={() => window.location.href = `/teams/${team1.id}`}>
               Voir {team1.name}
             </Button>
@@ -61,12 +61,8 @@ const TeamComparisonResult = ({
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <TeamStatistics team={team1} timelineStats={team1TimelineStats} />
-        </div>
-        <div>
-          <TeamStatistics team={team2} timelineStats={team2TimelineStats} />
-        </div>
+        <TeamStatistics team={team1} timelineStats={team1TimelineStats} />
+        <TeamStatistics team={team2} timelineStats={team2TimelineStats} />
       </div>
     </motion.div>
   );
