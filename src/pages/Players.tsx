@@ -6,7 +6,6 @@ import PlayerCard from "@/components/PlayerCard";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
 import { getTeams } from "@/utils/database/teamsService";
-import { toast } from "sonner";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,19 +56,6 @@ const Players = () => {
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
         console.log("Available regions in database:", uniqueRegions);
         setAvailableRegions(uniqueRegions);
-        
-        // Show toast with regions for easy access
-        toast.info(
-          <div>
-            <strong>Régions disponibles:</strong>
-            <ul className="mt-2 list-disc pl-4">
-              {uniqueRegions.map(region => (
-                <li key={region}>{region}</li>
-              ))}
-            </ul>
-          </div>,
-          { duration: 10000 }
-        );
         
       } catch (error) {
         console.error("Error fetching player data:", error);
@@ -149,19 +135,6 @@ const Players = () => {
           <p className="text-gray-600">
             Browse and analyze professional League of Legends players
           </p>
-          
-          {availableRegions.length > 0 && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-md">
-              <h2 className="font-medium mb-2">Régions disponibles dans la base de données:</h2>
-              <div className="flex flex-wrap gap-2">
-                {availableRegions.map(region => (
-                  <span key={region} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
-                    {region}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         
         <div className="mb-8">
