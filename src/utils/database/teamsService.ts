@@ -1,10 +1,9 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team, SideStatistics } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedTeams, setLoadedTeams } from '../csvTypes';
 import { getPlayers } from './playersService';
-import { getSideStatistics as getMockSideStatistics } from '../models';
+import { getMockSideStatistics } from '../statistics'; // Updated import
 
 // Save teams to database
 export const saveTeams = async (teams: Team[]): Promise<boolean> => {

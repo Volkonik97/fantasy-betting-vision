@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { matches } from "@/utils/models";
-import { getSideStatistics } from "@/utils/models/statistics"; 
+import { getSideStatistics } from "@/utils/statistics"; // Updated import
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { SideStatistics } from "@/utils/models/types";

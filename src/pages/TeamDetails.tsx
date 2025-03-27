@@ -12,7 +12,7 @@ import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeams, getMatches } from "@/utils/csvService";
-import { getSideStatistics } from "@/utils/models/statistics";
+import { getSideStatistics } from "@/utils/statistics"; // Updated import
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const TeamDetails = () => {

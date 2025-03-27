@@ -15,7 +15,6 @@ import {
   getPlayers,
   getMatches,
   getTournaments,
-  getSideStatistics
 } from './database/databaseService';
 import { 
   getLoadedTeams,
@@ -29,6 +28,7 @@ import {
   resetCache
 } from './csvTypes';
 import { getPlayerMatchStats } from './database/matchesService';
+import { getSideStatistics } from './statistics'; // Updated import
 
 // Re-export types
 export type { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
