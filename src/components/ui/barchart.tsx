@@ -10,6 +10,9 @@ interface BarChartProps {
   grid?: boolean;
   colors?: string[];
   showYAxis?: boolean;
+  layout?: "horizontal" | "vertical";
+  barSize?: number;
+  height?: number | string;
 }
 
 // Type guard function to check if a React element has dataKey prop
@@ -22,8 +25,11 @@ export const BarChart = ({
   xAxisKey, 
   children, 
   grid = true, 
-  colors = ["#2563eb", "#f43f5e"], 
-  showYAxis = false 
+  colors = ["#3b82f6", "#ef4444"], 
+  showYAxis = true,
+  layout = "horizontal",
+  barSize = 20,
+  height = "100%"
 }: BarChartProps) => {
   // Create the config object for customization
   const config = React.useMemo(() => {
@@ -31,7 +37,7 @@ export const BarChart = ({
       return children.reduce((acc, child, index) => {
         if (React.isValidElement(child) && hasDataKey(child)) {
           acc[child.props.dataKey] = { 
-            color: colors[index % colors.length] || "#2563eb",
+            color: colors[index % colors.length] || "#3b82f6",
             label: child.props.name || child.props.dataKey
           };
         }
@@ -42,7 +48,7 @@ export const BarChart = ({
     if (React.isValidElement(children) && hasDataKey(children)) {
       return { 
         [children.props.dataKey]: { 
-          color: colors[0] || "#2563eb",
+          color: colors[0] || "#3b82f6",
           label: children.props.name || children.props.dataKey
         }
       };
@@ -53,18 +59,66 @@ export const BarChart = ({
 
   return (
     <ChartContainer config={config}>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={height}>
         <RechartsBarChart 
           data={data} 
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          layout={layout}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          barSize={barSize}
           barGap={8}
-          layout="vertical"
         >
-          {grid && <CartesianGrid strokeDasharray="3 3" />}
-          <XAxis type="number" />
-          <YAxis dataKey={xAxisKey} type="category" width={100} />
-          <Tooltip />
-          <Legend verticalAlign="top" height={36} />
+          {grid && <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />}
+          
+          {layout === "horizontal" ? (
+            <>
+              <XAxis 
+                dataKey={xAxisKey} 
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={{ stroke: '#e5e7eb' }}
+              />
+              {showYAxis && (
+                <YAxis 
+                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                  tickLine={{ stroke: '#e5e7eb' }}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              <XAxis 
+                type="number" 
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={{ stroke: '#e5e7eb' }}
+              />
+              <YAxis 
+                dataKey={xAxisKey} 
+                type="category" 
+                width={120}
+                tick={{ fill: '#6b7280', fontSize: 12 }}
+                axisLine={{ stroke: '#e5e7eb' }}
+                tickLine={{ stroke: '#e5e7eb' }}
+              />
+            </>
+          )}
+          
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'white', 
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.375rem',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }}
+          />
+          <Legend 
+            verticalAlign="top" 
+            height={36} 
+            iconType="square"
+            iconSize={10}
+            wrapperStyle={{ fontSize: 12 }}
+          />
           {children}
         </RechartsBarChart>
       </ResponsiveContainer>

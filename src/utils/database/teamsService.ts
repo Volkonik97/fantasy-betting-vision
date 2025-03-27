@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -104,8 +105,9 @@ export const getTeams = async (): Promise<Team[]> => {
 // Get side statistics for a team
 export const getSideStatistics = async (teamId: string) => {
   try {
+    // Récupérer directement les statistiques simulées et attendre qu'elles soient résolues
     const stats = await getMockSideStatistics(teamId);
-    return stats; // Return the resolved stats directly
+    return stats;
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques:", error);
     const stats = await getMockSideStatistics(teamId);

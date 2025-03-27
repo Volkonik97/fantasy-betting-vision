@@ -11,6 +11,14 @@ export interface SideAnalysisProps {
 }
 
 const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
+  const sideWinRateData = [
+    {
+      name: "Win Rate",
+      blue: statistics.blueWins,
+      red: statistics.redWins
+    }
+  ];
+  
   const firstObjectiveData = [
     {
       name: "First Blood",
@@ -34,53 +42,47 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
-  const sideWinRateData = [
-    {
-      name: "Win Rate",
-      blue: statistics.blueWins,
-      red: statistics.redWins
-    }
-  ];
-  
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="space-y-6">
+      <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Side Win Rate</CardTitle>
           <CardDescription>Performance on blue vs red side</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-60 w-full">
+          <div className="h-72">
             <BarChart
               data={sideWinRateData}
               xAxisKey="name"
               grid={false}
               colors={["#3b82f6", "#ef4444"]}
-              showYAxis
+              layout="horizontal"
+              barSize={40}
             >
-              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" />
-              <Bar dataKey="red" name="Red Side" fill="#ef4444" />
+              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[4, 4, 0, 0]} />
             </BarChart>
           </div>
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">First Objectives</CardTitle>
           <CardDescription>Percentage of securing objectives first</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-60 w-full">
+          <div className="h-80">
             <BarChart
               data={firstObjectiveData}
               xAxisKey="name"
               grid={false}
               colors={["#3b82f6", "#ef4444"]}
-              showYAxis
+              layout="vertical"
+              barSize={20}
             >
-              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" />
-              <Bar dataKey="red" name="Red Side" fill="#ef4444" />
+              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
             </BarChart>
           </div>
         </CardContent>
