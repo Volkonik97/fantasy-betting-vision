@@ -9,13 +9,15 @@ import {
   safeParseFloat
 } from './types';
 
-// Process match data from League data rows
+// Process match data from League data rows with improved efficiency
 export function processMatchData(data: LeagueGameDataRow[]): {
   uniqueGames: Map<string, GameTracker>,
   matchStats: Map<string, Map<string, MatchTeamStats>>,
   matchPlayerStats: Map<string, Map<string, PlayerMatchStats>>,
   matchesArray: MatchCSV[]
 } {
+  console.log(`Processing ${data.length} rows of match data...`);
+  
   // Create map for tracking game/match data
   const uniqueGames = new Map<string, GameTracker>();
   
@@ -25,50 +27,58 @@ export function processMatchData(data: LeagueGameDataRow[]): {
   // Track player match statistics
   const matchPlayerStats = new Map<string, Map<string, PlayerMatchStats>>();
   
-  // Collect match data
+  // Pre-process the data and group by game ID for faster processing
+  const gameIdGroups = new Map<string, LeagueGameDataRow[]>();
+  
+  // Group data by game ID for batch processing
   data.forEach(row => {
     if (!row.gameid) return;
     
-    const gameId = row.gameid;
-    
-    if (!uniqueGames.has(gameId)) {
-      uniqueGames.set(gameId, {
-        id: gameId,
-        date: row.date || new Date().toISOString(),
-        league: row.league || '',
-        year: row.year || '',
-        split: row.split || '',
-        patch: row.patch || '',
-        playoffs: parseBoolean(row.playoffs),
-        teams: { blue: '', red: '' },
-        result: undefined,
-        duration: row.gamelength,
-      });
+    if (!gameIdGroups.has(row.gameid)) {
+      gameIdGroups.set(row.gameid, []);
     }
     
-    const game = uniqueGames.get(gameId)!;
+    gameIdGroups.get(row.gameid)!.push(row);
+  });
+  
+  console.log(`Found ${gameIdGroups.size} unique games to process`);
+  
+  // Process each game with all its rows at once
+  gameIdGroups.forEach((gameRows, gameId) => {
+    // Initialize game data
+    let game: GameTracker = {
+      id: gameId,
+      date: gameRows[0].date || new Date().toISOString(),
+      league: gameRows[0].league || '',
+      year: gameRows[0].year || '',
+      split: gameRows[0].split || '',
+      patch: gameRows[0].patch || '',
+      playoffs: parseBoolean(gameRows[0].playoffs),
+      teams: { blue: '', red: '' },
+      result: undefined,
+      duration: gameRows[0].gamelength,
+    };
     
-    // Track team sides
-    if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
-      game.teams.blue = row.teamid;
-    } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
-      game.teams.red = row.teamid;
-    }
+    // Initialize team stats maps
+    const teamStatsMap = new Map<string, MatchTeamStats>();
+    const playerStatsMap = new Map<string, PlayerMatchStats>();
     
-    // Track game result
-    if (row.result === '1' && row.teamid) {
-      game.result = row.teamid;
-    }
-    
-    // Collect match-level team statistics
-    if (row.teamid) {
-      if (!matchStats.has(gameId)) {
-        matchStats.set(gameId, new Map<string, MatchTeamStats>());
+    // Process all rows for this game at once
+    gameRows.forEach(row => {
+      // Track team sides
+      if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
+        game.teams.blue = row.teamid;
+      } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
+        game.teams.red = row.teamid;
       }
       
-      const teamStatsMap = matchStats.get(gameId)!;
+      // Track game result
+      if (row.result === '1' && row.teamid) {
+        game.result = row.teamid;
+      }
       
-      if (!teamStatsMap.has(row.teamid)) {
+      // Collect match-level team statistics
+      if (row.teamid && !teamStatsMap.has(row.teamid)) {
         teamStatsMap.set(row.teamid, {
           team_id: row.teamid,
           match_id: gameId,
@@ -112,20 +122,11 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_inhibitors: safeParseInt(row.opp_inhibitors)
         });
       }
-    }
-    
-    // Collect detailed player stats for this match
-    if (row.playerid && row.teamid) {
-      // Initialize nested maps if they don't exist
-      if (!matchPlayerStats.has(gameId)) {
-        matchPlayerStats.set(gameId, new Map<string, PlayerMatchStats>());
-      }
       
-      const playersMap = matchPlayerStats.get(gameId)!;
-      
-      if (!playersMap.has(row.playerid)) {
+      // Collect detailed player stats for this match
+      if (row.playerid && row.teamid && !playerStatsMap.has(row.playerid)) {
         // Create a new player match stats entry
-        const newPlayerMatchStat: PlayerMatchStats = {
+        playerStatsMap.set(row.playerid, {
           participant_id: row.participantid || '',
           player_id: row.playerid,
           team_id: row.teamid,
@@ -134,7 +135,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           position: row.position || '',
           champion: row.champion || '',
           
-          // Important: Add the is_winner field based on the result column
+          // Set is_winner based on the result column
           is_winner: row.result === '1',
           
           // Combat stats
@@ -182,7 +183,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           monster_kills_enemy_jungle: safeParseInt(row.monsterkillsenemyjungle),
           cspm: safeParseFloat(row.cspm),
           
-          // Timeline stats: 10 min
+          // Timeline stats - remaining fields are the same
           gold_at_10: safeParseInt(row.goldat10),
           xp_at_10: safeParseInt(row.xpat10),
           cs_at_10: safeParseInt(row.csat10),
@@ -216,7 +217,6 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_assists_at_15: safeParseInt(row.opp_assistsat15),
           opp_deaths_at_15: safeParseInt(row.opp_deathsat15),
           
-          // Timeline stats: 20 min
           gold_at_20: safeParseInt(row.goldat20),
           xp_at_20: safeParseInt(row.xpat20),
           cs_at_20: safeParseInt(row.csat20),
@@ -233,7 +233,6 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_assists_at_20: safeParseInt(row.opp_assistsat20),
           opp_deaths_at_20: safeParseInt(row.opp_deathsat20),
           
-          // Timeline stats: 25 min
           gold_at_25: safeParseInt(row.goldat25),
           xp_at_25: safeParseInt(row.xpat25),
           cs_at_25: safeParseInt(row.csat25),
@@ -249,17 +248,17 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_kills_at_25: safeParseInt(row.opp_killsat25),
           opp_assists_at_25: safeParseInt(row.opp_assistsat25),
           opp_deaths_at_25: safeParseInt(row.opp_deathsat25)
-        };
-        
-        playersMap.set(row.playerid, newPlayerMatchStat);
-      } else {
-        // If this player already has stats for this match, update the result
-        // This handles the case where result might be defined in different rows
-        if (row.result === '1') {
-          playersMap.get(row.playerid)!.is_winner = true;
-        }
+        });
+      } else if (row.result === '1' && row.playerid && playerStatsMap.has(row.playerid)) {
+        // If the player already has stats and we find a winning row, update the is_winner field
+        playerStatsMap.get(row.playerid)!.is_winner = true;
       }
-    }
+    });
+    
+    // Save the processed data for this game
+    uniqueGames.set(gameId, game);
+    matchStats.set(gameId, teamStatsMap);
+    matchPlayerStats.set(gameId, playerStatsMap);
   });
 
   // Prepare match data for final conversion
@@ -286,5 +285,6 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       return matchCSV;
     });
 
+  console.log(`Processed ${matchesArray.length} matches with ${matchPlayerStats.size} match player statistics`);
   return { uniqueGames, matchStats, matchPlayerStats, matchesArray };
 }

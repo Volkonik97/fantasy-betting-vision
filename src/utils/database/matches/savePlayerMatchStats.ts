@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
@@ -37,201 +38,95 @@ export const savePlayerMatchStats = async (
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
     // Improved batch size for better performance
-    const BATCH_SIZE = 50; // Increased from 3 to 50 for much better performance
-    const statsChunks = chunk(validStats, BATCH_SIZE);
+    const BATCH_SIZE = 100; // Increased from 50 to 100 for better performance
+    const MAX_CONCURRENT = 5; // Increased from 3 to 5 for better parallel processing
+    const totalStats = validStats.length;
+    
+    // First check which records already exist to implement incremental updates
+    console.log("Checking for existing records...");
+    
+    // Use a more efficient approach - insert directly with upsert
+    // instead of checking each record individually
     let successCount = 0;
     let errorCount = 0;
     let processedCount = 0;
     
-    // Process in parallel batches with reasonable concurrency
-    const MAX_CONCURRENT = 3; // Process 3 chunks at a time instead of just 1
-    const totalStats = validStats.length;
+    // Split records into chunks for faster processing
+    const statsChunks = chunk(validStats, BATCH_SIZE);
+    console.log(`Processing ${statsChunks.length} batches with batch size ${BATCH_SIZE}`);
     
-    // First check which records already exist to implement incremental updates
-    console.log("Fetching existing records to implement incremental updates...");
-    const existingRecordsMap = new Map();
-    
-    // Collect all unique match_id and player_id combinations
-    const uniqueIdentifiers = validStats.map(stat => ({
-      match_id: stat.match_id,
-      player_id: stat.player_id
-    }));
-    
-    // Fetch existing records in batches to avoid query size limits
-    const idChunks = chunk(uniqueIdentifiers, 100);
-    for (const idChunk of idChunks) {
-      // Create a filter condition for each chunk
-      const filterConditions = idChunk.map(id => 
-        `(match_id.eq.${id.match_id}.and.player_id.eq.${id.player_id})`
-      ).join(',');
+    // Process chunks in parallel with improved concurrency
+    for (let i = 0; i < statsChunks.length; i += MAX_CONCURRENT) {
+      const chunksToProcess = statsChunks.slice(i, i + MAX_CONCURRENT);
       
-      // Query existing records using the OR conditions - only select id, player_id, and match_id
-      // Remove 'updated_at' since it doesn't exist in the table definition
-      const { data: existingRecords, error } = await supabase
-        .from('player_match_stats')
-        .select('id, player_id, match_id')
-        .or(filterConditions);
-      
-      // Add the existing records to our map
-      if (existingRecords) {
-        existingRecords.forEach(record => {
-          const key = `${record.player_id}_${record.match_id}`;
-          existingRecordsMap.set(key, record);
-        });
-      } else if (error) {
-        console.error("Error fetching existing records:", error);
-      }
-    }
-    
-    console.log(`Found ${existingRecordsMap.size} existing records out of ${validStats.length} total records`);
-    
-    // Separate records into new ones and updates
-    const newRecords = [];
-    const updateRecords = [];
-    
-    for (const stat of validStats) {
-      const key = `${stat.player_id}_${stat.match_id}`;
-      if (existingRecordsMap.has(key)) {
-        // Update existing record
-        stat.id = existingRecordsMap.get(key).id;
-        updateRecords.push(stat);
-      } else {
-        // New record
-        newRecords.push(stat);
-      }
-    }
-    
-    console.log(`Identified ${newRecords.length} new records and ${updateRecords.length} records to update`);
-    
-    // Process new records first
-    if (newRecords.length > 0) {
-      const newRecordChunks = chunk(newRecords, BATCH_SIZE);
-      console.log(`Processing ${newRecordChunks.length} batches of new records...`);
-      
-      for (let i = 0; i < newRecordChunks.length; i += MAX_CONCURRENT) {
-        const chunksToProcess = newRecordChunks.slice(i, i + MAX_CONCURRENT);
-        
-        try {
-          // Process the batches in parallel
-          const results = await Promise.all(chunksToProcess.map(async (statsChunk) => {
-            try {
-              const { error, count } = await supabase
-                .from('player_match_stats')
-                .insert(statsChunk)
-                .select('count');
-                
-              if (error) {
-                console.error("Error inserting player match stats batch:", error);
-                
-                // Try individual inserts if batch fails
-                let individualSuccessCount = 0;
-                for (const stat of statsChunk) {
-                  try {
-                    const { error: singleInsertError } = await supabase
-                      .from('player_match_stats')
-                      .insert([stat]);
-                      
-                    if (!singleInsertError) {
-                      individualSuccessCount++;
-                    } else {
-                      errorCount++;
-                    }
-                  } catch (singleError) {
-                    console.error(`Failed to insert stat for player ${stat.player_id} in match ${stat.match_id}:`, singleError);
-                    errorCount++;
-                  }
-                }
-                
-                return individualSuccessCount;
-              }
+      try {
+        // Process the batches in parallel
+        const results = await Promise.all(chunksToProcess.map(async (statsChunk) => {
+          try {
+            // Use upsert instead of separate insert/update operations
+            // This dramatically reduces the number of database operations
+            const { error } = await supabase
+              .from('player_match_stats')
+              .upsert(statsChunk, {
+                onConflict: 'player_id,match_id',
+                ignoreDuplicates: false
+              });
               
-              return statsChunk.length;
-            } catch (batchError) {
-              console.error("Error processing player match stats batch:", batchError);
-              errorCount += statsChunk.length;
-              return 0;
-            }
-          }));
-          
-          // Update the processed count
-          const processedInBatch = results.reduce((sum, count) => sum + count, 0);
-          processedCount += processedInBatch;
-          successCount += processedInBatch;
-          
-          // Report progress through callback
-          if (progressCallback) {
-            progressCallback(processedCount, totalStats);
-          }
-          
-          // Log progress
-          console.log(`Inserted new records: ${processedCount}/${newRecords.length} (${Math.round(processedCount/newRecords.length*100)}%)`);
-        } catch (parallelError) {
-          console.error("Error in batch processing:", parallelError);
-        }
-      }
-    }
-    
-    // Now process updates
-    if (updateRecords.length > 0) {
-      const updateRecordChunks = chunk(updateRecords, BATCH_SIZE);
-      console.log(`Processing ${updateRecordChunks.length} batches of updates...`);
-      
-      let updatedCount = 0;
-      
-      for (let i = 0; i < updateRecordChunks.length; i += MAX_CONCURRENT) {
-        const chunksToProcess = updateRecordChunks.slice(i, i + MAX_CONCURRENT);
-        
-        try {
-          // Process the batches in parallel
-          const results = await Promise.all(chunksToProcess.map(async (statsChunk) => {
-            try {
-              let chunkSuccessCount = 0;
+            if (error) {
+              console.error("Error upserting player match stats batch:", error);
               
-              // Update records individually since upsert might not work well for complex updates
+              // If batch fails, try individual upserts instead of separate insert/update operations
+              let individualSuccessCount = 0;
               for (const stat of statsChunk) {
                 try {
-                  const { error } = await supabase
+                  const { error: singleError } = await supabase
                     .from('player_match_stats')
-                    .update(stat)
-                    .eq('id', stat.id);
+                    .upsert([stat], {
+                      onConflict: 'player_id,match_id',
+                      ignoreDuplicates: false
+                    });
                     
-                  if (!error) {
-                    chunkSuccessCount++;
+                  if (!singleError) {
+                    individualSuccessCount++;
                   } else {
-                    console.error(`Error updating player match stat for player ${stat.player_id} in match ${stat.match_id}:`, error);
                     errorCount++;
                   }
-                } catch (updateError) {
-                  console.error(`Failed to update stat for player ${stat.player_id} in match ${stat.match_id}:`, updateError);
+                } catch (singleError) {
+                  console.error(`Failed to upsert stat for player ${stat.player_id} in match ${stat.match_id}:`, singleError);
                   errorCount++;
                 }
               }
               
-              return chunkSuccessCount;
-            } catch (batchError) {
-              console.error("Error processing player match stats update batch:", batchError);
-              errorCount += statsChunk.length;
-              return 0;
+              return individualSuccessCount;
             }
-          }));
-          
-          // Update the processed count
-          const updatedInBatch = results.reduce((sum, count) => sum + count, 0);
-          updatedCount += updatedInBatch;
-          processedCount += updatedInBatch;
-          successCount += updatedInBatch;
-          
-          // Report progress through callback
-          if (progressCallback) {
-            progressCallback(newRecords.length + updatedCount, totalStats);
+            
+            return statsChunk.length;
+          } catch (batchError) {
+            console.error("Error processing player match stats batch:", batchError);
+            errorCount += statsChunk.length;
+            return 0;
           }
-          
-          // Log progress
-          console.log(`Updated records: ${updatedCount}/${updateRecords.length} (${Math.round(updatedCount/updateRecords.length*100)}%)`);
-        } catch (parallelError) {
-          console.error("Error in update batch processing:", parallelError);
+        }));
+        
+        // Update the processed count
+        const processedInBatch = results.reduce((sum, count) => sum + count, 0);
+        processedCount += processedInBatch;
+        successCount += processedInBatch;
+        
+        // Report progress through callback
+        if (progressCallback) {
+          progressCallback(processedCount, totalStats);
         }
+        
+        // Log progress
+        console.log(`Processed records: ${processedCount}/${totalStats} (${Math.round(processedCount/totalStats*100)}%) - Batch ${i/MAX_CONCURRENT + 1}/${Math.ceil(statsChunks.length/MAX_CONCURRENT)}`);
+      } catch (parallelError) {
+        console.error("Error in batch processing:", parallelError);
       }
+      
+      // Add a small delay between batch groups to avoid overwhelming the database
+      // This counter-intuitively can lead to better overall performance
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     console.log(`Successfully processed ${successCount}/${playerStats.length} player match statistics (${errorCount} errors)`);

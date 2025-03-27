@@ -273,6 +273,7 @@ export type Database = {
           gpr: number | null
           gspd: number | null
           id: string
+          is_winner: boolean | null
           kills: number | null
           kills_at_10: number | null
           kills_at_15: number | null
@@ -379,6 +380,7 @@ export type Database = {
           gpr?: number | null
           gspd?: number | null
           id?: string
+          is_winner?: boolean | null
           kills?: number | null
           kills_at_10?: number | null
           kills_at_15?: number | null
@@ -485,6 +487,7 @@ export type Database = {
           gpr?: number | null
           gspd?: number | null
           id?: string
+          is_winner?: boolean | null
           kills?: number | null
           kills_at_10?: number | null
           kills_at_15?: number | null

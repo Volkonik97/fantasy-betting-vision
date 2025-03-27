@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 // Define a progress callback type
 type ProgressCallback = (step: string, progress: number) => void;
 
-// Load data from Google Sheets
+// Load data from Google Sheets with improved performance
 export const loadFromGoogleSheets = async (
   sheetUrl: string,
   deleteExisting: boolean = false,
@@ -45,7 +45,7 @@ export const loadFromGoogleSheets = async (
     
     console.log("Fetching data from URL:", csvUrl);
     
-    // Set up complete config for CSV parsing to ensure we get all rows
+    // Set up optimized config for CSV parsing to ensure we get all rows quickly
     const csvResult = await new Promise<Papa.ParseResult<any>>((resolve, reject) => {
       Papa.parse(csvUrl, {
         download: true,
@@ -53,23 +53,19 @@ export const loadFromGoogleSheets = async (
         skipEmptyLines: true,
         dynamicTyping: false, // Keep everything as strings to avoid data loss
         complete: (result) => {
-          console.log(`Papa parse complete with ${result.data.length} rows`);
+          console.log(`CSV parsing complete, found ${result.data.length} rows`);
           resolve(result);
         },
         error: (error) => {
-          console.error("Papa parse error:", error);
+          console.error("CSV parsing error:", error);
           reject(error);
         },
-        // Set a generous limit to ensure we get all rows
-        worker: false, // Disable worker to avoid timeouts with large files
+        // Performance optimizations
+        worker: true, // Use worker thread for better performance with large files
         delimiter: ",", // Explicitly set delimiter
         newline: "\n", // Explicitly set newline
-        fastMode: false, // Disable fast mode for more reliable parsing
-        chunkSize: 100000, // Increase chunk size for better performance
-        beforeFirstChunk: (chunk) => {
-          console.log("Received first chunk");
-          return chunk;
-        }
+        fastMode: true, // Enable fast mode for better performance where possible
+        chunkSize: 250000, // Increase chunk size for better performance
       });
     });
     
@@ -102,7 +98,9 @@ export const loadFromGoogleSheets = async (
     
     // Process the data into our application format
     progressCallback?.("Traitement des données", 45);
+    console.time("data-processing");
     const processedData = processLeagueData(csvData as LeagueGameDataRow[]);
+    console.timeEnd("data-processing");
     
     if (processedData.teams.length === 0 || processedData.players.length === 0) {
       console.error("Le traitement des données n'a pas généré d'équipes ou de joueurs");
@@ -124,6 +122,7 @@ export const loadFromGoogleSheets = async (
     
     // Save the processed data to Supabase in steps to show progress
     progressCallback?.("Enregistrement des équipes", 55);
+    console.time("data-saving");
     const saveResult = await saveToDatabase(processedData, (phase, percent, current, total) => {
       let totalProgress = 0;
       
@@ -148,6 +147,7 @@ export const loadFromGoogleSheets = async (
           break;
       }
     });
+    console.timeEnd("data-saving");
     
     if (saveResult) {
       progressCallback?.("Importation terminée", 100);
