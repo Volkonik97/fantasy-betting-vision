@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +18,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [importProgress, setImportProgress] = useState(0);
   const [isImportComplete, setIsImportComplete] = useState(false);
   const [hasDataInDb, setHasDataInDb] = useState(false);
-  const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number} | null>(null);
+  const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number, playerStats: number} | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(true);
 
   useEffect(() => {
@@ -42,18 +41,12 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       setImportProgress(10);
       console.log("Début de l'importation depuis Google Sheets:", sheetsUrl);
       
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setImportProgress(prev => {
-          if (prev < 90) return prev + 5;
-          return prev;
-        });
-      }, 2000);
+      const progressCallback = (step: string, progress: number) => {
+        console.log(`Import progress: ${step} - ${progress}%`);
+        setImportProgress(progress);
+      };
       
-      // Pass deleteExisting based on checkbox value
-      const result = await loadFromGoogleSheets(sheetsUrl, deleteExisting);
-      
-      clearInterval(progressInterval);
+      const result = await loadFromGoogleSheets(sheetsUrl, deleteExisting, progressCallback);
       
       if (result === false) {
         setImportProgress(0);
@@ -67,16 +60,18 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       setImportStats({
         teams: result.teams.length,
         players: result.players.length,
-        matches: result.matches.length
+        matches: result.matches.length,
+        playerStats: result.playerMatchStats?.length || 0
       });
       
       console.log("Résultat de l'importation:", {
         teams: result.teams.length,
         players: result.players.length, 
-        matches: result.matches.length
+        matches: result.matches.length,
+        playerStats: result.playerMatchStats?.length || 0
       });
       
-      toast.success(`Données chargées avec succès depuis Google Sheets: ${result.teams.length} équipes, ${result.players.length} joueurs, ${result.matches.length} matchs`);
+      toast.success(`Données chargées avec succès depuis Google Sheets: ${result.teams.length} équipes, ${result.players.length} joueurs, ${result.matches.length} matchs, ${result.playerMatchStats?.length || 0} statistiques de match`);
       
       if (onDataImported) {
         await onDataImported();
@@ -84,7 +79,6 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       
       setHasDataInDb(true);
       
-      // Rediriger vers la page d'accueil après chargement
       setTimeout(() => {
         window.location.href = '/';
       }, 3000);
@@ -107,6 +101,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
             <li>• {importStats.teams} équipes importées</li>
             <li>• {importStats.players} joueurs importés</li>
             <li>• {importStats.matches} matchs importés</li>
+            <li>• {importStats.playerStats} statistiques de joueurs importées</li>
           </ul>
           <p className="text-sm mt-2 text-green-700">
             Redirection vers la page d'accueil...

@@ -8,6 +8,9 @@ import { getMatches, saveMatches, savePlayerMatchStats } from './matches/matches
 import { getTournaments } from './tournamentsService';
 import { toast } from "sonner";
 
+// Progress callback type
+type ProgressCallback = (phase: 'teams' | 'players' | 'matches' | 'playerStats', percent: number) => void;
+
 // Save data to database
 export const saveToDatabase = async (data: {
   teams: Team[];
@@ -15,7 +18,7 @@ export const saveToDatabase = async (data: {
   matches: Match[];
   playerMatchStats?: any[];
   tournaments?: any[];
-}): Promise<boolean> => {
+}, progressCallback?: ProgressCallback): Promise<boolean> => {
   try {
     console.log("Starting to save to Supabase:", {
       teamsCount: data.teams.length,
@@ -31,6 +34,7 @@ export const saveToDatabase = async (data: {
       toast.error("Erreur lors de l'enregistrement des équipes");
       return false;
     }
+    progressCallback?.('teams', 100);
     
     // Insert players
     const playersSuccess = await savePlayers(data.players);
@@ -39,6 +43,7 @@ export const saveToDatabase = async (data: {
       toast.error("Erreur lors de l'enregistrement des joueurs");
       return false;
     }
+    progressCallback?.('players', 100);
     
     // Insert matches
     const matchesSuccess = await saveMatches(data.matches);
@@ -47,6 +52,7 @@ export const saveToDatabase = async (data: {
       toast.error("Erreur lors de l'enregistrement des matchs");
       return false;
     }
+    progressCallback?.('matches', 100);
     
     // Insert player match statistics if available
     if (data.playerMatchStats && data.playerMatchStats.length > 0) {
@@ -60,17 +66,56 @@ export const saveToDatabase = async (data: {
       console.log(`${validPlayerStats.length} valid player stats out of ${data.playerMatchStats.length}`);
       
       if (validPlayerStats.length > 0) {
-        const statsSuccess = await savePlayerMatchStats(validPlayerStats);
-        if (!statsSuccess) {
+        // Process player stats in smaller chunks and report progress
+        const TOTAL_CHUNKS = Math.ceil(validPlayerStats.length / 25);
+        let chunksProcessed = 0;
+        
+        // Create a wrapped version of savePlayerMatchStats to track progress
+        const saveWithProgress = async (stats: any[]) => {
+          const result = await savePlayerMatchStats(stats);
+          chunksProcessed++;
+          
+          // Report progress after each chunk
+          if (progressCallback) {
+            const percent = (chunksProcessed / TOTAL_CHUNKS) * 100;
+            progressCallback('playerStats', Math.min(percent, 100));
+          }
+          
+          return result;
+        };
+        
+        // Process in batches of maximum 1000 stats at a time to avoid memory issues
+        const BATCH_SIZE = 1000;
+        let successCount = 0;
+        
+        for (let i = 0; i < validPlayerStats.length; i += BATCH_SIZE) {
+          const batch = validPlayerStats.slice(i, i + BATCH_SIZE);
+          const statsSuccess = await saveWithProgress(batch);
+          
+          if (statsSuccess) {
+            successCount += batch.length;
+          } else {
+            console.error(`Échec lors de l'enregistrement du lot de statistiques ${i}-${i + batch.length}`);
+          }
+        }
+        
+        if (successCount === 0) {
           console.error("Échec lors de l'enregistrement des statistiques des joueurs");
           toast.error("Erreur lors de l'enregistrement des statistiques des joueurs");
           // Continue even if player stats failed, since the core data was saved
         } else {
-          console.log("Statistiques des joueurs enregistrées avec succès");
+          console.log(`${successCount}/${validPlayerStats.length} statistiques des joueurs enregistrées avec succès`);
+          
+          if (successCount < validPlayerStats.length) {
+            toast.warning(`Attention: Seulement ${successCount}/${validPlayerStats.length} statistiques de joueurs ont été importées`);
+          }
         }
       } else {
         console.warn("No valid player match statistics to save");
+        progressCallback?.('playerStats', 100); // Mark as complete even if no stats to save
       }
+    } else {
+      progressCallback?.('playerStats', 100); // Mark as complete even if no stats to save
     }
     
     console.log("Données enregistrées avec succès dans Supabase");

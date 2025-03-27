@@ -7,10 +7,14 @@ import { processLeagueData } from './leagueDataProcessor';
 import { hasDatabaseData, clearDatabase, saveToDatabase } from './database/databaseService';
 import { toast } from 'sonner';
 
+// Define a progress callback type
+type ProgressCallback = (step: string, progress: number) => void;
+
 // Load data from Google Sheets
 export const loadFromGoogleSheets = async (
   sheetUrl: string,
-  deleteExisting: boolean = false
+  deleteExisting: boolean = false,
+  progressCallback?: ProgressCallback
 ) => {
   try {
     if (!sheetUrl) {
@@ -34,6 +38,7 @@ export const loadFromGoogleSheets = async (
     }
     
     toast.info("Chargement des données depuis Google Sheets...");
+    progressCallback?.("Préparation", 15);
     
     // Get CSV URL and parse the data
     const csvUrl = getGSheetCSVUrl(sheetId);
@@ -67,10 +72,12 @@ export const loadFromGoogleSheets = async (
     
     console.log(`${csvData.length} lignes de données chargées depuis Google Sheets`);
     toast.info(`${csvData.length} lignes de données chargées`);
+    progressCallback?.("Données chargées", 30);
     
     // If we need to delete existing data before inserting new data
     if (deleteExisting) {
       console.log("Suppression des données existantes...");
+      progressCallback?.("Suppression des données existantes", 35);
       const clearResult = await clearDatabase();
       if (!clearResult) {
         console.error("Échec de la suppression des données existantes");
@@ -78,9 +85,11 @@ export const loadFromGoogleSheets = async (
         return false;
       }
       console.log("Données existantes supprimées avec succès");
+      progressCallback?.("Données supprimées", 40);
     }
     
     // Process the data into our application format
+    progressCallback?.("Traitement des données", 45);
     const processedData = processLeagueData(csvData as LeagueGameDataRow[]);
     
     if (processedData.teams.length === 0 || processedData.players.length === 0) {
@@ -94,12 +103,37 @@ export const loadFromGoogleSheets = async (
       playersCount: processedData.players.length,
       matchesCount: processedData.matches.length
     });
+    progressCallback?.("Traitement terminé", 50);
     
-    // Save the processed data to Supabase
-    const saveResult = await saveToDatabase(processedData);
+    // Save the processed data to Supabase in steps to show progress
+    progressCallback?.("Enregistrement des équipes", 55);
+    const saveResult = await saveToDatabase(processedData, (phase, percent) => {
+      let totalProgress = 0;
+      
+      // Map the database phase to an overall progress percentage
+      switch (phase) {
+        case 'teams':
+          totalProgress = 55 + percent * 0.15; // 55-70%
+          progressCallback?.("Enregistrement des équipes", totalProgress);
+          break;
+        case 'players':
+          totalProgress = 70 + percent * 0.15; // 70-85%
+          progressCallback?.("Enregistrement des joueurs", totalProgress);
+          break;
+        case 'matches':
+          totalProgress = 85 + percent * 0.05; // 85-90%
+          progressCallback?.("Enregistrement des matchs", totalProgress);
+          break;
+        case 'playerStats':
+          totalProgress = 90 + percent * 0.1; // 90-100%
+          progressCallback?.("Enregistrement des statistiques", totalProgress);
+          break;
+      }
+    });
     
     if (saveResult) {
-      toast.success(`Données importées avec succès: ${processedData.teams.length} équipes, ${processedData.players.length} joueurs, ${processedData.matches.length} matchs`);
+      progressCallback?.("Importation terminée", 100);
+      toast.success(`Données importées avec succès: ${processedData.teams.length} équipes, ${processedData.players.length} joueurs, ${processedData.matches.length} matchs, ${processedData.playerMatchStats.length} statistiques`);
       return processedData; // Return the processed data instead of boolean
     } else {
       toast.error("Erreur lors de la sauvegarde des données");
