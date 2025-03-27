@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { getTeamById } from "@/utils/database/teamsService";
 import { getMatches } from "@/utils/database/matchesService";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
+import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
@@ -19,6 +20,7 @@ const TeamDetails = () => {
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
+  const [timelineStats, setTimelineStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -59,6 +61,16 @@ const TeamDetails = () => {
           } catch (statsError) {
             console.error("Erreur lors du chargement des statistiques côté:", statsError);
             // Continue without side stats
+          }
+          
+          // Load timeline statistics
+          try {
+            const timeline = await getTeamTimelineStats(foundTeam.id);
+            console.log("Timeline stats loaded:", timeline);
+            setTimelineStats(timeline);
+          } catch (timelineError) {
+            console.error("Erreur lors du chargement des statistiques timeline:", timelineError);
+            // Continue without timeline stats
           }
         }
       } catch (err) {
@@ -113,7 +125,13 @@ const TeamDetails = () => {
         
         <TeamAnalysisSection team={team} sideStats={sideStats} />
         
-        <TeamPlayersList players={team.players} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          <div>
+            <TeamStatistics team={team} timelineStats={timelineStats} />
+          </div>
+          
+          <TeamPlayersList players={team.players} />
+        </div>
         
         <TeamRecentMatches team={team} matches={teamMatches} />
       </main>

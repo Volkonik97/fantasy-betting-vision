@@ -13,6 +13,8 @@ interface TeamComparisonResultProps {
   team1WinProb: number;
   team2WinProb: number;
   comparisonData: any[];
+  team1TimelineStats?: any;
+  team2TimelineStats?: any;
 }
 
 const TeamComparisonResult = ({
@@ -20,7 +22,9 @@ const TeamComparisonResult = ({
   team2,
   team1WinProb,
   team2WinProb,
-  comparisonData
+  comparisonData,
+  team1TimelineStats,
+  team2TimelineStats
 }: TeamComparisonResultProps) => {
   return (
     <motion.div
@@ -58,10 +62,10 @@ const TeamComparisonResult = ({
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <TeamStatistics team={team1} />
+          <TeamStatistics team={team1} timelineStats={team1TimelineStats} />
         </div>
         <div>
-          <TeamStatistics team={team2} />
+          <TeamStatistics team={team2} timelineStats={team2TimelineStats} />
         </div>
       </div>
     </motion.div>

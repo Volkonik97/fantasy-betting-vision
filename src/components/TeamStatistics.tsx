@@ -3,18 +3,22 @@ import React from "react";
 import { Team } from "@/utils/models/types";
 import { motion } from "framer-motion";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TeamStatisticsProps {
   team: Team;
+  timelineStats?: any;
 }
 
-const TeamStatistics = ({ team }: TeamStatisticsProps) => {
+const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
   const stats = [
     { name: "Win Rate", value: `${(team.winRate * 100).toFixed(0)}%` },
     { name: "Blue Side Win", value: `${(team.blueWinRate * 100).toFixed(0)}%` },
     { name: "Red Side Win", value: `${(team.redWinRate * 100).toFixed(0)}%` },
     { name: "Avg Game Time", value: formatSecondsToMinutesSeconds(team.averageGameTime) },
   ];
+
+  const hasTimeline = timelineStats && Object.keys(timelineStats).length > 0;
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden">
@@ -55,6 +59,69 @@ const TeamStatistics = ({ team }: TeamStatisticsProps) => {
             </motion.div>
           ))}
         </div>
+        
+        {hasTimeline && (
+          <div className="mt-6">
+            <h4 className="text-sm font-medium text-gray-500 mb-3">Timeline Statistics</h4>
+            <Tabs defaultValue="gold">
+              <TabsList className="w-full mb-4 grid grid-cols-3">
+                <TabsTrigger value="gold">Gold</TabsTrigger>
+                <TabsTrigger value="cs">CS</TabsTrigger>
+                <TabsTrigger value="kda">K/D</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="gold">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-2">
+                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                        <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
+                        <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                          {stats.avgGoldDiff > 0 ? '+' : ''}{stats.avgGoldDiff.toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="cs">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-2">
+                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                        <div className="font-semibold">{stats.avgCs}</div>
+                        <div className="text-xs mt-1 text-gray-600">
+                          {(stats.avgCs / parseInt(time)).toFixed(1)} CS/min
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="kda">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-2">
+                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                        <div className="font-semibold">
+                          {stats.avgKills} / {stats.avgDeaths}
+                        </div>
+                        <div className="text-xs mt-1 text-gray-600">
+                          {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        )}
         
         <h4 className="text-sm font-medium text-gray-500 mt-6 mb-3">Players</h4>
         
