@@ -1,22 +1,24 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, TrendingUp, Percent, Clock, Trophy } from "lucide-react";
+import { ArrowLeft, TrendingUp, Percent, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Team, Match, Player, SideStatistics } from "@/utils/models/types";
+import { Team, Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import TeamStatistics from "@/components/TeamStatistics";
 import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
-import { getTeams, getMatches } from "@/utils/csvService";
-import { getSideStatistics } from "@/utils/statistics"; // Updated import path
+import { getTeamById } from "@/utils/database/teamsService";
+import { getMatches } from "@/utils/database/matchesService";
+import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 import { toast } from "sonner";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
@@ -25,15 +27,20 @@ const TeamDetails = () => {
   
   useEffect(() => {
     const loadTeamData = async () => {
+      if (!id) {
+        setError("ID d'équipe manquant");
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         setIsLoading(true);
         
         // Load team from database
-        const teams = await getTeams();
-        const foundTeam = teams.find(t => t.id === id);
+        const foundTeam = await getTeamById(id);
         
         if (!foundTeam) {
-          setError("Team not found");
+          setError("Équipe non trouvée");
           setIsLoading(false);
           return;
         }
@@ -53,22 +60,20 @@ const TeamDetails = () => {
             const stats = await getSideStatistics(foundTeam.id);
             setSideStats(stats);
           } catch (statsError) {
-            console.error("Error loading side statistics:", statsError);
+            console.error("Erreur lors du chargement des statistiques côté:", statsError);
             // Continue without side stats
           }
         }
       } catch (err) {
-        console.error("Error loading team data:", err);
-        setError("Error loading team data");
-        toast.error("Failed to load team details");
+        console.error("Erreur lors du chargement des données d'équipe:", err);
+        setError("Erreur lors du chargement des données d'équipe");
+        toast.error("Échec du chargement des détails de l'équipe");
       } finally {
         setIsLoading(false);
       }
     };
     
-    if (id) {
-      loadTeamData();
-    }
+    loadTeamData();
   }, [id]);
   
   if (isLoading) {
@@ -83,9 +88,9 @@ const TeamDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">{error || "Team not found"}</h2>
+          <h2 className="text-2xl font-bold mb-4">{error || "Équipe non trouvée"}</h2>
           <Link to="/teams" className="text-lol-blue hover:underline">
-            Return to teams list
+            Retour à la liste des équipes
           </Link>
         </div>
       </div>
@@ -181,7 +186,7 @@ const TeamDetails = () => {
         
         {sideStats && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">Side Performance Analysis</h2>
+            <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
             <SideAnalysis statistics={sideStats} />
           </div>
         )}
@@ -191,11 +196,17 @@ const TeamDetails = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold mb-4">Roster</h2>
+          <h2 className="text-2xl font-bold mb-4">Joueurs</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {team.players.map(player => (
-              <PlayerCard key={player.id} player={player} />
-            ))}
+            {team.players.length > 0 ? (
+              team.players.map(player => (
+                <PlayerCard key={player.id} player={player} />
+              ))
+            ) : (
+              <p className="col-span-full text-gray-500 text-center py-8">
+                Aucun joueur trouvé pour cette équipe
+              </p>
+            )}
           </div>
         </motion.div>
         
@@ -206,16 +217,16 @@ const TeamDetails = () => {
             transition={{ duration: 0.3, delay: 0.3 }}
             className="mt-8"
           >
-            <h2 className="text-2xl font-bold mb-4">Recent Matches</h2>
+            <h2 className="text-2xl font-bold mb-4">Matchs récents</h2>
             <div className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="px-4 py-3 text-left">Date</th>
-                    <th className="px-4 py-3 text-left">Tournament</th>
-                    <th className="px-4 py-3 text-left">Opponent</th>
-                    <th className="px-4 py-3 text-left">Result</th>
-                    <th className="px-4 py-3 text-left">Prediction</th>
+                    <th className="px-4 py-3 text-left">Tournoi</th>
+                    <th className="px-4 py-3 text-left">Adversaire</th>
+                    <th className="px-4 py-3 text-left">Résultat</th>
+                    <th className="px-4 py-3 text-left">Prédiction</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -224,8 +235,8 @@ const TeamDetails = () => {
                     const opponent = isBlue ? match.teamRed : match.teamBlue;
                     const result = match.result 
                       ? (isBlue 
-                          ? (match.result.winner === team.id ? 'Win' : 'Loss')
-                          : (match.result.winner === team.id ? 'Win' : 'Loss'))
+                          ? (match.result.winner === team.id ? 'Victoire' : 'Défaite')
+                          : (match.result.winner === team.id ? 'Victoire' : 'Défaite'))
                       : '-';
                     const predictionAccurate = match.result 
                       ? match.predictedWinner === match.result.winner 
@@ -255,8 +266,8 @@ const TeamDetails = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`font-medium ${
-                            result === 'Win' ? 'text-green-600' : 
-                            result === 'Loss' ? 'text-red-600' : 'text-gray-500'
+                            result === 'Victoire' ? 'text-green-600' : 
+                            result === 'Défaite' ? 'text-red-600' : 'text-gray-500'
                           }`}>
                             {result}
                           </span>
@@ -266,11 +277,11 @@ const TeamDetails = () => {
                             <span className={`text-xs px-2 py-1 rounded ${
                               predictionAccurate ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                             }`}>
-                              {predictionAccurate ? 'Correct' : 'Incorrect'}
+                              {predictionAccurate ? 'Correcte' : 'Incorrecte'}
                             </span>
                           ) : (
                             <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                              {match.predictedWinner === team.id ? 'Win' : 'Loss'} 
+                              {match.predictedWinner === team.id ? 'Victoire' : 'Défaite'} 
                               ({isBlue 
                                 ? Math.round(match.blueWinOdds * 100)
                                 : Math.round(match.redWinOdds * 100)}%)

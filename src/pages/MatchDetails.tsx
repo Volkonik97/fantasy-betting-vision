@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getMatches } from "@/utils/csvService";
-import { getSideStatistics } from "@/utils/statistics"; // Updated import path
+import { getMatches } from "@/utils/database/matchesService";
+import { getSideStatistics } from "@/utils/statistics"; 
 import { Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,12 @@ const MatchDetails = () => {
   
   useEffect(() => {
     const loadMatchData = async () => {
+      if (!id) {
+        toast.error("ID de match manquant");
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       try {
         // Load match from database
@@ -36,7 +42,7 @@ const MatchDetails = () => {
         const foundMatch = matches.find(m => m.id === id);
         
         if (!foundMatch) {
-          toast.error("Match not found");
+          toast.error("Match non trouvé");
           setIsLoading(false);
           return;
         }
@@ -49,33 +55,28 @@ const MatchDetails = () => {
           const red = await getSideStatistics(foundMatch.teamRed.id);
           
           // Add team IDs to the stats objects
-          const blueWithId: SideStatistics = {
+          setBlueTeamStats({
             ...blue,
             teamId: foundMatch.teamBlue.id
-          };
+          });
           
-          const redWithId: SideStatistics = {
+          setRedTeamStats({
             ...red,
             teamId: foundMatch.teamRed.id
-          };
-          
-          setBlueTeamStats(blueWithId);
-          setRedTeamStats(redWithId);
+          });
         } catch (statsError) {
-          console.error("Error loading team statistics:", statsError);
+          console.error("Erreur lors du chargement des statistiques d'équipe:", statsError);
           // Continue without team stats
         }
       } catch (error) {
-        console.error("Error loading match data:", error);
-        toast.error("Failed to load match details");
+        console.error("Erreur lors du chargement des données du match:", error);
+        toast.error("Échec du chargement des détails du match");
       } finally {
         setIsLoading(false);
       }
     };
     
-    if (id) {
-      loadMatchData();
-    }
+    loadMatchData();
   }, [id]);
   
   if (isLoading) {
@@ -90,9 +91,9 @@ const MatchDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Match Not Found</h2>
+          <h2 className="text-2xl font-bold mb-4">Match non trouvé</h2>
           <Button onClick={() => navigate('/matches')}>
-            Back to Matches
+            Retour aux matchs
           </Button>
         </div>
       </div>
