@@ -16,7 +16,37 @@ const Players = () => {
   const [loading, setLoading] = useState(true);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
-  const regions = ["All", "LCK", "LPL", "LEC", "LTA", "LFL2"];
+  // Updated with all major LoL competitive regions
+  const regions = [
+    "All", 
+    "LCK", // Korea
+    "LPL", // China
+    "LEC", // Europe
+    "LTA", // Latin America
+    "LCS", // North America
+    "PCS", // Pacific
+    "VCS", // Vietnam
+    "CBLOL", // Brazil
+    "LJL", // Japan
+    "LCO", // Oceania
+    "TCL", // Turkey
+    "LCL", // Commonwealth of Independent States
+    "LLA", // Latin America
+    "LFL", // France
+    "LFL2", // France Division 2
+    "LVP", // Spain
+    "Prime League", // Germany/DACH
+    "NLC", // Northern Europe
+    "PG Nationals", // Italy
+    "Ultraliga", // Poland
+    "Greek Legends", // Greece
+    "Arabian League", // Arabia
+    "Hitpoint Masters", // Czech Republic & Slovakia
+    "Elite Series", // Benelux
+    "Esports Balkan League", // Balkans
+    "Baltic Masters" // Baltic
+  ];
+  
   const subRegions = {
     LTA: ["All", "LTA N", "LTA S"]
   };
@@ -119,7 +149,7 @@ const Players = () => {
           
           <div className="w-full sm:w-auto">
             <h3 className="font-medium mb-2">Filter by Region</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
               {regions.map(region => (
                 <button
                   key={region}
