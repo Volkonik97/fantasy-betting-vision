@@ -2,11 +2,11 @@
 import React from "react";
 import { SideStatistics } from "@/utils/models/types";
 import { Bar } from "recharts";
-import { BarChart } from "./ui/chart";
+import { BarChart } from "./ui/barchart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
-interface SideAnalysisProps {
+export interface SideAnalysisProps {
   statistics: SideStatistics;
 }
 

@@ -4,21 +4,22 @@ import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, TrendingUp, Percent, Clock, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Team, Match, Player } from "@/utils/mockData";
+import { Team, Match, Player, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import PlayerCard from "@/components/PlayerCard";
 import TeamStatistics from "@/components/TeamStatistics";
 import SideAnalysis from "@/components/SideAnalysis";
 import PredictionChart from "@/components/PredictionChart";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeams, getMatches, getSideStatistics } from "@/utils/csvService";
+import { getTeams, getMatches } from "@/utils/csvService";
+import { getSideStatistics } from "@/utils/models/statistics";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
-  const [sideStats, setSideStats] = useState<any>(null);
+  const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -47,8 +48,10 @@ const TeamDetails = () => {
         setTeamMatches(filteredMatches);
         
         // Charger les statistiques par côté
-        const stats = await getSideStatistics(foundTeam.id);
-        setSideStats(stats);
+        if (foundTeam.id) {
+          const stats = await getSideStatistics(foundTeam.id);
+          setSideStats(stats);
+        }
       } catch (err) {
         console.error("Erreur lors du chargement des données:", err);
         setError("Erreur lors du chargement des données");

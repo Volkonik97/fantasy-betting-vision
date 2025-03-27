@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Make sure teams have their players
 const populatedTeams = populateTeamPlayers();
 
-export const getSideStatistics = async (teamId: string): Promise<SideStatistics | null> => {
+export const getSideStatistics = async (teamId: string): Promise<SideStatistics> => {
   // Try to get stats from the database first
   try {
     const { data: matchesData, error: matchesError } = await supabase
@@ -133,9 +133,57 @@ const calculateTimelineStats = (playerStats: any[]) => {
 };
 
 // Fallback to mock data if database fails
-const getMockSideStatistics = (teamId: string): SideStatistics | null => {
+const getMockSideStatistics = (teamId: string): SideStatistics => {
   const team = populatedTeams.find(t => t.id === teamId);
-  if (!team) return null;
+  if (!team) {
+    // Return default stats if team not found
+    return {
+      blueWins: 50,
+      redWins: 50,
+      blueFirstBlood: 50,
+      redFirstBlood: 50,
+      blueFirstDragon: 50,
+      redFirstDragon: 50,
+      blueFirstHerald: 50,
+      redFirstHerald: 50,
+      blueFirstTower: 50,
+      redFirstTower: 50,
+      timelineStats: {
+        '10': {
+          avgGold: 3250,
+          avgXp: 4120,
+          avgCs: 85,
+          avgGoldDiff: 350,
+          avgKills: 1.2,
+          avgDeaths: 0.8
+        },
+        '15': {
+          avgGold: 5120,
+          avgXp: 6780,
+          avgCs: 130,
+          avgGoldDiff: 580,
+          avgKills: 2.5,
+          avgDeaths: 1.3
+        },
+        '20': {
+          avgGold: 7350,
+          avgXp: 9450,
+          avgCs: 175,
+          avgGoldDiff: 850,
+          avgKills: 3.8,
+          avgDeaths: 2.1
+        },
+        '25': {
+          avgGold: 9780,
+          avgXp: 12400,
+          avgCs: 220,
+          avgGoldDiff: 1250,
+          avgKills: 5.2,
+          avgDeaths: 3.0
+        }
+      }
+    };
+  }
   
   return {
     blueWins: Math.round(team.blueWinRate * 100),
