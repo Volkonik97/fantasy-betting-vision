@@ -58,8 +58,8 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               colors={["#3b82f6", "#ef4444"]}
               showYAxis
             >
-              <Bar dataKey="blue" name="Blue Side" />
-              <Bar dataKey="red" name="Red Side" />
+              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" />
+              <Bar dataKey="red" name="Red Side" fill="#ef4444" />
             </BarChart>
           </div>
         </CardContent>
@@ -79,8 +79,8 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               colors={["#3b82f6", "#ef4444"]}
               showYAxis
             >
-              <Bar dataKey="blue" name="Blue Side" />
-              <Bar dataKey="red" name="Red Side" />
+              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" />
+              <Bar dataKey="red" name="Red Side" fill="#ef4444" />
             </BarChart>
           </div>
         </CardContent>

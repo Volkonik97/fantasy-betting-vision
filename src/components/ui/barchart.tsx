@@ -26,8 +26,9 @@ export const BarChart = ({
   showYAxis = false 
 }: BarChartProps) => {
   // Create the config object for customization
-  const config = Array.isArray(children) 
-    ? children.reduce((acc, child, index) => {
+  const config = React.useMemo(() => {
+    if (Array.isArray(children)) {
+      return children.reduce((acc, child, index) => {
         if (React.isValidElement(child) && hasDataKey(child)) {
           acc[child.props.dataKey] = { 
             color: colors[index % colors.length] || "#2563eb",
@@ -35,24 +36,37 @@ export const BarChart = ({
           };
         }
         return acc;
-      }, {} as Record<string, { color: string, label: string }>)
-    : React.isValidElement(children) && hasDataKey(children)
-      ? { [children.props.dataKey]: { 
+      }, {} as Record<string, { color: string, label: string }>);
+    } 
+    
+    if (React.isValidElement(children) && hasDataKey(children)) {
+      return { 
+        [children.props.dataKey]: { 
           color: colors[0] || "#2563eb",
           label: children.props.name || children.props.dataKey
-        }}
-      : {};
+        }
+      };
+    }
+    
+    return {};
+  }, [children, colors]);
 
   return (
     <ChartContainer config={config}>
-      <RechartsBarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-        {grid && <CartesianGrid strokeDasharray="3 3" />}
-        <XAxis dataKey={xAxisKey} />
-        {showYAxis && <YAxis />}
-        <Tooltip />
-        <Legend />
-        {children}
-      </RechartsBarChart>
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsBarChart 
+          data={data} 
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          barGap={4}
+        >
+          {grid && <CartesianGrid strokeDasharray="3 3" />}
+          <XAxis dataKey={xAxisKey} />
+          {showYAxis && <YAxis />}
+          <Tooltip />
+          <Legend />
+          {children}
+        </RechartsBarChart>
+      </ResponsiveContainer>
     </ChartContainer>
   );
 };
