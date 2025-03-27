@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getPlayerById } from "@/utils/database/playersService";
 import { getPlayerStats } from "@/utils/database/matches/playerStats";
+import { getPlayerTimelineStats } from "@/utils/database/matches/playerStats";
 import { getTeamById } from "@/utils/database/teamsService";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ import PlayerHeader from "@/components/player/PlayerHeader";
 import PlayerStatsOverview from "@/components/player/PlayerStatsOverview";
 import PlayerChampionStats from "@/components/player/PlayerChampionStats";
 import PlayerMatchStats from "@/components/player/PlayerMatchStats";
+import PlayerTimelineStats from "@/components/player/PlayerTimelineStats";
 import { isWinForPlayer, calculateAverages, getChampionStats } from "@/utils/player/playerStatsCalculator";
 
 const PlayerDetails = () => {
@@ -23,6 +25,7 @@ const PlayerDetails = () => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [teamName, setTeamName] = useState<string>("");
   const [matchStats, setMatchStats] = useState<any[]>([]);
+  const [timelineStats, setTimelineStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -54,6 +57,16 @@ const PlayerDetails = () => {
         const stats = await getPlayerStats(id);
         console.log("Player match stats:", stats);
         setMatchStats(stats);
+        
+        // Get timeline statistics for this player
+        try {
+          const timeline = await getPlayerTimelineStats(id);
+          console.log("Player timeline stats:", timeline);
+          setTimelineStats(timeline);
+        } catch (timelineError) {
+          console.error("Erreur lors du chargement des statistiques timeline:", timelineError);
+          // Continue without timeline stats
+        }
         
       } catch (error) {
         console.error("Error loading player data:", error);
@@ -128,12 +141,17 @@ const PlayerDetails = () => {
           <Tabs defaultValue="overview">
             <TabsList className="w-full mb-4">
               <TabsTrigger value="overview" className="flex-1">Vue d'ensemble</TabsTrigger>
+              <TabsTrigger value="timeline" className="flex-1">Timeline</TabsTrigger>
               <TabsTrigger value="champions" className="flex-1">Champions</TabsTrigger>
               <TabsTrigger value="matches" className="flex-1">Matchs</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview">
               <PlayerStatsOverview averageStats={averageStats} />
+            </TabsContent>
+            
+            <TabsContent value="timeline">
+              <PlayerTimelineStats timelineStats={timelineStats} />
             </TabsContent>
             
             <TabsContent value="champions">

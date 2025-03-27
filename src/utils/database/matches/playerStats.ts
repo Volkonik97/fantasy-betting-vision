@@ -1,9 +1,9 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getTimelineStats } from '../../statistics/timelineStats';
 
 // Cache pour éviter de récupérer plusieurs fois les mêmes données
 const playerStatsCache: Record<string, any[]> = {};
+const timelineStatsCache: Record<string, any> = {};
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const lastFetch: Record<string, number> = {};
 
@@ -147,6 +147,45 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any> => {
 };
 
 /**
+ * Get timeline statistics for a specific player
+ */
+export const getPlayerTimelineStats = async (playerId: string): Promise<any> => {
+  try {
+    const cacheKey = `timeline_player_${playerId}`;
+    const now = Date.now();
+    
+    // Check cache first
+    if (timelineStatsCache[cacheKey] && lastFetch[cacheKey] && (now - lastFetch[cacheKey] < CACHE_DURATION)) {
+      console.log(`Using cached timeline stats for player ${playerId}`);
+      return timelineStatsCache[cacheKey];
+    }
+    
+    console.log(`Getting timeline stats for player ${playerId}`);
+    const playerStats = await getPlayerStats(playerId);
+    
+    if (!playerStats || playerStats.length === 0) {
+      console.log(`No player stats found for player ${playerId}, returning null`);
+      return null;
+    }
+    
+    console.log(`Processing ${playerStats.length} player stats for timeline data`);
+    const timelineStats = getTimelineStats(playerStats);
+    
+    // Log the generated timeline stats for debugging
+    console.log(`Generated timeline stats for player ${playerId}:`, timelineStats);
+    
+    // Update cache
+    timelineStatsCache[cacheKey] = timelineStats;
+    lastFetch[cacheKey] = now;
+    
+    return timelineStats;
+  } catch (error) {
+    console.error(`Error getting timeline stats for player ${playerId}:`, error);
+    return null;
+  }
+};
+
+/**
  * Clear player stats cache
  */
 export const clearPlayerStatsCache = () => {
@@ -154,5 +193,10 @@ export const clearPlayerStatsCache = () => {
     delete playerStatsCache[key];
     delete lastFetch[key];
   });
+  
+  Object.keys(timelineStatsCache).forEach(key => {
+    delete timelineStatsCache[key];
+  });
+  
   console.log('Player stats cache cleared');
 };
