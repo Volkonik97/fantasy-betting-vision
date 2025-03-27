@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { toast } from "sonner";
 import { Link, Database, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CsvDataManagerProps {
   onDataImported?: () => void;
@@ -18,6 +20,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [isImportComplete, setIsImportComplete] = useState(false);
   const [hasDataInDb, setHasDataInDb] = useState(false);
   const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number} | null>(null);
+  const [deleteExisting, setDeleteExisting] = useState(true);
 
   useEffect(() => {
     const checkData = async () => {
@@ -47,8 +50,8 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         });
       }, 2000);
       
-      // Pass deleteExisting=true to ensure clean imports
-      const result = await loadFromGoogleSheets(sheetsUrl, true);
+      // Pass deleteExisting based on checkbox value
+      const result = await loadFromGoogleSheets(sheetsUrl, deleteExisting);
       
       clearInterval(progressInterval);
       
@@ -142,8 +145,19 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
               <Database className="mr-2 h-5 w-5" />
               <p className="text-sm font-medium">
                 Les données sont stockées dans Supabase.
-                Les nouvelles données importées remplaceront les données existantes.
               </p>
+            </div>
+            
+            <div className="flex items-center mt-2">
+              <Checkbox 
+                id="deleteExisting" 
+                checked={deleteExisting} 
+                onCheckedChange={(checked) => setDeleteExisting(checked as boolean)}
+                className="mr-2"
+              />
+              <label htmlFor="deleteExisting" className="text-sm cursor-pointer text-blue-700">
+                Supprimer les données existantes avant l'importation
+              </label>
             </div>
           </div>
         )}

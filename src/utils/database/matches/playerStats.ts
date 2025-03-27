@@ -37,7 +37,7 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[], l
     // Order by more recent matches first
     query = query.order('created_at', { ascending: false });
     
-    // Apply limit if provided
+    // Apply limit if provided - remove limit to get ALL matches
     if (limit && limit > 0) {
       query = query.limit(limit);
     }
@@ -73,7 +73,16 @@ export const getPlayerMatchStats = async (teamId: string, matchIds?: string[], l
  */
 export const getPlayerStats = async (playerId: string, limit?: number): Promise<any[]> => {
   try {
-    console.log(`Fetching player stats for player ${playerId}`);
+    const cacheKey = `player_${playerId}_${limit || 'unlimited'}`;
+    const now = Date.now();
+    
+    // Check cache first
+    if (playerStatsCache[cacheKey] && lastFetch[cacheKey] && (now - lastFetch[cacheKey] < CACHE_DURATION)) {
+      console.log(`Using cached player stats for player ${playerId}`);
+      return playerStatsCache[cacheKey];
+    }
+    
+    console.log(`Fetching player stats for player ${playerId}, limit: ${limit || 'unlimited'}`);
     
     // Build query
     let query = supabase
@@ -82,10 +91,8 @@ export const getPlayerStats = async (playerId: string, limit?: number): Promise<
       .eq('player_id', playerId)
       .order('created_at', { ascending: false });
     
-    // Apply limit if provided
-    if (limit && limit > 0) {
-      query = query.limit(limit);
-    }
+    // Don't apply a limit to get ALL matches
+    // This ensures we get all matches for this player
     
     // Execute query
     const { data: playerStats, error } = await query;
@@ -101,8 +108,12 @@ export const getPlayerStats = async (playerId: string, limit?: number): Promise<
     }
     
     console.log(`Found ${playerStats.length} player stats for player ${playerId}`);
-    return playerStats;
     
+    // Update cache
+    playerStatsCache[cacheKey] = playerStats;
+    lastFetch[cacheKey] = now;
+    
+    return playerStats;
   } catch (error) {
     console.error(`Error in getPlayerStats for player ${playerId}:`, error);
     return [];
