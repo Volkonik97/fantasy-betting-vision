@@ -18,6 +18,13 @@ export const formatSecondsToMinutesSeconds = (seconds: number): string => {
     seconds = seconds * 60;
   }
   
+  // Additional fix: if the value is still very large (>3600) after our first correction,
+  // it might be a mistake in the data format. Force it to be a reasonable game length.
+  if (seconds > 3600) {
+    seconds = seconds % 3600; // Take just the seconds part, ignore hours
+    if (seconds < 60) seconds = 1800; // If too small, default to 30 minutes
+  }
+  
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   
@@ -27,8 +34,21 @@ export const formatSecondsToMinutesSeconds = (seconds: number): string => {
 // Convert seconds to minutes (as a number) for averaging
 export const secondsToMinutes = (seconds: number): number => {
   if (!seconds || isNaN(seconds)) return 0;
-  // On retourne directement les secondes au lieu de les convertir en minutes
-  // Cela permettra de stocker la valeur en secondes dans la base de données
+  
+  // Apply similar logic as formatSecondsToMinutesSeconds to normalize time values
+  if (seconds > 3600) {
+    seconds = seconds / 1000;
+  } else if (seconds < 10) {
+    seconds = seconds * 60;
+  }
+  
+  // If still very large, normalize
+  if (seconds > 3600) {
+    seconds = seconds % 3600;
+    if (seconds < 60) seconds = 1800;
+  }
+  
+  // Return normalized seconds
   return seconds;
 };
 

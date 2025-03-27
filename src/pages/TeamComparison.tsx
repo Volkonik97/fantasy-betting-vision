@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { getTeams, getSideStatistics } from "@/utils/csvService";
 import { Team } from "@/utils/mockData";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 const TeamComparison = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -114,8 +115,9 @@ const TeamComparison = () => {
       factors.push(`${team1.name} performe mieux du côté rouge (${Math.round(team1.redWinRate * 100)}% vs ${Math.round(team2.redWinRate * 100)}%)`);
     }
     
+    // Format game time properly using our utility function
     if (team1.averageGameTime < team2.averageGameTime) {
-      factors.push(`${team1.name} a des parties plus courtes (${team1.averageGameTime} min vs ${team2.averageGameTime} min)`);
+      factors.push(`${team1.name} a des parties plus courtes (${formatSecondsToMinutesSeconds(team1.averageGameTime)} vs ${formatSecondsToMinutesSeconds(team2.averageGameTime)})`);
     }
     
     return factors;

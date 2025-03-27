@@ -3,6 +3,7 @@ import { getSideStatistics } from './sideStatistics';
 import { getTimelineStats, calculateTimelineStats } from './timelineStats';
 import { getMockSideStatistics } from './mockStats';
 import { calculateAverage, calculatePercentage, throttlePromises, defaultSideStats } from './helpers';
+import { formatTime, normalizeTimeValue } from '../formatters/timeFormatter';
 
 export {
   getSideStatistics,
@@ -12,5 +13,7 @@ export {
   calculateAverage,
   calculatePercentage,
   throttlePromises,
-  defaultSideStats
+  defaultSideStats,
+  formatTime,
+  normalizeTimeValue
 };

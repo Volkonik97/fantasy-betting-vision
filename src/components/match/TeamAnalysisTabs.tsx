@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +5,7 @@ import SideAnalysis from "@/components/SideAnalysis";
 import { SideStatistics } from "@/utils/models/types";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 
 interface TeamAnalysisTabsProps {
   blueTeamStats: SideStatistics | null;
@@ -18,7 +18,6 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
   const [blueTeamDynamicStats, setBlueTeamDynamicStats] = useState<SideStatistics | null>(blueTeamStats);
   const [redTeamDynamicStats, setRedTeamDynamicStats] = useState<SideStatistics | null>(redTeamStats);
 
-  // Function to get player match statistics and calculate team stats
   const getTeamPlayerStats = async (teamId: string | undefined, originalStats: SideStatistics | null) => {
     if (!teamId || !originalStats) {
       console.log(`Cannot get player stats: teamId=${teamId}, originalStats=${!!originalStats}`);
@@ -28,7 +27,6 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
     console.log(`Fetching player match stats for team ${teamId}`);
     
     try {
-      // Get timeline stats with the optimized function
       const timelineStats = await getTeamTimelineStats(teamId);
       
       if (!timelineStats) {
@@ -38,7 +36,6 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
       
       console.log(`Found timeline stats for team ${teamId}:`, timelineStats);
       
-      // Merge the original stats with the dynamic timeline stats
       return {
         ...originalStats,
         timelineStats
@@ -49,13 +46,11 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
     }
   };
   
-  // Load team stats when component mounts or when props change
   useEffect(() => {
     const loadTeamStats = async () => {
       setIsLoadingData(true);
       
       try {
-        // Get blue team ID and red team ID from props
         const blueTeamId = blueTeamStats?.teamId;
         const redTeamId = redTeamStats?.teamId;
         
@@ -69,7 +64,6 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
           return;
         }
         
-        // Process teams sequentially to avoid overwhelming the database
         if (blueTeamId) {
           const dynamicBlueStats = await getTeamPlayerStats(blueTeamId, blueTeamStats);
           console.log("Dynamic blue team stats loaded:", !!dynamicBlueStats);
@@ -89,7 +83,6 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
         console.error("Error loading dynamic team stats:", error);
         toast.error("Échec du chargement des statistiques d'équipe");
         
-        // Fallback to props
         setBlueTeamDynamicStats(blueTeamStats);
         setRedTeamDynamicStats(redTeamStats);
       } finally {
