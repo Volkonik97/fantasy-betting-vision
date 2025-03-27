@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { SideStatistics } from "@/utils/models/types";
 import { Bar } from "recharts";
 import { BarChart } from "./ui/barchart";
@@ -12,7 +12,12 @@ export interface SideAnalysisProps {
 
 const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
   // Ensure we have valid data for the charts
-  const ensureValidData = (value: number) => isNaN(value) ? 0 : value;
+  const ensureValidData = (value: number) => isNaN(value) ? 0 : Math.max(0, Math.min(100, value));
+  
+  // Debug logging
+  useEffect(() => {
+    console.log("SideAnalysis rendering with stats:", statistics);
+  }, [statistics]);
   
   const sideWinRateData = [
     {
@@ -45,11 +50,8 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
-  console.log("SideAnalysis rendering with stats:", {
-    winRates: sideWinRateData,
-    firstObjectives: firstObjectiveData,
-    timelineStats: statistics.timelineStats
-  });
+  const hasTimeline = statistics.timelineStats && 
+    Object.keys(statistics.timelineStats).length > 0;
   
   return (
     <div className="space-y-6">
@@ -97,7 +99,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
         </CardContent>
       </Card>
       
-      {statistics.timelineStats && (
+      {hasTimeline && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Timeline Statistics</CardTitle>

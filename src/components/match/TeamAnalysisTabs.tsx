@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SideAnalysis from "@/components/SideAnalysis";
@@ -12,6 +12,33 @@ interface TeamAnalysisTabsProps {
 }
 
 const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalysisTabsProps) => {
+  // Debug logging
+  useEffect(() => {
+    console.log("TeamAnalysisTabs rendering:", { 
+      isLoading, 
+      blueTeamStats: !!blueTeamStats, 
+      redTeamStats: !!redTeamStats 
+    });
+    
+    if (blueTeamStats) {
+      console.log("Blue team stats sample:", {
+        blueWins: blueTeamStats.blueWins,
+        redWins: blueTeamStats.redWins,
+        blueFirstBlood: blueTeamStats.blueFirstBlood,
+        hasTimeline: !!blueTeamStats.timelineStats
+      });
+    }
+    
+    if (redTeamStats) {
+      console.log("Red team stats sample:", {
+        blueWins: redTeamStats.blueWins,
+        redWins: redTeamStats.redWins,
+        redFirstBlood: redTeamStats.redFirstBlood,
+        hasTimeline: !!redTeamStats.timelineStats
+      });
+    }
+  }, [blueTeamStats, redTeamStats, isLoading]);
+  
   const renderTeamStats = (teamStats: SideStatistics | null, tabValue: string) => {
     if (isLoading) {
       return (

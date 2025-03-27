@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Match } from "@/utils/models/types";
 import { ArrowUpRight } from "lucide-react";
 
@@ -8,20 +8,22 @@ interface MatchPredictionProps {
 }
 
 const MatchPrediction = ({ match }: MatchPredictionProps) => {
-  // Ensure valid percentage values
-  const blueWinPercentage = isNaN(match.blueWinOdds) ? 50 : match.blueWinOdds * 100;
-  const redWinPercentage = isNaN(match.redWinOdds) ? 50 : match.redWinOdds * 100;
+  // Ensure valid percentage values with better validation
+  const blueWinPercentage = isNaN(match.blueWinOdds) ? 50 : Math.max(0, Math.min(100, match.blueWinOdds * 100));
+  const redWinPercentage = isNaN(match.redWinOdds) ? 50 : Math.max(0, Math.min(100, match.redWinOdds * 100));
   
-  // Log values for debugging
-  console.log("MatchPrediction data:", {
-    blueTeam: match.teamBlue.name,
-    redTeam: match.teamRed.name,
-    blueWinOdds: match.blueWinOdds,
-    redWinOdds: match.redWinOdds,
-    blueWinPercentage,
-    redWinPercentage,
-    predictedWinner: match.predictedWinner
-  });
+  // Debug logging
+  useEffect(() => {
+    console.log("MatchPrediction data:", {
+      blueTeam: match.teamBlue.name,
+      redTeam: match.teamRed.name,
+      blueWinOdds: match.blueWinOdds,
+      redWinOdds: match.redWinOdds,
+      blueWinPercentage,
+      redWinPercentage,
+      predictedWinner: match.predictedWinner
+    });
+  }, [match]);
   
   return (
     <div className="mb-6">
@@ -31,7 +33,7 @@ const MatchPrediction = ({ match }: MatchPredictionProps) => {
           <div className="flex justify-between text-sm mb-1">
             <div className="flex items-center">
               <img 
-                src={match.teamBlue.logo} 
+                src={match.teamBlue.logo || "/placeholder.svg"} 
                 alt={match.teamBlue.name}
                 className="w-5 h-5 mr-2 object-contain" 
                 onError={(e) => {
@@ -50,7 +52,7 @@ const MatchPrediction = ({ match }: MatchPredictionProps) => {
                 <ArrowUpRight className="w-4 h-4 text-green-500 ml-1" />
               )}
               <img 
-                src={match.teamRed.logo} 
+                src={match.teamRed.logo || "/placeholder.svg"} 
                 alt={match.teamRed.name}
                 className="w-5 h-5 ml-2 object-contain" 
                 onError={(e) => {
