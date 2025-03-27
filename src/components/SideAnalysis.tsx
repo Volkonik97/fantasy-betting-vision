@@ -11,34 +11,37 @@ export interface SideAnalysisProps {
 }
 
 const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
+  // Ensure we have valid data for the charts
+  const ensureValidData = (value: number) => isNaN(value) ? 0 : value;
+  
   const sideWinRateData = [
     {
       name: "Win Rate",
-      blue: statistics.blueWins,
-      red: statistics.redWins
+      blue: ensureValidData(statistics.blueWins),
+      red: ensureValidData(statistics.redWins)
     }
   ];
   
   const firstObjectiveData = [
     {
       name: "First Blood",
-      blue: statistics.blueFirstBlood,
-      red: statistics.redFirstBlood
+      blue: ensureValidData(statistics.blueFirstBlood),
+      red: ensureValidData(statistics.redFirstBlood)
     },
     {
       name: "First Dragon",
-      blue: statistics.blueFirstDragon,
-      red: statistics.redFirstDragon
+      blue: ensureValidData(statistics.blueFirstDragon),
+      red: ensureValidData(statistics.redFirstDragon)
     },
     {
       name: "First Herald",
-      blue: statistics.blueFirstHerald,
-      red: statistics.redFirstHerald
+      blue: ensureValidData(statistics.blueFirstHerald),
+      red: ensureValidData(statistics.redFirstHerald)
     },
     {
       name: "First Tower",
-      blue: statistics.blueFirstTower,
-      red: statistics.redFirstTower
+      blue: ensureValidData(statistics.blueFirstTower),
+      red: ensureValidData(statistics.redFirstTower)
     }
   ];
   

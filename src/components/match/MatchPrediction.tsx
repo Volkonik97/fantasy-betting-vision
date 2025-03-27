@@ -8,9 +8,20 @@ interface MatchPredictionProps {
 }
 
 const MatchPrediction = ({ match }: MatchPredictionProps) => {
-  // Calculer le pourcentage correct pour la progression de la barre
-  const blueWinPercentage = match.blueWinOdds * 100;
-  const redWinPercentage = match.redWinOdds * 100;
+  // Ensure valid percentage values
+  const blueWinPercentage = isNaN(match.blueWinOdds) ? 50 : match.blueWinOdds * 100;
+  const redWinPercentage = isNaN(match.redWinOdds) ? 50 : match.redWinOdds * 100;
+  
+  // Log values for debugging
+  console.log("MatchPrediction data:", {
+    blueTeam: match.teamBlue.name,
+    redTeam: match.teamRed.name,
+    blueWinOdds: match.blueWinOdds,
+    redWinOdds: match.redWinOdds,
+    blueWinPercentage,
+    redWinPercentage,
+    predictedWinner: match.predictedWinner
+  });
   
   return (
     <div className="mb-6">
