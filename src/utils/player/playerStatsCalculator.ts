@@ -1,109 +1,168 @@
 
-export interface PlayerAverageStats {
-  kills: number;
-  deaths: number;
-  assists: number;
-  kda: number;
-  csPerMin: number;
-  damageShare: number;
-  visionScore: number;
-  goldShare: number;
-  games: number;
-  wins: number;
-  winRate: number;
-}
+// Utility functions for calculating player statistics from match data
 
-export interface ChampionStat {
-  champion: string;
-  games: number;
-  wins: number;
-  kills: number;
-  deaths: number;
-  assists: number;
-}
-
-// Calculate win for a player in a specific match
-export const isWinForPlayer = (stat: any, playerTeam?: string): boolean => {
-  // Check if the stat indicates a win for this player
-  if (stat.is_winner === true) {
+/**
+ * Determines if a match was a win for the player
+ */
+export const isWinForPlayer = (playerStat: any, playerTeamId?: string): boolean => {
+  // If we have the playerTeamId explicitly passed, use it
+  const teamId = playerTeamId || playerStat.team_id;
+  
+  // Check if there's match result data
+  if (!playerStat.match_id) {
+    return false;
+  }
+  
+  // Directly use side and match winner for more reliable results
+  const playerSide = playerStat.side?.toLowerCase();
+  
+  // For backward compatibility, try to determine the result from multiple sources
+  // 1. Check direct win field if available
+  if (typeof playerStat.is_winner === 'boolean') {
+    return playerStat.is_winner;
+  }
+  
+  // 2. If we know the winner team ID and the player's team ID
+  if (playerStat.winner_team_id && teamId) {
+    return playerStat.winner_team_id === teamId;
+  }
+  
+  // 3. Try to determine from side and blue/red win
+  if (playerSide === 'blue' && playerStat.blue_team_win === true) {
+    return true;
+  }
+  if (playerSide === 'red' && playerStat.blue_team_win === false) {
     return true;
   }
   
-  // Check if the team_id matches the winner_team_id
-  if (stat.team_id && stat.winner_team_id && stat.team_id === stat.winner_team_id) {
-    return true;
-  }
-  
-  // Check if the team (player's team) matches the winner
-  if (playerTeam && stat.winner === playerTeam) {
-    return true;
-  }
-  
+  // Default to false if we can't determine
   return false;
 };
 
-// Calculate average stats
-export const calculateAverages = (matchStats: any[]): PlayerAverageStats | null => {
-  if (!matchStats || matchStats.length === 0) return null;
+/**
+ * Calculate average statistics from player match data
+ */
+export const calculateAverages = (matchStats: any[]): any => {
+  if (!matchStats || matchStats.length === 0) {
+    return null;
+  }
   
-  // Calculate the total number of wins across all matches
-  const totalWins = matchStats.reduce((count, stat) => count + (isWinForPlayer(stat) ? 1 : 0), 0);
-  const winRate = matchStats.length > 0 ? (totalWins / matchStats.length) * 100 : 0;
+  // Initialize counters
+  let totalKills = 0;
+  let totalDeaths = 0;
+  let totalAssists = 0;
+  let totalCs = 0;
+  let totalDamageShare = 0;
+  let totalGoldShare = 0;
+  let totalVisionScore = 0;
+  let winCount = 0;
   
-  // Calculate total kills, deaths, and assists
-  const totalKills = matchStats.reduce((sum, stat) => sum + (stat.kills || 0), 0);
-  const totalDeaths = matchStats.reduce((sum, stat) => sum + (stat.deaths || 0), 0);
-  const totalAssists = matchStats.reduce((sum, stat) => sum + (stat.assists || 0), 0);
+  // Count matches with data for each stat to calculate correct averages
+  let matchesWithDamageShare = 0;
+  let matchesWithGoldShare = 0;
+  let matchesWithVisionScore = 0;
   
-  // Calculate KDA directly using totals, not averaging individual KDAs
-  const kda = totalDeaths > 0 ? (totalKills + totalAssists) / totalDeaths : totalKills + totalAssists;
+  // Process each match
+  for (const match of matchStats) {
+    totalKills += match.kills || 0;
+    totalDeaths += match.deaths || 0;
+    totalAssists += match.assists || 0;
+    
+    // CS
+    if (match.total_cs || match.minion_kills) {
+      totalCs += match.total_cs || match.minion_kills || 0;
+    }
+    
+    // Damage share
+    if (match.damage_share) {
+      totalDamageShare += match.damage_share;
+      matchesWithDamageShare++;
+    }
+    
+    // Gold share
+    if (match.earned_gold_share) {
+      totalGoldShare += match.earned_gold_share;
+      matchesWithGoldShare++;
+    }
+    
+    // Vision score
+    if (match.vision_score) {
+      totalVisionScore += match.vision_score;
+      matchesWithVisionScore++;
+    }
+    
+    // Check if match was a win - use improved detection
+    if (isWinForPlayer(match)) {
+      winCount++;
+    }
+  }
   
+  // Calculate averages
+  const games = matchStats.length;
+  const kda = totalDeaths > 0 ? 
+    ((totalKills + totalAssists) / totalDeaths).toFixed(2) : 
+    ((totalKills + totalAssists)).toFixed(2);
+  
+  // Return calculated stats
   return {
-    kills: totalKills / matchStats.length,
-    deaths: totalDeaths / matchStats.length,
-    assists: totalAssists / matchStats.length,
-    kda: kda, // This is now calculated from totals, not averaged
-    csPerMin: matchStats.reduce((sum, stat) => sum + (stat.cspm || 0), 0) / matchStats.length,
-    damageShare: matchStats.reduce((sum, stat) => sum + (stat.damage_share || 0), 0) / matchStats.length,
-    visionScore: matchStats.reduce((sum, stat) => sum + (stat.vision_score || 0), 0) / matchStats.length,
-    goldShare: matchStats.reduce((sum, stat) => sum + (stat.earned_gold_share || 0), 0) / matchStats.length,
-    games: matchStats.length,
-    wins: totalWins,
-    winRate: winRate
+    kills: totalKills / games,
+    deaths: totalDeaths / games,
+    assists: totalAssists / games,
+    kda: parseFloat(kda),
+    csPerMin: matchStats.reduce((sum, match) => sum + (match.cspm || 0), 0) / games,
+    damageShare: matchesWithDamageShare > 0 ? totalDamageShare / matchesWithDamageShare : 0,
+    goldShare: matchesWithGoldShare > 0 ? totalGoldShare / matchesWithGoldShare : 0,
+    visionScore: matchesWithVisionScore > 0 ? totalVisionScore / matchesWithVisionScore : 0,
+    games,
+    wins: winCount,
+    winRate: (winCount / games) * 100
   };
 };
 
-// Get champion statistics
-export const getChampionStats = (matchStats: any[], playerTeam?: string): ChampionStat[] => {
-  if (!matchStats || matchStats.length === 0) return [];
+/**
+ * Get champion statistics for a player
+ */
+export const getChampionStats = (matchStats: any[], playerTeamId?: string): any[] => {
+  if (!matchStats || matchStats.length === 0) {
+    return [];
+  }
   
-  const champStats: Record<string, ChampionStat> = {};
+  const champStats: { [key: string]: any } = {};
   
-  matchStats.forEach(stat => {
-    if (!stat.champion) return;
+  // Group stats by champion
+  for (const match of matchStats) {
+    const champion = match.champion;
+    if (!champion) continue;
     
-    if (!champStats[stat.champion]) {
-      champStats[stat.champion] = {
-        champion: stat.champion,
+    if (!champStats[champion]) {
+      champStats[champion] = {
+        champion,
         games: 0,
         wins: 0,
         kills: 0,
         deaths: 0,
-        assists: 0
+        assists: 0,
       };
     }
     
-    champStats[stat.champion].games += 1;
+    // Update stats
+    champStats[champion].games += 1;
+    champStats[champion].kills += match.kills || 0;
+    champStats[champion].deaths += match.deaths || 0;
+    champStats[champion].assists += match.assists || 0;
     
-    // Use the optimized win check
-    if (isWinForPlayer(stat, playerTeam)) {
-      champStats[stat.champion].wins += 1;
+    // Use improved win detection
+    if (isWinForPlayer(match, playerTeamId)) {
+      champStats[champion].wins += 1;
     }
-    
-    champStats[stat.champion].kills += (stat.kills || 0);
-    champStats[stat.champion].deaths += (stat.deaths || 0);
-    champStats[stat.champion].assists += (stat.assists || 0);
-  });
+  }
   
-  return Object.values(champStats).sort((a, b) => b.games - a.games);
+  // Convert to array and calculate averages
+  return Object.values(champStats).map(champ => ({
+    ...champ,
+    winRate: champ.games > 0 ? (champ.wins / champ.games) * 100 : 0,
+    kda: champ.deaths > 0 ? 
+      ((champ.kills + champ.assists) / champ.deaths).toFixed(2) : 
+      ((champ.kills + champ.assists)).toFixed(2)
+  })).sort((a, b) => b.games - a.games);
 };

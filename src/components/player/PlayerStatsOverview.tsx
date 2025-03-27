@@ -1,5 +1,6 @@
 
 import React from "react";
+import { CheckCircle, XCircle } from "lucide-react";
 
 interface PlayerAverageStats {
   kills: number;
@@ -72,6 +73,16 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             <span className="text-2xl font-bold">{Math.round(averageStats.winRate)}%</span>
             <span className="text-sm text-gray-600">
               {averageStats.wins} / {averageStats.games}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs mt-2">
+            <span className="inline-flex items-center text-green-600">
+              <CheckCircle size={12} className="mr-1" />
+              {averageStats.wins}
+            </span>
+            <span className="inline-flex items-center text-red-600">
+              <XCircle size={12} className="mr-1" />
+              {averageStats.games - averageStats.wins}
             </span>
           </div>
         </div>

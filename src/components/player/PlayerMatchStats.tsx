@@ -2,6 +2,8 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface PlayerMatchStatsProps {
   matchStats: any[];
@@ -11,7 +13,24 @@ interface PlayerMatchStatsProps {
 const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps) => {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6">
-      <h2 className="text-xl font-bold mb-4">Statistiques par match ({matchStats.length} matchs)</h2>
+      <h2 className="text-xl font-bold mb-4">
+        Statistiques par match ({matchStats.length} matchs)
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="ml-2 text-gray-400 hover:text-gray-600">
+                <Info size={16} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-sm max-w-xs">
+                Les résultats sont déterminés en comparant l'équipe du joueur 
+                et l'équipe gagnante du match.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </h2>
       
       {matchStats.length > 0 ? (
         <div className="overflow-x-auto">
@@ -32,17 +51,18 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
                 const isWin = isWinForPlayer(stat);
                 
                 return (
-                  <TableRow key={stat.id}>
+                  <TableRow key={stat.id} className={isWin ? "bg-green-50/30" : "bg-red-50/30"}>
                     <TableCell className="font-medium">
                       {stat.match_id ? (
                         <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
                           {stat.match_id.substring(0, 8)}...
                         </Link>
                       ) : "N/A"}
+                      <div className="text-xs text-gray-500">{stat.side || "N/A"}</div>
                     </TableCell>
                     <TableCell>{stat.champion || "N/A"}</TableCell>
                     <TableCell>
-                      <span className={isWin ? "text-green-600" : "text-red-600"}>
+                      <span className={isWin ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
                         {isWin ? "Victoire" : "Défaite"}
                       </span>
                     </TableCell>
