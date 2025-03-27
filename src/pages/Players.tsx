@@ -72,8 +72,14 @@ const Players = () => {
   const filteredPlayers = allPlayers.filter(player => {
     const isAL = player.teamRegion === "AL";
     
-    const roleMatches = selectedRole === "All" || 
-      player.role?.toLowerCase() === selectedRole.toLowerCase();
+    const roleMatches = selectedRole === "All" || (
+      player.role && (
+        player.role.toLowerCase() === selectedRole.toLowerCase() ||
+        (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(player.role.toLowerCase())) ||
+        (selectedRole === "Support" && ["support", "sup", "supp"].includes(player.role.toLowerCase())) ||
+        (selectedRole === "Jungle" && ["jungle", "jg", "jgl"].includes(player.role.toLowerCase()))
+      )
+    );
     
     let regionMatches = true;
     

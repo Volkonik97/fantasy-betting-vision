@@ -8,6 +8,16 @@ interface PlayerRoleFilterProps {
 }
 
 const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFilterProps) => {
+  // Store the display name and the value separately to ensure consistent comparison
+  const roleMapping: Record<string, string> = {
+    "All": "All",
+    "Top": "Top",
+    "Jungle": "Jungle",
+    "Mid": "Mid",
+    "ADC": "ADC", 
+    "Support": "Support"
+  };
+
   return (
     <div className="w-full md:w-auto">
       <h3 className="font-medium mb-2">Filter by Role</h3>
@@ -21,6 +31,7 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
                 ? "bg-lol-blue text-white"
                 : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
             }`}
+            data-role-value={roleMapping[role] || role}
           >
             {role}
           </button>
