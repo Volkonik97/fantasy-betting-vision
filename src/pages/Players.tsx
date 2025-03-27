@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -71,41 +70,34 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
-    // Debug for AL region filtering
     const isAL = player.teamRegion === "AL";
     
     const roleMatches = selectedRole === "All" || 
-      player.role === selectedRole;
+      player.role?.toLowerCase() === selectedRole.toLowerCase();
     
     let regionMatches = true;
     
     if (selectedCategory !== "All") {
       if (selectedRegion === "All") {
-        // If a category is selected but no specific region, show all players in that category
         regionMatches = regionCategories[selectedCategory].some(region => 
           region === "All" || player.teamRegion === region
         );
         
-        // Debug log for AL players in ERL category
         if (isAL && selectedCategory === "ERL") {
           console.log("AL player being filtered for ERL category:", 
             { name: player.name, region: player.teamRegion, matches: regionMatches });
         }
       } else {
-        // If both category and region are selected, show only players in that specific region
         regionMatches = player.teamRegion === selectedRegion;
         
-        // Debug log for AL region specific selection
         if (selectedRegion === "AL") {
           console.log("AL player being filtered for AL region:", 
             { name: player.name, region: player.teamRegion, matches: regionMatches });
         }
       }
     } else if (selectedRegion !== "All") {
-      // If only a region is selected (no category), show players in that region
       regionMatches = player.teamRegion === selectedRegion;
       
-      // Debug log for AL region specific selection
       if (selectedRegion === "AL") {
         console.log("AL player being filtered (no category):", 
           { name: player.name, region: player.teamRegion, matches: regionMatches });
@@ -139,7 +131,6 @@ const Players = () => {
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region);
     
-    // Debug log when selecting AL region
     if (region === "AL") {
       console.log("AL region selected");
       console.log("Players in AL region:", allPlayers.filter(p => p.teamRegion === "AL").length);
