@@ -35,7 +35,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
               return {
                 ...stat,
                 opponent_team_name: opponentTeam.name,
-                opponent_team_id: opponentTeam.id
+                opponent_team_id: opponentTeam.id,
+                match_date: match.date // Store the match date for sorting
               };
             } catch (error) {
               console.error(`Error loading match data for ${stat.match_id}:`, error);
@@ -49,7 +50,17 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
           console.log("First match with opponent:", statsWithOpponents[0]);
         }
         
-        setMatchesWithOpponents(statsWithOpponents);
+        // Sort matches by date (newest first)
+        const sortedMatches = [...statsWithOpponents].sort((a, b) => {
+          // If no date is available, put those matches at the end
+          if (!a.match_date) return 1;
+          if (!b.match_date) return -1;
+          
+          // Compare dates in descending order (newest first)
+          return new Date(b.match_date).getTime() - new Date(a.match_date).getTime();
+        });
+        
+        setMatchesWithOpponents(sortedMatches);
       } catch (error) {
         console.error("Error loading opponent teams:", error);
       } finally {
