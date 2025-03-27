@@ -47,9 +47,9 @@ const PlayerTimelineStats = ({ timelineStats }: TimelineStatsProps) => {
   
   const chartData = prepareChartData();
   
-  // Format large numbers with k suffix
-  const formatValue = (value: number) => {
-    return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value;
+  // Format large numbers with k suffix - Always return a string
+  const formatValue = (value: number): string => {
+    return value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value.toString();
   };
   
   return (
