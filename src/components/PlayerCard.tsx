@@ -26,12 +26,45 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
     }
   };
 
-  // Assurer que championPool est un tableau
+  // Ensure championPool is an array
   const championPoolArray = Array.isArray(player.championPool) 
     ? player.championPool 
     : typeof player.championPool === 'string' 
       ? player.championPool.split(',').map(c => c.trim()).filter(c => c) 
       : [];
+
+  // Format KDA value
+  const formattedKDA = typeof player.kda === 'number' 
+    ? player.kda.toFixed(1) 
+    : typeof player.kda === 'string' 
+      ? parseFloat(player.kda).toFixed(1) 
+      : '0.0';
+
+  // Format CS per minute
+  const formattedCsPerMin = typeof player.csPerMin === 'number' 
+    ? player.csPerMin.toFixed(1) 
+    : typeof player.csPerMin === 'string' 
+      ? parseFloat(player.csPerMin).toFixed(1) 
+      : '0.0';
+
+  // Format damage share percentage
+  const formattedDamageShare = typeof player.damageShare === 'number' 
+    ? Math.round(player.damageShare * 100) 
+    : typeof player.damageShare === 'string' 
+      ? Math.round(parseFloat(player.damageShare) * 100) 
+      : 0;
+
+  // Get team display name
+  const getTeamDisplayName = (teamId: string) => {
+    switch (teamId) {
+      case "t1": return "T1";
+      case "geng": return "Gen.G";
+      case "jdg": return "JD Gaming";
+      case "fnc": return "Fnatic";
+      case "c9": return "Cloud9";
+      default: return teamId;
+    }
+  };
 
   return (
     <Link to={`/players/${player.id}`}>
@@ -58,11 +91,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             <div>
               <h3 className="font-medium text-lg">{player.name}</h3>
               <span className="text-sm text-gray-500 block">
-                {player.team === "t1" ? "T1" : 
-                player.team === "geng" ? "Gen.G" : 
-                player.team === "jdg" ? "JD Gaming" : 
-                player.team === "fnc" ? "Fnatic" : 
-                player.team === "c9" ? "Cloud9" : player.team}
+                {getTeamDisplayName(player.team)}
               </span>
             </div>
             
@@ -74,21 +103,17 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           <div className="mt-4 grid grid-cols-3 gap-2">
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">KDA</span>
-              <span className="text-lg font-semibold">{typeof player.kda === 'number' ? player.kda.toFixed(1) : player.kda}</span>
+              <span className="text-lg font-semibold">{formattedKDA}</span>
             </div>
             
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">CS/Min</span>
-              <span className="text-lg font-semibold">{typeof player.csPerMin === 'number' ? player.csPerMin.toFixed(1) : player.csPerMin}</span>
+              <span className="text-lg font-semibold">{formattedCsPerMin}</span>
             </div>
             
             <div className="text-center p-2 bg-gray-50 rounded-md">
               <span className="text-xs text-gray-500 block mb-1">DMG Share</span>
-              <span className="text-lg font-semibold">{typeof player.damageShare === 'number' 
-                ? Math.round(player.damageShare * 100) 
-                : typeof player.damageShare === 'string' 
-                  ? Math.round(parseFloat(player.damageShare) * 100) 
-                  : 0}%</span>
+              <span className="text-lg font-semibold">{formattedDamageShare}%</span>
             </div>
           </div>
           

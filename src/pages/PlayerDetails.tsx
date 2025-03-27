@@ -60,6 +60,26 @@ const PlayerDetails = () => {
     loadPlayerData();
   }, [id]);
   
+  // Calculate win rate for a player in a specific match
+  const isWinForPlayer = (stat: any): boolean => {
+    // Check if the stat indicates a win for this player
+    if (stat.is_winner === true) {
+      return true;
+    }
+    
+    // Check if the team_id matches the winner_team_id
+    if (stat.team_id && stat.winner_team_id && stat.team_id === stat.winner_team_id) {
+      return true;
+    }
+    
+    // Check if the team (player's team) matches the winner
+    if (player?.team && stat.winner === player.team) {
+      return true;
+    }
+    
+    return false;
+  };
+  
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -105,6 +125,10 @@ const PlayerDetails = () => {
   const calculateAverages = () => {
     if (!matchStats || matchStats.length === 0) return null;
     
+    // Calculate the total number of wins across all matches
+    const totalWins = matchStats.reduce((count, stat) => count + (isWinForPlayer(stat) ? 1 : 0), 0);
+    const winRate = matchStats.length > 0 ? (totalWins / matchStats.length) * 100 : 0;
+    
     return {
       kills: matchStats.reduce((sum, stat) => sum + (stat.kills || 0), 0) / matchStats.length,
       deaths: matchStats.reduce((sum, stat) => sum + (stat.deaths || 0), 0) / matchStats.length,
@@ -120,7 +144,9 @@ const PlayerDetails = () => {
       damageShare: matchStats.reduce((sum, stat) => sum + (stat.damage_share || 0), 0) / matchStats.length,
       visionScore: matchStats.reduce((sum, stat) => sum + (stat.vision_score || 0), 0) / matchStats.length,
       goldShare: matchStats.reduce((sum, stat) => sum + (stat.earned_gold_share || 0), 0) / matchStats.length,
-      games: matchStats.length
+      games: matchStats.length,
+      wins: totalWins,
+      winRate: winRate
     };
   };
   
@@ -153,9 +179,12 @@ const PlayerDetails = () => {
       }
       
       champStats[stat.champion].games += 1;
-      if (stat.winner === player.team || (stat.team_id === player.team && stat.is_winner)) {
+      
+      // Use the optimized win check
+      if (isWinForPlayer(stat)) {
         champStats[stat.champion].wins += 1;
       }
+      
       champStats[stat.champion].kills += (stat.kills || 0);
       champStats[stat.champion].deaths += (stat.deaths || 0);
       champStats[stat.champion].assists += (stat.assists || 0);
@@ -277,6 +306,16 @@ const PlayerDetails = () => {
                     </div>
                     
                     <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="text-sm text-gray-500 mb-2">Win Rate</h3>
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-2xl font-bold">{Math.round(averageStats.winRate)}%</span>
+                        <span className="text-sm text-gray-600">
+                          {averageStats.wins} / {averageStats.games}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-sm text-gray-500 mb-2">Vision Score</h3>
                       <div className="flex justify-between items-baseline">
                         <span className="text-2xl font-bold">{Math.round(averageStats.visionScore || 0)}</span>
@@ -325,12 +364,21 @@ const PlayerDetails = () => {
                             ? ((champ.kills + champ.assists) / champ.deaths) 
                             : champ.kills + champ.assists;
                           
+                          const winRatePercent = Math.round((champ.wins / champ.games) * 100);
+                          const winRateColor = winRatePercent >= 60 
+                            ? "text-green-600" 
+                            : winRatePercent >= 50 
+                              ? "text-blue-600" 
+                              : "text-red-600";
+                          
                           return (
                             <TableRow key={champ.champion}>
                               <TableCell className="font-medium">{champ.champion}</TableCell>
                               <TableCell>{champ.games}</TableCell>
                               <TableCell>
-                                {champ.wins} ({Math.round((champ.wins / champ.games) * 100)}%)
+                                <span className={winRateColor}>
+                                  {champ.wins} ({winRatePercent}%)
+                                </span>
                               </TableCell>
                               <TableCell>{kda.toFixed(2)}</TableCell>
                               <TableCell>
@@ -359,6 +407,7 @@ const PlayerDetails = () => {
                         <TableRow>
                           <TableHead>Match</TableHead>
                           <TableHead>Champion</TableHead>
+                          <TableHead>Résultat</TableHead>
                           <TableHead>K/D/A</TableHead>
                           <TableHead>CS/Min</TableHead>
                           <TableHead>Vision</TableHead>
@@ -366,26 +415,35 @@ const PlayerDetails = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {matchStats.map((stat) => (
-                          <TableRow key={stat.id}>
-                            <TableCell className="font-medium">
-                              {stat.match_id ? (
-                                <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
-                                  {stat.match_id.substring(0, 8)}...
-                                </Link>
-                              ) : "N/A"}
-                            </TableCell>
-                            <TableCell>{stat.champion || "N/A"}</TableCell>
-                            <TableCell>
-                              {stat.kills || 0}/{stat.deaths || 0}/{stat.assists || 0}
-                            </TableCell>
-                            <TableCell>{stat.cspm ? stat.cspm.toFixed(1) : "N/A"}</TableCell>
-                            <TableCell>{stat.vision_score || "N/A"}</TableCell>
-                            <TableCell>
-                              {stat.damage_share ? `${Math.round(stat.damage_share * 100)}%` : "N/A"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {matchStats.map((stat) => {
+                          const isWin = isWinForPlayer(stat);
+                          
+                          return (
+                            <TableRow key={stat.id}>
+                              <TableCell className="font-medium">
+                                {stat.match_id ? (
+                                  <Link to={`/matches/${stat.match_id}`} className="text-lol-blue hover:underline">
+                                    {stat.match_id.substring(0, 8)}...
+                                  </Link>
+                                ) : "N/A"}
+                              </TableCell>
+                              <TableCell>{stat.champion || "N/A"}</TableCell>
+                              <TableCell>
+                                <span className={isWin ? "text-green-600" : "text-red-600"}>
+                                  {isWin ? "Victoire" : "Défaite"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {stat.kills || 0}/{stat.deaths || 0}/{stat.assists || 0}
+                              </TableCell>
+                              <TableCell>{stat.cspm ? stat.cspm.toFixed(1) : "N/A"}</TableCell>
+                              <TableCell>{stat.vision_score || "N/A"}</TableCell>
+                              <TableCell>
+                                {stat.damage_share ? `${Math.round(stat.damage_share * 100)}%` : "N/A"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
