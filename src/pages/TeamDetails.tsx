@@ -125,10 +125,13 @@ const TeamDetails = () => {
         </motion.div>
         
         {/* Suppression de l'affichage des statistiques timeline dans TeamAnalysisSection */}
-        <TeamAnalysisSection team={team} sideStats={{
-          ...sideStats || {},
-          timelineStats: null // On supprime les timeline stats ici pour éviter la duplication
-        }} />
+        <TeamAnalysisSection 
+          team={team} 
+          sideStats={sideStats ? {
+            ...sideStats,
+            timelineStats: null // On supprime les timeline stats ici pour éviter la duplication
+          } : null} 
+        />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-1">
