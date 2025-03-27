@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 interface PlayerCardProps {
-  player: Player;
+  player: Player & { teamName?: string; teamRegion?: string };
 }
 
 const PlayerCard = ({ player }: PlayerCardProps) => {

@@ -45,12 +45,22 @@ const Players = () => {
     fetchData();
   }, []);
   
-  const filteredPlayers = allPlayers.filter(player => 
-    (selectedRole === "All" || player.role === selectedRole) &&
-    (selectedRegion === "All" || player.teamRegion === selectedRegion) &&
-    (player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-     player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredPlayers = allPlayers.filter(player => {
+    // Check if player role matches selected role (case-insensitive)
+    const roleMatches = selectedRole === "All" || 
+      player.role.toLowerCase() === selectedRole.toLowerCase();
+    
+    // Check if team region matches selected region
+    const regionMatches = selectedRegion === "All" || 
+      player.teamRegion === selectedRegion;
+    
+    // Check if search term is in player name or team name
+    const searchMatches = 
+      player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      player.teamName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return roleMatches && regionMatches && searchMatches;
+  });
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
