@@ -3,11 +3,32 @@ import { supabase } from '@/integrations/supabase/client';
 import { Team, Match } from '../../models/types';
 import { Json } from '@/integrations/supabase/types';
 
+// Cache pour les matchs
+let matchesCache: Match[] | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+let lastMatchesCacheUpdate = 0;
+
+// Function to clear cache (used when saving new matches)
+export const clearMatchCache = (): void => {
+  matchesCache = null;
+  lastMatchesCacheUpdate = 0;
+  console.log("Match cache cleared");
+};
+
 /**
  * Get all matches from the database
  */
 export const getMatches = async (): Promise<Match[]> => {
   try {
+    // Vérifier si nous avons un cache récent
+    const now = Date.now();
+    if (matchesCache && (now - lastMatchesCacheUpdate) < CACHE_DURATION) {
+      console.log("Using cached matches data");
+      return matchesCache;
+    }
+    
+    console.log("Fetching matches from Supabase");
+    
     const { data: matches, error } = await supabase
       .from('matches')
       .select('*');
@@ -56,7 +77,7 @@ export const getMatches = async (): Promise<Match[]> => {
         logo: teamRedData.logo,
         region: teamRedData.region,
         winRate: Number(teamRedData.win_rate) || 0,
-        blueWinRate: Number(teamRedData.blue_win_rate) || 0,
+        blueWinRate: Number(teamBlueData.blue_win_rate) || 0,
         redWinRate: Number(teamRedData.red_win_rate) || 0,
         averageGameTime: Number(teamRedData.average_game_time) || 0,
         players: []
@@ -131,23 +152,38 @@ export const getMatches = async (): Promise<Match[]> => {
       return formattedMatch;
     }).filter(match => match !== null) as Match[];
     
-    // Fetch player match stats
-    for (const match of formattedMatches) {
-      const { data: playerStats, error: statsError } = await supabase
-        .from('player_match_stats')
-        .select('*')
-        .eq('match_id', match.id);
-      
-      if (statsError) {
-        console.error(`Erreur lors de la récupération des stats des joueurs pour le match ${match.id}:`, statsError);
-      } else if (playerStats && playerStats.length > 0) {
-        match.playerStats = playerStats;
-      }
-    }
+    // Ne charger les statistiques des joueurs que si elles sont explicitement demandées
+    // pour améliorer les performances sur la page d'accueil
+    
+    // Mettre à jour le cache
+    matchesCache = formattedMatches;
+    lastMatchesCacheUpdate = now;
     
     return formattedMatches;
   } catch (error) {
     console.error("Erreur lors de la récupération des matchs:", error);
     return [];
+  }
+};
+
+/**
+ * Get a specific match by ID
+ */
+export const getMatchById = async (matchId: string): Promise<Match | null> => {
+  try {
+    // First check if match is in cache
+    if (matchesCache) {
+      const cachedMatch = matchesCache.find(match => match.id === matchId);
+      if (cachedMatch) {
+        return cachedMatch;
+      }
+    }
+    
+    // Not in cache, need to fetch individually
+    const matches = await getMatches();
+    return matches.find(match => match.id === matchId) || null;
+  } catch (error) {
+    console.error(`Error getting match by ID ${matchId}:`, error);
+    return null;
   }
 };

@@ -25,22 +25,29 @@ const Index = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        // Load teams from database
+        // Load teams from database (smaller dataset first)
         const loadedTeams = await getTeams();
         setTeams(loadedTeams);
         
-        // Load matches from database
+        // Load matches from database (optimize to only load a subset)
         const loadedMatches = await getMatches();
-        setMatches(loadedMatches);
+        // Only use the 10 most recent matches for the homepage
+        const recentMatches = loadedMatches
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 10);
+        setMatches(recentMatches);
         
         // Load side statistics for the first team if available
         if (loadedTeams && loadedTeams.length > 0) {
-          const stats = await getSideStatistics(loadedTeams[0].id);
-          setSideStats(stats);
+          setTimeout(async () => {
+            // Load this after the main content is displayed
+            const stats = await getSideStatistics(loadedTeams[0].id);
+            setSideStats(stats);
+          }, 500);
         }
       } catch (error) {
         console.error("Error loading data:", error);
-        toast.error("Error loading data. Please try again later.");
+        toast.error("Erreur lors du chargement des données.");
       } finally {
         setIsLoading(false);
       }
@@ -75,8 +82,8 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
         <Navbar />
         <div className="max-w-6xl mx-auto px-6 py-20 text-center">
-          <h2 className="text-2xl font-bold mb-4">No data available</h2>
-          <p className="text-gray-600 mb-6">Please import data or check your database connection.</p>
+          <h2 className="text-2xl font-bold mb-4">Aucune donnée disponible</h2>
+          <p className="text-gray-600 mb-6">Veuillez importer des données ou vérifier votre connexion à la base de données.</p>
         </div>
       </div>
     );
@@ -113,7 +120,7 @@ const Index = () => {
           </div>
           
           <div className="mb-16">
-            <h3 className="text-xl font-semibold mb-6">Upcoming Matches</h3>
+            <h3 className="text-xl font-semibold mb-6">Prochains Matchs</h3>
             <div className="grid md:grid-cols-2 gap-6">
               {matches.slice(0, 4).map((match) => (
                 <motion.div
@@ -137,7 +144,7 @@ const Index = () => {
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
               >
-                <TeamStatistics team={teams[0]} />
+                {teams.length > 0 && <TeamStatistics team={teams[0]} />}
               </motion.div>
             </div>
             
@@ -176,7 +183,7 @@ const Index = () => {
                   <SideAnalysis statistics={sideStats} />
                 ) : (
                   <div className="text-center p-8 bg-white rounded-xl border border-gray-100 shadow-subtle">
-                    <p className="text-gray-500">No statistics available</p>
+                    <p className="text-gray-500">Aucune statistique disponible</p>
                   </div>
                 )}
               </div>
@@ -245,8 +252,8 @@ const Index = () => {
           {teams.length > 0 && teams[0].players && teams[0].players.length > 0 && (
             <div>
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-semibold">Top Players</h3>
-                <button className="text-sm text-lol-blue hover:underline">View All</button>
+                <h3 className="text-xl font-semibold">Meilleurs Joueurs</h3>
+                <button className="text-sm text-lol-blue hover:underline">Voir tous</button>
               </div>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
