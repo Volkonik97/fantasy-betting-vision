@@ -60,38 +60,74 @@ function calculateSideStatistics(
   const redWins = completedRedMatches.filter(m => m.winner_team_id === teamId).length;
   
   const blueWinRate = completedBlueMatches.length > 0 
-    ? (blueWins / completedBlueMatches.length) * 100 
+    ? Math.round((blueWins / completedBlueMatches.length) * 100) 
     : 50;
     
   const redWinRate = completedRedMatches.length > 0 
-    ? (redWins / completedRedMatches.length) * 100 
+    ? Math.round((redWins / completedRedMatches.length) * 100) 
     : 50;
   
-  // Calculate first objectives (simplified)
+  // Calculate first objectives stats dynamically
   const blueFirstBlood = completedBlueMatches.filter(m => m.first_blood === teamId).length;
   const redFirstBlood = completedRedMatches.filter(m => m.first_blood === teamId).length;
   
   const blueFirstBloodRate = completedBlueMatches.length > 0 
-    ? (blueFirstBlood / completedBlueMatches.length) * 100 
+    ? Math.round((blueFirstBlood / completedBlueMatches.length) * 100) 
     : 50;
     
   const redFirstBloodRate = completedRedMatches.length > 0 
-    ? (redFirstBlood / completedRedMatches.length) * 100 
+    ? Math.round((redFirstBlood / completedRedMatches.length) * 100) 
+    : 50;
+  
+  // Calculate first dragon stats
+  const blueFirstDragon = completedBlueMatches.filter(m => m.first_dragon === teamId).length;
+  const redFirstDragon = completedRedMatches.filter(m => m.first_dragon === teamId).length;
+  
+  const blueFirstDragonRate = completedBlueMatches.length > 0 
+    ? Math.round((blueFirstDragon / completedBlueMatches.length) * 100) 
+    : 50;
+    
+  const redFirstDragonRate = completedRedMatches.length > 0 
+    ? Math.round((redFirstDragon / completedRedMatches.length) * 100) 
+    : 50;
+  
+  // Calculate first herald stats
+  const blueFirstHerald = completedBlueMatches.filter(m => m.first_herald === teamId).length;
+  const redFirstHerald = completedRedMatches.filter(m => m.first_herald === teamId).length;
+  
+  const blueFirstHeraldRate = completedBlueMatches.length > 0 
+    ? Math.round((blueFirstHerald / completedBlueMatches.length) * 100) 
+    : 50;
+    
+  const redFirstHeraldRate = completedRedMatches.length > 0 
+    ? Math.round((redFirstHerald / completedRedMatches.length) * 100) 
+    : 50;
+  
+  // Calculate first tower stats
+  const blueFirstTower = completedBlueMatches.filter(m => m.first_tower === teamId).length;
+  const redFirstTower = completedRedMatches.filter(m => m.first_tower === teamId).length;
+  
+  const blueFirstTowerRate = completedBlueMatches.length > 0 
+    ? Math.round((blueFirstTower / completedBlueMatches.length) * 100) 
+    : 50;
+    
+  const redFirstTowerRate = completedRedMatches.length > 0 
+    ? Math.round((redFirstTower / completedRedMatches.length) * 100) 
     : 50;
   
   // Return the calculated statistics
   return {
     teamId,
-    blueWins: Math.round(blueWinRate),
-    redWins: Math.round(redWinRate),
-    blueFirstBlood: Math.round(blueFirstBloodRate),
-    redFirstBlood: Math.round(redFirstBloodRate),
-    blueFirstDragon: 50, // Default values for now
-    redFirstDragon: 50,
-    blueFirstHerald: 50,
-    redFirstHerald: 50,
-    blueFirstTower: 50,
-    redFirstTower: 50,
+    blueWins: blueWinRate,
+    redWins: redWinRate,
+    blueFirstBlood: blueFirstBloodRate,
+    redFirstBlood: redFirstBloodRate,
+    blueFirstDragon: blueFirstDragonRate,
+    redFirstDragon: redFirstDragonRate,
+    blueFirstHerald: blueFirstHeraldRate,
+    redFirstHerald: redFirstHeraldRate,
+    blueFirstTower: blueFirstTowerRate,
+    redFirstTower: redFirstTowerRate,
     timelineStats: createDefaultTimelineStats()
   };
 }
