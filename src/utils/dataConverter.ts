@@ -6,6 +6,18 @@ import { Team, Player, Match } from './mockData';
 export const formatSecondsToMinutesSeconds = (seconds: number): string => {
   if (!seconds || isNaN(seconds)) return "00:00";
   
+  // Convert any seconds input to a proper seconds value (in case it's provided in minutes)
+  if (seconds > 3600) {
+    // If value is suspiciously large (over 1 hour), assume it's in milliseconds
+    seconds = seconds / 1000;
+  } else if (seconds > 300) {
+    // If value is over 5 minutes in seconds but not huge, it's probably good as is
+    seconds = seconds;
+  } else if (seconds < 10) {
+    // If value is tiny, assume it's in minutes and convert to seconds
+    seconds = seconds * 60;
+  }
+  
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   

@@ -32,7 +32,9 @@ const MatchResults = ({ match }: MatchResultsProps) => {
             <Clock className="w-5 h-5 text-gray-400" />
             <div>
               <div className="text-sm text-gray-500">Match Duration</div>
-              <div className="font-medium">{match.result?.duration ? formatSecondsToMinutesSeconds(parseInt(match.result.duration)) : "??:??"}</div>
+              <div className="font-medium">
+                {match.result?.duration ? formatSecondsToMinutesSeconds(Number(match.result.duration)) : "??:??"}
+              </div>
             </div>
           </div>
           
