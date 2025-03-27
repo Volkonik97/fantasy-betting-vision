@@ -48,6 +48,7 @@ const Players = () => {
         );
         
         console.log("Players with team data:", players);
+        console.log("Players in AL region:", players.filter(player => player.teamRegion === "AL").length);
         setAllPlayers(players);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -76,14 +77,17 @@ const Players = () => {
     
     if (selectedCategory !== "All") {
       if (selectedRegion === "All") {
+        // If a category is selected but no specific region, show all players in that category
         regionMatches = regionCategories[selectedCategory].some(region => 
-          region === "All" || player.teamRegion.toUpperCase() === region.toUpperCase()
+          region === "All" || player.teamRegion === region
         );
       } else {
-        regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+        // If both category and region are selected, show only players in that specific region
+        regionMatches = player.teamRegion === selectedRegion;
       }
     } else if (selectedRegion !== "All") {
-      regionMatches = player.teamRegion.toUpperCase() === selectedRegion.toUpperCase();
+      // If only a region is selected (no category), show players in that region
+      regionMatches = player.teamRegion === selectedRegion;
     }
     
     if (selectedRegion === "LTA") {

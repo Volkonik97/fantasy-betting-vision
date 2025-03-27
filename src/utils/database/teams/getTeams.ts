@@ -12,6 +12,7 @@ export const getTeams = async (): Promise<Team[]> => {
     // Check if we have a recent cache
     const cachedTeams = getTeamsFromCache();
     if (cachedTeams) {
+      console.log("Using cached teams data");
       return cachedTeams;
     }
     
@@ -34,6 +35,10 @@ export const getTeams = async (): Promise<Team[]> => {
     }
     
     console.log(`Found ${teamsData.length} teams in database`);
+    console.log("Teams by region:", teamsData.reduce((acc, team) => {
+      acc[team.region] = (acc[team.region] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
     
     // Fetch players for these teams
     const { data: playersData, error: playersError } = await supabase
@@ -60,6 +65,15 @@ export const getTeams = async (): Promise<Team[]> => {
     
     // Assign players to their teams
     if (playersData && playersData.length > 0) {
+      console.log(`Found ${playersData.length} players in database`);
+      
+      // Log players by team to debug
+      const playersByTeam = playersData.reduce((acc, player) => {
+        acc[player.team_id] = (acc[player.team_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log("Players by team:", playersByTeam);
+      
       teams.forEach(team => {
         team.players = playersData
           .filter(player => player.team_id === team.id)
@@ -75,6 +89,14 @@ export const getTeams = async (): Promise<Team[]> => {
             championPool: player.champion_pool as string[] || []
           }));
       });
+      
+      // Log player counts by region to debug AL region specifically
+      const playersByRegion = teams.reduce((acc, team) => {
+        if (!acc[team.region]) acc[team.region] = 0;
+        acc[team.region] += team.players.length;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log("Players by region:", playersByRegion);
     }
     
     // Cache the results
