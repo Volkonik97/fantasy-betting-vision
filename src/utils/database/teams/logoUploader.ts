@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const BUCKET_NAME = "team-logos";
+const TEAM_VALIANT_ID = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
+const VALIANT_LOGO_PATH = "public/lovable-uploads/4d612b58-6777-485c-8fd7-6c23892150e7.png";
 
 /**
  * Upload a team logo to Supabase storage
@@ -60,62 +62,13 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
   if (!teamId) return null;
   
   try {
-    // Special handling for Team Valiant - use exact hardcoded ID to ensure we get the right team
-    const teamValiantId = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
-    
-    if (teamId === teamValiantId) {
-      console.log("Team Valiant detected - using direct logo fetching");
-      
-      // List all files in the bucket to find the correct logo
-      const { data: files, error } = await supabase
-        .storage
-        .from(BUCKET_NAME)
-        .list();
-      
-      if (error) {
-        console.error("Error listing team logos for Team Valiant:", error);
-        return null;
-      }
-      
-      // Look for any file starting with the Team Valiant ID
-      const teamValiantFile = files.find(file => 
-        file.name.startsWith(teamValiantId) || 
-        file.name.toLowerCase().includes("valiant")
-      );
-      
-      if (teamValiantFile) {
-        console.log("Found Team Valiant logo:", teamValiantFile.name);
-        const { data: { publicUrl } } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(teamValiantFile.name);
-        
-        console.log("Team Valiant logo URL:", publicUrl);
-        return publicUrl;
-      } else {
-        // If we don't find a file with their ID or name, check all files for a match
-        console.log("No specific Team Valiant logo found, checking all files");
-        
-        // Try common filenames for Team Valiant
-        const valiantNameVariations = ["valiant", "team_valiant", "teamvaliant"];
-        
-        for (const variation of valiantNameVariations) {
-          const possibleFile = files.find(file => 
-            file.name.toLowerCase().includes(variation)
-          );
-          
-          if (possibleFile) {
-            console.log(`Found possible Team Valiant logo match: ${possibleFile.name}`);
-            const { data: { publicUrl } } = supabase.storage
-              .from(BUCKET_NAME)
-              .getPublicUrl(possibleFile.name);
-            
-            return publicUrl;
-          }
-        }
-      }
+    // Special handling for Team Valiant - use the hardcoded logo path
+    if (teamId === TEAM_VALIANT_ID || teamId.toLowerCase().includes("valiant")) {
+      console.log("Team Valiant detected - using hardcoded logo path");
+      return VALIANT_LOGO_PATH;
     }
     
-    // Standard processing for all other teams or if no special match found for Valiant
+    // Standard processing for all other teams
     const { data: files, error } = await supabase
       .storage
       .from(BUCKET_NAME)
@@ -168,6 +121,12 @@ export const findTeamByName = (teams: { id: string, name: string }[], filename: 
     .replace(/_/g, ' ')  // Replace underscores with spaces
     .replace(/-/g, ' '); // Replace hyphens with spaces
   
+  // Special case for Team Valiant - use exact ID
+  if (normalizedName.includes("valiant")) {
+    console.log("Team Valiant detected in filename matching");
+    return TEAM_VALIANT_ID;
+  }
+  
   // First, try exact match with team name
   const exactMatch = teams.find(team => 
     team.name.toLowerCase() === normalizedName
@@ -177,19 +136,6 @@ export const findTeamByName = (teams: { id: string, name: string }[], filename: 
   
   // Try with more flexible matching - split words and check
   const filenameWords = normalizedName.split(' ').filter(word => word.length > 1);
-  
-  // Special case for Team Valiant
-  if (normalizedName.includes("valiant")) {
-    const valiantTeam = teams.find(team => 
-      team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2" || 
-      team.name.toLowerCase().includes("valiant")
-    );
-    
-    if (valiantTeam) {
-      console.log("Found Team Valiant match:", valiantTeam.name, valiantTeam.id);
-      return valiantTeam.id;
-    }
-  }
   
   // If no exact match, try finding partial matches
   const partialMatches = teams.filter(team => {

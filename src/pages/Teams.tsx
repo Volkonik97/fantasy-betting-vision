@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -149,6 +148,7 @@ interface TeamCardProps {
 
 const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
+  const TEAM_VALIANT_ID = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
   
   useEffect(() => {
     const fetchLogo = async () => {
@@ -156,11 +156,14 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
         console.log(`Fetching logo for team card: ${team.name} (${team.id})`);
         
         // Special handling for Team Valiant
-        const isTeamValiant = team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2" || 
+        const isTeamValiant = team.id === TEAM_VALIANT_ID || 
                               team.name.toLowerCase().includes("valiant");
                               
         if (isTeamValiant) {
           console.log("Team Valiant detected in TeamCard - using special handling");
+          // Use hardcoded path for Team Valiant
+          setLogoUrl("public/lovable-uploads/4d612b58-6777-485c-8fd7-6c23892150e7.png");
+          return;
         }
         
         const url = await getTeamLogoUrl(team.id);

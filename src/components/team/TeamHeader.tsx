@@ -11,18 +11,22 @@ interface TeamHeaderProps {
 
 const TeamHeader = ({ team }: TeamHeaderProps) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team?.logo || null);
+  const TEAM_VALIANT_ID = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
   
   useEffect(() => {
     const fetchLogo = async () => {
       if (team?.id) {
         console.log(`Fetching logo for team ${team.id} (${team.name})`);
         
-        // Special handling for Team Valiant to ensure we get the correct logo
-        const isTeamValiant = team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2" || 
+        // Special handling for Team Valiant
+        const isTeamValiant = team.id === TEAM_VALIANT_ID || 
                              team.name.toLowerCase().includes("valiant");
                              
         if (isTeamValiant) {
           console.log("Team Valiant detected in TeamHeader - using special handling");
+          // Use hardcoded path for Team Valiant
+          setLogoUrl("public/lovable-uploads/4d612b58-6777-485c-8fd7-6c23892150e7.png");
+          return;
         }
         
         const url = await getTeamLogoUrl(team.id);
