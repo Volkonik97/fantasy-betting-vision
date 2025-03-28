@@ -56,6 +56,11 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
   // Display the team name directly from the player object if available
   const teamName = player.teamName || player.team;
 
+  // Function to truncate champion names
+  const truncateChampionName = (name: string, maxLength: number = 8) => {
+    return name.length > maxLength ? `${name.substring(0, maxLength)}...` : name;
+  };
+
   return (
     <div className="h-full">
       <motion.div 
@@ -90,8 +95,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </span>
           </div>
           
-          {/* Stats section with fixed consistent height */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          {/* Stats section with fixed height and consistent spacing */}
+          <div className="grid grid-cols-3 gap-2 mb-4 mt-2">
             <div className="text-center p-2 bg-gray-50 rounded-md h-16 flex flex-col justify-center">
               <span className="text-xs text-gray-500 mb-1">KDA</span>
               <span className="font-semibold text-sm">{formattedKDA}</span>
@@ -108,17 +113,18 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
           </div>
           
-          {/* Champion pool section - fixed to always be at bottom with consistent spacing */}
-          <div className="mt-auto">
+          {/* Champion pool section with fixed height and truncated names */}
+          <div className="mt-auto pt-2">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {championPoolArray.length > 0 ? (
                 championPoolArray.slice(0, 3).map((champion, index) => (
                   <span 
                     key={index}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md"
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]"
+                    title={champion}
                   >
-                    {champion}
+                    {truncateChampionName(champion)}
                   </span>
                 ))
               ) : (
