@@ -34,6 +34,7 @@ const TeamDetails = () => {
       
       try {
         setIsLoading(true);
+        setError(null);
         
         // Load team from database
         const foundTeam = await getTeamById(id);
@@ -46,19 +47,40 @@ const TeamDetails = () => {
         
         setTeam(foundTeam);
         
-        // Force clear the match cache to ensure we get fresh data
+        // Force clear the match cache every time to ensure fresh data
         await clearMatchCache();
         
         // Load ALL matches from database with fresh data
+        console.log(`Chargement des matchs pour l'équipe ${id} (${foundTeam.name})...`);
         const allMatches = await getMatches();
-        console.log(`Loaded ${allMatches.length} total matches from database`);
+        console.log(`Chargé ${allMatches.length} matchs au total depuis la base de données`);
         
-        // Filter matches associated with this team
-        const filteredMatches = allMatches.filter(
-          match => match.teamBlue.id === id || match.teamRed.id === id
-        );
+        // Assurez-vous que l'ID est correctement utilisé pour la comparaison
+        const teamId = id.trim();
         
-        console.log(`Found ${filteredMatches.length} matches for team ${id}`);
+        // Filter matches associated with this team - use trim() to ensure no whitespace issues
+        const filteredMatches = allMatches.filter(match => {
+          const blueId = match.teamBlue.id.trim();
+          const redId = match.teamRed.id.trim();
+          const matchFound = blueId === teamId || redId === teamId;
+          
+          if (matchFound) {
+            console.log(`Match trouvé: ${match.id} - ${match.teamBlue.name} vs ${match.teamRed.name}`);
+          }
+          
+          return matchFound;
+        });
+        
+        console.log(`Trouvé ${filteredMatches.length} matchs sur ${allMatches.length} pour l'équipe ${id}`);
+        
+        // Ajout de vérifications détaillées pour le débogage
+        if (filteredMatches.length === 0 && allMatches.length > 0) {
+          console.warn(`Aucun match trouvé pour l'équipe ${id}. Échantillon d'IDs d'équipes dans les matchs disponibles:`);
+          allMatches.slice(0, 5).forEach(match => {
+            console.log(`Match ${match.id}: Blue=${match.teamBlue.id}(${match.teamBlue.name}), Red=${match.teamRed.id}(${match.teamRed.name})`);
+          });
+        }
+        
         setTeamMatches(filteredMatches);
         
         // Load side statistics

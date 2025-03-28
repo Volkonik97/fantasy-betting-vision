@@ -38,6 +38,8 @@ export const getMatches = async (): Promise<Match[]> => {
       return [];
     }
     
+    console.log(`Récupéré ${matches.length} matchs bruts depuis Supabase`);
+    
     // Fetch teams separately to populate the match data
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
@@ -48,13 +50,15 @@ export const getMatches = async (): Promise<Match[]> => {
       return [];
     }
     
+    console.log(`Récupéré ${teamsData.length} équipes depuis Supabase`);
+    
     // Convert database format to application format
     const formattedMatches: Match[] = matches.map(match => {
       const teamBlueData = teamsData.find(team => team.id === match.team_blue_id);
       const teamRedData = teamsData.find(team => team.id === match.team_red_id);
       
       if (!teamBlueData || !teamRedData) {
-        console.error(`Équipes non trouvées pour le match ${match.id}`);
+        console.error(`Équipes non trouvées pour le match ${match.id}: Blue=${match.team_blue_id}, Red=${match.team_red_id}`);
         return null;
       }
       
@@ -77,7 +81,7 @@ export const getMatches = async (): Promise<Match[]> => {
         logo: teamRedData.logo,
         region: teamRedData.region,
         winRate: Number(teamRedData.win_rate) || 0,
-        blueWinRate: Number(teamBlueData.blue_win_rate) || 0,
+        blueWinRate: Number(teamRedData.blue_win_rate) || 0,
         redWinRate: Number(teamRedData.red_win_rate) || 0,
         averageGameTime: Number(teamRedData.average_game_time) || 0,
         players: []
@@ -152,8 +156,7 @@ export const getMatches = async (): Promise<Match[]> => {
       return formattedMatch;
     }).filter(match => match !== null) as Match[];
     
-    // Ne charger les statistiques des joueurs que si elles sont explicitement demandées
-    // pour améliorer les performances sur la page d'accueil
+    console.log(`Formatté ${formattedMatches.length} matchs valides sur ${matches.length} matchs récupérés`);
     
     // Mettre à jour le cache
     matchesCache = formattedMatches;

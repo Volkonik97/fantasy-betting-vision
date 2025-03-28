@@ -13,11 +13,11 @@ interface TeamRecentMatchesProps {
 
 const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
   const [matchesWithLogos, setMatchesWithLogos] = useState<Match[]>([]);
-  const [isLoadingLogos, setIsLoadingLogos] = useState(false);
+  const [isLoadingLogos, setIsLoadingLogos] = useState(true);
 
   useEffect(() => {
     // Log the incoming matches to debug
-    console.log(`Received ${matches.length} matches for team ${team.id}`);
+    console.log(`Traitement de ${matches.length} matchs pour l'équipe ${team.id} (${team.name})`);
     
     // Sort matches by date (most recent first)
     const sortedMatches = [...matches].sort((a, b) => {
@@ -26,6 +26,12 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
     
     const fetchLogos = async () => {
       setIsLoadingLogos(true);
+      
+      if (sortedMatches.length === 0) {
+        console.log("Aucun match à traiter pour les logos");
+        setIsLoadingLogos(false);
+        return;
+      }
       
       try {
         const updatedMatches = await Promise.all(
@@ -65,7 +71,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
     };
     
     fetchLogos();
-  }, [matches, team.id]);
+  }, [matches, team.id, team.name]);
 
   if (isLoadingLogos) {
     return (
