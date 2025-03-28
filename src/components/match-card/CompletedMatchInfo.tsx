@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Users } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getSeriesScore } from "@/utils/database/matches/seriesService";
+import { getSeriesScore } from "@/utils/database/matchesService";
 
 interface CompletedMatchInfoProps {
   result: {
@@ -31,7 +31,8 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           const baseMatchId = matchId.split('_').slice(0, -1).join('_');
           const matchCount = await getSeriesScore(baseMatchId, '', '', true);
           
-          if (matchCount && matchCount > 1) {
+          // Fix: Check if matchCount is a number before comparing
+          if (matchCount !== null && typeof matchCount === 'number' && matchCount > 1) {
             setSeriesInfo(`Match ${matchCount} of the series`);
           }
         } catch (error) {

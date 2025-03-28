@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import TeamLogo from "./TeamLogo";
 import { Team } from "@/utils/models/types";
-import { getSeriesScore } from "@/utils/database/matches/seriesService";
+import { getSeriesScore } from "@/utils/database/matchesService";
 
 interface MatchTeamsProps {
   teamBlue: Team;
@@ -54,7 +54,8 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
           // Get scores from all matches in this series
           const scores = await getSeriesScore(baseMatchId, teamBlue.id, teamRed.id);
           
-          if (scores) {
+          // Fix: Check if scores is an object before setting state
+          if (scores !== null && typeof scores === 'object' && 'blue' in scores && 'red' in scores) {
             setAggregatedScores(scores);
             console.log(`Series scores for ${baseMatchId}:`, scores);
           }
