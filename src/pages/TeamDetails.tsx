@@ -54,38 +54,65 @@ const TeamDetails = () => {
         const allMatches = await getMatches();
         console.log(`Chargement de ${allMatches.length} matchs totaux depuis la base de données`);
         
-        // Filter matches for this team, ensuring we strictly check for team ID matches
+        // Debug info to track ID formats
+        console.log(`Recherche des matchs pour l'équipe ID=${id} (${foundTeam.name})`);
+        console.log(`Format de l'ID de l'équipe recherchée: ${typeof id}`);
+        
+        // Filter matches for this team with more thorough approach
         const teamMatchesArray = allMatches.filter(match => {
-          const matchesBlueTeam = match.teamBlue.id === id;
-          const matchesRedTeam = match.teamRed.id === id;
+          // Check if either team in the match has the same ID as our current team
+          // Convert both to strings and trim whitespace to ensure consistent comparison
+          const matchBlueId = String(match.teamBlue.id).trim();
+          const matchRedId = String(match.teamRed.id).trim();
+          const currentTeamId = String(id).trim();
           
+          const matchesBlueTeam = matchBlueId === currentTeamId;
+          const matchesRedTeam = matchRedId === currentTeamId;
+          
+          // Additional debug for first few matches to verify ID matching
           if (matchesBlueTeam || matchesRedTeam) {
             console.log(`Match trouvé pour l'équipe ${foundTeam.name}: ${match.id} (${match.tournament})`);
+            console.log(`  Match: Équipe Bleue ID="${matchBlueId}", Équipe Rouge ID="${matchRedId}"`);
+            console.log(`  Équipe recherchée ID="${currentTeamId}"`);
             return true;
           }
           return false;
         });
         
-        console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
-        
-        if (teamMatchesArray.length === 0 && allMatches.length > 0) {
-          console.warn("Aucun match trouvé pour cette équipe. Débug des IDs d'équipe dans les données de match:");
-          allMatches.slice(0, 5).forEach(match => {
-            console.log(`Match ${match.id}: Équipe Bleue ID=${match.teamBlue.id}, Équipe Rouge ID=${match.teamRed.id}`);
+        // If we found fewer matches than expected, try alternative matching approaches
+        if (teamMatchesArray.length < 15 && allMatches.length > 0) {
+          console.warn(`Trouvé seulement ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name}). Essai d'une approche alternative...`);
+          
+          // Compare IDs after normalization (lowercase and trimmed)
+          const alternativeMatches = allMatches.filter(match => {
+            const normalizedBlueId = String(match.teamBlue.id).trim().toLowerCase().replace(/[^\w]/g, '');
+            const normalizedRedId = String(match.teamRed.id).trim().toLowerCase().replace(/[^\w]/g, '');
+            const normalizedTeamId = String(id).trim().toLowerCase().replace(/[^\w]/g, '');
+            
+            return normalizedBlueId === normalizedTeamId || normalizedRedId === normalizedTeamId;
           });
-          console.log(`ID d'équipe recherché: ${id}`);
           
-          // Additional debug: check if IDs might be case-sensitive or have whitespace issues
-          const potentialMatches = allMatches.filter(match => 
-            match.teamBlue.id.trim().toLowerCase() === id.trim().toLowerCase() || 
-            match.teamRed.id.trim().toLowerCase() === id.trim().toLowerCase()
-          );
+          // Try matching by team name as a fallback
+          const nameMatches = allMatches.filter(match => {
+            return match.teamBlue.name === foundTeam.name || match.teamRed.name === foundTeam.name;
+          });
           
-          if (potentialMatches.length > 0) {
-            console.log(`Trouvé ${potentialMatches.length} matchs potentiels avec comparaison insensible à la casse`);
-            setTeamMatches(potentialMatches);
+          console.log(`Matchs alternatifs trouvés: ${alternativeMatches.length}`);
+          console.log(`Matchs trouvés par nom: ${nameMatches.length}`);
+          
+          // Use whichever approach found more matches
+          if (alternativeMatches.length > teamMatchesArray.length) {
+            console.log(`Utilisation des ${alternativeMatches.length} matchs trouvés par ID normalisé`);
+            setTeamMatches(alternativeMatches);
+          } else if (nameMatches.length > teamMatchesArray.length) {
+            console.log(`Utilisation des ${nameMatches.length} matchs trouvés par nom`);
+            setTeamMatches(nameMatches);
+          } else {
+            console.log(`Conservation des ${teamMatchesArray.length} matchs trouvés par ID exact`);
+            setTeamMatches(teamMatchesArray);
           }
         } else {
+          console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
           setTeamMatches(teamMatchesArray);
         }
         

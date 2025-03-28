@@ -55,23 +55,47 @@ export const getMatches = async (): Promise<Match[]> => {
     // Create a map of team IDs to team data for faster lookups
     const teamsMap = new Map();
     teamsData.forEach(team => {
-      teamsMap.set(team.id, team);
+      // Store using multiple keys for more robust matching
+      const id = team.id;
+      teamsMap.set(id, team); 
+      
+      // Also store with trimmed ID and lowercase for case-insensitive matching
+      if (typeof id === 'string') {
+        teamsMap.set(id.trim(), team);
+        teamsMap.set(id.trim().toLowerCase(), team);
+      }
+      
+      // Store by name for name-based lookups
+      teamsMap.set(team.name, team);
     });
+    
+    console.log(`Créé une map de ${teamsMap.size} entrées d'équipes`);
     
     // Convert database format to application format
     const formattedMatches: Match[] = matches
       .map(match => {
-        // Find the team data for blue and red teams
-        const teamBlueData = teamsMap.get(match.team_blue_id);
-        const teamRedData = teamsMap.get(match.team_red_id);
+        // Normalize team IDs to improve matching reliability
+        const teamBlueId = String(match.team_blue_id).trim();
+        const teamRedId = String(match.team_red_id).trim();
+        
+        // Find the team data for blue and red teams with multiple lookup attempts
+        let teamBlueData = teamsMap.get(teamBlueId);
+        if (!teamBlueData) {
+          teamBlueData = teamsMap.get(teamBlueId.toLowerCase());
+        }
+        
+        let teamRedData = teamsMap.get(teamRedId);
+        if (!teamRedData) {
+          teamRedData = teamsMap.get(teamRedId.toLowerCase());
+        }
         
         if (!teamBlueData) {
-          console.error(`Équipe bleue non trouvée pour le match ${match.id}: ID=${match.team_blue_id}`);
+          console.error(`Équipe bleue non trouvée pour le match ${match.id}: ID=${teamBlueId}`);
           return null;
         }
         
         if (!teamRedData) {
-          console.error(`Équipe rouge non trouvée pour le match ${match.id}: ID=${match.team_red_id}`);
+          console.error(`Équipe rouge non trouvée pour le match ${match.id}: ID=${teamRedId}`);
           return null;
         }
         
@@ -181,6 +205,16 @@ export const getMatches = async (): Promise<Match[]> => {
       teamIds.add(match.teamRed.id);
     });
     console.log(`Nombre d'équipes uniques dans les matchs: ${teamIds.size}`);
+    
+    // Debug: List IDs and names of first few teams to check consistency
+    console.log("Échantillon des équipes dans les matchs:");
+    const sampleTeams = Array.from(teamIds).slice(0, 5);
+    sampleTeams.forEach(id => {
+      const team = teamsMap.get(id);
+      if (team) {
+        console.log(`  ID: "${id}" -> Nom: "${team.name}"`);
+      }
+    });
     
     // Update cache
     matchesCache = formattedMatches;

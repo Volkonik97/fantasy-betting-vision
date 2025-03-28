@@ -34,6 +34,8 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
           return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
         
+        console.log(`Tri des matchs: ${sortedMatches.length} matchs après tri par date`);
+        
         const updatedMatches = await Promise.all(
           sortedMatches.map(async (match) => {
             // Ensure the match is valid
@@ -43,7 +45,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
             }
             
             // Determine opponent team
-            const isBlue = match.teamBlue.id === team.id;
+            const isBlue = match.teamBlue.id === team.id || match.teamBlue.name === team.name;
             const opponent = isBlue ? match.teamRed : match.teamBlue;
             
             if (!opponent || !opponent.id) {
@@ -143,7 +145,8 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
                 return null;
               }
               
-              const isBlue = match.teamBlue.id === team.id;
+              // Check if team is blue by ID or name for more flexibility
+              const isBlue = match.teamBlue.id === team.id || match.teamBlue.name === team.name;
               const opponent = isBlue ? match.teamRed : match.teamBlue;
               const side = isBlue ? "Bleu" : "Rouge";
               
