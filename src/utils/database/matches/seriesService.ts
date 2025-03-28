@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -31,7 +32,7 @@ export const getSeriesScore = async (
     const { data: seriesMatches, error } = await supabase
       .from('matches')
       .select('*')
-      .like('id', `${baseMatchId}_%')
+      .like('id', `${baseMatchId}_%`)
       .order('id', { ascending: true });
 
     if (error) {
