@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Users } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getSeriesScore } from "@/utils/database/matchesService";
+import { getSeriesScore, getGameNumberFromId, getBaseMatchId } from "@/utils/database/matchesService";
 
 interface CompletedMatchInfoProps {
   result: {
@@ -28,14 +28,21 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
     const getSeriesInfo = async () => {
       if (seriesAggregation) {
         try {
-          const baseMatchId = matchId.split('_').slice(0, -1).join('_');
+          // Get the base match ID (without game number)
+          const baseMatchId = getBaseMatchId(matchId);
+          
+          // Get the game number
+          const gameNumber = getGameNumberFromId(matchId);
+          
+          // Get the series length
           const seriesResult = await getSeriesScore(baseMatchId, '', '', true);
           
-          // Check if seriesResult is a number (match count) before comparing
-          if (typeof seriesResult === 'number' && seriesResult > 1) {
-            // Get the game number from the match ID
-            const gameNumber = matchId.split('_').pop();
+          // Check if the series length is valid and reasonable (max Bo7)
+          if (typeof seriesResult === 'number' && seriesResult > 1 && seriesResult <= 7) {
             setSeriesInfo(`Game ${gameNumber} of ${seriesResult} in the series`);
+          } else {
+            // If the series length is invalid, just show the game number
+            setSeriesInfo(`Game ${gameNumber}`);
           }
         } catch (error) {
           console.error("Error getting series info:", error);

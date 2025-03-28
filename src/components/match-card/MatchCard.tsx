@@ -4,7 +4,7 @@ import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
-import { isSeriesMatch } from "@/utils/database/matchesService";
+import { isSeriesMatch, isStandardSeries } from "@/utils/database/matchesService";
 
 import MatchCardHeader from "./MatchCardHeader";
 import MatchTeams from "./MatchTeams";
@@ -27,6 +27,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const [redLogoUrl, setRedLogoUrl] = useState<string | null>(match.teamRed.logo || null);
   const [blueLogoError, setBlueLogoError] = useState(false);
   const [redLogoError, setRedLogoError] = useState(false);
+  const [isSeries, setIsSeries] = useState(false);
   
   useEffect(() => {
     const fetchLogos = async () => {
@@ -55,8 +56,26 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
       }
     };
     
+    // Check if this is a series match and verify it's a valid series
+    const checkIfSeries = async () => {
+      const isMatchInSeries = isSeriesMatch(match.id);
+      
+      if (isMatchInSeries && match.status === "Completed") {
+        try {
+          const validSeries = await isStandardSeries(match.id);
+          setIsSeries(validSeries);
+        } catch (error) {
+          console.error("Error checking series status:", error);
+          setIsSeries(false);
+        }
+      } else {
+        setIsSeries(false);
+      }
+    };
+    
     fetchLogos();
-  }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
+    checkIfSeries();
+  }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo, match.id, match.status]);
   
   // Ensure scores are properly extracted and treated as numbers
   const blueScore = match.result?.score && match.result.score.length > 0 
@@ -66,9 +85,6 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const redScore = match.result?.score && match.result.score.length > 1 
     ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(String(match.result.score[1])) || 0) 
     : 0;
-
-  // Determine if we should check for series aggregate score
-  const isSeries = isSeriesMatch(match.id) && match.status === "Completed";
   
   return (
     <div 

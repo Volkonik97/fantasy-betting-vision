@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import TeamLogo from "./TeamLogo";
 import { Team } from "@/utils/models/types";
-import { getSeriesScore, isSeriesMatch } from "@/utils/database/matchesService";
+import { getSeriesScore, isSeriesMatch, getBaseMatchId, isStandardSeries } from "@/utils/database/matchesService";
 
 interface MatchTeamsProps {
   teamBlue: Team;
@@ -42,14 +42,24 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
 }) => {
   // State to hold aggregated scores for series matches
   const [aggregatedScores, setAggregatedScores] = useState<{blue: number, red: number} | null>(null);
+  const [isValidSeries, setIsValidSeries] = useState<boolean>(false);
   
   useEffect(() => {
     // If this is part of a series, get the aggregated scores
     const fetchSeriesScores = async () => {
       if (seriesAggregation && status === "Completed") {
         try {
+          // Check if this is a standard series (Bo3, Bo5, Bo7)
+          const validSeries = await isStandardSeries(matchId);
+          setIsValidSeries(validSeries);
+          
+          if (!validSeries) {
+            console.log(`Match ${matchId} is not part of a standard series`);
+            return;
+          }
+          
           // Extract the base part of the match ID (before the last underscore)
-          const baseMatchId = matchId.split('_').slice(0, -1).join('_');
+          const baseMatchId = getBaseMatchId(matchId);
           
           // Get scores from all matches in this series
           const scores = await getSeriesScore(baseMatchId, teamBlue.id, teamRed.id);
@@ -68,9 +78,9 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
     fetchSeriesScores();
   }, [matchId, teamBlue.id, teamRed.id, seriesAggregation, status]);
   
-  // Use aggregated scores if available, otherwise use individual match scores
-  const displayBlueScore = aggregatedScores ? aggregatedScores.blue : blueScore;
-  const displayRedScore = aggregatedScores ? aggregatedScores.red : redScore;
+  // Use aggregated scores if available and valid, otherwise use individual match scores
+  const displayBlueScore = (aggregatedScores && isValidSeries) ? aggregatedScores.blue : blueScore;
+  const displayRedScore = (aggregatedScores && isValidSeries) ? aggregatedScores.red : redScore;
   
   return (
     <div className="flex items-center justify-between">
