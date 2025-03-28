@@ -18,12 +18,14 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, isLoading }) => {
     );
   }
   
+  console.log("TeamsList rendering with", teams.length, "teams");
+  
   if (teams.length === 0) {
     return (
       <div className="text-center py-10">
         <p className="text-gray-500">Aucune équipe trouvée avec ces critères.</p>
         <div className="mt-4">
-          <p className="text-gray-500 mb-4">Aucune donnée n'a été importée.</p>
+          <p className="text-gray-500 mb-4">Aucune donnée n'a été importée ou les équipes ne sont pas disponibles.</p>
           <Link to="/data-import" className="text-lol-blue hover:underline">
             Importer des données
           </Link>

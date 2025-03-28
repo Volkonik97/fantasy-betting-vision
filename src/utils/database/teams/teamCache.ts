@@ -32,6 +32,7 @@ export const getTeamsFromCache = (): Team[] | null => {
 export const updateTeamsCache = (teams: Team[]): void => {
   teamsCache = teams;
   lastCacheUpdate = Date.now();
+  console.log(`Updated teams cache with ${teams.length} teams`);
 };
 
 /**
@@ -65,6 +66,7 @@ export const updateTeamInCache = (team: Team): void => {
  * Clear the teams cache
  */
 export const clearTeamsCache = (): void => {
+  console.log("Clearing teams cache");
   teamsCache = null;
   lastCacheUpdate = 0;
 };

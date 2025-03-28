@@ -24,16 +24,18 @@ const Teams = () => {
       const loadedTeams = await getTeams();
       
       if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
+        console.log("Successfully loaded teams:", loadedTeams.length);
         setTeams(loadedTeams);
         
         const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
         setRegions(uniqueRegions);
       } else {
-        toast.error("No team data found");
+        console.warn("No teams loaded from database");
+        toast.error("Aucune équipe trouvée");
       }
     } catch (error) {
       console.error("Error loading teams:", error);
-      toast.error("Error loading teams");
+      toast.error("Erreur lors du chargement des équipes");
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +62,8 @@ const Teams = () => {
   const toggleLogoUploader = () => {
     setShowLogoUploader(!showLogoUploader);
   };
+
+  console.log("Filtered teams:", filteredTeams.length, "of", teams.length, "total teams");
 
   return (
     <div className="min-h-screen bg-gray-50">
