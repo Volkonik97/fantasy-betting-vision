@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect } from "react";
 import { isSameDay } from "date-fns";
-import { matches } from "@/utils/models";
 import Navbar from "@/components/Navbar";
 import MatchesHeader from "@/components/matches/MatchesHeader";
 import MatchFilters from "@/components/matches/MatchFilters";
 import TournamentFilter from "@/components/matches/TournamentFilter";
 import MatchesTabs from "@/components/matches/MatchesTabs";
 import { getTournaments } from "@/utils/database/tournamentsService";
-import { Tournament } from "@/utils/models/types";
+import { getMatches } from "@/utils/database/matchesService";
+import { Match, Tournament } from "@/utils/models/types";
+import { toast } from "sonner";
 
 const Matches = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,19 +17,33 @@ const Matches = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const matchesPerPage = 6;
   
   useEffect(() => {
-    const loadTournaments = async () => {
+    const loadData = async () => {
       try {
+        setLoading(true);
+        
+        // Load tournaments
         const tournamentsList = await getTournaments();
         setTournaments(tournamentsList);
+        
+        // Load matches
+        const matchesList = await getMatches();
+        console.log(`Loaded ${matchesList.length} matches from the database`);
+        setMatches(matchesList);
       } catch (error) {
-        console.error("Error loading tournaments:", error);
+        console.error("Error loading data:", error);
+        toast.error("Error loading matches data");
+      } finally {
+        setLoading(false);
       }
     };
     
-    loadTournaments();
+    loadData();
   }, []);
   
   const handleSearch = (query: string) => {
@@ -91,15 +106,21 @@ const Matches = () => {
           onTournamentChange={setSelectedTournament}
         />
         
-        <MatchesTabs
-          upcomingMatches={upcomingMatches}
-          liveMatches={liveMatches}
-          completedMatches={completedMatches}
-          currentPage={currentPage}
-          matchesPerPage={matchesPerPage}
-          onPageChange={setCurrentPage}
-          onTabChange={() => setCurrentPage(1)}
-        />
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
+          </div>
+        ) : (
+          <MatchesTabs
+            upcomingMatches={upcomingMatches}
+            liveMatches={liveMatches}
+            completedMatches={completedMatches}
+            currentPage={currentPage}
+            matchesPerPage={matchesPerPage}
+            onPageChange={setCurrentPage}
+            onTabChange={() => setCurrentPage(1)}
+          />
+        )}
       </main>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -37,7 +38,7 @@ export const getSeriesScore = async (
 
     if (!seriesMatches || seriesMatches.length === 0) {
       console.log(`No series matches found for ${baseMatchId}`);
-      return null;
+      return countOnly ? 0 : { blue: 0, red: 0 };
     }
 
     // If we only want the count, return the number of matches
@@ -60,6 +61,6 @@ export const getSeriesScore = async (
     return { blue: blueWins, red: redWins };
   } catch (error) {
     console.error("Error calculating series score:", error);
-    return null;
+    return countOnly ? 0 : { blue: 0, red: 0 };
   }
 };
