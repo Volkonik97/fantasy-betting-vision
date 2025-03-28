@@ -10,7 +10,11 @@ import {
   getGameNumberFromId, 
   getBaseMatchId, 
   getSeriesScoreUpToGame, 
-  isStandardSeries 
+  isStandardSeries,
+  isStandardSeriesLength,
+  determineSeriesLength,
+  fetchSeriesMatches,
+  calculateSeriesScore
 } from './series';
 
 export {
@@ -31,5 +35,9 @@ export {
   getGameNumberFromId,
   getBaseMatchId,
   getSeriesScoreUpToGame,
-  isStandardSeries
+  isStandardSeries,
+  isStandardSeriesLength,
+  determineSeriesLength,
+  fetchSeriesMatches,
+  calculateSeriesScore
 };
