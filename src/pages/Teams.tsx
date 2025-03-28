@@ -35,7 +35,13 @@ const Teams = () => {
       
       if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
         console.log("Successfully loaded teams:", loadedTeams.length);
-        setTeams(loadedTeams);
+        
+        // Sort teams alphabetically by name
+        const sortedTeams = [...loadedTeams].sort((a, b) => 
+          a.name.localeCompare(b.name)
+        );
+        
+        setTeams(sortedTeams);
         
         const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
         setRegions(uniqueRegions);
