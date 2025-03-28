@@ -3,6 +3,8 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Team, Match } from "@/utils/models/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { useEffect, useState } from "react";
 
 interface TeamRecentMatchesProps {
   team: Team;
@@ -10,7 +12,45 @@ interface TeamRecentMatchesProps {
 }
 
 const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
-  if (matches.length === 0) {
+  const [matchesWithLogos, setMatchesWithLogos] = useState<Match[]>(matches);
+
+  useEffect(() => {
+    const fetchLogos = async () => {
+      const updatedMatches = await Promise.all(
+        matches.map(async (match) => {
+          const isBlue = match.teamBlue.id === team.id;
+          const opponent = isBlue ? match.teamRed : match.teamBlue;
+          
+          // Only fetch a new logo if it doesn't already exist
+          if (!opponent.logo || opponent.logo === "") {
+            try {
+              const logoUrl = await getTeamLogoUrl(opponent.id);
+              if (logoUrl) {
+                // Create a new opponent object with the logo
+                const updatedOpponent = { ...opponent, logo: logoUrl };
+                
+                // Return updated match with the new opponent
+                return isBlue 
+                  ? { ...match, teamRed: updatedOpponent }
+                  : { ...match, teamBlue: updatedOpponent };
+              }
+            } catch (error) {
+              console.error(`Error fetching logo for team ${opponent.id}:`, error);
+            }
+          }
+          
+          // Return original match if no logo update was needed
+          return match;
+        })
+      );
+      
+      setMatchesWithLogos(updatedMatches);
+    };
+    
+    fetchLogos();
+  }, [matches, team.id]);
+
+  if (matchesWithLogos.length === 0) {
     return null;
   }
 
@@ -34,7 +74,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
             </tr>
           </thead>
           <tbody>
-            {matches.map(match => {
+            {matchesWithLogos.map(match => {
               const isBlue = match.teamBlue.id === team.id;
               const opponent = isBlue ? match.teamRed : match.teamBlue;
               const result = match.result 
