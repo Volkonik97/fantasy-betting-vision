@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format, isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -94,8 +95,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
       
       <div className="p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
               {!blueLogoError && blueLogoUrl ? (
                 <Avatar className="w-10 h-10">
                   <AvatarImage 
@@ -122,9 +123,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             </div>
           </div>
           
-          <div className="text-center w-20 mx-2 flex-shrink-0">
+          <div className="w-24 mx-2 flex-shrink-0 flex items-center justify-center">
             {match.status === "Completed" && match.result ? (
-              <div className="flex items-center justify-center gap-2 text-lg font-semibold">
+              <div className="flex items-center justify-center gap-3 text-xl font-semibold">
                 <span className={match.result.winner === match.teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
                   {match.result.score[0]}
                 </span>
@@ -138,12 +139,12 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             )}
           </div>
           
-          <div className="flex items-center gap-3">
-            <div>
-              <h3 className="font-medium text-right">{match.teamRed.name}</h3>
-              <span className="text-sm text-gray-500 block text-right">{match.teamRed.region}</span>
+          <div className="flex items-center gap-3 flex-1 justify-end">
+            <div className="text-right">
+              <h3 className="font-medium">{match.teamRed.name}</h3>
+              <span className="text-sm text-gray-500 block">{match.teamRed.region}</span>
             </div>
-            <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
+            <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
               {!redLogoError && redLogoUrl ? (
                 <Avatar className="w-10 h-10">
                   <AvatarImage 
