@@ -60,11 +60,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     const checkIfSeries = async () => {
       const isMatchInSeries = isSeriesMatch(match.id);
       
-      if (isMatchInSeries && match.status === "Completed") {
+      if (isMatchInSeries) {
         try {
-          const baseId = getBaseMatchId(match.id);
-          console.log(`Checking series status for match ${match.id} with baseId ${baseId}`);
-          
           const validSeries = await isStandardSeries(match.id);
           console.log(`Match ${match.id} is${validSeries ? '' : ' not'} a valid series`);
           
@@ -74,14 +71,13 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           setIsSeries(false);
         }
       } else {
-        console.log(`Match ${match.id} is${isMatchInSeries ? '' : ' not'} part of a series. Status: ${match.status}`);
         setIsSeries(false);
       }
     };
     
     fetchLogos();
     checkIfSeries();
-  }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo, match.id, match.status]);
+  }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo, match.id]);
   
   // Log for debugging
   console.log(`Match ${match.id} - Is series: ${isSeries}`);

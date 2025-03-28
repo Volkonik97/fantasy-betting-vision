@@ -31,7 +31,8 @@ export const getSeriesScore = async (
     const { data: seriesMatches, error } = await supabase
       .from('matches')
       .select('*')
-      .like('id', `${baseMatchId}_%`);
+      .like('id', `${baseMatchId}_%')
+      .order('id', { ascending: true });
 
     if (error) {
       console.error("Error fetching series matches:", error);
@@ -44,7 +45,8 @@ export const getSeriesScore = async (
     }
 
     // Important: Check if this is really a series or just matches with similar IDs
-    // Typically a series has a small number of matches (3, 5, 7)
+    // Standard series lengths are 3, 5, 7 matches
+    const standardSeriesLengths = [3, 5, 7];
     const maxSeriesLength = 7; // Maximum reasonable Bo7 series
     
     if (seriesMatches.length > maxSeriesLength) {
@@ -62,12 +64,14 @@ export const getSeriesScore = async (
     // Log the number of matches found
     console.log(`Found ${seriesMatches.length} matches in series ${baseMatchId}`);
 
-    // If we only want the count, return the number of matches
+    // If we only want the count, determine the series length
     if (countOnly) {
-      // For Bo3, Bo5, Bo7 determination based on match count
-      if (seriesMatches.length <= 3) return 3;
-      if (seriesMatches.length <= 5) return 5;
-      return 7;
+      // For Bo3, Bo5, Bo7 determination based on actual or potential match count
+      // Look for the nearest standard series length
+      if (seriesMatches.length <= 2) return 3; // Bo3
+      if (seriesMatches.length <= 3) return 3; // Bo3
+      if (seriesMatches.length <= 5) return 5; // Bo5
+      return 7; // Bo7
     }
 
     // Otherwise, calculate the series score

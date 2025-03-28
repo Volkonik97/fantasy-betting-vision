@@ -72,6 +72,10 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
         } catch (error) {
           console.error("Error fetching series scores:", error);
         }
+      } else {
+        // Reset aggregated scores if not in a series or not completed
+        setAggregatedScores(null);
+        setIsValidSeries(false);
       }
     };
     
@@ -87,15 +91,15 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   let displayBlueScore = blueScore;
   let displayRedScore = redScore;
   
-  // If this is a completed match, use the result scores if available
+  // If this is a completed match with result, always use those scores first
   if (status === "Completed" && result && result.score) {
     displayBlueScore = result.score[0];
     displayRedScore = result.score[1];
     console.log(`Match ${matchId} - Using result scores: ${displayBlueScore}:${displayRedScore}`);
   }
   
-  // If this is a valid series with aggregated scores, use those instead
-  if (aggregatedScores && isValidSeries) {
+  // Only use aggregated scores if they're available AND this is a valid series
+  if (aggregatedScores && isValidSeries && seriesAggregation) {
     displayBlueScore = aggregatedScores.blue;
     displayRedScore = aggregatedScores.red;
     console.log(`Match ${matchId} - Using series scores: ${displayBlueScore}:${displayRedScore}`);
