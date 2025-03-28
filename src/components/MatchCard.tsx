@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format, isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -123,9 +122,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             </div>
           </div>
           
-          <div className="text-center">
+          <div className="text-center w-20 mx-2 flex-shrink-0">
             {match.status === "Completed" && match.result ? (
-              <div className="flex items-center gap-2 text-lg font-semibold">
+              <div className="flex items-center justify-center gap-2 text-lg font-semibold">
                 <span className={match.result.winner === match.teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
                   {match.result.score[0]}
                 </span>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -120,7 +119,7 @@ const Index = () => {
           </div>
           
           <div className="mb-16">
-            <h3 className="text-xl font-semibold mb-6">Prochains Matchs</h3>
+            <h3 className="text-xl font-semibold mb-6">Matchs précédents</h3>
             <div className="grid md:grid-cols-2 gap-6">
               {matches.slice(0, 4).map((match) => (
                 <motion.div
