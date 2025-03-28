@@ -109,7 +109,7 @@ function calculateSideStatistics(
     redFirstHerald,
     blueFirstTower,
     redFirstTower,
-    timelineStats: createDefaultTimelineStats()
+    timelineStats: null // Timeline stats will be set separately
   };
 }
 
@@ -136,48 +136,6 @@ function createDefaultSideStatistics(teamId: string): SideStatistics {
     redFirstHerald: 50,
     blueFirstTower: 50,
     redFirstTower: 50,
-    timelineStats: createDefaultTimelineStats()
-  };
-}
-
-// Create default timeline statistics
-function createDefaultTimelineStats() {
-  return {
-    '10': {
-      avgGold: 3250,
-      avgXp: 4120,
-      avgCs: 85,
-      avgGoldDiff: 350,
-      avgKills: 1.2,
-      avgDeaths: 0.8,
-      avgAssists: 1.5
-    },
-    '15': {
-      avgGold: 5120,
-      avgXp: 6780,
-      avgCs: 130,
-      avgGoldDiff: 580,
-      avgKills: 2.5,
-      avgDeaths: 1.3,
-      avgAssists: 2.8
-    },
-    '20': {
-      avgGold: 7350,
-      avgXp: 9450,
-      avgCs: 175,
-      avgGoldDiff: 850,
-      avgKills: 3.8,
-      avgDeaths: 2.1,
-      avgAssists: 4.2
-    },
-    '25': {
-      avgGold: 9780,
-      avgXp: 12400,
-      avgCs: 220,
-      avgGoldDiff: 1250,
-      avgKills: 5.2,
-      avgDeaths: 3,
-      avgAssists: 5.7
-    }
+    timelineStats: null
   };
 }
