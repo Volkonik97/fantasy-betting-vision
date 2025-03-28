@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
@@ -110,7 +111,9 @@ const Index = () => {
 
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-medium mb-2">{nextTournament.name}</h3>
-            <p className="text-gray-600">{nextTournament.description}</p>
+            <p className="text-gray-600">
+              {nextTournament.region}, {nextTournament.startDate} - {nextTournament.endDate}
+            </p>
           </div>
         </section>
       </main>
