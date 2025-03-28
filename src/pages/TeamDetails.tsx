@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { Team, Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import { getTeamById } from "@/utils/database/teamsService";
-import { getMatches } from "@/utils/database/matchesService";
+import { getMatches, clearMatchCache } from "@/utils/database/matchesService";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
@@ -46,7 +46,10 @@ const TeamDetails = () => {
         
         setTeam(foundTeam);
         
-        // Load ALL matches from database
+        // Force clear the match cache to ensure we get fresh data
+        await clearMatchCache();
+        
+        // Load ALL matches from database with fresh data
         const allMatches = await getMatches();
         console.log(`Loaded ${allMatches.length} total matches from database`);
         

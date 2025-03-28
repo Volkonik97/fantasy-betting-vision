@@ -13,6 +13,7 @@ interface TeamRecentMatchesProps {
 
 const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
   const [matchesWithLogos, setMatchesWithLogos] = useState<Match[]>([]);
+  const [isLoadingLogos, setIsLoadingLogos] = useState(false);
 
   useEffect(() => {
     // Log the incoming matches to debug
@@ -24,37 +25,63 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
     });
     
     const fetchLogos = async () => {
-      const updatedMatches = await Promise.all(
-        sortedMatches.map(async (match) => {
-          const isBlue = match.teamBlue.id === team.id;
-          const opponent = isBlue ? match.teamRed : match.teamBlue;
-          
-          try {
-            // Always try to fetch the logo, regardless of whether one already exists
-            const logoUrl = await getTeamLogoUrl(opponent.id);
-            if (logoUrl) {
-              // Create a new opponent object with the logo
-              const updatedOpponent = { ...opponent, logo: logoUrl };
-              
-              // Return updated match with the new opponent
-              return isBlue 
-                ? { ...match, teamRed: updatedOpponent }
-                : { ...match, teamBlue: updatedOpponent };
-            }
-          } catch (error) {
-            console.error(`Error fetching logo for team ${opponent.id}:`, error);
-          }
-          
-          // Return original match if logo fetch failed
-          return match;
-        })
-      );
+      setIsLoadingLogos(true);
       
-      setMatchesWithLogos(updatedMatches);
+      try {
+        const updatedMatches = await Promise.all(
+          sortedMatches.map(async (match) => {
+            // Determine if the team is on the blue or red side
+            const isBlue = match.teamBlue.id === team.id;
+            const opponent = isBlue ? match.teamRed : match.teamBlue;
+            
+            try {
+              // Always try to fetch the logo, regardless of whether one already exists
+              const logoUrl = await getTeamLogoUrl(opponent.id);
+              if (logoUrl) {
+                // Create a new opponent object with the logo
+                const updatedOpponent = { ...opponent, logo: logoUrl };
+                
+                // Return updated match with the new opponent
+                return isBlue 
+                  ? { ...match, teamRed: updatedOpponent }
+                  : { ...match, teamBlue: updatedOpponent };
+              }
+            } catch (error) {
+              console.error(`Error fetching logo for team ${opponent.id}:`, error);
+            }
+            
+            // Return original match if logo fetch failed
+            return match;
+          })
+        );
+        
+        console.log(`Processed ${updatedMatches.length} matches with logos`);
+        setMatchesWithLogos(updatedMatches);
+      } catch (error) {
+        console.error("Error processing matches with logos:", error);
+      } finally {
+        setIsLoadingLogos(false);
+      }
     };
     
     fetchLogos();
   }, [matches, team.id]);
+
+  if (isLoadingLogos) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+        className="mt-8"
+      >
+        <h2 className="text-2xl font-bold mb-4">Matchs récents</h2>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lol-blue"></div>
+        </div>
+      </motion.div>
+    );
+  }
 
   if (matchesWithLogos.length === 0) {
     return (
