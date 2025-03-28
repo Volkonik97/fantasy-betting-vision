@@ -108,15 +108,15 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
           </div>
           
-          {/* Completely redesigned champion pool section */}
+          {/* Redesigned champion pool with fixed width badges */}
           <div className="mt-auto">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="flex flex-wrap gap-1">
               {championPoolArray.length > 0 ? (
                 championPoolArray.slice(0, 3).map((champion, index) => (
                   <span 
                     key={index}
-                    className="px-1.5 py-1 bg-blue-50 text-blue-700 text-xs rounded text-center truncate"
+                    className="w-[68px] py-1 bg-blue-50 text-blue-700 text-xs text-center rounded"
                     title={champion}
                   >
                     {champion.substring(0, 5)}
@@ -126,7 +126,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
                 <span className="text-xs text-gray-400">Aucun champion</span>
               )}
               {championPoolArray.length > 3 && (
-                <span className="px-1 py-1 bg-gray-50 text-gray-500 text-xs rounded text-center">
+                <span className="w-[30px] py-1 bg-gray-50 text-gray-500 text-xs text-center rounded">
                   +{championPoolArray.length - 3}
                 </span>
               )}
