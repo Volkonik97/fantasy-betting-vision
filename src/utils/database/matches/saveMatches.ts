@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -45,6 +46,18 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     
     for (const matchChunk of matchChunks) {
       try {
+        // Debug match data
+        console.log(`Processing match batch with objectives data:`, 
+          matchChunk.map(m => ({
+            id: m.id,
+            first_blood: m.result?.firstBlood || m.extraStats?.first_blood || null,
+            first_dragon: m.result?.firstDragon || m.extraStats?.first_dragon || null,
+            first_baron: m.result?.firstBaron || m.extraStats?.first_baron || null,
+            first_herald: m.extraStats?.first_herald || null,
+            first_tower: m.extraStats?.first_tower || null
+          }))
+        );
+        
         const { error: matchesError } = await supabase
           .from('matches')
           .upsert(
@@ -79,14 +92,14 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               drakes_unknown: match.extraStats?.drakes_unknown || 0,
               elders: match.extraStats?.elders || 0,
               opp_elders: match.extraStats?.opp_elders || 0,
-              first_herald: match.extraStats?.first_herald || '',
+              first_herald: match.extraStats?.first_herald || match.result?.firstHerald || '',
               heralds: match.extraStats?.heralds || 0,
               opp_heralds: match.extraStats?.opp_heralds || 0,
               barons: match.extraStats?.barons || 0,
               opp_barons: match.extraStats?.opp_barons || 0,
               void_grubs: match.extraStats?.void_grubs || 0,
               opp_void_grubs: match.extraStats?.opp_void_grubs || 0,
-              first_tower: match.extraStats?.first_tower || '',
+              first_tower: match.extraStats?.first_tower || match.result?.firstTower || '',
               first_mid_tower: match.extraStats?.first_mid_tower || '',
               first_three_towers: match.extraStats?.first_three_towers || '',
               towers: match.extraStats?.towers || 0,
@@ -100,9 +113,9 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               score_red: match.result?.score?.[1] || 0,
               duration: match.result?.duration || '',
               mvp: match.result?.mvp || '',
-              first_blood: match.result?.firstBlood || '',
-              first_dragon: match.result?.firstDragon || '',
-              first_baron: match.result?.firstBaron || ''
+              first_blood: match.result?.firstBlood || match.extraStats?.first_blood || '',
+              first_dragon: match.result?.firstDragon || match.extraStats?.first_dragon || '',
+              first_baron: match.result?.firstBaron || match.extraStats?.first_baron || ''
             })),
             { onConflict: 'id' }
           );

@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -99,7 +98,7 @@ export interface Tournament {
 }
 
 export interface SideStatistics {
-  teamId?: string; // Added to track which team these stats belong to
+  teamId: string;
   blueWins: number;
   redWins: number;
   blueFirstBlood: number;
@@ -110,16 +109,7 @@ export interface SideStatistics {
   redFirstHerald: number;
   blueFirstTower: number;
   redFirstTower: number;
-  timelineStats?: {
-    [key: string]: {
-      avgGold: number;
-      avgXp: number;
-      avgCs: number;
-      avgGoldDiff: number;
-      avgCsDiff?: number;
-      avgKills: number;
-      avgDeaths: number;
-      avgAssists?: number;
-    }
-  };
+  blueFirstBaron?: number;
+  redFirstBaron?: number;
+  timelineStats: any;
 }

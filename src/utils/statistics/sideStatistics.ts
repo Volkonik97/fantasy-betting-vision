@@ -72,7 +72,7 @@ function calculateSideStatistics(
   
   console.log(`[sideStatistics] Win rates - Blue: ${blueWinRate}%, Red: ${redWinRate}%`);
   
-  // Calculate first objectives stats
+  // Calculate first objectives stats - fixed to properly use objective fields
   const blueFirstBlood = calculateObjectiveRate(completedBlueMatches, 'first_blood', teamId);
   const redFirstBlood = calculateObjectiveRate(completedRedMatches, 'first_blood', teamId);
   
@@ -85,6 +85,9 @@ function calculateSideStatistics(
   const blueFirstTower = calculateObjectiveRate(completedBlueMatches, 'first_tower', teamId);
   const redFirstTower = calculateObjectiveRate(completedRedMatches, 'first_tower', teamId);
   
+  const blueFirstBaron = calculateObjectiveRate(completedBlueMatches, 'first_baron', teamId);
+  const redFirstBaron = calculateObjectiveRate(completedRedMatches, 'first_baron', teamId);
+  
   console.log(`[sideStatistics] First objectives:`, {
     blueFirstBlood,
     redFirstBlood,
@@ -93,7 +96,9 @@ function calculateSideStatistics(
     blueFirstHerald,
     redFirstHerald,
     blueFirstTower,
-    redFirstTower
+    redFirstTower,
+    blueFirstBaron,
+    redFirstBaron
   });
   
   // Return the calculated statistics
@@ -109,6 +114,8 @@ function calculateSideStatistics(
     redFirstHerald,
     blueFirstTower,
     redFirstTower,
+    blueFirstBaron,
+    redFirstBaron,
     timelineStats: createDefaultTimelineStats()
   };
 }
@@ -117,6 +124,7 @@ function calculateSideStatistics(
 function calculateObjectiveRate(matches: any[], objectiveKey: string, teamId: string): number {
   if (matches.length === 0) return 50;
   
+  // Count how many times this team got the first objective
   const objectiveCount = matches.filter(m => m[objectiveKey] === teamId).length;
   return Math.round((objectiveCount / matches.length) * 100);
 }
@@ -136,6 +144,8 @@ function createDefaultSideStatistics(teamId: string): SideStatistics {
     redFirstHerald: 50,
     blueFirstTower: 50,
     redFirstTower: 50,
+    blueFirstBaron: 50,
+    redFirstBaron: 50,
     timelineStats: createDefaultTimelineStats()
   };
 }

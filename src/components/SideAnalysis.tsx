@@ -49,10 +49,15 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
       name: "First Tower",
       blue: ensureValidData(statistics.blueFirstTower),
       red: ensureValidData(statistics.redFirstTower)
+    },
+    {
+      name: "First Baron",
+      blue: ensureValidData(statistics.blueFirstBaron),
+      red: ensureValidData(statistics.redFirstBaron)
     }
   ];
   
-  console.log("First Objective Data (rebuilt):", firstObjectiveData);
+  console.log("BarChart data:", firstObjectiveData);
   
   // Check if timeline stats exist and are not null
   const hasTimeline = statistics.timelineStats && 
@@ -91,7 +96,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
           <CardDescription>Percentage of securing objectives first</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-80">
+          <div className="h-96">
             <BarChart
               data={firstObjectiveData}
               xAxisKey="name"
@@ -100,7 +105,7 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               layout="vertical"
               barSize={20}
               showYAxis={true}
-              height={300}
+              height={350}
             >
               <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
