@@ -57,11 +57,12 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className="h-full"
     >
-      <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300 h-full">
+      <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300 h-full flex flex-col">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
               {logoLoading ? (
                 <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
               ) : logoUrl && !logoError ? (
@@ -94,7 +95,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           </div>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="flex-1 flex flex-col">
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Win Rate</p>
@@ -106,7 +107,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
             </div>
           </div>
           
-          <div className="flex justify-between mt-4">
+          <div className="flex justify-between mt-auto pt-4">
             <Link 
               to={`/teams/${team.id}`} 
               className="text-sm text-lol-blue hover:underline"

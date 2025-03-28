@@ -55,10 +55,14 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
   
+  // Déterminer dynamiquement les scores
+  const blueScore = match.result?.score[0] ?? 0;
+  const redScore = match.result?.score[1] ?? 0;
+  
   return (
     <div 
       className={cn(
-        "bg-white border border-gray-100 rounded-xl shadow-subtle overflow-hidden transition-all duration-300 hover:shadow-md",
+        "bg-white border border-gray-100 rounded-xl shadow-subtle overflow-hidden transition-all duration-300 hover:shadow-md h-full flex flex-col",
         className
       )}
     >
@@ -93,7 +97,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         </div>
       </div>
       
-      <div className="p-4">
+      <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -127,11 +131,11 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             {match.status === "Completed" && match.result ? (
               <div className="flex items-center justify-center gap-3 text-xl font-semibold">
                 <span className={match.result.winner === match.teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
-                  {match.result.score[0]}
+                  {blueScore}
                 </span>
                 <span className="text-gray-300">:</span>
                 <span className={match.result.winner === match.teamRed.id ? "text-lol-red" : "text-gray-400"}>
-                  {match.result.score[1]}
+                  {redScore}
                 </span>
               </div>
             ) : (
