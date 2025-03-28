@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -12,6 +11,7 @@ import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 import TeamLogoUploader from "@/components/team/TeamLogoUploader";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUploader";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -56,7 +56,6 @@ const Teams = () => {
   };
 
   const handleLogoUploadComplete = () => {
-    // Reload teams to refresh the logos
     loadTeams();
     setShowLogoUploader(false);
   };
@@ -148,6 +147,21 @@ interface TeamCardProps {
 }
 
 const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
+  
+  useEffect(() => {
+    const fetchLogo = async () => {
+      if (team.id) {
+        const url = await getTeamLogoUrl(team.id);
+        if (url) {
+          setLogoUrl(url);
+        }
+      }
+    };
+    
+    fetchLogo();
+  }, [team.id]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -159,7 +173,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
               <img 
-                src={team.logo} 
+                src={logoUrl || "/placeholder.svg"} 
                 alt={`${team.name} logo`} 
                 className="w-10 h-10 object-contain"
                 onError={(e) => {

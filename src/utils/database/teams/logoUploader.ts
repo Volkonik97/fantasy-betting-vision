@@ -56,21 +56,49 @@ export const uploadTeamLogo = async (teamId: string, logoFile: File): Promise<st
  * @param teamId The team ID
  * @returns Public URL for the team logo
  */
-export const getTeamLogoUrl = (teamId: string): string | null => {
+export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => {
   if (!teamId) return null;
   
-  // We don't know the file extension, so we check for common image formats
+  // We don't know the file extension, so we check if the file exists with common formats
   const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
   
-  for (const format of formats) {
-    const filePath = `${teamId}.${format}`;
-    const { data: { publicUrl } } = supabase.storage
+  try {
+    // List all files in the bucket that start with the teamId
+    const { data, error } = await supabase
+      .storage
       .from(BUCKET_NAME)
-      .getPublicUrl(filePath);
+      .list('', {
+        limit: 100,
+        search: teamId,
+      });
     
-    // Try to check if the file exists (can't do this directly with Supabase public URLs)
-    // We'll return the first URL we generate and let the image component handle fallbacks
-    return publicUrl;
+    if (error) {
+      console.error("Error checking for team logo:", error);
+      return null;
+    }
+
+    // Find any file that starts with the teamId
+    const logoFile = data.find(file => file.name.startsWith(teamId + '.'));
+    
+    if (logoFile) {
+      const { data: { publicUrl } } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(logoFile.name);
+      
+      return publicUrl;
+    }
+    
+    // If we can't find the file directly, try with different formats
+    for (const format of formats) {
+      const filePath = `${teamId}.${format}`;
+      const { data: { publicUrl } } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+      
+      return publicUrl;
+    }
+  } catch (error) {
+    console.error("Error getting team logo URL:", error);
   }
   
   return null;

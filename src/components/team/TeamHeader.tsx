@@ -1,20 +1,36 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUploader";
 
 interface TeamHeaderProps {
   team: Team;
 }
 
 const TeamHeader = ({ team }: TeamHeaderProps) => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(team?.logo || null);
+  
+  useEffect(() => {
+    const fetchLogo = async () => {
+      if (team?.id) {
+        const url = await getTeamLogoUrl(team.id);
+        if (url) {
+          setLogoUrl(url);
+        }
+      }
+    };
+    
+    fetchLogo();
+  }, [team?.id]);
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
           <img 
-            src={team?.logo} 
+            src={logoUrl || "/placeholder.svg"} 
             alt={`${team?.name} logo`} 
             className="w-16 h-16 object-contain"
             onError={(e) => {
