@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -59,28 +58,41 @@ export const uploadTeamLogo = async (teamId: string, logoFile: File): Promise<st
 export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => {
   if (!teamId) return null;
   
-  // We don't know the file extension, so we check if the file exists with common formats
-  const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
-  
   try {
-    // List all files in the bucket that start with the teamId
-    const { data, error } = await supabase
+    // List all files in the bucket
+    const { data: files, error } = await supabase
       .storage
       .from(BUCKET_NAME)
-      .list('', {
-        limit: 100,
-        search: teamId,
-      });
+      .list();
     
     if (error) {
-      console.error("Error checking for team logo:", error);
+      console.error("Error listing team logos:", error);
       return null;
     }
-
+    
+    // Check if Team Valiant is the requested team (for debugging)
+    if (teamId === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2") {
+      console.log("Fetching logo for Team Valiant, special handling");
+      
+      // Look for any file starting with the Team Valiant ID
+      const teamValiantFile = files.find(file => file.name.startsWith("oe:team:71bd93fd1eab2c2f4ba60305ecabce2"));
+      
+      if (teamValiantFile) {
+        console.log("Found Team Valiant logo:", teamValiantFile.name);
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(teamValiantFile.name);
+        return publicUrl;
+      } else {
+        console.log("No Team Valiant logo found in storage");
+      }
+    }
+    
     // Find any file that starts with the teamId
-    const logoFile = data.find(file => file.name.startsWith(teamId + '.'));
+    const logoFile = files.find(file => file.name.startsWith(teamId));
     
     if (logoFile) {
+      console.log(`Found logo file for team ${teamId}: ${logoFile.name}`);
       const { data: { publicUrl } } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(logoFile.name);
@@ -88,13 +100,15 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       return publicUrl;
     }
     
-    // If we can't find the file directly, try with different formats
+    // If no file found, try with common extensions
+    const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
     for (const format of formats) {
       const filePath = `${teamId}.${format}`;
       const { data: { publicUrl } } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(filePath);
       
+      // This will return a URL regardless of whether the file exists
       return publicUrl;
     }
   } catch (error) {

@@ -152,15 +152,22 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   useEffect(() => {
     const fetchLogo = async () => {
       if (team.id) {
+        console.log(`Fetching logo for team card: ${team.name} (${team.id})`);
+        
+        if (team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2") {
+          console.log("Team Valiant detected in TeamCard");
+        }
+        
         const url = await getTeamLogoUrl(team.id);
         if (url) {
+          console.log(`Logo URL found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
         }
       }
     };
     
     fetchLogo();
-  }, [team.id]);
+  }, [team.id, team.name]);
 
   return (
     <motion.div
@@ -172,15 +179,24 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
-              <img 
-                src={logoUrl || "/placeholder.svg"} 
-                alt={`${team.name} logo`} 
-                className="w-10 h-10 object-contain"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/placeholder.svg";
-                }}
-              />
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={`${team.name} logo`} 
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    console.log(`Error loading logo for ${team.name} in card`);
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
+                />
+              ) : (
+                <img 
+                  src="/placeholder.svg" 
+                  alt="Placeholder logo" 
+                  className="w-10 h-10 object-contain p-2"
+                />
+              )}
             </div>
             <div>
               <CardTitle className="text-xl">{team.name}</CardTitle>

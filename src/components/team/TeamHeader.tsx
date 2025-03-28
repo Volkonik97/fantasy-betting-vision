@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
@@ -15,31 +14,50 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
   useEffect(() => {
     const fetchLogo = async () => {
       if (team?.id) {
+        console.log(`Fetching logo for team ${team.id} (${team.name})`);
+        
+        // Special handling for Team Valiant
+        if (team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2") {
+          console.log("Team Valiant detected in TeamHeader");
+        }
+        
         const url = await getTeamLogoUrl(team.id);
         if (url) {
+          console.log(`Logo URL found for ${team.name}: ${url}`);
           setLogoUrl(url);
+        } else {
+          console.log(`No logo URL found for ${team.name}`);
         }
       }
     };
     
     fetchLogo();
-  }, [team?.id]);
+  }, [team?.id, team?.name]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-          <img 
-            src={logoUrl || "/placeholder.svg"} 
-            alt={`${team?.name} logo`} 
-            className="w-16 h-16 object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = "/placeholder.svg";
-              // Apply some styling to center the placeholder
-              target.classList.add("p-2");
-            }}
-          />
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={`${team?.name} logo`} 
+              className="w-16 h-16 object-contain"
+              onError={(e) => {
+                console.log(`Error loading logo for ${team?.name}`, e);
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.svg";
+                // Apply some styling to center the placeholder
+                target.classList.add("p-2");
+              }}
+            />
+          ) : (
+            <img 
+              src="/placeholder.svg" 
+              alt="Placeholder logo" 
+              className="w-16 h-16 object-contain p-2"
+            />
+          )}
         </div>
         
         <div>
