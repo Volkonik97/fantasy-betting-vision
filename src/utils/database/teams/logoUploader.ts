@@ -75,3 +75,52 @@ export const getTeamLogoUrl = (teamId: string): string | null => {
   
   return null;
 };
+
+/**
+ * Find a team by its name (case-insensitive)
+ * @param teams List of all teams
+ * @param filename Filename (assumed to be team name)
+ * @returns Team ID if found, null otherwise
+ */
+export const findTeamByName = (teams: { id: string, name: string }[], filename: string): string | null => {
+  // Normalize the filename and remove extension
+  const normalizedName = filename.split('.')[0].toLowerCase().trim();
+  
+  // First, try exact match with team name
+  const exactMatch = teams.find(team => 
+    team.name.toLowerCase() === normalizedName
+  );
+  
+  if (exactMatch) return exactMatch.id;
+  
+  // If no exact match, try finding partial matches
+  // This handles cases where filename might be "T1" but team name is "T1 Esports"
+  const partialMatches = teams.filter(team => {
+    const teamName = team.name.toLowerCase();
+    return (
+      teamName.includes(normalizedName) || 
+      normalizedName.includes(teamName)
+    );
+  });
+  
+  if (partialMatches.length === 1) {
+    // If we have exactly one partial match, use it
+    return partialMatches[0].id;
+  } else if (partialMatches.length > 1) {
+    // Multiple matches, use the closest one by length
+    // (assumes shorter differences are more likely to be correct)
+    partialMatches.sort((a, b) => {
+      const diffA = Math.abs(a.name.length - normalizedName.length);
+      const diffB = Math.abs(b.name.length - normalizedName.length);
+      return diffA - diffB;
+    });
+    return partialMatches[0].id;
+  }
+  
+  // Try to match by ID as a fallback
+  const idMatch = teams.find(team => 
+    team.id.toLowerCase() === normalizedName
+  );
+  
+  return idMatch ? idMatch.id : null;
+};

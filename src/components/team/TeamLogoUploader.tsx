@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
-import { uploadTeamLogo } from "@/utils/database/teams/logoUploader";
+import { uploadTeamLogo, findTeamByName } from "@/utils/database/teams/logoUploader";
 import { Team } from "@/utils/models/types";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -41,27 +41,28 @@ const TeamLogoUploader = ({ teams, onComplete }: TeamLogoUploaderProps) => {
     // Process files one by one
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      const fileName = file.name.split('.')[0]; // Use filename without extension as team ID
+      const fileName = file.name.split('.')[0]; // Use filename without extension
       
-      // Find the team with this ID
-      const team = teams.find(t => t.id.toLowerCase() === fileName.toLowerCase());
+      // Find team by name or ID
+      const teamId = findTeamByName(teams, file.name);
+      const team = teams.find(t => t.id === teamId);
       
       if (team) {
         try {
           const logoUrl = await uploadTeamLogo(team.id, file);
           if (logoUrl) {
-            successfulUploads.push(team.name);
+            successfulUploads.push(`${team.name} (${fileName})`);
             console.log(`Uploaded logo for ${team.name} (${team.id}): ${logoUrl}`);
           } else {
-            failedUploads.push(team.name);
+            failedUploads.push(`${fileName}`);
             console.error(`Failed to upload logo for ${team.name} (${team.id})`);
           }
         } catch (error) {
-          failedUploads.push(team.name);
+          failedUploads.push(`${fileName}`);
           console.error(`Error uploading logo for ${team.name} (${team.id}):`, error);
         }
       } else {
-        console.warn(`No team found with ID matching filename: ${fileName}`);
+        console.warn(`No team found matching filename: ${fileName}`);
         failedUploads.push(fileName);
       }
       
@@ -99,7 +100,7 @@ const TeamLogoUploader = ({ teams, onComplete }: TeamLogoUploaderProps) => {
         <h3 className="text-lg font-medium mb-2">Télécharger des logos d'équipe</h3>
         <p className="text-sm text-gray-500 mb-4">
           Sélectionnez les fichiers image pour les logos d'équipe. 
-          Nommez les fichiers avec l'ID de l'équipe correspondante (ex: t1.png, geng.png).
+          Les noms des fichiers seront utilisés pour trouver les équipes correspondantes.
         </p>
         
         <div className="flex items-center gap-4">
@@ -153,7 +154,7 @@ const TeamLogoUploader = ({ teams, onComplete }: TeamLogoUploaderProps) => {
           <AlertTitle>Erreurs</AlertTitle>
           <AlertDescription>
             Impossible de télécharger {results.failed.length} logos. 
-            Vérifiez que les noms de fichiers correspondent aux ID d'équipe.
+            Vérifiez que les noms de fichiers correspondent aux noms ou ID d'équipe.
           </AlertDescription>
         </Alert>
       )}
