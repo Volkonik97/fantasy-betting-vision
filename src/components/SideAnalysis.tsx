@@ -52,14 +52,12 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
-  console.log("First Objective Data:", firstObjectiveData);
+  console.log("First Objective Data (rebuilt):", firstObjectiveData);
   
   // Check if timeline stats exist and are not null
   const hasTimeline = statistics.timelineStats && 
     statistics.timelineStats !== null &&
     Object.keys(statistics.timelineStats).length > 0;
-    
-  console.log("Has timeline data:", hasTimeline, statistics.timelineStats);
   
   return (
     <div className="space-y-6">

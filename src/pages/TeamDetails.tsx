@@ -14,7 +14,6 @@ import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import SideAnalysis from "@/components/SideAnalysis";
-import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -70,7 +69,6 @@ const TeamDetails = () => {
           
           const timeline = await getTeamTimelineStats(id);
           setTimelineStats(timeline);
-          console.log("Timeline statistics loaded:", timeline);
         } catch (statsError) {
           console.error("Erreur lors du chargement des statistiques:", statsError);
           // Continue without statistics
@@ -134,12 +132,6 @@ const TeamDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
             <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
-            
-            {/* Ajout du composant TeamStatistics qui utilise les données de timeline */}
-            {timelineStats && (
-              <TeamStatistics team={team} timelineStats={timelineStats} />
-            )}
-            
             <TeamRecentMatches team={team} matches={teamMatches} />
           </div>
           
