@@ -14,9 +14,19 @@ const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [isLoading, setIsLoading] = useState(true);
   const [regions, setRegions] = useState<string[]>(["All"]);
   const [showLogoUploader, setShowLogoUploader] = useState(false);
+  
+  // Region categories like in the Players page
+  const regionCategories = {
+    "All": ["All"],
+    "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
+    "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
+  };
   
   const loadTeams = async () => {
     try {
@@ -45,10 +55,21 @@ const Teams = () => {
     loadTeams();
   }, []);
   
-  const filteredTeams = teams.filter(team => 
-    (selectedRegion === "All" || team.region === selectedRegion) &&
-    team.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTeams = teams.filter(team => {
+    if (selectedCategory === "All") {
+      return team.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    
+    if (selectedRegion === "All") {
+      // Check if team's region is in the selected category
+      return regionCategories[selectedCategory].some(region => 
+        region === "All" || team.region === region
+      ) && team.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }
+    
+    return team.region === selectedRegion && 
+      team.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
@@ -89,6 +110,9 @@ const Teams = () => {
           regions={regions}
           selectedRegion={selectedRegion}
           setSelectedRegion={setSelectedRegion}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          regionCategories={regionCategories}
         />
         
         <TeamsList teams={filteredTeams} isLoading={isLoading} />
