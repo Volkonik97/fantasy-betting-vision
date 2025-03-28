@@ -58,13 +58,13 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
   const teamName = player.teamName || player.team;
 
   return (
-    <Link to={`/players/${player.id}`}>
+    <div className="h-full">
       <motion.div 
-        className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden hover:shadow-md transition-shadow duration-300"
+        className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden hover:shadow-md transition-shadow duration-300 h-full flex flex-col"
         whileHover={{ y: -5 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0">
           <img 
             src={player.image} 
             alt={player.name} 
@@ -77,8 +77,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
         
-        <div className="p-4 -mt-5 relative">
-          <div className="flex justify-between items-start">
+        <div className="p-4 -mt-5 relative flex flex-col flex-grow">
+          <div className="flex justify-between items-start mb-3">
             <div>
               <h3 className="font-medium text-lg">{player.name}</h3>
               <span className="text-sm text-gray-500 block">
@@ -91,20 +91,20 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </span>
           </div>
           
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="text-center p-2 bg-gray-50 rounded-md">
+          <div className="grid grid-cols-3 gap-2 mt-auto">
+            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
               <span className="text-xs text-gray-500 block mb-1">KDA</span>
-              <span className="text-lg font-semibold">{formattedKDA}</span>
+              <span className="font-semibold">{formattedKDA}</span>
             </div>
             
-            <div className="text-center p-2 bg-gray-50 rounded-md">
+            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
               <span className="text-xs text-gray-500 block mb-1">CS/Min</span>
-              <span className="text-lg font-semibold">{formattedCsPerMin}</span>
+              <span className="font-semibold">{formattedCsPerMin}</span>
             </div>
             
-            <div className="text-center p-2 bg-gray-50 rounded-md">
-              <span className="text-xs text-gray-500 block mb-1">DMG Share</span>
-              <span className="text-lg font-semibold">{formattedDamageShare}%</span>
+            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
+              <span className="text-xs text-gray-500 block mb-1">DMG</span>
+              <span className="font-semibold">{formattedDamageShare}%</span>
             </div>
           </div>
           
@@ -132,7 +132,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           </div>
         </div>
       </motion.div>
-    </Link>
+    </div>
   );
 };
 

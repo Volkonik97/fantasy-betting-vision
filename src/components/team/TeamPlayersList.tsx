@@ -32,7 +32,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
               <Link 
                 to={`/players/${player.id}`} 
                 key={player.id}
-                className="transition-transform hover:scale-105"
+                className="h-full block"
               >
                 <PlayerCard player={enrichedPlayer} />
               </Link>
