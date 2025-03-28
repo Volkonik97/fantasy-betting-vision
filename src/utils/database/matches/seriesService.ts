@@ -185,13 +185,24 @@ export const getSeriesScoreUpToGame = async (
 export const getGameNumberFromId = (matchId: string): number => {
   if (!isSeriesMatch(matchId)) return 1;
   
-  const gameIdPart = matchId.split('_').pop();
+  const parts = matchId.split('_');
+  const gameIdPart = parts[parts.length - 1];
   
   if (!gameIdPart) return 1;
   
   // Try to parse the game number, default to 1 if not a valid number
   const gameNumber = parseInt(gameIdPart, 10);
-  return isNaN(gameNumber) ? 1 : gameNumber;
+  
+  // Make sure the game number is reasonable (between 1 and 7)
+  // Games in a series are typically numbered 1, 2, 3, etc.
+  if (isNaN(gameNumber) || gameNumber < 1 || gameNumber > 7) {
+    // If the parsed value is unreasonable, try to determine the game number
+    // by position in the series sequence
+    console.log(`Invalid game number ${gameNumber} extracted from ${matchId}, using position-based approach`);
+    return (parts.length > 1) ? parts.length : 1;
+  }
+  
+  return gameNumber;
 };
 
 /**
