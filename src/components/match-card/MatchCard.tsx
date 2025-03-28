@@ -4,7 +4,7 @@ import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
-import { isSeriesMatch, isStandardSeries } from "@/utils/database/matchesService";
+import { isSeriesMatch, isStandardSeries, getBaseMatchId } from "@/utils/database/matchesService";
 
 import MatchCardHeader from "./MatchCardHeader";
 import MatchTeams from "./MatchTeams";
@@ -62,13 +62,19 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
       
       if (isMatchInSeries && match.status === "Completed") {
         try {
+          const baseId = getBaseMatchId(match.id);
+          console.log(`Checking series status for match ${match.id} with baseId ${baseId}`);
+          
           const validSeries = await isStandardSeries(match.id);
+          console.log(`Match ${match.id} is${validSeries ? '' : ' not'} a valid series`);
+          
           setIsSeries(validSeries);
         } catch (error) {
           console.error("Error checking series status:", error);
           setIsSeries(false);
         }
       } else {
+        console.log(`Match ${match.id} is${isMatchInSeries ? '' : ' not'} part of a series. Status: ${match.status}`);
         setIsSeries(false);
       }
     };
@@ -76,6 +82,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
     checkIfSeries();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo, match.id, match.status]);
+  
+  // Log for debugging
+  console.log(`Match ${match.id} - Is series: ${isSeries}`);
   
   // Ensure scores are properly extracted and treated as numbers
   const blueScore = match.result?.score && match.result.score.length > 0 
@@ -85,6 +94,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const redScore = match.result?.score && match.result.score.length > 1 
     ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(String(match.result.score[1])) || 0) 
     : 0;
+    
+  console.log(`Match ${match.id} - Final score calculation: Blue ${blueScore}, Red ${redScore}`);
   
   return (
     <div 

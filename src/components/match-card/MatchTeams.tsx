@@ -77,10 +77,29 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
     
     fetchSeriesScores();
   }, [matchId, teamBlue.id, teamRed.id, seriesAggregation, status]);
+
+  // Log scores for debugging
+  console.log(`Match ${matchId} - Original scores - Blue: ${blueScore}, Red: ${redScore}`);
+  console.log(`Match ${matchId} - Result:`, result);
+  console.log(`Match ${matchId} - Aggregated scores:`, aggregatedScores);
   
-  // Use aggregated scores if available and valid, otherwise use individual match scores
-  const displayBlueScore = (aggregatedScores && isValidSeries) ? aggregatedScores.blue : blueScore;
-  const displayRedScore = (aggregatedScores && isValidSeries) ? aggregatedScores.red : redScore;
+  // Determine which scores to display
+  let displayBlueScore = blueScore;
+  let displayRedScore = redScore;
+  
+  // If this is a completed match, use the result scores if available
+  if (status === "Completed" && result && result.score) {
+    displayBlueScore = result.score[0];
+    displayRedScore = result.score[1];
+    console.log(`Match ${matchId} - Using result scores: ${displayBlueScore}:${displayRedScore}`);
+  }
+  
+  // If this is a valid series with aggregated scores, use those instead
+  if (aggregatedScores && isValidSeries) {
+    displayBlueScore = aggregatedScores.blue;
+    displayRedScore = aggregatedScores.red;
+    console.log(`Match ${matchId} - Using series scores: ${displayBlueScore}:${displayRedScore}`);
+  }
   
   return (
     <div className="flex items-center justify-between">

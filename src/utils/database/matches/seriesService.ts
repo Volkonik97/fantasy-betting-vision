@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -65,7 +64,10 @@ export const getSeriesScore = async (
 
     // If we only want the count, return the number of matches
     if (countOnly) {
-      return seriesMatches.length;
+      // For Bo3, Bo5, Bo7 determination based on match count
+      if (seriesMatches.length <= 3) return 3;
+      if (seriesMatches.length <= 5) return 5;
+      return 7;
     }
 
     // Otherwise, calculate the series score
@@ -73,13 +75,20 @@ export const getSeriesScore = async (
     let redWins = 0;
 
     seriesMatches.forEach(match => {
-      // Log each match in the series to debug
-      console.log(`Match in series: ${match.id}, winner: ${match.winner_team_id}, blueId: ${teamBlueId}, redId: ${teamRedId}`);
+      if (!match.winner_team_id) {
+        console.log(`Match ${match.id} has no winner_team_id`);
+        return;
+      }
+
+      // Debug: Log individual match scores
+      console.log(`Match ${match.id} - score_blue: ${match.score_blue}, score_red: ${match.score_red}, winner: ${match.winner_team_id}`);
       
       if (match.winner_team_id === teamBlueId) {
         blueWins++;
       } else if (match.winner_team_id === teamRedId) {
         redWins++;
+      } else {
+        console.log(`Winner team ID ${match.winner_team_id} doesn't match either blue (${teamBlueId}) or red (${teamRedId})`);
       }
     });
 

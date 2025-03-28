@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Team, Match } from '../../models/types';
 import { Json } from '@/integrations/supabase/types';
@@ -173,16 +172,34 @@ const formatMatch = (match: any, teamsMap: Map<string, any>): Match | null => {
  * Create match result object
  */
 const createMatchResult = (match: any) => {
-  // Fix: Ensure we always have a tuple with exactly two numbers
-  // Default to [0, 0] if we can't parse the scores correctly
-  const scoreBlue = typeof match.score_blue === 'number' ? match.score_blue : 
-                   typeof match.score_blue === 'string' ? parseInt(match.score_blue) : 0;
-                   
-  const scoreRed = typeof match.score_red === 'number' ? match.score_red : 
-                  typeof match.score_red === 'string' ? parseInt(match.score_red) : 0;
+  // Handle score extraction more carefully to ensure we always get numbers
+  let scoreBlue = 0;
+  let scoreRed = 0;
+  
+  // First try to use score_blue/score_red fields (preferred)
+  if (match.score_blue !== undefined && match.score_blue !== null) {
+    scoreBlue = typeof match.score_blue === 'number' ? match.score_blue : 
+               typeof match.score_blue === 'string' ? parseInt(match.score_blue) : 0;
+  }
+  
+  if (match.score_red !== undefined && match.score_red !== null) {
+    scoreRed = typeof match.score_red === 'number' ? match.score_red : 
+               typeof match.score_red === 'string' ? parseInt(match.score_red) : 0;
+  }
+  
+  // If specific scores aren't available but there's a winner, set 1-0 score
+  if ((scoreBlue === 0 && scoreRed === 0) && match.winner_team_id) {
+    if (match.winner_team_id === match.team_blue_id) {
+      scoreBlue = 1;
+    } else if (match.winner_team_id === match.team_red_id) {
+      scoreRed = 1;
+    }
+  }
 
   // Create a fixed-length array with exactly two elements
   const score: [number, number] = [scoreBlue, scoreRed];
+  
+  console.log(`Match ${match.id} result - Winner: ${match.winner_team_id}, Score: ${scoreBlue}:${scoreRed}`);
   
   return {
     winner: match.winner_team_id,

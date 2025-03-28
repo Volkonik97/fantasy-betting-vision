@@ -33,9 +33,11 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           
           // Get the game number
           const gameNumber = getGameNumberFromId(matchId);
+          console.log(`Game number for match ${matchId} is ${gameNumber}`);
           
           // Get the series length
           const seriesResult = await getSeriesScore(baseMatchId, '', '', true);
+          console.log(`Series length for ${baseMatchId} is ${seriesResult}`);
           
           // Check if the series length is valid and reasonable (max Bo7)
           if (typeof seriesResult === 'number' && seriesResult > 1 && seriesResult <= 7) {
