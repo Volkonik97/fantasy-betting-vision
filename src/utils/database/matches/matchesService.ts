@@ -4,6 +4,7 @@ import { getMatches, getMatchById, clearMatchCache, getMatchesByTeamId } from '.
 import { saveMatches } from './saveMatches';
 import { getPlayerMatchStats, getPlayerStats, getTeamTimelineStats, getPlayerTimelineStats, clearPlayerStatsCache } from './playerStats';
 import { savePlayerMatchStats } from './savePlayerMatchStats';
+import { getSeriesScore, isSeriesMatch } from './seriesService';
 
 export {
   getMatches,
@@ -16,5 +17,7 @@ export {
   getPlayerTimelineStats,
   clearPlayerStatsCache,
   clearMatchCache,
-  savePlayerMatchStats
+  savePlayerMatchStats,
+  getSeriesScore,
+  isSeriesMatch
 };

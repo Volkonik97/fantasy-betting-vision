@@ -57,7 +57,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
   
-  // Fixed: Ensuring scores are properly extracted and treated as numbers
+  // Fixed: Ensure scores are properly extracted and treated as numbers
   const blueScore = match.result?.score && match.result.score.length > 0 
     ? (typeof match.result.score[0] === 'number' ? match.result.score[0] : parseInt(String(match.result.score[0])) || 0) 
     : 0;
@@ -65,6 +65,10 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const redScore = match.result?.score && match.result.score.length > 1 
     ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(String(match.result.score[1])) || 0) 
     : 0;
+
+  // Determine if we should check for series aggregate score
+  // This is for matches that have the same teams playing multiple games on the same date
+  const isSeries = match.id.includes('_') && match.status === "Completed";
   
   // Log match details for debugging
   console.log(`Match ${match.id} - Score: ${blueScore}:${redScore}`, { 
@@ -73,7 +77,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     redScore,
     winner: match.result?.winner,
     blueId: match.teamBlue.id,
-    redId: match.teamRed.id
+    redId: match.teamRed.id,
+    isSeries
   });
   
   return (
@@ -103,6 +108,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           result={match.result}
           blueScore={blueScore}
           redScore={redScore}
+          matchId={match.id}
+          seriesAggregation={isSeries}
         />
         
         <div className="mt-5 pt-5 border-t border-gray-100">
@@ -125,6 +132,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           <CompletedMatchInfo 
             result={match.result}
             winnerName={match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}
+            matchId={match.id}
+            seriesAggregation={isSeries}
           />
         )}
       </div>
