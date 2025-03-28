@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { uploadTeamLogo } from "@/utils/database/teams/logoUtils";
 import { Team } from "@/utils/models/types";
@@ -12,8 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, AlertCircle, Check } from "lucide-react";
+import { Upload, AlertCircle, Check, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SingleTeamLogoUploaderProps {
   teams: Team[];
@@ -25,7 +26,36 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{success: boolean, message: string} | null>(null);
+  const [previewLogo, setPreviewLogo] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedTeam = teams.find(t => t.id === selectedTeamId);
+
+  React.useEffect(() => {
+    const loadCurrentLogo = async () => {
+      if (!selectedTeamId) {
+        setPreviewLogo(null);
+        return;
+      }
+
+      try {
+        const team = teams.find(t => t.id === selectedTeamId);
+        if (team?.logo) {
+          setPreviewLogo(team.logo);
+          return;
+        }
+
+        const logoUrl = await getTeamLogoUrl(selectedTeamId);
+        setPreviewLogo(logoUrl);
+      } catch (error) {
+        console.error("Error fetching current logo:", error);
+        setPreviewLogo(null);
+      }
+    };
+
+    loadCurrentLogo();
+  }, [selectedTeamId, teams]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,7 +69,6 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
     setResult(null);
     
     try {
-      // Get the selected team
       const team = teams.find(t => t.id === selectedTeamId);
       
       if (!team) {
@@ -53,7 +82,6 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
       
       setProgress(50);
       
-      // Upload the logo
       const logoUrl = await uploadTeamLogo(selectedTeamId, file);
       setProgress(100);
       
@@ -63,6 +91,7 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
           message: `Logo téléchargé avec succès pour ${team.name}`
         });
         toast.success(`Logo téléchargé avec succès pour ${team.name}`);
+        setPreviewLogo(logoUrl);
         if (onComplete) onComplete();
       } else {
         setResult({
@@ -94,6 +123,22 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
     }
   };
 
+  const handleRefreshLogo = async () => {
+    if (!selectedTeamId) return;
+
+    setIsRefreshing(true);
+    try {
+      const logoUrl = await getTeamLogoUrl(selectedTeamId);
+      setPreviewLogo(logoUrl);
+      toast.success("Aperçu du logo actualisé");
+    } catch (error) {
+      console.error("Error refreshing logo:", error);
+      toast.error("Erreur lors de l'actualisation du logo");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <div className="space-y-4 border-t pt-4 mt-4">
       <h3 className="text-lg font-medium mb-2">Télécharger un logo pour une équipe spécifique</h3>
@@ -101,7 +146,7 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
         Sélectionnez une équipe dans la liste et téléchargez son logo
       </p>
       
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="w-full sm:w-1/2">
           <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
             <SelectTrigger>
@@ -118,6 +163,45 @@ const SingleTeamLogoUploader: React.FC<SingleTeamLogoUploaderProps> = ({ teams, 
             </SelectContent>
           </Select>
         </div>
+
+        {selectedTeam && (
+          <div className="flex flex-col items-center bg-gray-50 p-4 rounded-lg">
+            <p className="text-sm font-medium mb-2">Logo actuel</p>
+            <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center mb-2">
+              {isRefreshing ? (
+                <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
+              ) : previewLogo ? (
+                <Avatar className="w-14 h-14">
+                  <AvatarImage 
+                    src={previewLogo} 
+                    alt={`${selectedTeam.name} logo`}
+                    className="object-contain"
+                    onError={() => setPreviewLogo(null)}
+                  />
+                  <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
+                    {selectedTeam.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-14 h-14">
+                  <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
+                    {selectedTeam.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefreshLogo} 
+              disabled={isRefreshing}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+              Actualiser
+            </Button>
+          </div>
+        )}
         
         <div className="flex items-center gap-4">
           <Button 

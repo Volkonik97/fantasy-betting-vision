@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getTeamLogoUrl, TEAM_VALIANT_ID } from "@/utils/database/teams/logoUtils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 
 interface TeamHeaderProps {
   team: Team;
@@ -10,59 +12,71 @@ interface TeamHeaderProps {
 
 const TeamHeader = ({ team }: TeamHeaderProps) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team?.logo || null);
+  const [logoLoading, setLogoLoading] = useState(true);
+  const [logoError, setLogoError] = useState(false);
   
   useEffect(() => {
     const fetchLogo = async () => {
-      if (team?.id) {
-        console.log(`Fetching logo for team ${team.id} (${team.name})`);
-        
-        // Special handling for Team Valiant
-        const isTeamValiant = team.id === TEAM_VALIANT_ID || 
-                             team.name.toLowerCase().includes("valiant");
-                             
-        if (isTeamValiant) {
-          console.log("Team Valiant detected in TeamHeader - using special handling");
-          // Use hardcoded path for Team Valiant
-          setLogoUrl("public/lovable-uploads/4d612b58-6777-485c-8fd7-6c23892150e7.png");
+      if (!team?.id) return;
+
+      setLogoLoading(true);
+      setLogoError(false);
+      
+      try {
+        // First try to use the logo directly from the team object
+        if (team.logo && !team.logo.includes("undefined")) {
+          setLogoUrl(team.logo);
+          setLogoLoading(false);
           return;
         }
         
+        // If no direct logo, try to fetch from storage
         const url = await getTeamLogoUrl(team.id);
-        if (url) {
-          console.log(`Logo URL found for ${team.name}: ${url}`);
+        if (url && !url.includes("undefined")) {
+          console.log(`Logo found for ${team.name} in header: ${url}`);
           setLogoUrl(url);
         } else {
-          console.log(`No logo URL found for ${team.name}`);
+          // Set logo error if no valid URL found
+          setLogoError(true);
         }
+      } catch (error) {
+        console.error(`Error fetching logo for ${team.name}:`, error);
+        setLogoError(true);
+      } finally {
+        setLogoLoading(false);
       }
     };
     
     fetchLogo();
-  }, [team?.id, team?.name]);
+  }, [team?.id, team?.logo, team?.name]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-          {logoUrl ? (
-            <img 
-              src={logoUrl} 
-              alt={`${team?.name} logo`} 
-              className="w-16 h-16 object-contain"
-              onError={(e) => {
-                console.log(`Error loading logo for ${team?.name}`, e);
-                const target = e.target as HTMLImageElement;
-                target.src = "/placeholder.svg";
-                // Apply some styling to center the placeholder
-                target.classList.add("p-2");
-              }}
-            />
+          {logoLoading ? (
+            <div className="animate-pulse w-12 h-12 bg-gray-200 rounded-full"></div>
+          ) : logoUrl && !logoError ? (
+            <Avatar className="w-16 h-16">
+              <AvatarImage
+                src={logoUrl}
+                alt={`${team?.name} logo`}
+                className="object-contain"
+                onError={() => {
+                  console.log(`Error loading logo for ${team?.name} in header`);
+                  setLogoError(true);
+                }}
+              />
+              <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
+                {team?.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
           ) : (
-            <img 
-              src="/placeholder.svg" 
-              alt="Placeholder logo" 
-              className="w-16 h-16 object-contain p-2"
-            />
+            <Avatar className="w-16 h-16">
+              <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
+                {team?.name.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
           )}
         </div>
         

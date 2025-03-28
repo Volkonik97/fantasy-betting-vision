@@ -17,7 +17,37 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       return VALIANT_LOGO_PATH;
     }
     
-    // Standard processing for all other teams
+    // First, try to get the file directly using the team ID and common extensions
+    const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
+    
+    for (const format of formats) {
+      const fileName = `${teamId}.${format}`;
+      
+      // Check if this specific file exists
+      const { data: fileExists, error: checkError } = await supabase
+        .storage
+        .from(BUCKET_NAME)
+        .list('', {
+          search: fileName
+        });
+      
+      if (checkError) {
+        console.error(`Error checking for file ${fileName}:`, checkError);
+        continue;
+      }
+      
+      // If we found the file
+      if (fileExists && fileExists.some(f => f.name === fileName)) {
+        console.log(`Found exact match file for team ${teamId}: ${fileName}`);
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(fileName);
+        
+        return publicUrl;
+      }
+    }
+    
+    // If no exact match found, list all files and find one that starts with the teamId
     const { data: files, error } = await supabase
       .storage
       .from(BUCKET_NAME)
@@ -40,20 +70,11 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       return publicUrl;
     }
     
-    // If no file found, try with common extensions
-    const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
-    for (const format of formats) {
-      const filePath = `${teamId}.${format}`;
-      const { data: { publicUrl } } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-      
-      // This will return a URL regardless of whether the file exists
-      return publicUrl;
-    }
+    console.log(`No logo found for team ${teamId} after checking all methods`);
+    return null;
+    
   } catch (error) {
     console.error("Error getting team logo URL:", error);
+    return null;
   }
-  
-  return null;
 };

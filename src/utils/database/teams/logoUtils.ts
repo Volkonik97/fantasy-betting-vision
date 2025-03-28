@@ -3,15 +3,17 @@
 
 // Import from source files directly
 import { findTeamByName } from './teamMatcher';
-import { uploadTeamLogo } from './logoUploader';
-import { getTeamLogoUrl } from './logoRetriever';
+import { uploadTeamLogo as uploadLogo } from './logoUploader';
+import { getTeamLogoUrl as getLogo } from './logoRetriever';
 import { TEAM_VALIANT_ID, VALIANT_LOGO_PATH, BUCKET_NAME } from './constants';
 
-// Re-export all logo-related functions and constants
+// Re-export to avoid circular dependencies
+export const uploadTeamLogo = uploadLogo;
+export const getTeamLogoUrl = getLogo;
+
+// Re-export all other logo-related functions and constants
 export {
   findTeamByName,
-  uploadTeamLogo,
-  getTeamLogoUrl,
   TEAM_VALIANT_ID,
   VALIANT_LOGO_PATH,
   BUCKET_NAME
