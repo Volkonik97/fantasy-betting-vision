@@ -2,7 +2,6 @@
 import React from "react";
 import { Player } from "@/utils/models/types";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
@@ -91,20 +90,21 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </span>
           </div>
           
+          {/* Stats section with fixed heights and better alignment */}
           <div className="grid grid-cols-3 gap-2 mt-auto">
-            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
+            <div className="text-center p-2 bg-gray-50 rounded-md h-[60px] flex flex-col justify-center">
               <span className="text-xs text-gray-500 block mb-1">KDA</span>
-              <span className="font-semibold">{formattedKDA}</span>
+              <span className="font-semibold text-base">{formattedKDA}</span>
             </div>
             
-            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
+            <div className="text-center p-2 bg-gray-50 rounded-md h-[60px] flex flex-col justify-center">
               <span className="text-xs text-gray-500 block mb-1">CS/Min</span>
-              <span className="font-semibold">{formattedCsPerMin}</span>
+              <span className="font-semibold text-base">{formattedCsPerMin}</span>
             </div>
             
-            <div className="text-center p-2 bg-gray-50 rounded-md flex flex-col justify-center">
+            <div className="text-center p-2 bg-gray-50 rounded-md h-[60px] flex flex-col justify-center">
               <span className="text-xs text-gray-500 block mb-1">DMG</span>
-              <span className="font-semibold">{formattedDamageShare}%</span>
+              <span className="font-semibold text-base">{formattedDamageShare}%</span>
             </div>
           </div>
           
