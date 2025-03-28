@@ -29,11 +29,13 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
       if (seriesAggregation) {
         try {
           const baseMatchId = matchId.split('_').slice(0, -1).join('_');
-          const matchCount = await getSeriesScore(baseMatchId, '', '', true);
+          const seriesResult = await getSeriesScore(baseMatchId, '', '', true);
           
-          // Check if matchCount is a number before comparing
-          if (typeof matchCount === 'number' && matchCount > 1) {
-            setSeriesInfo(`Match ${matchCount} of the series`);
+          // Check if seriesResult is a number (match count) before comparing
+          if (typeof seriesResult === 'number' && seriesResult > 1) {
+            // Get the game number from the match ID
+            const gameNumber = matchId.split('_').pop();
+            setSeriesInfo(`Game ${gameNumber} of ${seriesResult} in the series`);
           }
         } catch (error) {
           console.error("Error getting series info:", error);

@@ -4,6 +4,7 @@ import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { isSeriesMatch } from "@/utils/database/matchesService";
 
 import MatchCardHeader from "./MatchCardHeader";
 import MatchTeams from "./MatchTeams";
@@ -57,7 +58,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
   
-  // Fixed: Ensure scores are properly extracted and treated as numbers
+  // Ensure scores are properly extracted and treated as numbers
   const blueScore = match.result?.score && match.result.score.length > 0 
     ? (typeof match.result.score[0] === 'number' ? match.result.score[0] : parseInt(String(match.result.score[0])) || 0) 
     : 0;
@@ -67,19 +68,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     : 0;
 
   // Determine if we should check for series aggregate score
-  // This is for matches that have the same teams playing multiple games on the same date
-  const isSeries = match.id.includes('_') && match.status === "Completed";
-  
-  // Log match details for debugging
-  console.log(`Match ${match.id} - Score: ${blueScore}:${redScore}`, { 
-    rawScore: match.result?.score,
-    blueScore,
-    redScore,
-    winner: match.result?.winner,
-    blueId: match.teamBlue.id,
-    redId: match.teamRed.id,
-    isSeries
-  });
+  const isSeries = isSeriesMatch(match.id) && match.status === "Completed";
   
   return (
     <div 

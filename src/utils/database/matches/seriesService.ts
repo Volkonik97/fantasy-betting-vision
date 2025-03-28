@@ -33,7 +33,7 @@ export const getSeriesScore = async (
 
     if (error) {
       console.error("Error fetching series matches:", error);
-      return null;
+      return countOnly ? 0 : { blue: 0, red: 0 };
     }
 
     if (!seriesMatches || seriesMatches.length === 0) {
@@ -51,6 +51,9 @@ export const getSeriesScore = async (
     let redWins = 0;
 
     seriesMatches.forEach(match => {
+      // Log each match in the series to debug
+      console.log(`Match in series: ${match.id}, winner: ${match.winner_team_id}, blueId: ${teamBlueId}, redId: ${teamRedId}`);
+      
       if (match.winner_team_id === teamBlueId) {
         blueWins++;
       } else if (match.winner_team_id === teamRedId) {
@@ -58,6 +61,7 @@ export const getSeriesScore = async (
       }
     });
 
+    console.log(`Series score calculated: Blue ${blueWins} - Red ${redWins}`);
     return { blue: blueWins, red: redWins };
   } catch (error) {
     console.error("Error calculating series score:", error);

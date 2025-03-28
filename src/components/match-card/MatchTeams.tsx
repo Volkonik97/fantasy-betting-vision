@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import TeamLogo from "./TeamLogo";
 import { Team } from "@/utils/models/types";
-import { getSeriesScore } from "@/utils/database/matchesService";
+import { getSeriesScore, isSeriesMatch } from "@/utils/database/matchesService";
 
 interface MatchTeamsProps {
   teamBlue: Team;
@@ -56,8 +56,8 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
           
           // Check if scores is an object with blue/red properties before setting state
           if (scores !== null && typeof scores === 'object' && 'blue' in scores && 'red' in scores) {
+            console.log(`Setting aggregated scores for match ${matchId}:`, scores);
             setAggregatedScores(scores);
-            console.log(`Series scores for ${baseMatchId}:`, scores);
           }
         } catch (error) {
           console.error("Error fetching series scores:", error);
@@ -71,16 +71,6 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   // Use aggregated scores if available, otherwise use individual match scores
   const displayBlueScore = aggregatedScores ? aggregatedScores.blue : blueScore;
   const displayRedScore = aggregatedScores ? aggregatedScores.red : redScore;
-  
-  // Debug the actual score values
-  console.log(`MatchTeams - Match ${matchId} - ${teamBlue.name} vs ${teamRed.name} scores:`, { 
-    blueScore, 
-    redScore,
-    displayBlueScore,
-    displayRedScore,
-    aggregatedScores,
-    result 
-  });
   
   return (
     <div className="flex items-center justify-between">
