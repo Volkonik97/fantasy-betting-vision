@@ -80,12 +80,12 @@ const Index = () => {
 
         <section className="mb-16">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Matchs précédents</h2>
+            <h2 className="text-2xl font-bold">Recent Matches</h2>
             <Link 
               to="/matches" 
               className="text-lol-blue hover:text-blue-700 font-medium flex items-center gap-1"
             >
-              <span>Voir tous</span>
+              <span>View All</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
