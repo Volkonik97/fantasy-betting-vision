@@ -56,11 +56,6 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
   // Display the team name directly from the player object if available
   const teamName = player.teamName || player.team;
 
-  // Function to truncate champion names
-  const truncateChampionName = (name: string, maxLength: number = 8) => {
-    return name.length > maxLength ? `${name.substring(0, maxLength)}...` : name;
-  };
-
   return (
     <div className="h-full">
       <motion.div 
@@ -113,25 +108,25 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
           </div>
           
-          {/* Champion pool section with consistent padding and alignment */}
+          {/* Completely redesigned champion pool section */}
           <div className="mt-auto">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
-            <div className="flex flex-wrap gap-1">
+            <div className="grid grid-cols-3 gap-1">
               {championPoolArray.length > 0 ? (
                 championPoolArray.slice(0, 3).map((champion, index) => (
                   <span 
                     key={index}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[70px]"
+                    className="px-1.5 py-1 bg-blue-50 text-blue-700 text-xs rounded text-center truncate"
                     title={champion}
                   >
-                    {truncateChampionName(champion, 6)}
+                    {champion.substring(0, 5)}
                   </span>
                 ))
               ) : (
                 <span className="text-xs text-gray-400">Aucun champion</span>
               )}
               {championPoolArray.length > 3 && (
-                <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded-md">
+                <span className="px-1 py-1 bg-gray-50 text-gray-500 text-xs rounded text-center">
                   +{championPoolArray.length - 3}
                 </span>
               )}
