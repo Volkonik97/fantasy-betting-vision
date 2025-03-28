@@ -50,26 +50,44 @@ const TeamDetails = () => {
         // Clear match cache to ensure fresh data
         await clearMatchCache();
         
-        // Load matches from database
+        // Load all matches from database
         const allMatches = await getMatches();
-        console.log(`Loaded ${allMatches.length} total matches from database`);
+        console.log(`Chargement de ${allMatches.length} matchs totaux depuis la base de données`);
         
-        // Create a new array with matches for this team
-        const teamMatchesArray = allMatches.filter(match => 
-          match.teamBlue.id === id || match.teamRed.id === id
-        );
+        // Filter matches for this team, ensuring we strictly check for team ID matches
+        const teamMatchesArray = allMatches.filter(match => {
+          const matchesBlueTeam = match.teamBlue.id === id;
+          const matchesRedTeam = match.teamRed.id === id;
+          
+          if (matchesBlueTeam || matchesRedTeam) {
+            console.log(`Match trouvé pour l'équipe ${foundTeam.name}: ${match.id} (${match.tournament})`);
+            return true;
+          }
+          return false;
+        });
         
-        console.log(`Found ${teamMatchesArray.length} matches for team ${id} (${foundTeam.name})`);
+        console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
         
         if (teamMatchesArray.length === 0 && allMatches.length > 0) {
-          console.warn("No matches found for this team. Debugging team IDs in the match data:");
+          console.warn("Aucun match trouvé pour cette équipe. Débug des IDs d'équipe dans les données de match:");
           allMatches.slice(0, 5).forEach(match => {
-            console.log(`Match ${match.id}: Blue team ID=${match.teamBlue.id}, Red team ID=${match.teamRed.id}`);
+            console.log(`Match ${match.id}: Équipe Bleue ID=${match.teamBlue.id}, Équipe Rouge ID=${match.teamRed.id}`);
           });
-          console.log(`Looking for team ID: ${id}`);
+          console.log(`ID d'équipe recherché: ${id}`);
+          
+          // Additional debug: check if IDs might be case-sensitive or have whitespace issues
+          const potentialMatches = allMatches.filter(match => 
+            match.teamBlue.id.trim().toLowerCase() === id.trim().toLowerCase() || 
+            match.teamRed.id.trim().toLowerCase() === id.trim().toLowerCase()
+          );
+          
+          if (potentialMatches.length > 0) {
+            console.log(`Trouvé ${potentialMatches.length} matchs potentiels avec comparaison insensible à la casse`);
+            setTeamMatches(potentialMatches);
+          }
+        } else {
+          setTeamMatches(teamMatchesArray);
         }
-        
-        setTeamMatches(teamMatchesArray);
         
         // Load side statistics and timeline data
         try {
@@ -79,11 +97,11 @@ const TeamDetails = () => {
           const timeline = await getTeamTimelineStats(id);
           setTimelineStats(timeline);
         } catch (statsError) {
-          console.error("Error loading statistics:", statsError);
+          console.error("Erreur lors du chargement des statistiques:", statsError);
           // Continue without statistics
         }
       } catch (err) {
-        console.error("Error loading team data:", err);
+        console.error("Erreur lors du chargement des données d'équipe:", err);
         setError("Erreur lors du chargement des données d'équipe");
         toast.error("Échec du chargement des détails de l'équipe");
       } finally {
@@ -134,7 +152,7 @@ const TeamDetails = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
-            <TeamPlayersList players={team.players} teamName={team.name} />
+            <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
             <TeamRecentMatches team={team} matches={teamMatches} />
           </div>
           

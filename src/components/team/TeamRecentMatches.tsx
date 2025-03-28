@@ -7,7 +7,7 @@ import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { useEffect, useState } from "react";
 
 interface TeamRecentMatchesProps {
-  team: Team;
+  team: Team | null;
   matches: Match[];
 }
 
@@ -16,7 +16,9 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
   const [isLoadingLogos, setIsLoadingLogos] = useState(true);
 
   useEffect(() => {
-    console.log(`Processing ${matches.length} matches for team ${team.id} (${team.name})`);
+    if (!team) return;
+    
+    console.log(`Traitement de ${matches.length} matchs pour l'équipe ${team.id} (${team.name})`);
     
     const fetchLogos = async () => {
       setIsLoadingLogos(true);
@@ -34,9 +36,20 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
         
         const updatedMatches = await Promise.all(
           sortedMatches.map(async (match) => {
+            // Ensure the match is valid
+            if (!match.teamBlue || !match.teamRed) {
+              console.error(`Match invalide (${match.id}): données d'équipe manquantes`, match);
+              return match;
+            }
+            
             // Determine opponent team
             const isBlue = match.teamBlue.id === team.id;
             const opponent = isBlue ? match.teamRed : match.teamBlue;
+            
+            if (!opponent || !opponent.id) {
+              console.error(`Match ${match.id}: informations d'adversaire invalides`, opponent);
+              return match;
+            }
             
             try {
               const logoUrl = await getTeamLogoUrl(opponent.id);
@@ -50,7 +63,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
                   : { ...match, teamBlue: updatedOpponent };
               }
             } catch (error) {
-              console.error(`Error fetching logo for team ${opponent.id}:`, error);
+              console.error(`Erreur lors de la récupération du logo pour l'équipe ${opponent.id}:`, error);
             }
             
             // Return original match if logo fetch failed
@@ -58,19 +71,19 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
           })
         );
         
-        console.log(`Processed ${updatedMatches.length} matches with logos`);
+        console.log(`Traité ${updatedMatches.length} matchs avec logos`);
         setMatchesWithLogos(updatedMatches);
       } catch (error) {
-        console.error("Error processing matches with logos:", error);
+        console.error("Erreur lors du traitement des matchs avec logos:", error);
       } finally {
         setIsLoadingLogos(false);
       }
     };
     
     fetchLogos();
-  }, [matches, team.id, team.name]);
+  }, [matches, team]);
 
-  if (isLoadingLogos) {
+  if (isLoadingLogos || !team) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -117,14 +130,23 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
               <th className="px-4 py-3 text-left">Date</th>
               <th className="px-4 py-3 text-left">Tournoi</th>
               <th className="px-4 py-3 text-left">Adversaire</th>
+              <th className="px-4 py-3 text-left">Côté</th>
               <th className="px-4 py-3 text-left">Résultat</th>
               <th className="px-4 py-3 text-left">Prédiction</th>
             </tr>
           </thead>
           <tbody>
             {matchesWithLogos.map(match => {
+              // Ensure the match data is complete
+              if (!match.teamBlue || !match.teamRed) {
+                console.error(`Données de match incomplètes pour le match ${match.id}`);
+                return null;
+              }
+              
               const isBlue = match.teamBlue.id === team.id;
               const opponent = isBlue ? match.teamRed : match.teamBlue;
+              const side = isBlue ? "Bleu" : "Rouge";
+              
               const result = match.status === 'Completed' 
                 ? (match.result?.winner === team.id ? 'Victoire' : 'Défaite') 
                 : '-';
@@ -152,6 +174,13 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
                       </Avatar>
                       <span>{opponent.name}</span>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      isBlue ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {side}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`font-medium ${
