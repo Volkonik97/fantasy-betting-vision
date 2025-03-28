@@ -1,10 +1,17 @@
 
-// Export all match-related functions
+// Re-export from the matches directory
 import { getMatches, getMatchById, clearMatchCache, getMatchesByTeamId } from './getMatches';
 import { saveMatches } from './saveMatches';
 import { getPlayerMatchStats, getPlayerStats, getTeamTimelineStats, getPlayerTimelineStats, clearPlayerStatsCache } from './playerStats';
 import { savePlayerMatchStats } from './savePlayerMatchStats';
-import { getSeriesScore, isSeriesMatch } from './seriesService';
+import { 
+  isSeriesMatch, 
+  getSeriesScore, 
+  getGameNumberFromId, 
+  getBaseMatchId, 
+  getSeriesScoreUpToGame, 
+  isStandardSeries 
+} from './series';
 
 export {
   getMatches,
@@ -18,6 +25,11 @@ export {
   clearPlayerStatsCache,
   clearMatchCache,
   savePlayerMatchStats,
+  // Series-related exports
+  isSeriesMatch,
   getSeriesScore,
-  isSeriesMatch
+  getGameNumberFromId,
+  getBaseMatchId,
+  getSeriesScoreUpToGame,
+  isStandardSeries
 };
