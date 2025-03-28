@@ -2,6 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Team, Match } from "@/utils/models/types";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TeamRecentMatchesProps {
   team: Team;
@@ -53,17 +54,16 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
                   <td className="px-4 py-3">{match.tournament}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-                        <img 
+                      <Avatar className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <AvatarImage 
                           src={opponent.logo} 
                           alt={`${opponent.name} logo`} 
                           className="w-4 h-4 object-contain"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/placeholder.svg";
-                          }}
                         />
-                      </div>
+                        <AvatarFallback className="text-xs">
+                          {opponent.name.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <span>{opponent.name}</span>
                     </div>
                   </td>

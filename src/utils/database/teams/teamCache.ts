@@ -55,7 +55,12 @@ export const updateTeamInCache = (team: Team): void => {
   
   const index = teamsCache.findIndex(t => t.id === team.id);
   if (index >= 0) {
-    teamsCache[index] = team;
+    // Make sure to preserve the team name when updating
+    const teamName = teamsCache[index].name;
+    teamsCache[index] = {
+      ...team,
+      name: teamName || team.name
+    };
   } else {
     teamsCache.push(team);
   }
@@ -69,4 +74,28 @@ export const clearTeamsCache = (): void => {
   console.log("Clearing teams cache");
   teamsCache = null;
   lastCacheUpdate = 0;
+};
+
+/**
+ * Get team name from cache by ID
+ */
+export const getTeamNameFromCache = (teamId: string): string | null => {
+  if (!teamsCache) return null;
+  const team = teamsCache.find(t => t.id === teamId);
+  return team ? team.name : null;
+};
+
+/**
+ * Update all players in cache with their team name
+ */
+export const updatePlayersWithTeamName = (teamId: string, teamName: string): void => {
+  if (!teamsCache) return;
+  
+  const team = teamsCache.find(t => t.id === teamId);
+  if (team && team.players) {
+    team.players = team.players.map(player => ({
+      ...player,
+      teamName: teamName
+    }));
+  }
 };
