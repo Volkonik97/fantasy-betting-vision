@@ -57,13 +57,13 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
   
-  // Ensure scores are properly extracted and treated as numbers
+  // Fixed: Ensuring scores are properly extracted and treated as numbers
   const blueScore = match.result?.score && match.result.score.length > 0 
-    ? (typeof match.result.score[0] === 'number' ? match.result.score[0] : parseInt(match.result.score[0].toString()) || 0) 
+    ? (typeof match.result.score[0] === 'number' ? match.result.score[0] : parseInt(String(match.result.score[0])) || 0) 
     : 0;
     
   const redScore = match.result?.score && match.result.score.length > 1 
-    ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(match.result.score[1].toString()) || 0) 
+    ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(String(match.result.score[1])) || 0) 
     : 0;
   
   // Log match details for debugging
