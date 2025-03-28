@@ -16,32 +16,29 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
   const [isLoadingLogos, setIsLoadingLogos] = useState(true);
 
   useEffect(() => {
-    // Log the incoming matches to debug
-    console.log(`Traitement de ${matches.length} matchs pour l'équipe ${team.id} (${team.name})`);
-    
-    // Sort matches by date (most recent first)
-    const sortedMatches = [...matches].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
+    console.log(`Processing ${matches.length} matches for team ${team.id} (${team.name})`);
     
     const fetchLogos = async () => {
       setIsLoadingLogos(true);
       
-      if (sortedMatches.length === 0) {
-        console.log("Aucun match à traiter pour les logos");
+      if (matches.length === 0) {
         setIsLoadingLogos(false);
         return;
       }
       
       try {
+        // Sort matches by date (most recent first)
+        const sortedMatches = [...matches].sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+        
         const updatedMatches = await Promise.all(
           sortedMatches.map(async (match) => {
-            // Determine if the team is on the blue or red side
+            // Determine opponent team
             const isBlue = match.teamBlue.id === team.id;
             const opponent = isBlue ? match.teamRed : match.teamBlue;
             
             try {
-              // Always try to fetch the logo, regardless of whether one already exists
               const logoUrl = await getTeamLogoUrl(opponent.id);
               if (logoUrl) {
                 // Create a new opponent object with the logo
@@ -128,12 +125,10 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
             {matchesWithLogos.map(match => {
               const isBlue = match.teamBlue.id === team.id;
               const opponent = isBlue ? match.teamRed : match.teamBlue;
-              const result = match.result 
-                ? (isBlue 
-                    ? (match.result.winner === team.id ? 'Victoire' : 'Défaite')
-                    : (match.result.winner === team.id ? 'Victoire' : 'Défaite'))
+              const result = match.status === 'Completed' 
+                ? (match.result?.winner === team.id ? 'Victoire' : 'Défaite') 
                 : '-';
-              const predictionAccurate = match.result 
+              const predictionAccurate = match.status === 'Completed' && match.result 
                 ? match.predictedWinner === match.result.winner 
                 : null;
               

@@ -47,64 +47,43 @@ const TeamDetails = () => {
         
         setTeam(foundTeam);
         
-        // Force clear the match cache every time to ensure fresh data
+        // Clear match cache to ensure fresh data
         await clearMatchCache();
         
-        // Load ALL matches from database with fresh data
-        console.log(`Chargement des matchs pour l'équipe ${id} (${foundTeam.name})...`);
+        // Load matches from database
         const allMatches = await getMatches();
-        console.log(`Chargé ${allMatches.length} matchs au total depuis la base de données`);
+        console.log(`Loaded ${allMatches.length} total matches from database`);
         
-        // Assurez-vous que l'ID est correctement utilisé pour la comparaison
-        const teamId = id.trim();
+        // Create a new array with matches for this team
+        const teamMatchesArray = allMatches.filter(match => 
+          match.teamBlue.id === id || match.teamRed.id === id
+        );
         
-        // Filter matches associated with this team - use trim() to ensure no whitespace issues
-        const filteredMatches = allMatches.filter(match => {
-          const blueId = match.teamBlue.id.trim();
-          const redId = match.teamRed.id.trim();
-          const matchFound = blueId === teamId || redId === teamId;
-          
-          if (matchFound) {
-            console.log(`Match trouvé: ${match.id} - ${match.teamBlue.name} vs ${match.teamRed.name}`);
-          }
-          
-          return matchFound;
-        });
+        console.log(`Found ${teamMatchesArray.length} matches for team ${id} (${foundTeam.name})`);
         
-        console.log(`Trouvé ${filteredMatches.length} matchs sur ${allMatches.length} pour l'équipe ${id}`);
-        
-        // Ajout de vérifications détaillées pour le débogage
-        if (filteredMatches.length === 0 && allMatches.length > 0) {
-          console.warn(`Aucun match trouvé pour l'équipe ${id}. Échantillon d'IDs d'équipes dans les matchs disponibles:`);
+        if (teamMatchesArray.length === 0 && allMatches.length > 0) {
+          console.warn("No matches found for this team. Debugging team IDs in the match data:");
           allMatches.slice(0, 5).forEach(match => {
-            console.log(`Match ${match.id}: Blue=${match.teamBlue.id}(${match.teamBlue.name}), Red=${match.teamRed.id}(${match.teamRed.name})`);
+            console.log(`Match ${match.id}: Blue team ID=${match.teamBlue.id}, Red team ID=${match.teamRed.id}`);
           });
+          console.log(`Looking for team ID: ${id}`);
         }
         
-        setTeamMatches(filteredMatches);
+        setTeamMatches(teamMatchesArray);
         
-        // Load side statistics
-        if (foundTeam.id) {
-          try {
-            const stats = await getSideStatistics(foundTeam.id);
-            setSideStats(stats);
-          } catch (statsError) {
-            console.error("Erreur lors du chargement des statistiques côté:", statsError);
-            // Continue without side stats
-          }
+        // Load side statistics and timeline data
+        try {
+          const stats = await getSideStatistics(id);
+          setSideStats(stats);
           
-          // Load timeline statistics
-          try {
-            const timeline = await getTeamTimelineStats(foundTeam.id);
-            console.log("Timeline stats loaded:", timeline);
-            setTimelineStats(timeline);
-          } catch (timelineError) {
-            console.error("Erreur lors du chargement des statistiques timeline:", timelineError);
-            // Continue without timeline stats
-          }
+          const timeline = await getTeamTimelineStats(id);
+          setTimelineStats(timeline);
+        } catch (statsError) {
+          console.error("Error loading statistics:", statsError);
+          // Continue without statistics
         }
       } catch (err) {
-        console.error("Erreur lors du chargement des données d'équipe:", err);
+        console.error("Error loading team data:", err);
         setError("Erreur lors du chargement des données d'équipe");
         toast.error("Échec du chargement des détails de l'équipe");
       } finally {
@@ -160,13 +139,12 @@ const TeamDetails = () => {
           </div>
           
           <div className="space-y-8">
-            {/* Affichage des statistiques par côté avec timeline */}
             {sideStats && (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
                 <SideAnalysis statistics={{
                   ...sideStats,
-                  timelineStats: timelineStats // On utilise les timelineStats ici
+                  timelineStats: timelineStats
                 }} />
               </div>
             )}

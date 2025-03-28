@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Team, Match } from '../../models/types';
 import { Json } from '@/integrations/supabase/types';
 
-// Cache pour les matchs
+// Cache for matches
 let matchesCache: Match[] | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 let lastMatchesCacheUpdate = 0;
 
 // Function to clear cache (used when saving new matches)
@@ -20,7 +20,7 @@ export const clearMatchCache = (): void => {
  */
 export const getMatches = async (): Promise<Match[]> => {
   try {
-    // Vérifier si nous avons un cache récent
+    // Check if we have a recent cache
     const now = Date.now();
     if (matchesCache && (now - lastMatchesCacheUpdate) < CACHE_DURATION) {
       console.log("Using cached matches data");
@@ -34,31 +34,32 @@ export const getMatches = async (): Promise<Match[]> => {
       .select('*');
     
     if (error) {
-      console.error("Erreur lors de la récupération des matchs:", error);
+      console.error("Error retrieving matches:", error);
       return [];
     }
     
-    console.log(`Récupéré ${matches.length} matchs bruts depuis Supabase`);
+    console.log(`Retrieved ${matches.length} raw matches from Supabase`);
     
-    // Fetch teams separately to populate the match data
+    // Fetch teams separately to populate match data
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
       .select('*');
     
     if (teamsError) {
-      console.error("Erreur lors de la récupération des équipes:", teamsError);
+      console.error("Error retrieving teams:", teamsError);
       return [];
     }
     
-    console.log(`Récupéré ${teamsData.length} équipes depuis Supabase`);
+    console.log(`Retrieved ${teamsData.length} teams from Supabase`);
     
     // Convert database format to application format
     const formattedMatches: Match[] = matches.map(match => {
+      // Find the team data for blue and red teams
       const teamBlueData = teamsData.find(team => team.id === match.team_blue_id);
       const teamRedData = teamsData.find(team => team.id === match.team_red_id);
       
       if (!teamBlueData || !teamRedData) {
-        console.error(`Équipes non trouvées pour le match ${match.id}: Blue=${match.team_blue_id}, Red=${match.team_red_id}`);
+        console.error(`Teams not found for match ${match.id}: Blue=${match.team_blue_id}, Red=${match.team_red_id}`);
         return null;
       }
       
@@ -142,8 +143,10 @@ export const getMatches = async (): Promise<Match[]> => {
         formattedMatch.result = {
           winner: match.winner_team_id,
           score: [
-            typeof match.score_blue === 'string' ? parseInt(match.score_blue) : match.score_blue || 0, 
-            typeof match.score_red === 'string' ? parseInt(match.score_red) : match.score_red || 0
+            typeof match.score_blue === 'number' ? match.score_blue : 
+              typeof match.score_blue === 'string' ? parseInt(match.score_blue) : 0, 
+            typeof match.score_red === 'number' ? match.score_red : 
+              typeof match.score_red === 'string' ? parseInt(match.score_red) : 0
           ],
           duration: match.duration,
           mvp: match.mvp,
@@ -156,15 +159,15 @@ export const getMatches = async (): Promise<Match[]> => {
       return formattedMatch;
     }).filter(match => match !== null) as Match[];
     
-    console.log(`Formatté ${formattedMatches.length} matchs valides sur ${matches.length} matchs récupérés`);
+    console.log(`Formatted ${formattedMatches.length} valid matches out of ${matches.length} retrieved matches`);
     
-    // Mettre à jour le cache
+    // Update cache
     matchesCache = formattedMatches;
     lastMatchesCacheUpdate = now;
     
     return formattedMatches;
   } catch (error) {
-    console.error("Erreur lors de la récupération des matchs:", error);
+    console.error("Error retrieving matches:", error);
     return [];
   }
 };
@@ -182,7 +185,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       }
     }
     
-    // Not in cache, need to fetch individually
+    // Not in cache, need to fetch all matches
     const matches = await getMatches();
     return matches.find(match => match.id === matchId) || null;
   } catch (error) {
