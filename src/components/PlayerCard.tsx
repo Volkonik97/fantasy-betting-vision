@@ -96,7 +96,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           </div>
           
           {/* Stats section with fixed height and consistent spacing */}
-          <div className="grid grid-cols-3 gap-2 mb-4 mt-2">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="text-center p-2 bg-gray-50 rounded-md h-16 flex flex-col justify-center">
               <span className="text-xs text-gray-500 mb-1">KDA</span>
               <span className="font-semibold text-sm">{formattedKDA}</span>
@@ -113,18 +113,18 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
           </div>
           
-          {/* Champion pool section with fixed height and truncated names */}
-          <div className="mt-auto pt-2">
+          {/* Champion pool section with consistent padding and alignment */}
+          <div className="mt-auto">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {championPoolArray.length > 0 ? (
                 championPoolArray.slice(0, 3).map((champion, index) => (
                   <span 
                     key={index}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]"
+                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-md whitespace-nowrap overflow-hidden text-ellipsis max-w-[70px]"
                     title={champion}
                   >
-                    {truncateChampionName(champion)}
+                    {truncateChampionName(champion, 6)}
                   </span>
                 ))
               ) : (
