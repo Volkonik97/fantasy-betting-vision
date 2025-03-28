@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
-import { uploadTeamLogo, findTeamByName } from "@/utils/database/teams/logoUploader";
+import { uploadTeamLogo, findTeamByName } from "@/utils/database/teams/logoUtils";
 import { Team } from "@/utils/models/types";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

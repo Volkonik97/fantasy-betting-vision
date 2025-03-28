@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Team } from "@/utils/models/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getTeamLogoUrl } from "@/utils/database/teams/logoUploader";
+import { getTeamLogoUrl, TEAM_VALIANT_ID } from "@/utils/database/teams/logoUtils";
 
 interface TeamCardProps {
   team: Team;
@@ -13,7 +12,6 @@ interface TeamCardProps {
 
 const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
-  const TEAM_VALIANT_ID = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
   
   useEffect(() => {
     const fetchLogo = async () => {

@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getTeamLogoUrl } from "@/utils/database/teams/logoUploader";
+import { getTeamLogoUrl, TEAM_VALIANT_ID } from "@/utils/database/teams/logoUtils";
 
 interface TeamHeaderProps {
   team: Team;
@@ -11,7 +10,6 @@ interface TeamHeaderProps {
 
 const TeamHeader = ({ team }: TeamHeaderProps) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team?.logo || null);
-  const TEAM_VALIANT_ID = "oe:team:71bd93fd1eab2c2f4ba60305ecabce2";
   
   useEffect(() => {
     const fetchLogo = async () => {
