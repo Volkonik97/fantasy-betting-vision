@@ -46,11 +46,16 @@ const TeamDetails = () => {
         
         setTeam(foundTeam);
         
-        // Load matches associated with this team
-        const matches = await getMatches();
-        const filteredMatches = matches.filter(
+        // Load ALL matches from database
+        const allMatches = await getMatches();
+        console.log(`Loaded ${allMatches.length} total matches from database`);
+        
+        // Filter matches associated with this team
+        const filteredMatches = allMatches.filter(
           match => match.teamBlue.id === id || match.teamRed.id === id
         );
+        
+        console.log(`Found ${filteredMatches.length} matches for team ${id}`);
         setTeamMatches(filteredMatches);
         
         // Load side statistics
