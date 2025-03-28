@@ -6,6 +6,7 @@ import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
 interface CompletedMatchInfoProps {
   result: {
     winner: string;
+    score: [number, number];
     duration?: string;
     mvp?: string;
   };
@@ -13,10 +14,12 @@ interface CompletedMatchInfoProps {
 }
 
 const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({ result, winnerName }) => {
+  const formattedDuration = result.duration ? formatSecondsToMinutesSeconds(parseInt(result.duration)) : "??:??";
+  
   return (
     <div className="mt-4 grid grid-cols-1 gap-2">
       <div className="text-sm text-gray-600">
-        <span className="font-medium">{winnerName}</span> won in {result.duration ? formatSecondsToMinutesSeconds(parseInt(result.duration)) : "??:??"}
+        <span className="font-medium">{winnerName}</span> won in {formattedDuration}
       </div>
       {result.mvp && (
         <div className="flex items-center gap-2 text-sm text-gray-600">

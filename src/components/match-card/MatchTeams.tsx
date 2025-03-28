@@ -35,6 +35,9 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   blueScore,
   redScore
 }) => {
+  // Debug the actual score values
+  console.log(`MatchTeams - Match ${teamBlue.name} vs ${teamRed.name} scores:`, { blueScore, redScore, result });
+  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3 flex-1">
@@ -51,13 +54,13 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
       </div>
       
       <div className="w-24 mx-2 flex-shrink-0 flex items-center justify-center">
-        {status === "Completed" && result ? (
+        {status === "Completed" ? (
           <div className="flex items-center justify-center gap-3 text-xl font-semibold">
-            <span className={result.winner === teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
+            <span className={result?.winner === teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
               {blueScore}
             </span>
             <span className="text-gray-300">:</span>
-            <span className={result.winner === teamRed.id ? "text-lol-red" : "text-gray-400"}>
+            <span className={result?.winner === teamRed.id ? "text-lol-red" : "text-gray-400"}>
               {redScore}
             </span>
           </div>
