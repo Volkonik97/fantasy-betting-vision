@@ -76,7 +76,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
         
-        <div className="p-4 -mt-5 relative flex flex-col flex-grow">
+        <div className="p-4 -mt-5 relative flex flex-col h-full">
           <div className="flex justify-between items-start mb-3">
             <div>
               <h3 className="font-medium text-lg">{player.name}</h3>
@@ -90,8 +90,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </span>
           </div>
           
-          {/* Stats section with consistent height and alignment */}
-          <div className="grid grid-cols-3 gap-2 mt-auto mb-4">
+          {/* Stats section with fixed consistent height */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="text-center p-2 bg-gray-50 rounded-md h-16 flex flex-col justify-center">
               <span className="text-xs text-gray-500 mb-1">KDA</span>
               <span className="font-semibold text-sm">{formattedKDA}</span>
@@ -108,6 +108,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
           </div>
           
+          {/* Champion pool section - fixed to always be at bottom with consistent spacing */}
           <div className="mt-auto">
             <span className="text-xs text-gray-500 block mb-2">Champion Pool</span>
             <div className="flex flex-wrap gap-2">
