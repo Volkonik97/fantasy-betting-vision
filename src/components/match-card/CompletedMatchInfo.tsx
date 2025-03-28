@@ -96,7 +96,9 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           {seriesInfo}
           {seriesScore && (
             <span className="ml-2">
-              (Series: {seriesScore.blue}-{seriesScore.red})
+              (Series: <span className={teamBlueId === result.winner ? "text-green-600" : "text-red-500"}>{seriesScore.blue}</span>
+              -
+              <span className={teamRedId === result.winner ? "text-green-600" : "text-red-500"}>{seriesScore.red}</span>)
             </span>
           )}
         </div>
