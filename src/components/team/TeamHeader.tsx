@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
@@ -16,9 +17,12 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
       if (team?.id) {
         console.log(`Fetching logo for team ${team.id} (${team.name})`);
         
-        // Special handling for Team Valiant
-        if (team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2") {
-          console.log("Team Valiant detected in TeamHeader");
+        // Special handling for Team Valiant to ensure we get the correct logo
+        const isTeamValiant = team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2" || 
+                             team.name.toLowerCase().includes("valiant");
+                             
+        if (isTeamValiant) {
+          console.log("Team Valiant detected in TeamHeader - using special handling");
         }
         
         const url = await getTeamLogoUrl(team.id);

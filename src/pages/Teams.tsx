@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -154,8 +155,12 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
       if (team.id) {
         console.log(`Fetching logo for team card: ${team.name} (${team.id})`);
         
-        if (team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2") {
-          console.log("Team Valiant detected in TeamCard");
+        // Special handling for Team Valiant
+        const isTeamValiant = team.id === "oe:team:71bd93fd1eab2c2f4ba60305ecabce2" || 
+                              team.name.toLowerCase().includes("valiant");
+                              
+        if (isTeamValiant) {
+          console.log("Team Valiant detected in TeamCard - using special handling");
         }
         
         const url = await getTeamLogoUrl(team.id);
@@ -188,6 +193,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                     console.log(`Error loading logo for ${team.name} in card`);
                     const target = e.target as HTMLImageElement;
                     target.src = "/placeholder.svg";
+                    target.classList.add("p-2");
                   }}
                 />
               ) : (
