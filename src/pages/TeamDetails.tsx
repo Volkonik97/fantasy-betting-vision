@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Team, Match, SideStatistics } from "@/utils/models/types";
@@ -16,6 +17,7 @@ import SideAnalysis from "@/components/SideAnalysis";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
@@ -82,6 +84,11 @@ const TeamDetails = () => {
     
     loadTeamData();
   }, [id]);
+
+  const handleBackClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/teams');
+  };
   
   if (isLoading) {
     return (
@@ -109,13 +116,14 @@ const TeamDetails = () => {
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <Link
-          to="/teams"
+        <a
+          href="/teams"
+          onClick={handleBackClick}
           className="inline-flex items-center gap-2 text-gray-600 hover:text-lol-blue transition-colors mb-6"
         >
           <ArrowLeft size={16} />
           <span>Retour aux équipes</span>
-        </Link>
+        </a>
         
         <motion.div>
           <TeamHeader team={team} />
