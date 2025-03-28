@@ -305,6 +305,54 @@ export const getMatches = async (): Promise<Match[]> => {
 };
 
 /**
+ * Get all matches for a specific team by ID
+ */
+export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
+  try {
+    console.log(`Récupération des matchs pour l'équipe ID=${teamId}`);
+    
+    // Get all matches
+    const allMatches = await getMatches();
+    
+    // Use multiple approaches to find matches for this team
+    const exactMatches = allMatches.filter(match => {
+      return match.teamBlue.id === teamId || match.teamRed.id === teamId;
+    });
+    
+    // If we found enough matches with exact ID, return them
+    if (exactMatches.length > 0) {
+      console.log(`Trouvé ${exactMatches.length} matchs avec ID exact pour l'équipe ${teamId}`);
+      return exactMatches;
+    }
+    
+    // Try with normalized IDs (lowercase, trimmed)
+    const normalizedId = String(teamId).trim().toLowerCase();
+    const normalizedMatches = allMatches.filter(match => {
+      const normalizedBlueId = String(match.teamBlue.id).trim().toLowerCase();
+      const normalizedRedId = String(match.teamRed.id).trim().toLowerCase();
+      return normalizedBlueId === normalizedId || normalizedRedId === normalizedId;
+    });
+    
+    if (normalizedMatches.length > 0) {
+      console.log(`Trouvé ${normalizedMatches.length} matchs avec ID normalisé pour l'équipe ${teamId}`);
+      return normalizedMatches;
+    }
+    
+    // If all else fails, try to find by substring
+    console.log(`Recherche par sous-chaîne pour l'équipe ${teamId}`);
+    const substringMatches = allMatches.filter(match => {
+      return match.teamBlue.id.includes(teamId) || match.teamRed.id.includes(teamId);
+    });
+    
+    console.log(`Trouvé ${substringMatches.length} matchs par sous-chaîne pour l'équipe ${teamId}`);
+    return substringMatches;
+  } catch (error) {
+    console.error(`Erreur lors de la récupération des matchs pour l'équipe ${teamId}:`, error);
+    return [];
+  }
+};
+
+/**
  * Get a specific match by ID
  */
 export const getMatchById = async (matchId: string): Promise<Match | null> => {
