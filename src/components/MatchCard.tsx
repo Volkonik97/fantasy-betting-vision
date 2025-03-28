@@ -58,7 +58,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   return (
     <div 
       className={cn(
-        "bg-white border border-gray-100 rounded-xl shadow-subtle overflow-hidden transition-all duration-300 hover:shadow-md h-full flex flex-col",
+        "bg-white border border-gray-100 rounded-xl shadow-subtle overflow-hidden transition-all duration-300 hover:shadow-md",
         className
       )}
     >
@@ -93,9 +93,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         </div>
       </div>
       
-      <div className="p-4 flex-grow flex flex-col">
+      <div className="p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 w-[40%]">
+          <div className="flex items-center gap-3 flex-1">
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
               {!blueLogoError && blueLogoUrl ? (
                 <Avatar className="w-10 h-10">
@@ -117,13 +117,13 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
                 </Avatar>
               )}
             </div>
-            <div className="overflow-hidden">
-              <h3 className="font-medium truncate">{match.teamBlue.name}</h3>
-              <span className="text-sm text-gray-500 block truncate">{match.teamBlue.region}</span>
+            <div>
+              <h3 className="font-medium">{match.teamBlue.name}</h3>
+              <span className="text-sm text-gray-500">{match.teamBlue.region}</span>
             </div>
           </div>
           
-          <div className="w-[20%] flex-shrink-0 flex items-center justify-center">
+          <div className="w-24 mx-2 flex-shrink-0 flex items-center justify-center">
             {match.status === "Completed" && match.result ? (
               <div className="flex items-center justify-center gap-3 text-xl font-semibold">
                 <span className={match.result.winner === match.teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
@@ -139,10 +139,10 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             )}
           </div>
           
-          <div className="flex items-center justify-end gap-3 w-[40%]">
-            <div className="text-right overflow-hidden">
-              <h3 className="font-medium truncate">{match.teamRed.name}</h3>
-              <span className="text-sm text-gray-500 block truncate">{match.teamRed.region}</span>
+          <div className="flex items-center gap-3 flex-1 justify-end">
+            <div className="text-right">
+              <h3 className="font-medium">{match.teamRed.name}</h3>
+              <span className="text-sm text-gray-500 block">{match.teamRed.region}</span>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
               {!redLogoError && redLogoUrl ? (
