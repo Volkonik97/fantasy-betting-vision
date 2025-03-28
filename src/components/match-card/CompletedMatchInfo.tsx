@@ -80,6 +80,10 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
   
   const formattedDuration = result.duration ? formatSecondsToMinutesSeconds(parseInt(result.duration)) : "??:??";
   
+  // Determine the team colors based on which team is the winner
+  const isBlueWinner = teamBlueId === result.winner;
+  const isRedWinner = teamRedId === result.winner;
+  
   return (
     <div className="mt-4 grid grid-cols-1 gap-2">
       <div className="text-sm text-gray-600">
@@ -97,9 +101,9 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           {seriesScore && (
             <span className="ml-2">
               (Series: 
-              <span className={seriesScore.blue > seriesScore.red ? "text-green-600" : "text-gray-600"}> {seriesScore.blue}</span>
+              <span className={isBlueWinner ? "text-lol-blue" : "text-gray-600"}> {seriesScore.blue}</span>
               -
-              <span className={seriesScore.red > seriesScore.blue ? "text-green-600" : "text-gray-600"}> {seriesScore.red}</span>)
+              <span className={isRedWinner ? "text-lol-red" : "text-gray-600"}> {seriesScore.red}</span>)
             </span>
           )}
         </div>

@@ -82,6 +82,10 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
     console.log(`Match ${matchId} - Using result scores: ${displayBlueScore}:${displayRedScore}`);
   }
   
+  // Determine if blue or red team has won
+  const hasBlueWon = result?.winner === teamBlue.id;
+  const hasRedWon = result?.winner === teamRed.id;
+  
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3 flex-1">
@@ -100,11 +104,11 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
       <div className="w-24 mx-2 flex-shrink-0 flex items-center justify-center">
         {status === "Completed" ? (
           <div className="flex items-center justify-center gap-3 text-xl font-semibold">
-            <span className={result?.winner === teamBlue.id ? "text-lol-blue" : "text-gray-400"}>
+            <span className={hasBlueWon ? "text-lol-blue" : "text-gray-400"}>
               {displayBlueScore}
             </span>
             <span className="text-gray-300">:</span>
-            <span className={result?.winner === teamRed.id ? "text-lol-red" : "text-gray-400"}>
+            <span className={hasRedWon ? "text-lol-red" : "text-gray-400"}>
               {displayRedScore}
             </span>
           </div>
