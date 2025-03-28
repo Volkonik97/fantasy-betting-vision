@@ -101,6 +101,8 @@ const TeamLogoUploader = ({ teams, onComplete }: TeamLogoUploaderProps) => {
         <p className="text-sm text-gray-500 mb-4">
           Sélectionnez les fichiers image pour les logos d'équipe. 
           Les noms des fichiers seront utilisés pour trouver les équipes correspondantes.
+          Pour de meilleurs résultats, nommez les fichiers avec le nom exact de l'équipe 
+          (exemple: T1.png, Gen_G.png).
         </p>
         
         <div className="flex items-center gap-4">
@@ -155,6 +157,14 @@ const TeamLogoUploader = ({ teams, onComplete }: TeamLogoUploaderProps) => {
           <AlertDescription>
             Impossible de télécharger {results.failed.length} logos. 
             Vérifiez que les noms de fichiers correspondent aux noms ou ID d'équipe.
+            <ul className="mt-2 text-sm list-disc pl-5 max-h-32 overflow-y-auto">
+              {results.failed.slice(0, 10).map((name, index) => (
+                <li key={index}>{name}</li>
+              ))}
+              {results.failed.length > 10 && (
+                <li>...et {results.failed.length - 10} autres fichiers</li>
+              )}
+            </ul>
           </AlertDescription>
         </Alert>
       )}
