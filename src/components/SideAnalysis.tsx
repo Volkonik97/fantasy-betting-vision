@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { SideStatistics } from "@/utils/models/types";
+import { SideStatistics, TimelineStats, TimelineStatPoint } from "@/utils/models/types";
 import { Bar } from "recharts";
 import { BarChart } from "./ui/barchart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -52,8 +52,8 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     },
     {
       name: "First Baron",
-      blue: ensureValidData(statistics.blueFirstBaron),
-      red: ensureValidData(statistics.redFirstBaron)
+      blue: ensureValidData(statistics.blueFirstBaron || 0),
+      red: ensureValidData(statistics.redFirstBaron || 0)
     }
   ];
   
@@ -132,15 +132,18 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               <TabsContent value="gold">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {Object.entries(statistics.timelineStats).map(([time, stats]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
-                        <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                          {stats.avgGoldDiff > 0 ? '+' : ''}{stats.avgGoldDiff.toLocaleString()}
+                    {Object.entries(statistics.timelineStats).map(([time, stats]) => {
+                      const statData = stats as TimelineStatPoint;
+                      return (
+                        <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                          <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                          <div className="font-semibold">{statData.avgGold.toLocaleString()}</div>
+                          <div className={`text-xs mt-1 ${statData.avgGoldDiff > 0 ? 'text-green-600' : statData.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                            {statData.avgGoldDiff > 0 ? '+' : ''}{statData.avgGoldDiff.toLocaleString()}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </TabsContent>
@@ -148,16 +151,19 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               <TabsContent value="cs">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {Object.entries(statistics.timelineStats).map(([time, stats]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">{stats.avgCs}</div>
-                        <div className={`text-xs mt-1 ${stats.avgCsDiff && stats.avgCsDiff > 0 ? 'text-green-600' : (stats.avgCsDiff && stats.avgCsDiff < 0) ? 'text-red-600' : 'text-gray-600'}`}>
-                          {stats.avgCsDiff ? (stats.avgCsDiff > 0 ? '+' : '') + stats.avgCsDiff : ''}
-                          <span className="text-gray-600 ml-1">({(stats.avgCs / parseInt(time)).toFixed(1)} CS/min)</span>
+                    {Object.entries(statistics.timelineStats).map(([time, stats]) => {
+                      const statData = stats as TimelineStatPoint;
+                      return (
+                        <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                          <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                          <div className="font-semibold">{statData.avgCs}</div>
+                          <div className={`text-xs mt-1 ${statData.avgCsDiff > 0 ? 'text-green-600' : statData.avgCsDiff < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                            {statData.avgCsDiff > 0 ? '+' : ''}{statData.avgCsDiff}
+                            <span className="text-gray-600 ml-1">({(statData.avgCs / parseInt(time)).toFixed(1)} CS/min)</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </TabsContent>
@@ -165,17 +171,20 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
               <TabsContent value="kda">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {Object.entries(statistics.timelineStats).map(([time, stats]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">
-                          {stats.avgKills.toFixed(1)} / {stats.avgDeaths.toFixed(1)} {stats.avgAssists && `/ ${stats.avgAssists.toFixed(1)}`}
+                    {Object.entries(statistics.timelineStats).map(([time, stats]) => {
+                      const statData = stats as TimelineStatPoint;
+                      return (
+                        <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                          <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                          <div className="font-semibold">
+                            {statData.avgKills.toFixed(1)} / {statData.avgDeaths.toFixed(1)} {statData.avgAssists && `/ ${statData.avgAssists.toFixed(1)}`}
+                          </div>
+                          <div className="text-xs mt-1 text-gray-600">
+                            {(statData.avgKills / (statData.avgDeaths || 1)).toFixed(1)} KDA
+                          </div>
                         </div>
-                        <div className="text-xs mt-1 text-gray-600">
-                          {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </TabsContent>

@@ -53,8 +53,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
             first_blood: m.result?.firstBlood || m.extraStats?.first_blood || null,
             first_dragon: m.result?.firstDragon || m.extraStats?.first_dragon || null,
             first_baron: m.result?.firstBaron || m.extraStats?.first_baron || null,
-            first_herald: m.extraStats?.first_herald || null,
-            first_tower: m.extraStats?.first_tower || null
+            first_herald: m.extraStats?.first_herald || m.result?.firstHerald || null,
+            first_tower: m.extraStats?.first_tower || m.result?.firstTower || null
           }))
         );
         

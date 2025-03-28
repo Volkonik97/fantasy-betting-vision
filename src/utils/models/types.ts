@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -43,6 +44,8 @@ export interface Match {
     firstBlood?: string;
     firstDragon?: string;
     firstBaron?: string;
+    firstHerald?: string; // Add firstHerald
+    firstTower?: string; // Add firstTower
   };
   extraStats?: {
     patch?: string;
@@ -84,6 +87,9 @@ export interface Match {
     opp_void_grubs?: number;
     blueTeamStats?: any;
     redTeamStats?: any;
+    first_blood?: string; // Add first_blood
+    first_dragon?: string; // Add first_dragon
+    first_baron?: string; // Add first_baron
   };
   playerStats?: any[];
 }
@@ -95,6 +101,23 @@ export interface Tournament {
   startDate: string;
   endDate: string;
   logo: string;
+}
+
+// Define TimelineStatPoint interface to strongly type timeline data
+export interface TimelineStatPoint {
+  avgGold: number;
+  avgXp: number;
+  avgCs: number;
+  avgGoldDiff: number;
+  avgCsDiff: number;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+}
+
+// Define TimelineStats interface to strongly type the timeline data object
+export interface TimelineStats {
+  [minute: string]: TimelineStatPoint;
 }
 
 export interface SideStatistics {
@@ -111,5 +134,5 @@ export interface SideStatistics {
   redFirstTower: number;
   blueFirstBaron?: number;
   redFirstBaron?: number;
-  timelineStats: any;
+  timelineStats: TimelineStats;
 }
