@@ -40,13 +40,12 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   matchId,
   seriesAggregation = false
 }) => {
-  // State to hold aggregated scores for series matches
-  const [aggregatedScores, setAggregatedScores] = useState<{blue: number, red: number} | null>(null);
+  // State to hold scores
   const [isValidSeries, setIsValidSeries] = useState<boolean>(false);
   
   useEffect(() => {
-    // If this is part of a series, get the aggregated scores
-    const fetchSeriesScores = async () => {
+    // Check if this is part of a valid series
+    const checkSeriesValidity = async () => {
       if (seriesAggregation && status === "Completed") {
         try {
           // Check if this is a standard series (Bo3, Bo5, Bo7)
@@ -55,54 +54,32 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
           
           if (!validSeries) {
             console.log(`Match ${matchId} is not part of a standard series`);
-            return;
-          }
-          
-          // Extract the base part of the match ID (before the last underscore)
-          const baseMatchId = getBaseMatchId(matchId);
-          
-          // Get scores from all matches in this series
-          const scores = await getSeriesScore(baseMatchId, teamBlue.id, teamRed.id);
-          
-          // Check if scores is an object with blue/red properties before setting state
-          if (scores !== null && typeof scores === 'object' && 'blue' in scores && 'red' in scores) {
-            console.log(`Setting aggregated scores for match ${matchId}:`, scores);
-            setAggregatedScores(scores);
           }
         } catch (error) {
-          console.error("Error fetching series scores:", error);
+          console.error("Error checking series validity:", error);
+          setIsValidSeries(false);
         }
       } else {
-        // Reset aggregated scores if not in a series or not completed
-        setAggregatedScores(null);
         setIsValidSeries(false);
       }
     };
     
-    fetchSeriesScores();
-  }, [matchId, teamBlue.id, teamRed.id, seriesAggregation, status]);
+    checkSeriesValidity();
+  }, [matchId, seriesAggregation, status]);
 
   // Log scores for debugging
-  console.log(`Match ${matchId} - Original scores - Blue: ${blueScore}, Red: ${redScore}`);
+  console.log(`Match ${matchId} - Individual match scores - Blue: ${blueScore}, Red: ${redScore}`);
   console.log(`Match ${matchId} - Result:`, result);
-  console.log(`Match ${matchId} - Aggregated scores:`, aggregatedScores);
   
-  // Determine which scores to display
+  // Determine which scores to display - always use individual match scores for this component
+  // If we have a result with scores, use those
   let displayBlueScore = blueScore;
   let displayRedScore = redScore;
   
-  // If this is a completed match with result, always use those scores first
   if (status === "Completed" && result && result.score) {
     displayBlueScore = result.score[0];
     displayRedScore = result.score[1];
     console.log(`Match ${matchId} - Using result scores: ${displayBlueScore}:${displayRedScore}`);
-  }
-  
-  // Only use aggregated scores if they're available AND this is a valid series
-  if (aggregatedScores && isValidSeries && seriesAggregation) {
-    displayBlueScore = aggregatedScores.blue;
-    displayRedScore = aggregatedScores.red;
-    console.log(`Match ${matchId} - Using series scores: ${displayBlueScore}:${displayRedScore}`);
   }
   
   return (

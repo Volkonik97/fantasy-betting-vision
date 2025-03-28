@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -146,6 +145,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
             winnerName={match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}
             matchId={match.id}
             seriesAggregation={isSeries}
+            teamBlueId={match.teamBlue.id}
+            teamRedId={match.teamRed.id}
           />
         )}
       </div>

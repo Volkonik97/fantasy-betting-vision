@@ -2,7 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { Users } from "lucide-react";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
-import { getSeriesScore, getGameNumberFromId, getBaseMatchId } from "@/utils/database/matchesService";
+import { 
+  getSeriesScore, 
+  getGameNumberFromId, 
+  getBaseMatchId, 
+  getSeriesScoreUpToGame 
+} from "@/utils/database/matchesService";
 
 interface CompletedMatchInfoProps {
   result: {
@@ -14,15 +19,20 @@ interface CompletedMatchInfoProps {
   winnerName: string;
   matchId: string;
   seriesAggregation?: boolean;
+  teamBlueId?: string;
+  teamRedId?: string;
 }
 
 const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({ 
   result, 
   winnerName,
   matchId,
-  seriesAggregation = false 
+  seriesAggregation = false,
+  teamBlueId,
+  teamRedId 
 }) => {
   const [seriesInfo, setSeriesInfo] = useState<string | null>(null);
+  const [seriesScore, setSeriesScore] = useState<{blue: number, red: number} | null>(null);
   
   useEffect(() => {
     const getSeriesInfo = async () => {
@@ -41,6 +51,19 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           
           // Check if the series length is valid and reasonable (max Bo7)
           if (typeof seriesResult === 'number' && seriesResult > 1 && seriesResult <= 7) {
+            // Get the score up to this current game (not including this game's result)
+            if (gameNumber > 1 && teamBlueId && teamRedId) {
+              const previousScore = await getSeriesScoreUpToGame(
+                baseMatchId, 
+                gameNumber, 
+                teamBlueId, 
+                teamRedId
+              );
+              
+              console.log(`Previous score before game ${gameNumber}: Blue ${previousScore.blue} - Red ${previousScore.red}`);
+              setSeriesScore(previousScore);
+            }
+            
             setSeriesInfo(`Game ${gameNumber} of ${seriesResult} in the series`);
           } else {
             // If the series length is invalid, just show the game number
@@ -53,7 +76,7 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
     };
     
     getSeriesInfo();
-  }, [matchId, seriesAggregation]);
+  }, [matchId, seriesAggregation, teamBlueId, teamRedId]);
   
   const formattedDuration = result.duration ? formatSecondsToMinutesSeconds(parseInt(result.duration)) : "??:??";
   
@@ -69,8 +92,13 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
         </div>
       )}
       {seriesInfo && (
-        <div className="text-xs text-gray-500 italic mt-1">
+        <div className="text-xs text-gray-500 mt-1">
           {seriesInfo}
+          {seriesScore && (
+            <span className="ml-2">
+              (Series: {seriesScore.blue}-{seriesScore.red})
+            </span>
+          )}
         </div>
       )}
     </div>

@@ -106,6 +106,78 @@ export const getSeriesScore = async (
 };
 
 /**
+ * Get series score up to a specific game number
+ * @param baseMatchId Base match ID (without game number suffix)
+ * @param currentGameNumber The current game number in the series
+ * @param teamBlueId Team blue ID
+ * @param teamRedId Team red ID
+ * @returns Score up to the current game (exclusive of the current game)
+ */
+export const getSeriesScoreUpToGame = async (
+  baseMatchId: string,
+  currentGameNumber: number,
+  teamBlueId?: string,
+  teamRedId?: string
+): Promise<{ blue: number, red: number }> => {
+  try {
+    console.log(`Getting series score up to game ${currentGameNumber} for series ${baseMatchId}`);
+    
+    // Get all matches in the series up to but not including the current game
+    const { data: previousMatches, error } = await supabase
+      .from('matches')
+      .select('*')
+      .like('id', `${baseMatchId}_%`)
+      .order('id', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching previous matches in series:", error);
+      return { blue: 0, red: 0 };
+    }
+
+    if (!previousMatches || previousMatches.length === 0) {
+      console.log(`No previous matches found for series ${baseMatchId}`);
+      return { blue: 0, red: 0 };
+    }
+
+    // Filter matches that come before the current game
+    const matchesBeforeCurrent = previousMatches.filter(match => {
+      const gameNumber = getGameNumberFromId(match.id);
+      return gameNumber < currentGameNumber;
+    });
+
+    console.log(`Found ${matchesBeforeCurrent.length} matches before game ${currentGameNumber}`);
+    
+    // Calculate the score based on previous matches
+    let blueWins = 0;
+    let redWins = 0;
+
+    matchesBeforeCurrent.forEach(match => {
+      if (!match.winner_team_id) {
+        console.log(`Match ${match.id} has no winner_team_id`);
+        return;
+      }
+
+      // Debug: Log individual match scores
+      console.log(`Previous match ${match.id} - winner: ${match.winner_team_id}`);
+      
+      if (match.winner_team_id === teamBlueId) {
+        blueWins++;
+      } else if (match.winner_team_id === teamRedId) {
+        redWins++;
+      } else {
+        console.log(`Winner team ID ${match.winner_team_id} doesn't match either blue (${teamBlueId}) or red (${teamRedId})`);
+      }
+    });
+
+    console.log(`Series score up to game ${currentGameNumber}: Blue ${blueWins} - Red ${redWins}`);
+    return { blue: blueWins, red: redWins };
+  } catch (error) {
+    console.error("Error calculating previous series score:", error);
+    return { blue: 0, red: 0 };
+  }
+};
+
+/**
  * Extract the game number from a match ID
  * @param matchId The match ID to extract the game number from
  * @returns The game number, or 1 if not found
