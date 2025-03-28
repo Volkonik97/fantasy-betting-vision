@@ -1,19 +1,35 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { isSameDay } from "date-fns";
-import { matches, tournaments } from "@/utils/models";
+import { matches } from "@/utils/models";
 import Navbar from "@/components/Navbar";
 import MatchesHeader from "@/components/matches/MatchesHeader";
 import MatchFilters from "@/components/matches/MatchFilters";
 import TournamentFilter from "@/components/matches/TournamentFilter";
 import MatchesTabs from "@/components/matches/MatchesTabs";
+import { getTournaments } from "@/utils/database/tournamentsService";
+import { Tournament } from "@/utils/models/types";
 
 const Matches = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTournament, setSelectedTournament] = useState<string>("All");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const matchesPerPage = 6;
+  
+  useEffect(() => {
+    const loadTournaments = async () => {
+      try {
+        const tournamentsList = await getTournaments();
+        setTournaments(tournamentsList);
+      } catch (error) {
+        console.error("Error loading tournaments:", error);
+      }
+    };
+    
+    loadTournaments();
+  }, []);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);

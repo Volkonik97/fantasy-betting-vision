@@ -54,7 +54,7 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
           // Get scores from all matches in this series
           const scores = await getSeriesScore(baseMatchId, teamBlue.id, teamRed.id);
           
-          // Fix: Check if scores is an object before setting state
+          // Check if scores is an object with blue/red properties before setting state
           if (scores !== null && typeof scores === 'object' && 'blue' in scores && 'red' in scores) {
             setAggregatedScores(scores);
             console.log(`Series scores for ${baseMatchId}:`, scores);

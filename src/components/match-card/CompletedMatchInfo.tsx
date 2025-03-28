@@ -31,7 +31,7 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           const baseMatchId = matchId.split('_').slice(0, -1).join('_');
           const matchCount = await getSeriesScore(baseMatchId, '', '', true);
           
-          // Fix: Check if matchCount is a number before comparing
+          // Check if matchCount is a number before comparing
           if (matchCount !== null && typeof matchCount === 'number' && matchCount > 1) {
             setSeriesInfo(`Match ${matchCount} of the series`);
           }

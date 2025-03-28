@@ -1,6 +1,7 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Tournament } from "@/utils/models/types";
+import { getTournaments } from "@/utils/database/tournamentsService";
 
 interface TournamentFilterProps {
   tournaments: Tournament[];
@@ -13,6 +14,30 @@ const TournamentFilter = ({
   selectedTournament,
   onTournamentChange,
 }: TournamentFilterProps) => {
+  const [allTournaments, setAllTournaments] = useState<Tournament[]>(tournaments);
+
+  useEffect(() => {
+    const fetchAllTournaments = async () => {
+      try {
+        const dbTournaments = await getTournaments();
+        if (dbTournaments && dbTournaments.length > 0) {
+          // Combine with provided tournaments and deduplicate by id
+          const combinedTournaments = [...tournaments];
+          dbTournaments.forEach(dbTournament => {
+            if (!combinedTournaments.some(t => t.id === dbTournament.id)) {
+              combinedTournaments.push(dbTournament);
+            }
+          });
+          setAllTournaments(combinedTournaments);
+        }
+      } catch (error) {
+        console.error("Error fetching tournaments:", error);
+      }
+    };
+
+    fetchAllTournaments();
+  }, [tournaments]);
+
   return (
     <div className="mb-8 overflow-x-auto">
       <div className="flex flex-nowrap gap-3 pb-2">
@@ -27,7 +52,7 @@ const TournamentFilter = ({
           All Tournaments
         </button>
         
-        {tournaments.map(tournament => (
+        {allTournaments.map(tournament => (
           <button
             key={tournament.id}
             onClick={() => onTournamentChange(tournament.name)}
