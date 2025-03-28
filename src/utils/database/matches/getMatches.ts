@@ -173,14 +173,20 @@ const formatMatch = (match: any, teamsMap: Map<string, any>): Match | null => {
  * Create match result object
  */
 const createMatchResult = (match: any) => {
+  // Fix: Ensure we always have a tuple with exactly two numbers
+  // Default to [0, 0] if we can't parse the scores correctly
+  const scoreBlue = typeof match.score_blue === 'number' ? match.score_blue : 
+                   typeof match.score_blue === 'string' ? parseInt(match.score_blue) : 0;
+                   
+  const scoreRed = typeof match.score_red === 'number' ? match.score_red : 
+                  typeof match.score_red === 'string' ? parseInt(match.score_red) : 0;
+
+  // Create a fixed-length array with exactly two elements
+  const score: [number, number] = [scoreBlue, scoreRed];
+  
   return {
     winner: match.winner_team_id,
-    score: [
-      typeof match.score_blue === 'number' ? match.score_blue : 
-        typeof match.score_blue === 'string' ? parseInt(match.score_blue) : 0, 
-      typeof match.score_red === 'number' ? match.score_red : 
-        typeof match.score_red === 'string' ? parseInt(match.score_red) : 0
-    ],
+    score,
     duration: match.duration,
     mvp: match.mvp,
     firstBlood: match.first_blood,
