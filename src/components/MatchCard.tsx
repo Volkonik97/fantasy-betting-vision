@@ -55,9 +55,13 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     fetchLogos();
   }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo]);
   
-  // Déterminer dynamiquement les scores
-  const blueScore = match.result?.score[0] ?? 0;
-  const redScore = match.result?.score[1] ?? 0;
+  // Déterminer correctement les scores, avec vérification pour les scores non définis
+  // S'assurer que les scores sont traités comme des nombres, même s'ils sont 0
+  const blueScore = match.result?.score && match.result.score.length > 0 ? match.result.score[0] : 0;
+  const redScore = match.result?.score && match.result.score.length > 1 ? match.result.score[1] : 0;
+  
+  // Debug les scores
+  console.log(`Match ${match.id} - Score: ${blueScore}:${redScore}`, match.result?.score);
   
   return (
     <div 
