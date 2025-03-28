@@ -314,18 +314,14 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     // Get all matches
     const allMatches = await getMatches();
     
-    // Use multiple approaches to find matches for this team
+    // Méthode 1: Correspondance exacte avec les IDs d'équipe
     const exactMatches = allMatches.filter(match => {
       return match.teamBlue.id === teamId || match.teamRed.id === teamId;
     });
     
-    // If we found enough matches with exact ID, return them
-    if (exactMatches.length > 0) {
-      console.log(`Trouvé ${exactMatches.length} matchs avec ID exact pour l'équipe ${teamId}`);
-      return exactMatches;
-    }
+    console.log(`1. Correspondance exacte: ${exactMatches.length} matchs pour l'équipe ${teamId}`);
     
-    // Try with normalized IDs (lowercase, trimmed)
+    // Méthode 2: Correspondance avec IDs normalisés (minuscule, trimmed)
     const normalizedId = String(teamId).trim().toLowerCase();
     const normalizedMatches = allMatches.filter(match => {
       const normalizedBlueId = String(match.teamBlue.id).trim().toLowerCase();
@@ -333,19 +329,90 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
       return normalizedBlueId === normalizedId || normalizedRedId === normalizedId;
     });
     
-    if (normalizedMatches.length > 0) {
-      console.log(`Trouvé ${normalizedMatches.length} matchs avec ID normalisé pour l'équipe ${teamId}`);
-      return normalizedMatches;
-    }
+    console.log(`2. Correspondance normalisée: ${normalizedMatches.length} matchs pour l'équipe ${normalizedId}`);
     
-    // If all else fails, try to find by substring
-    console.log(`Recherche par sous-chaîne pour l'équipe ${teamId}`);
+    // Méthode 3: Recherche par sous-chaîne (contient l'ID)
     const substringMatches = allMatches.filter(match => {
       return match.teamBlue.id.includes(teamId) || match.teamRed.id.includes(teamId);
     });
     
-    console.log(`Trouvé ${substringMatches.length} matchs par sous-chaîne pour l'équipe ${teamId}`);
-    return substringMatches;
+    console.log(`3. Correspondance par sous-chaîne: ${substringMatches.length} matchs`);
+    
+    // Méthode 4: Recherche par nom d'équipe
+    // Récupérer le nom de l'équipe à partir de l'ID
+    const teamName = allMatches.find(match => 
+      match.teamBlue.id === teamId || match.teamRed.id === teamId
+    )?.teamBlue.id === teamId 
+      ? allMatches.find(m => m.teamBlue.id === teamId)?.teamBlue.name
+      : allMatches.find(m => m.teamRed.id === teamId)?.teamRed.name;
+    
+    let nameMatches: Match[] = [];
+    if (teamName) {
+      nameMatches = allMatches.filter(match => 
+        match.teamBlue.name === teamName || match.teamRed.name === teamName
+      );
+      console.log(`4. Correspondance par nom d'équipe (${teamName}): ${nameMatches.length} matchs`);
+    }
+    
+    // Méthode 5: Vérifier directement dans les données brutes
+    const { data: rawMatches, error } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`team_blue_id.ilike.%${teamId}%,team_red_id.ilike.%${teamId}%`);
+      
+    console.log(`5. Requête directe dans Supabase: ${rawMatches?.length || 0} matchs`);
+    if (error) {
+      console.error("Erreur lors de la recherche directe:", error);
+    }
+    
+    // Combiner tous les résultats et dédupliquer
+    const allMatchIds = new Set<string>();
+    const combinedMatches: Match[] = [];
+    
+    // Helper function to add unique matches
+    const addUniqueMatches = (matches: Match[]) => {
+      matches.forEach(match => {
+        if (!allMatchIds.has(match.id)) {
+          allMatchIds.add(match.id);
+          combinedMatches.push(match);
+        }
+      });
+    };
+    
+    // Add matches from all methods
+    addUniqueMatches(exactMatches);
+    addUniqueMatches(normalizedMatches);
+    addUniqueMatches(substringMatches);
+    addUniqueMatches(nameMatches);
+    
+    // Add raw matches if we found any (need to format them first)
+    if (rawMatches && rawMatches.length > 0) {
+      const teamsData = await fetchTeams();
+      const teamsMap = createTeamsMap(teamsData);
+      
+      const formattedRawMatches = rawMatches
+        .map(match => formatMatch(match, teamsMap))
+        .filter(match => match !== null) as Match[];
+      
+      addUniqueMatches(formattedRawMatches);
+    }
+    
+    // If specific match IDs were mentioned but not found, log them
+    const specificMatchId = "LOLTMNT05_115052";
+    const matchFound = combinedMatches.some(match => match.id === specificMatchId);
+    if (!matchFound) {
+      console.log(`Match spécifique ${specificMatchId} non trouvé pour l'équipe ${teamId}`);
+      
+      // Rechercher ce match spécifique dans tous les matchs
+      const specificMatch = allMatches.find(match => match.id === specificMatchId);
+      if (specificMatch) {
+        console.log(`Match ${specificMatchId} existe dans la base, mais n'est pas associé à l'équipe ${teamId}`);
+        console.log(`Équipes dans ce match: ${specificMatch.teamBlue.name} (${specificMatch.teamBlue.id}) vs ${specificMatch.teamRed.name} (${specificMatch.teamRed.id})`);
+      }
+    }
+    
+    console.log(`Total après déduplication: ${combinedMatches.length} matchs pour l'équipe ${teamId}`);
+    return combinedMatches;
   } catch (error) {
     console.error(`Erreur lors de la récupération des matchs pour l'équipe ${teamId}:`, error);
     return [];
