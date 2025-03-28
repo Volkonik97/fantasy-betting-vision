@@ -1,13 +1,17 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Team } from "@/utils/models/types";
-import { getTeams } from "@/utils/csvService";
+import { getTeams } from "@/utils/database/teamsService";
 import Navbar from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import TeamLogoUploader from "@/components/team/TeamLogoUploader";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -15,29 +19,30 @@ const Teams = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
   const [isLoading, setIsLoading] = useState(true);
   const [regions, setRegions] = useState<string[]>(["All"]);
+  const [showLogoUploader, setShowLogoUploader] = useState(false);
+  
+  const loadTeams = async () => {
+    try {
+      setIsLoading(true);
+      const loadedTeams = await getTeams();
+      
+      if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
+        setTeams(loadedTeams);
+        
+        const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
+        setRegions(uniqueRegions);
+      } else {
+        toast.error("No team data found");
+      }
+    } catch (error) {
+      console.error("Error loading teams:", error);
+      toast.error("Error loading teams");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   useEffect(() => {
-    const loadTeams = async () => {
-      try {
-        setIsLoading(true);
-        const loadedTeams = await getTeams();
-        
-        if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
-          setTeams(loadedTeams);
-          
-          const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
-          setRegions(uniqueRegions);
-        } else {
-          toast.error("No team data found");
-        }
-      } catch (error) {
-        console.error("Error loading teams:", error);
-        toast.error("Error loading teams");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadTeams();
   }, []);
   
@@ -50,17 +55,43 @@ const Teams = () => {
     setSearchTerm(query);
   };
 
+  const handleLogoUploadComplete = () => {
+    // Reload teams to refresh the logos
+    loadTeams();
+    setShowLogoUploader(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Teams</h1>
-          <p className="text-gray-600">
-            Browse and analyze all professional League of Legends teams
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Teams</h1>
+            <p className="text-gray-600">
+              Browse and analyze all professional League of Legends teams
+            </p>
+          </div>
+          
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => setShowLogoUploader(!showLogoUploader)}
+          >
+            <Upload size={16} />
+            {showLogoUploader ? "Hide Logo Uploader" : "Upload Team Logos"}
+          </Button>
         </div>
+        
+        {showLogoUploader && (
+          <div className="mb-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <TeamLogoUploader 
+              teams={teams} 
+              onComplete={handleLogoUploadComplete} 
+            />
+          </div>
+        )}
         
         <div className="mb-8">
           <SearchBar onSearch={handleSearch} />

@@ -20,6 +20,8 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = "/placeholder.svg";
+              // Apply some styling to center the placeholder
+              target.classList.add("p-2");
             }}
           />
         </div>

@@ -4,6 +4,8 @@ import { Team } from '../../models/types';
 import { toast } from "sonner";
 import { getTeamsFromCache, updateTeamsCache } from './teamCache';
 
+const BUCKET_NAME = "team-logos";
+
 /**
  * Get teams from database
  */
@@ -55,17 +57,35 @@ export const getTeams = async (): Promise<Team[]> => {
     }
     
     // Convert database format to application format
-    const teams: Team[] = teamsData.map(team => ({
-      id: team.id as string,
-      name: team.name as string,
-      logo: team.logo as string,
-      region: team.region as string,
-      winRate: Number(team.win_rate) || 0,
-      blueWinRate: Number(team.blue_win_rate) || 0,
-      redWinRate: Number(team.red_win_rate) || 0,
-      averageGameTime: Number(team.average_game_time) || 0, // Retrieved in seconds
-      players: []
-    }));
+    const teams: Team[] = teamsData.map(team => {
+      // Check if there's a custom logo in Supabase storage
+      let logoUrl = team.logo as string;
+      
+      // If the logo URL is not from storage, check if there's a logo in storage
+      if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
+        // Try to generate a storage URL based on team ID
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(`${team.id}.png`);
+        
+        // Use the storage URL if it exists, otherwise fall back to the database URL
+        if (publicUrl) {
+          logoUrl = publicUrl;
+        }
+      }
+      
+      return {
+        id: team.id as string,
+        name: team.name as string,
+        logo: logoUrl,
+        region: team.region as string,
+        winRate: Number(team.win_rate) || 0,
+        blueWinRate: Number(team.blue_win_rate) || 0,
+        redWinRate: Number(team.red_win_rate) || 0,
+        averageGameTime: Number(team.average_game_time) || 0, // Retrieved in seconds
+        players: []
+      };
+    });
     
     // Assign players to their teams
     if (playersData && playersData.length > 0) {
