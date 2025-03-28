@@ -40,7 +40,7 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
           setLogoError(true);
         }
       } catch (error) {
-        console.error(`Error fetching logo for ${team.name}:`, error);
+        console.error(`Error fetching logo for ${team?.name}:`, error);
         setLogoError(true);
       } finally {
         setLogoLoading(false);
