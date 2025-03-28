@@ -6,7 +6,8 @@ import {
   getSeriesScore, 
   getGameNumberFromId, 
   getBaseMatchId, 
-  getSeriesScoreUpToGame 
+  getSeriesScoreUpToGame,
+  isStandardSeries
 } from "@/utils/database/matchesService";
 
 interface CompletedMatchInfoProps {
@@ -33,11 +34,23 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
 }) => {
   const [seriesInfo, setSeriesInfo] = useState<string | null>(null);
   const [seriesScore, setSeriesScore] = useState<{blue: number, red: number} | null>(null);
+  const [isBO1, setIsBO1] = useState<boolean>(true);
   
   useEffect(() => {
     const getSeriesInfo = async () => {
       if (seriesAggregation) {
         try {
+          // First check if this is actually a series or just a BO1 with underscore in ID
+          const validSeries = await isStandardSeries(matchId);
+          
+          if (!validSeries) {
+            console.log(`Match ${matchId} is not part of a valid series, it's a BO1`);
+            setIsBO1(true);
+            return;
+          }
+          
+          setIsBO1(false);
+          
           // Get the base match ID (without game number)
           const baseMatchId = getBaseMatchId(matchId);
           
@@ -95,7 +108,7 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
           <span>MVP: {result.mvp}</span>
         </div>
       )}
-      {seriesInfo && (
+      {seriesInfo && !isBO1 && (
         <div className="text-xs text-gray-500 mt-1">
           {seriesInfo}
           {seriesScore && (

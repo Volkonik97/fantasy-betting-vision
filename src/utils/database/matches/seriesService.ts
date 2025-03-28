@@ -62,6 +62,12 @@ export const getSeriesScore = async (
       return { blue: 0, red: 0 };
     }
     
+    // If there's only one match with this pattern, it's a BO1, not a series
+    if (seriesMatches.length === 1) {
+      console.log(`Only one match found for ${baseMatchId}, this is a BO1 not a series`);
+      return countOnly ? 1 : { blue: 0, red: 0 };
+    }
+    
     // Log the number of matches found
     console.log(`Found ${seriesMatches.length} matches in series ${baseMatchId}`);
 
@@ -136,6 +142,12 @@ export const getSeriesScoreUpToGame = async (
 
     if (!previousMatches || previousMatches.length === 0) {
       console.log(`No previous matches found for series ${baseMatchId}`);
+      return { blue: 0, red: 0 };
+    }
+    
+    // If there's only one match, it's a BO1, not a series
+    if (previousMatches.length === 1) {
+      console.log(`Only one match found for ${baseMatchId}, this is a BO1 not a series`);
       return { blue: 0, red: 0 };
     }
 
@@ -226,12 +238,29 @@ export const isStandardSeries = async (matchId: string): Promise<boolean> => {
   if (!isSeriesMatch(matchId)) return false;
   
   const baseId = getBaseMatchId(matchId);
-  const seriesLength = await getSeriesScore(baseId, '', '', true);
   
-  if (typeof seriesLength === 'number') {
-    // Standard series lengths are 3, 5, or 7
-    return seriesLength === 3 || seriesLength === 5 || seriesLength === 7;
+  // Query to count similar matches to determine if it's a real series
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('id')
+    .like('id', `${baseId}_%`);
+    
+  if (error || !matches) {
+    console.error("Error checking if match is part of standard series:", error);
+    return false;
   }
   
-  return false;
+  // If there's only one match with this pattern, it's a BO1, not a series
+  if (matches.length === 1) {
+    console.log(`Only one match found for ${baseId}, this is a BO1 not a series`);
+    return false;
+  }
+  
+  const seriesLength = matches.length;
+  
+  // Standard series lengths are 3, 5, or 7
+  const isStandard = seriesLength >= 2 && seriesLength <= 7;
+  console.log(`Match ${matchId} is part of a ${isStandard ? 'standard' : 'non-standard'} series with ${seriesLength} games`);
+  
+  return isStandard;
 };
