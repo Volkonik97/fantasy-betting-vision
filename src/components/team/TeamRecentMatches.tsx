@@ -12,34 +12,37 @@ interface TeamRecentMatchesProps {
 }
 
 const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
-  const [matchesWithLogos, setMatchesWithLogos] = useState<Match[]>(matches);
+  const [matchesWithLogos, setMatchesWithLogos] = useState<Match[]>([]);
 
   useEffect(() => {
+    // Sort matches by date (most recent first)
+    const sortedMatches = [...matches].sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    
     const fetchLogos = async () => {
       const updatedMatches = await Promise.all(
-        matches.map(async (match) => {
+        sortedMatches.map(async (match) => {
           const isBlue = match.teamBlue.id === team.id;
           const opponent = isBlue ? match.teamRed : match.teamBlue;
           
-          // Only fetch a new logo if it doesn't already exist
-          if (!opponent.logo || opponent.logo === "") {
-            try {
-              const logoUrl = await getTeamLogoUrl(opponent.id);
-              if (logoUrl) {
-                // Create a new opponent object with the logo
-                const updatedOpponent = { ...opponent, logo: logoUrl };
-                
-                // Return updated match with the new opponent
-                return isBlue 
-                  ? { ...match, teamRed: updatedOpponent }
-                  : { ...match, teamBlue: updatedOpponent };
-              }
-            } catch (error) {
-              console.error(`Error fetching logo for team ${opponent.id}:`, error);
+          try {
+            // Always try to fetch the logo, regardless of whether one already exists
+            const logoUrl = await getTeamLogoUrl(opponent.id);
+            if (logoUrl) {
+              // Create a new opponent object with the logo
+              const updatedOpponent = { ...opponent, logo: logoUrl };
+              
+              // Return updated match with the new opponent
+              return isBlue 
+                ? { ...match, teamRed: updatedOpponent }
+                : { ...match, teamBlue: updatedOpponent };
             }
+          } catch (error) {
+            console.error(`Error fetching logo for team ${opponent.id}:`, error);
           }
           
-          // Return original match if no logo update was needed
+          // Return original match if logo fetch failed
           return match;
         })
       );
