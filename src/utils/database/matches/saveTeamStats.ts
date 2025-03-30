@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -111,6 +110,18 @@ export async function saveTeamMatchStats(
       stat.barons = convertToInteger(stat.barons);
       stat.turret_plates = convertToInteger(stat.turret_plates);
       stat.void_grubs = convertToInteger(stat.void_grubs);
+      
+      // Ensure dragon stats are integers
+      stat.dragons = convertToInteger(stat.dragons);
+      stat.elemental_drakes = convertToInteger(stat.elemental_drakes);
+      stat.infernals = convertToInteger(stat.infernals);
+      stat.mountains = convertToInteger(stat.mountains);
+      stat.clouds = convertToInteger(stat.clouds);
+      stat.oceans = convertToInteger(stat.oceans);
+      stat.chemtechs = convertToInteger(stat.chemtechs);
+      stat.hextechs = convertToInteger(stat.hextechs);
+      stat.drakes_unknown = convertToInteger(stat.drakes_unknown);
+      stat.elders = convertToInteger(stat.elders);
     });
     
     // Préparation des données pour l'insertion avec une vérification plus approfondie
@@ -137,27 +148,41 @@ export async function saveTeamMatchStats(
         kills: convertToInteger(stat.kills),
         deaths: convertToInteger(stat.deaths),
         kpm: ensureNumber(stat.kpm),
+        
+        // Dragon statistics
+        dragons: convertToInteger(stat.dragons),
+        elemental_drakes: convertToInteger(stat.elemental_drakes),
+        infernals: convertToInteger(stat.infernals),
+        mountains: convertToInteger(stat.mountains),
+        clouds: convertToInteger(stat.clouds),
+        oceans: convertToInteger(stat.oceans),
+        chemtechs: convertToInteger(stat.chemtechs),
+        hextechs: convertToInteger(stat.hextechs),
+        drakes_unknown: convertToInteger(stat.drakes_unknown),
+        elders: convertToInteger(stat.elders),
+        
+        // Other objectives
         towers: convertToInteger(stat.towers),
         turret_plates: convertToInteger(stat.turret_plates),
         inhibitors: convertToInteger(stat.inhibitors),
         heralds: convertToInteger(stat.heralds),
         barons: convertToInteger(stat.barons),
         void_grubs: convertToInteger(stat.void_grubs),
+        
+        // First objectives
         first_blood: ensureBoolean(stat.first_blood),
+        first_dragon: ensureBoolean(stat.first_dragon),
         first_herald: ensureBoolean(stat.first_herald),
         first_baron: ensureBoolean(stat.first_baron),
         first_tower: ensureBoolean(stat.first_tower),
         first_mid_tower: ensureBoolean(stat.first_mid_tower),
         first_three_towers: ensureBoolean(stat.first_three_towers),
+        
+        // Picks and bans if available
         picks: stat.picks ? JSON.stringify(stat.picks) : null,
         bans: stat.bans ? JSON.stringify(stat.bans) : null
       };
     });
-    
-    // Diviser les données en lots pour éviter les limitations de taille de requête
-    const chunkSize = 100;
-    const chunks = chunk(statsToInsert, chunkSize);
-    let currentCount = 0;
     
     // Create a map to deduplicate stats by match_id and team_id combination
     const uniqueStatsMap = new Map<string, any>();
@@ -173,7 +198,9 @@ export async function saveTeamMatchStats(
     console.log(`Après déduplication: ${uniqueStats.length} statistiques d'équipe uniques (éliminé ${statsToInsert.length - uniqueStats.length} doublons)`);
     
     // Recalculate chunks with deduplicated data
+    const chunkSize = 100;
     const uniqueChunks = chunk(uniqueStats, chunkSize);
+    let currentCount = 0;
     
     // Insérer chaque lot avec les données dédupliquées
     for (const [index, batch] of uniqueChunks.entries()) {

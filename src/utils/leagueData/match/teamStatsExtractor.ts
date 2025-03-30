@@ -63,18 +63,31 @@ function processTeamRows(
   const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
   const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
   
-  // Extraire les autres statistiques d'objectifs
+  // Extraire les stats de base
+  const teamKills = getStatValue(allTeamData, 'teamkills');
+  const teamDeaths = getStatValue(allTeamData, 'teamdeaths');
+  const teamKpm = getStatValue(allTeamData, 'team kpm');
+  const ckpm = getStatValue(allTeamData, 'ckpm');
+  
+  // Extraire les statistiques de dragons
+  const dragons = getStatValue(allTeamData, 'dragons');
+  const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
+  const infernals = getStatValue(allTeamData, 'infernals');
+  const mountains = getStatValue(allTeamData, 'mountains');
+  const clouds = getStatValue(allTeamData, 'clouds');
+  const oceans = getStatValue(allTeamData, 'oceans');
+  const chemtechs = getStatValue(allTeamData, 'chemtechs');
+  const hextechs = getStatValue(allTeamData, 'hextechs');
+  const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)') || getStatValue(allTeamData, 'dragons_type_unknown');
   const elders = getStatValue(allTeamData, 'elders');
+  
+  // Extraire les autres statistiques d'objectifs
   const heralds = getStatValue(allTeamData, 'heralds');
   const barons = getStatValue(allTeamData, 'barons');
   const towers = getStatValue(allTeamData, 'towers');
   const turretPlates = getStatValue(allTeamData, 'turretplates');
   const inhibitors = getStatValue(allTeamData, 'inhibitors');
   const voidGrubs = getStatValue(allTeamData, 'void_grubs');
-  const teamKills = getStatValue(allTeamData, 'teamkills');
-  const teamDeaths = getStatValue(allTeamData, 'teamdeaths');
-  const teamKpm = getStatValue(allTeamData, 'team kpm');
-  const ckpm = getStatValue(allTeamData, 'ckpm');
   
   // Créer l'objet de statistiques pour cette équipe
   teamStatsMap.set(teamId, {
@@ -88,36 +101,36 @@ function processTeamRows(
     team_kills: teamKills,
     team_deaths: teamDeaths,
     first_dragon: hasFirstDragon,
-    dragons: 0,
-    opp_dragons: 0, 
-    elemental_drakes: 0,
-    opp_elemental_drakes: 0,
-    infernals: 0,
-    mountains: 0,
-    clouds: 0,
-    oceans: 0,
-    chemtechs: 0,
-    hextechs: 0,
-    drakes_unknown: 0,
+    dragons: dragons,
+    opp_dragons: 0, // Will be calculated later
+    elemental_drakes: elementalDrakes,
+    opp_elemental_drakes: 0, // Will be calculated later
+    infernals: infernals,
+    mountains: mountains,
+    clouds: clouds,
+    oceans: oceans,
+    chemtechs: chemtechs,
+    hextechs: hextechs,
+    drakes_unknown: drakesUnknown,
     elders: elders,
-    opp_elders: 0,
+    opp_elders: 0, // Will be calculated later
     first_herald: hasFirstHerald,
     heralds: heralds,
-    opp_heralds: 0,
+    opp_heralds: 0, // Will be calculated later
     first_baron: hasFirstBaron,
     barons: barons,
-    opp_barons: 0,
+    opp_barons: 0, // Will be calculated later
     void_grubs: voidGrubs,
-    opp_void_grubs: 0,
+    opp_void_grubs: 0, // Will be calculated later
     first_tower: hasFirstTower,
     first_mid_tower: hasFirstMidTower,
     first_three_towers: hasFirstThreeTowers,
     towers: towers,
-    opp_towers: 0,
+    opp_towers: 0, // Will be calculated later
     turret_plates: turretPlates,
-    opp_turret_plates: 0,
+    opp_turret_plates: 0, // Will be calculated later
     inhibitors: inhibitors,
-    opp_inhibitors: 0
+    opp_inhibitors: 0 // Will be calculated later
   });
 }
 

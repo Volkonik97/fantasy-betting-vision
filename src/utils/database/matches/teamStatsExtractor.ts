@@ -35,7 +35,10 @@ export function extractTeamSpecificStats(match: Match): {
     kills: 0,
     deaths: 0,
     kpm: 0,
+    
+    // Statistiques des dragons
     dragons: 0,
+    elemental_drakes: 0,
     infernals: 0,
     mountains: 0,
     clouds: 0,
@@ -43,8 +46,9 @@ export function extractTeamSpecificStats(match: Match): {
     chemtechs: 0,
     hextechs: 0,
     drakes_unknown: 0,
-    elemental_drakes: 0,
     elders: 0,
+
+    // Autres objectifs
     heralds: 0,
     barons: 0,
     towers: 0,
@@ -71,7 +75,10 @@ export function extractTeamSpecificStats(match: Match): {
     kills: 0,
     deaths: 0,
     kpm: 0,
+    
+    // Statistiques des dragons
     dragons: 0,
+    elemental_drakes: 0,
     infernals: 0,
     mountains: 0,
     clouds: 0,
@@ -79,8 +86,9 @@ export function extractTeamSpecificStats(match: Match): {
     chemtechs: 0,
     hextechs: 0,
     drakes_unknown: 0,
-    elemental_drakes: 0,
     elders: 0,
+    
+    // Autres objectifs
     heralds: 0,
     barons: 0,
     towers: 0,

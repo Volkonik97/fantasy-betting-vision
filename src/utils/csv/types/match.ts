@@ -28,6 +28,18 @@ export interface MatchCSV {
   firstMidTower?: string;
   firstThreeTowers?: string;
   
+  // Dragon statistics
+  dragons?: string;          // Total dragons taken
+  elementalDrakes?: string;  // Total elemental drakes
+  infernals?: string;        // Infernal dragons
+  mountains?: string;        // Mountain dragons
+  clouds?: string;           // Cloud dragons
+  oceans?: string;           // Ocean dragons
+  chemtechs?: string;        // Chemtech dragons
+  hextechs?: string;         // Hextech dragons
+  drakes_unknown?: string;   // Unidentified dragons
+  elders?: string;           // Elder dragons
+  
   // Match statistics data
   patch?: string;
   year?: string;
