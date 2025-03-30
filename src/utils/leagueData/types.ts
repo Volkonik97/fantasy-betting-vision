@@ -29,6 +29,7 @@ export function booleanToString(value: any): string | null {
   return null;
 }
 
+// Exporter les types et interfaces directement dans ce fichier
 export interface PicksAndBans {
   [key: string]: any;
 }
@@ -100,3 +101,29 @@ export function prepareJsonData(data: any): any {
   // If it's already an object, return it directly
   return data;
 }
+
+/**
+ * Parse a value to boolean safely
+ */
+export function parseBoolean(value: any): boolean {
+  if (value === undefined || value === null) return false;
+  
+  if (typeof value === 'boolean') return value;
+  
+  if (typeof value === 'string') {
+    const lowerValue = value.toLowerCase();
+    return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
+  }
+  
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return false;
+}
+
+// Exporter aussi les interfaces/types des autres fichiers
+export * from './types/gameTracker';
+export * from './types/teamStats';
+export * from './types/playerStats';
+export * from './types/picksAndBans';
