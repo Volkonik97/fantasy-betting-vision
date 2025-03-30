@@ -1,5 +1,5 @@
 
-import { LeagueGameDataRow } from '../../csvTypes';
+import { LeagueGameDataRow } from '../../csv/types';
 
 /**
  * Groups game data by game ID for more efficient processing

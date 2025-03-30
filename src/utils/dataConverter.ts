@@ -1,5 +1,5 @@
 
-import { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
+import { TeamCSV, PlayerCSV, MatchCSV } from './csv/types';
 import { Team, Player, Match } from './mockData';
 
 // Format seconds to MM:SS format

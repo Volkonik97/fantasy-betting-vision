@@ -1,6 +1,6 @@
 
 import { GameTracker } from '../types';
-import { LeagueGameDataRow } from '../../csvTypes';
+import { LeagueGameDataRow } from '../../csv/types';
 import { parseBoolean } from '../types';
 
 /**

@@ -1,6 +1,6 @@
 
 import { GameTracker, MatchTeamStats, PlayerMatchStats } from '../types';
-import { LeagueGameDataRow, MatchCSV } from '../../csvTypes';
+import { LeagueGameDataRow, MatchCSV } from '../../csv/types';
 
 export interface ProcessedGameData {
   uniqueGames: Map<string, GameTracker>;

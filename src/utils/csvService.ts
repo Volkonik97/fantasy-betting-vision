@@ -26,12 +26,12 @@ import {
   setLoadedMatches,
   setLoadedTournaments,
   resetCache
-} from './csvTypes';
+} from './csv/cache/dataCache';
 import { getPlayerMatchStats } from './database/matchesService';
 import { getSideStatistics } from './statistics'; // Updated import
 
 // Re-export types
-export type { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csvTypes';
+export type { TeamCSV, PlayerCSV, MatchCSV, LeagueGameDataRow } from './csv/types';
 
 // Re-export everything for backward compatibility
 export {

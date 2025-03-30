@@ -1,6 +1,6 @@
 
 import { MatchTeamStats } from '../types';
-import { LeagueGameDataRow } from '../../csvTypes';
+import { LeagueGameDataRow } from '../../csv/types';
 import { safeParseFloat, safeParseInt } from '../types';
 
 /**

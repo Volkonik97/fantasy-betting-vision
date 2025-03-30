@@ -1,7 +1,7 @@
 
 import { PlayerMatchStats } from '../types';
-import { LeagueGameDataRow } from '../../csvTypes';
-import { parseBoolean, safeParseFloat, safeParseInt } from '../types';
+import { LeagueGameDataRow } from '../../csv/types';
+import { safeParseFloat, safeParseInt, parseBoolean } from '../types';
 
 /**
  * Extract player statistics from game rows
@@ -13,28 +13,24 @@ export function extractPlayerStats(
   const playerStatsMap = new Map<string, PlayerMatchStats>();
   
   gameRows.forEach(row => {
-    // Skip if no player data or already processed
-    if (!row.playerid || !row.teamid || playerStatsMap.has(row.playerid)) return;
+    // Skip if not player data (no playerid) or already processed
+    if (!row.playerid || playerStatsMap.has(row.playerid)) return;
     
-    // Handle first blood participation for player stats
-    const firstBloodKill = parseBoolean(row.firstbloodkill);
-    const firstBloodAssist = parseBoolean(row.firstbloodassist);
-    const firstBloodVictim = parseBoolean(row.firstbloodvictim);
+    // Process win/loss
+    const isWinner = row.result === '1';
     
-    // Create a new player match stats entry
+    // Create player stats object
     playerStatsMap.set(row.playerid, {
-      participant_id: row.participantid || `${row.playerid}_${gameId}`,
+      participant_id: `${row.playerid}_${gameId}`,
       player_id: row.playerid,
-      team_id: row.teamid,
+      team_id: row.teamid || '',
       match_id: gameId,
       side: row.side || '',
       position: row.position || '',
       champion: row.champion || '',
+      is_winner: isWinner,
       
-      // Set is_winner based on the result column
-      is_winner: row.result === '1',
-      
-      // Combat stats - correctly handle first blood stats
+      // Combat stats
       kills: safeParseInt(row.kills),
       deaths: safeParseInt(row.deaths),
       assists: safeParseInt(row.assists),
@@ -42,9 +38,9 @@ export function extractPlayerStats(
       triple_kills: safeParseInt(row.triplekills),
       quadra_kills: safeParseInt(row.quadrakills),
       penta_kills: safeParseInt(row.pentakills),
-      first_blood_kill: firstBloodKill,
-      first_blood_assist: firstBloodAssist,
-      first_blood_victim: firstBloodVictim,
+      first_blood_kill: parseBoolean(row.firstbloodkill),
+      first_blood_assist: parseBoolean(row.firstbloodassist),
+      first_blood_victim: parseBoolean(row.firstbloodvictim),
       
       // Damage stats
       damage_to_champions: safeParseInt(row.damagetochampions),
@@ -79,7 +75,7 @@ export function extractPlayerStats(
       monster_kills_enemy_jungle: safeParseInt(row.monsterkillsenemyjungle),
       cspm: safeParseFloat(row.cspm),
       
-      // Timeline stats
+      // Timeline stats: 10 min
       gold_at_10: safeParseInt(row.goldat10),
       xp_at_10: safeParseInt(row.xpat10),
       cs_at_10: safeParseInt(row.csat10),
@@ -145,7 +141,7 @@ export function extractPlayerStats(
       deaths_at_25: safeParseInt(row.deathsat25),
       opp_kills_at_25: safeParseInt(row.opp_killsat25),
       opp_assists_at_25: safeParseInt(row.opp_assistsat25),
-      opp_deaths_at_25: safeParseInt(row.opp_deathsat25) || 0
+      opp_deaths_at_25: safeParseInt(row.opp_deathsat25)
     });
   });
   

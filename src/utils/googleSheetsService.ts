@@ -2,7 +2,7 @@
 import axios from 'axios';
 import Papa from 'papaparse';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
-import { LeagueGameDataRow } from './csvTypes';
+import { LeagueGameDataRow } from './csv/types';
 import { processLeagueData } from './leagueDataProcessor';
 import { hasDatabaseData, clearDatabase, saveToDatabase } from './database/databaseService';
 import { toast } from 'sonner';

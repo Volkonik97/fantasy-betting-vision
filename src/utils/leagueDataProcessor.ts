@@ -1,5 +1,5 @@
 
-import { LeagueGameDataRow } from './csvTypes';
+import { LeagueGameDataRow } from './csv/types';
 import { Team, Player, Match } from './models/types';
 import { assembleLeagueData } from './leagueData/dataAssembler';
 

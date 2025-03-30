@@ -1,5 +1,5 @@
 
-import { LeagueGameDataRow } from '../../csvTypes';
+import { LeagueGameDataRow } from '../../csv/types';
 
 /**
  * Extract picks and bans data from game rows

@@ -1,6 +1,6 @@
 
 import { GameTracker, MatchTeamStats } from '../types';
-import { MatchCSV } from '../../csvTypes';
+import { MatchCSV } from '../../csv/types';
 
 /**
  * Convert game tracker to match CSV object
