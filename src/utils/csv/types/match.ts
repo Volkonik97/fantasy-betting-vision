@@ -20,13 +20,13 @@ export interface MatchCSV {
   // Team position (blue/red)
   teamPosition?: string;
   // Objectif data
-  firstBlood?: string;
-  firstDragon?: string;
-  firstBaron?: string;
-  firstHerald?: string;
-  firstTower?: string;
-  firstMidTower?: string;
-  firstThreeTowers?: string;
+  firstBlood?: string | boolean;
+  firstDragon?: string | boolean;
+  firstBaron?: string | boolean;
+  firstHerald?: string | boolean;
+  firstTower?: string | boolean;
+  firstMidTower?: string | boolean;
+  firstThreeTowers?: string | boolean;
   
   // Dragon statistics
   dragons?: string;          // Total dragons taken
@@ -59,8 +59,8 @@ export interface MatchCSV {
   
   // Additional data
   teamStats?: boolean;
-  picks?: PicksAndBans;
-  bans?: PicksAndBans;
+  picks?: PicksAndBans | string;
+  bans?: PicksAndBans | string;
   
   // Propriétés brutes (pour export Oracle's Elixir)
   [key: string]: any;

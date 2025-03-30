@@ -219,25 +219,51 @@ function processTeamRows(
 
 /**
  * Convert value to boolean considering many possible formats
+ * This enhanced version handles more edge cases and logs details for debugging
  */
-function getBooleanObjectiveValue(data: Record<string, any>, objectiveKeys: string[]): boolean {
+function getBooleanObjectiveValue(data: Record<string, any>, objectiveKeys: string[]): boolean | null {
+  // First, try direct boolean properties that might exist
   for (const key of objectiveKeys) {
     // Try both the original and lowercase versions
-    const value = data[key] || data[key.toLowerCase()];
+    const value = data[key] !== undefined ? data[key] : data[key.toLowerCase()];
+    
     if (value === undefined || value === null) continue;
+    
+    // Log the raw value for debugging
+    console.log(`[getBooleanObjectiveValue] For key ${key}, found raw value:`, {
+      value,
+      type: typeof value,
+      teamId: data.teamid || 'unknown'
+    });
     
     // Handle string values
     if (typeof value === 'string') {
       const lowerValue = value.toLowerCase().trim();
-      if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'oui') {
+      
+      // If it's a clear boolean string
+      if (['true', '1', 'yes', 'oui'].includes(lowerValue)) {
         return true;
       }
+      
+      if (['false', '0', 'no', 'non'].includes(lowerValue)) {
+        return false;
+      }
+      
       // Special case: if it's the team's name or ID, it means this team got the objective
-      if (data.teamid && value === data.teamid) {
+      if (data.teamid && (value === data.teamid || lowerValue === data.teamid.toLowerCase())) {
+        console.log(`[getBooleanObjectiveValue] Value matches team ID for ${key}: ${value} === ${data.teamid}`);
         return true;
       }
-      if (data.teamname && value === data.teamname) {
+      
+      if (data.teamname && (value === data.teamname || lowerValue === data.teamname.toLowerCase())) {
+        console.log(`[getBooleanObjectiveValue] Value matches team name for ${key}: ${value} === ${data.teamname}`);
         return true;
+      }
+      
+      // If the value is a different team ID/name, it means this team didn't get the objective
+      if (value !== '' && value !== '0' && value !== 'false' && value !== 'no') {
+        console.log(`[getBooleanObjectiveValue] Value appears to be another team ID/name for ${key}: ${value}`);
+        return false;
       }
     } 
     // Handle boolean or numeric values
@@ -248,7 +274,7 @@ function getBooleanObjectiveValue(data: Record<string, any>, objectiveKeys: stri
     }
   }
   
-  return false;
+  return null;
 }
 
 /**

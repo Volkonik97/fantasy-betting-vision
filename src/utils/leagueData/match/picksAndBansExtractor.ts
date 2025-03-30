@@ -1,5 +1,6 @@
 
 import { LeagueGameDataRow } from '../../csv/types';
+import { PicksAndBans, prepareJsonData } from '../types';
 
 /**
  * Extract picks and bans data from game rows
@@ -27,6 +28,27 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[]): {
     // Log pour le débogage
     console.log(`Extraction des picks et bans: ${blueTeamRows.length} joueurs bleus, ${redTeamRows.length} joueurs rouges`);
     
+    // Check if we have direct picks/bans data in JSON format
+    const jsonPicksRow = rows.find(row => row.picks && typeof row.picks === 'string');
+    const jsonBansRow = rows.find(row => row.bans && typeof row.bans === 'string');
+    
+    if (jsonPicksRow?.picks) {
+      // Try to directly use JSON data if available
+      try {
+        const parsedPicks = prepareJsonData(jsonPicksRow.picks);
+        if (parsedPicks && typeof parsedPicks === 'object') {
+          console.log("Found direct JSON picks data");
+          Object.assign(picks, parsedPicks);
+          return {
+            picks: picks,
+            bans: jsonBansRow?.bans ? prepareJsonData(jsonBansRow.bans) : undefined
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing picks JSON:", e);
+      }
+    }
+    
     // Traiter d'abord les picks des joueurs (plus précis)
     processTeamPlayerPicks(blueTeamRows, picks, 'blue');
     processTeamPlayerPicks(redTeamRows, picks, 'red');
@@ -38,6 +60,24 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[]): {
     
     // Extraire les bans
     const bans: { [key: string]: { championId: string; championName?: string } } = {};
+    
+    // Try the JSON first if available
+    if (jsonBansRow?.bans) {
+      try {
+        const parsedBans = prepareJsonData(jsonBansRow.bans);
+        if (parsedBans && typeof parsedBans === 'object') {
+          console.log("Found direct JSON bans data");
+          Object.assign(bans, parsedBans);
+          return {
+            picks: Object.keys(picks).length > 0 ? picks : undefined,
+            bans: bans
+          };
+        }
+      } catch (e) {
+        console.error("Error parsing bans JSON:", e);
+      }
+    }
+    
     processBans(blueTeamRows, bans, 'blue');
     processBans(redTeamRows, bans, 'red');
     

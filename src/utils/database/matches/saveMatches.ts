@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
+import { booleanToString, prepareJsonData } from '../../leagueData/types';
 
 // Import the clearMatchCache function from getMatches
 import { clearMatchCache } from './getMatches';
@@ -39,58 +40,6 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
       matches = uniqueMatches;
     }
     
-    // Fonction pour convertir les booléens
-    const convertToBoolean = (value: any): boolean | null => {
-      if (value === null || value === undefined) return null;
-      
-      if (typeof value === 'boolean') return value;
-      
-      if (typeof value === 'string') {
-        const lowerValue = value.toLowerCase().trim();
-        if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'oui') return true;
-        if (lowerValue === 'false' || lowerValue === '0' || lowerValue === 'no' || lowerValue === 'non') return false;
-        return null;
-      }
-      
-      if (typeof value === 'number') {
-        return value === 1;
-      }
-      
-      return null;
-    };
-
-    // Function to convert boolean to string representation for DB compatibility
-    const booleanToString = (value: any): string | null => {
-      if (value === null || value === undefined) return null;
-      
-      if (typeof value === 'boolean') {
-        return value ? 'true' : 'false';
-      }
-      
-      if (typeof value === 'string') {
-        return value;
-      }
-      
-      if (typeof value === 'number') {
-        return value === 1 ? 'true' : 'false';
-      }
-      
-      return null;
-    };
-    
-    // Fonction pour préparer les données JSON
-    const prepareJsonData = (value: any): any => {
-      if (!value) return null;
-      if (typeof value === 'string') {
-        try {
-          return JSON.parse(value);
-        } catch (e) {
-          return value; // Return as is if not valid JSON
-        }
-      }
-      return value; // Already an object
-    };
-    
     // Insert matches in batches of 50 using upsert
     const matchChunks = chunk(matches, 50);
     let successCount = 0;
@@ -109,6 +58,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               dragons: sampleMatch.extraStats.dragons,
               barons: sampleMatch.extraStats.barons,
               first_blood: sampleMatch.extraStats.first_blood,
+              first_blood_type: typeof sampleMatch.extraStats.first_blood,
               picks: sampleMatch.extraStats.picks ? typeof sampleMatch.extraStats.picks : 'Pas de picks',
               bans: sampleMatch.extraStats.bans ? typeof sampleMatch.extraStats.bans : 'Pas de bans'
             } : 'Pas de extraStats',
@@ -142,10 +92,12 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 barons: extraStats.barons || 0,
                 first_blood: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
                 hasPicks: !!picks,
-                hasBans: !!bans
+                hasBans: !!bans,
+                picksType: picks ? typeof picks : 'undefined',
+                bansType: bans ? typeof bans : 'undefined'
               });
               
-              // Assemble match object with safe property access
+              // Assemble match object with safe property access and proper boolean -> string conversion
               return {
                 id: match.id,
                 tournament: match.tournament || '',

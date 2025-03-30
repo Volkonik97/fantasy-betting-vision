@@ -20,7 +20,7 @@ export interface MatchTeamStats {
   team_id: string;
   match_id: string;
   side: string;
-  is_winner: boolean;
+  is_winner: boolean | null;
   team_kpm: number;
   ckpm: number;
   first_blood: boolean | null;
@@ -213,12 +213,30 @@ export interface PicksAndBans {
   }[];
 }
 
-// Helper function to parse boolean values from strings
-export function parseBoolean(value?: string | null): boolean {
-  if (!value) return false;
+// Improved helper function to parse boolean values from strings with more robust logic
+export function parseBoolean(value?: string | null | boolean): boolean | null {
+  if (value === undefined) return null;
+  if (value === null) return null;
   
-  value = value.toLowerCase().trim();
-  return value === 'true' || value === '1' || value === 'yes' || value === 'y';
+  // If it's already a boolean, return it
+  if (typeof value === 'boolean') return value;
+  
+  // Convert strings to lowercase for comparison
+  if (typeof value === 'string') {
+    const normalizedValue = value.toLowerCase().trim();
+    if (['true', '1', 'yes', 'y', 'oui'].includes(normalizedValue)) return true;
+    if (['false', '0', 'no', 'n', 'non'].includes(normalizedValue)) return false;
+    // If it matches a team ID or name format, might be true
+    // but we'll return null as we can't determine for sure in this function
+    return null;
+  }
+  
+  // Number conversion
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return null;
 }
 
 // Helper function to safely parse integers
@@ -233,4 +251,42 @@ export function safeParseFloat(value?: string | null): number {
   if (!value) return 0;
   const parsedValue = parseFloat(String(value));
   return isNaN(parsedValue) ? 0 : parsedValue;
+}
+
+// Helper function to convert boolean to string representation that's safe for database storage
+export function booleanToString(value?: boolean | string | null): string | null {
+  if (value === undefined || value === null) return null;
+  
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  
+  if (typeof value === 'string') {
+    // If it's already a string, ensure it's normalized to 'true'/'false'
+    const lowerValue = value.toLowerCase().trim();
+    if (['true', '1', 'yes', 'y', 'oui'].includes(lowerValue)) return 'true';
+    if (['false', '0', 'no', 'n', 'non'].includes(lowerValue)) return 'false';
+    // For team IDs and other strings, return as is
+    return value;
+  }
+  
+  return null;
+}
+
+// Helper function to prepare JSON data for database storage
+export function prepareJsonData(value: any): any {
+  if (!value) return null;
+  
+  // If it's a string, try to parse it as JSON
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      // If parsing fails, it's not valid JSON; return as is
+      return value;
+    }
+  }
+  
+  // If it's already an object or array, return as is
+  return value;
 }

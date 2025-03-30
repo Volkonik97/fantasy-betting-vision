@@ -1,5 +1,7 @@
+
 import { MatchCSV } from '../csv/types';
 import { Match, Team } from '../models/types';
+import { prepareJsonData } from '../leagueData/types';
 
 /**
  * Convert match CSV data to application Match objects
@@ -66,6 +68,18 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         });
       }
 
+      // Process picks and bans data
+      const processedPicks = prepareJsonData(blueTeamRow.picks);
+      const processedBans = prepareJsonData(blueTeamRow.bans);
+      
+      console.log(`[CSV Converter] Match ${blueTeamRow.id} - Picks and bans:`, {
+        rawPicks: blueTeamRow.picks ? typeof blueTeamRow.picks : 'undefined',
+        rawBans: blueTeamRow.bans ? typeof blueTeamRow.bans : 'undefined',
+        processedPicks: processedPicks ? typeof processedPicks : 'undefined',
+        processedBans: processedBans ? typeof processedBans : 'undefined',
+        picksKeys: processedPicks ? Object.keys(processedPicks) : []
+      });
+      
       // Directly use the numeric values from the CSV data
       matchObject.extraStats = {
         patch: blueTeamRow.patch || '',
@@ -74,11 +88,15 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         playoffs: blueTeamRow.playoffs === 'true',
         team_kpm: parseFloat(blueTeamRow.teamKpm || '0'),
         ckpm: parseFloat(blueTeamRow.ckpm || '0'),
+        
+        // First objectives - can be either string or boolean
         first_blood: blueTeamRow.firstBlood,
         first_dragon: blueTeamRow.firstDragon,
         first_herald: blueTeamRow.firstHerald,
         first_baron: blueTeamRow.firstBaron,
         first_tower: blueTeamRow.firstTower,
+        first_mid_tower: blueTeamRow.firstMidTower,
+        first_three_towers: blueTeamRow.firstThreeTowers,
         
         // Drakes - valeurs directes
         dragons: parseInt(blueTeamRow.dragons || '0'),
@@ -88,7 +106,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         oceans: parseInt(blueTeamRow.oceans || '0'),
         chemtechs: parseInt(blueTeamRow.chemtechs || '0'),
         hextechs: parseInt(blueTeamRow.hextechs || '0'),
-        drakes_unknown: parseInt(blueTeamRow.drakesUnknown || '0'),
+        drakes_unknown: parseInt(blueTeamRow.drakes_unknown || '0'),
         elemental_drakes: parseInt(blueTeamRow.elementalDrakes || '0'),
         
         // Autres objectifs
@@ -99,14 +117,12 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         team_deaths: parseInt(blueTeamRow.teamDeaths || '0'),
         elders: parseInt(blueTeamRow.elders || '0'),
         void_grubs: parseInt(blueTeamRow.voidGrubs || '0'),
-        first_mid_tower: blueTeamRow.firstMidTower,
-        first_three_towers: blueTeamRow.firstThreeTowers,
         turret_plates: parseInt(blueTeamRow.turretPlates || '0'),
         inhibitors: parseInt(blueTeamRow.inhibitors || '0'),
         
         // Ensures picks and bans are included
-        picks: blueTeamRow.picks,
-        bans: blueTeamRow.bans
+        picks: processedPicks,
+        bans: processedBans
       };
 
       // Validation and logging for important matches

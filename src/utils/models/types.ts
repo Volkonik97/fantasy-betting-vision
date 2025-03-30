@@ -98,7 +98,7 @@ export interface Match {
     first_blood?: string | boolean;
     first_dragon?: string | boolean;
     first_baron?: string | boolean;
-    // Ajout des propriétés picks et bans
+    // Ensure picks and bans properties are properly defined
     picks?: any;
     bans?: any;
   };
