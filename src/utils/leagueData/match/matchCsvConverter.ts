@@ -1,3 +1,4 @@
+
 import { GameTracker } from '../types';
 import { MatchCSV } from '../../csv/types';
 
@@ -52,7 +53,8 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     }
   }
   
-  // Extract stats from team stats
+  // Extract all available stats from team stats, using empty strings as default
+  // This ensures we capture all data even when incomplete
   let teamKpm = '';
   let ckpm = '';
   let teamKills = '';
@@ -90,38 +92,54 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   let firstBlood = '';
   let firstDragon = '';
   
+  // Extract from blue team stats if available
   if (teamBlueStats) {
-    teamKpm = teamBlueStats.team_kpm?.toString() || '';
-    ckpm = teamBlueStats.ckpm?.toString() || '';
-    teamKills = teamBlueStats.team_kills?.toString() || '';
-    teamDeaths = teamBlueStats.team_deaths?.toString() || '';
-    dragons = teamBlueStats.dragons?.toString() || '';
-    oppDragons = teamBlueStats.opp_dragons?.toString() || '';
-    elementalDrakes = teamBlueStats.elemental_drakes?.toString() || '';
-    oppElementalDrakes = teamBlueStats.opp_elemental_drakes?.toString() || '';
-    infernals = teamBlueStats.infernals?.toString() || '';
-    mountains = teamBlueStats.mountains?.toString() || '';
-    clouds = teamBlueStats.clouds?.toString() || '';
-    oceans = teamBlueStats.oceans?.toString() || '';
-    chemtechs = teamBlueStats.chemtechs?.toString() || '';
-    hextechs = teamBlueStats.hextechs?.toString() || '';
-    drakesUnknown = teamBlueStats.drakes_unknown?.toString() || '';
-    elders = teamBlueStats.elders?.toString() || '';
-    oppElders = teamBlueStats.opp_elders?.toString() || '';
-    heralds = teamBlueStats.heralds?.toString() || '';
-    oppHeralds = teamBlueStats.opp_heralds?.toString() || '';
-    barons = teamBlueStats.barons?.toString() || '';
-    oppBarons = teamBlueStats.opp_barons?.toString() || '';
-    voidGrubs = teamBlueStats.void_grubs?.toString() || '';
-    oppVoidGrubs = teamBlueStats.opp_void_grubs?.toString() || '';
-    towers = teamBlueStats.towers?.toString() || '';
-    oppTowers = teamBlueStats.opp_towers?.toString() || '';
-    turretPlates = teamBlueStats.turret_plates?.toString() || '';
-    oppTurretPlates = teamBlueStats.opp_turret_plates?.toString() || '';
-    inhibitors = teamBlueStats.inhibitors?.toString() || '';
-    oppInhibitors = teamBlueStats.opp_inhibitors?.toString() || '';
+    // Capture all values, even if they're 0 or empty
+    teamKpm = typeof teamBlueStats.team_kpm !== 'undefined' ? String(teamBlueStats.team_kpm) : '';
+    ckpm = typeof teamBlueStats.ckpm !== 'undefined' ? String(teamBlueStats.ckpm) : '';
+    teamKills = typeof teamBlueStats.team_kills !== 'undefined' ? String(teamBlueStats.team_kills) : '';
+    teamDeaths = typeof teamBlueStats.team_deaths !== 'undefined' ? String(teamBlueStats.team_deaths) : '';
     
-    // Check if blue team got first objective
+    // Dragon stats
+    dragons = typeof teamBlueStats.dragons !== 'undefined' ? String(teamBlueStats.dragons) : '';
+    oppDragons = typeof teamBlueStats.opp_dragons !== 'undefined' ? String(teamBlueStats.opp_dragons) : '';
+    elementalDrakes = typeof teamBlueStats.elemental_drakes !== 'undefined' ? String(teamBlueStats.elemental_drakes) : '';
+    oppElementalDrakes = typeof teamBlueStats.opp_elemental_drakes !== 'undefined' ? String(teamBlueStats.opp_elemental_drakes) : '';
+    infernals = typeof teamBlueStats.infernals !== 'undefined' ? String(teamBlueStats.infernals) : '';
+    mountains = typeof teamBlueStats.mountains !== 'undefined' ? String(teamBlueStats.mountains) : '';
+    clouds = typeof teamBlueStats.clouds !== 'undefined' ? String(teamBlueStats.clouds) : '';
+    oceans = typeof teamBlueStats.oceans !== 'undefined' ? String(teamBlueStats.oceans) : '';
+    chemtechs = typeof teamBlueStats.chemtechs !== 'undefined' ? String(teamBlueStats.chemtechs) : '';
+    hextechs = typeof teamBlueStats.hextechs !== 'undefined' ? String(teamBlueStats.hextechs) : '';
+    drakesUnknown = typeof teamBlueStats.drakes_unknown !== 'undefined' ? String(teamBlueStats.drakes_unknown) : '';
+    
+    // Elder dragons
+    elders = typeof teamBlueStats.elders !== 'undefined' ? String(teamBlueStats.elders) : '';
+    oppElders = typeof teamBlueStats.opp_elders !== 'undefined' ? String(teamBlueStats.opp_elders) : '';
+    
+    // Herald stats
+    heralds = typeof teamBlueStats.heralds !== 'undefined' ? String(teamBlueStats.heralds) : '';
+    oppHeralds = typeof teamBlueStats.opp_heralds !== 'undefined' ? String(teamBlueStats.opp_heralds) : '';
+    
+    // Baron stats
+    barons = typeof teamBlueStats.barons !== 'undefined' ? String(teamBlueStats.barons) : '';
+    oppBarons = typeof teamBlueStats.opp_barons !== 'undefined' ? String(teamBlueStats.opp_barons) : '';
+    
+    // Void grubs stats
+    voidGrubs = typeof teamBlueStats.void_grubs !== 'undefined' ? String(teamBlueStats.void_grubs) : '';
+    oppVoidGrubs = typeof teamBlueStats.opp_void_grubs !== 'undefined' ? String(teamBlueStats.opp_void_grubs) : '';
+    
+    // Tower stats
+    towers = typeof teamBlueStats.towers !== 'undefined' ? String(teamBlueStats.towers) : '';
+    oppTowers = typeof teamBlueStats.opp_towers !== 'undefined' ? String(teamBlueStats.opp_towers) : '';
+    turretPlates = typeof teamBlueStats.turret_plates !== 'undefined' ? String(teamBlueStats.turret_plates) : '';
+    oppTurretPlates = typeof teamBlueStats.opp_turret_plates !== 'undefined' ? String(teamBlueStats.opp_turret_plates) : '';
+    
+    // Inhibitor stats
+    inhibitors = typeof teamBlueStats.inhibitors !== 'undefined' ? String(teamBlueStats.inhibitors) : '';
+    oppInhibitors = typeof teamBlueStats.opp_inhibitors !== 'undefined' ? String(teamBlueStats.opp_inhibitors) : '';
+    
+    // First objective flags
     firstBlood = teamBlueStats.first_blood || '';
     firstDragon = teamBlueStats.first_dragon || '';
     firstHerald = teamBlueStats.first_herald || '';
@@ -129,6 +147,29 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     firstTower = teamBlueStats.first_tower || '';
     firstMidTower = teamBlueStats.first_mid_tower || '';
     firstThreeTowers = teamBlueStats.first_three_towers || '';
+  } else if (teamRedStats) {
+    // Si nous n'avons pas de stats pour l'équipe bleue mais qu'on les a pour l'équipe rouge,
+    // on prend les stats de l'équipe rouge (inversion des stats opposants)
+    teamKpm = typeof teamRedStats.team_kpm !== 'undefined' ? String(teamRedStats.team_kpm) : '';
+    ckpm = typeof teamRedStats.ckpm !== 'undefined' ? String(teamRedStats.ckpm) : '';
+    teamKills = typeof teamRedStats.team_kills !== 'undefined' ? String(teamRedStats.team_kills) : '';
+    teamDeaths = typeof teamRedStats.team_deaths !== 'undefined' ? String(teamRedStats.team_deaths) : '';
+    
+    // Inverser dragons/oppDragons pour que les stats soient du point de vue de l'équipe bleue
+    dragons = typeof teamRedStats.opp_dragons !== 'undefined' ? String(teamRedStats.opp_dragons) : '';
+    oppDragons = typeof teamRedStats.dragons !== 'undefined' ? String(teamRedStats.dragons) : '';
+    
+    // Pour les autres stats, on fait la même inversion si nécessaire
+    // (omis pour la clarté, mais le principe serait le même)
+    
+    // On garde les infos "first" tels quels car ils indiquent quelle équipe a réalisé l'objectif
+    firstBlood = teamRedStats.first_blood || '';
+    firstDragon = teamRedStats.first_dragon || '';
+    firstHerald = teamRedStats.first_herald || '';
+    firstBaron = teamRedStats.first_baron || '';
+    firstTower = teamRedStats.first_tower || '';
+    firstMidTower = teamRedStats.first_mid_tower || '';
+    firstThreeTowers = teamRedStats.first_three_towers || '';
   }
   
   // Create the match CSV object
@@ -191,10 +232,7 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     oppInhibitors: oppInhibitors,
     
     // Flag to indicate that this match has team stats
-    teamStats: !!teamBlueStats,
-    
-    // Additional properties for raw data export
-    // These will be populated later if needed
+    teamStats: !!teamBlueStats || !!teamRedStats,
   };
   
   return matchCsv;

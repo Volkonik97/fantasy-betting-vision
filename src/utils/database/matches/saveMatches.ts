@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -70,9 +71,13 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
           .from('matches')
           .upsert(
             matchChunk.map(match => {
-              // Extract stats and result data, ensuring they exist with default empty objects
+              // Ensure extraStats and result objects exist
               const extraStats = match.extraStats || {};
               const result = match.result || {};
+              
+              // Ensure other required properties are available
+              const teamBlueId = match.teamBlue?.id || '';
+              const teamRedId = match.teamRed?.id || '';
               
               // Log objective data for this match
               console.log(`Match ${match.id} données d'objectifs pour la BD:`, {
@@ -81,17 +86,17 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 first_blood: extraStats.first_blood || result.firstBlood || null
               });
               
-              // Type-safe access to nested properties using optional chaining
+              // Assemble match object with safe property access
               return {
                 id: match.id,
-                tournament: match.tournament,
-                date: match.date,
-                team_blue_id: match.teamBlue.id,
-                team_red_id: match.teamRed.id,
-                predicted_winner: match.predictedWinner,
-                blue_win_odds: match.blueWinOdds,
-                red_win_odds: match.redWinOdds,
-                status: match.status,
+                tournament: match.tournament || '',
+                date: match.date || '',
+                team_blue_id: teamBlueId,
+                team_red_id: teamRedId,
+                predicted_winner: match.predictedWinner || '',
+                blue_win_odds: match.blueWinOdds || 0,
+                red_win_odds: match.redWinOdds || 0,
+                status: match.status || 'Upcoming',
                 patch: extraStats.patch || '',
                 year: extraStats.year || '',
                 split: extraStats.split || '',

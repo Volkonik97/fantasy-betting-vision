@@ -36,59 +36,53 @@ export function extractTeamStats(
     
     console.log(`Extraction des statistiques d'équipe pour ${teamId} dans le match ${gameId}`);
     
-    // Log sample data to verify values
-    if (rows.length > 0) {
-      console.log(`Données d'échantillon pour l'équipe ${teamId}:`, {
-        dragons: baseRow.dragons,
-        barons: baseRow.barons,
-        firstblood: baseRow.firstblood,
-        firstdragon: baseRow.firstdragon,
-        firstbaron: baseRow.firstbaron,
-        gameLength: baseRow.gamelength,
-        teamKpm: baseRow['team kpm'],
-        ckpm: baseRow.ckpm
-      });
-    }
+    // Collect all rows for this game and team
+    const allTeamRows = gameRows.filter(row => row.teamid === teamId);
+    const allTeamData = combineTeamRowData(allTeamRows);
     
-    // Determine if this team got first objectives
-    const hasFirstBlood = checkTeamObjectiveValue(baseRow.firstblood, teamId);
-    const hasFirstDragon = checkTeamObjectiveValue(baseRow.firstdragon, teamId);
-    const hasFirstHerald = checkTeamObjectiveValue(baseRow.firstherald, teamId);
-    const hasFirstBaron = checkTeamObjectiveValue(baseRow.firstbaron, teamId);
-    const hasFirstTower = checkTeamObjectiveValue(baseRow.firsttower, teamId);
-    const hasFirstMidTower = checkTeamObjectiveValue(baseRow.firstmidtower, teamId);
-    const hasFirstThreeTowers = checkTeamObjectiveValue(baseRow.firsttothreetowers, teamId);
+    // Log all collected data keys for debugging
+    const dataKeys = Object.keys(allTeamData);
+    console.log(`Données disponibles pour l'équipe ${teamId}:`, dataKeys);
     
-    // Parse numeric values with safeParse helpers
-    const dragons = safeParseInt(baseRow.dragons);
-    const oppDragons = safeParseInt(baseRow.opp_dragons);
-    const elementalDrakes = safeParseInt(baseRow.elementaldrakes);
-    const oppElementalDrakes = safeParseInt(baseRow.opp_elementaldrakes);
-    const infernals = safeParseInt(baseRow.infernals);
-    const mountains = safeParseInt(baseRow.mountains);
-    const clouds = safeParseInt(baseRow.clouds);
-    const oceans = safeParseInt(baseRow.oceans);
-    const chemtechs = safeParseInt(baseRow.chemtechs);
-    const hextechs = safeParseInt(baseRow.hextechs);
-    const drakesUnknown = safeParseInt(baseRow['dragons (type unknown)']);
-    const elders = safeParseInt(baseRow.elders);
-    const oppElders = safeParseInt(baseRow.opp_elders);
-    const heralds = safeParseInt(baseRow.heralds);
-    const oppHeralds = safeParseInt(baseRow.opp_heralds);
-    const voidGrubs = safeParseInt(baseRow.void_grubs);
-    const oppVoidGrubs = safeParseInt(baseRow.opp_void_grubs);
-    const barons = safeParseInt(baseRow.barons);
-    const oppBarons = safeParseInt(baseRow.opp_barons);
-    const towers = safeParseInt(baseRow.towers);
-    const oppTowers = safeParseInt(baseRow.opp_towers);
-    const turretPlates = safeParseInt(baseRow.turretplates);
-    const oppTurretPlates = safeParseInt(baseRow.opp_turretplates);
-    const inhibitors = safeParseInt(baseRow.inhibitors);
-    const oppInhibitors = safeParseInt(baseRow.opp_inhibitors);
-    const teamKills = safeParseInt(baseRow.teamkills);
-    const teamDeaths = safeParseInt(baseRow.teamdeaths);
-    const teamKpm = safeParseFloat(baseRow['team kpm']);
-    const ckpm = safeParseFloat(baseRow.ckpm);
+    // Determine if this team got first objectives by checking all collected data
+    const hasFirstBlood = getFirstObjectiveValue(allTeamData, 'firstblood', teamId);
+    const hasFirstDragon = getFirstObjectiveValue(allTeamData, 'firstdragon', teamId);
+    const hasFirstHerald = getFirstObjectiveValue(allTeamData, 'firstherald', teamId);
+    const hasFirstBaron = getFirstObjectiveValue(allTeamData, 'firstbaron', teamId);
+    const hasFirstTower = getFirstObjectiveValue(allTeamData, 'firsttower', teamId);
+    const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
+    const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
+    
+    // Parse numeric values from all collected data
+    const dragons = getStatValue(allTeamData, 'dragons');
+    const oppDragons = getStatValue(allTeamData, 'opp_dragons');
+    const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
+    const oppElementalDrakes = getStatValue(allTeamData, 'opp_elementaldrakes');
+    const infernals = getStatValue(allTeamData, 'infernals');
+    const mountains = getStatValue(allTeamData, 'mountains');
+    const clouds = getStatValue(allTeamData, 'clouds');
+    const oceans = getStatValue(allTeamData, 'oceans');
+    const chemtechs = getStatValue(allTeamData, 'chemtechs');
+    const hextechs = getStatValue(allTeamData, 'hextechs');
+    const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)');
+    const elders = getStatValue(allTeamData, 'elders');
+    const oppElders = getStatValue(allTeamData, 'opp_elders');
+    const heralds = getStatValue(allTeamData, 'heralds');
+    const oppHeralds = getStatValue(allTeamData, 'opp_heralds');
+    const voidGrubs = getStatValue(allTeamData, 'void_grubs'); 
+    const oppVoidGrubs = getStatValue(allTeamData, 'opp_void_grubs');
+    const barons = getStatValue(allTeamData, 'barons');
+    const oppBarons = getStatValue(allTeamData, 'opp_barons');
+    const towers = getStatValue(allTeamData, 'towers');
+    const oppTowers = getStatValue(allTeamData, 'opp_towers');
+    const turretPlates = getStatValue(allTeamData, 'turretplates');
+    const oppTurretPlates = getStatValue(allTeamData, 'opp_turretplates');
+    const inhibitors = getStatValue(allTeamData, 'inhibitors');
+    const oppInhibitors = getStatValue(allTeamData, 'opp_inhibitors');
+    const teamKills = getStatValue(allTeamData, 'teamkills');
+    const teamDeaths = getStatValue(allTeamData, 'teamdeaths');
+    const teamKpm = getStatValue(allTeamData, 'team kpm'); 
+    const ckpm = getStatValue(allTeamData, 'ckpm');
     
     teamStatsMap.set(teamId, {
       team_id: teamId,
@@ -142,6 +136,53 @@ export function extractTeamStats(
   });
   
   return teamStatsMap;
+}
+
+/**
+ * Combine all data from multiple rows for the same team
+ * to ensure we capture all available statistics
+ */
+function combineTeamRowData(rows: LeagueGameDataRow[]): Record<string, any> {
+  const combinedData: Record<string, any> = {};
+  
+  rows.forEach(row => {
+    // Iterate through all properties in the row
+    Object.entries(row).forEach(([key, value]) => {
+      // Only set the value if it's not empty and not already set
+      if (value !== undefined && value !== null && value !== '' && 
+          (combinedData[key] === undefined || combinedData[key] === null || combinedData[key] === '')) {
+        combinedData[key] = value;
+      }
+    });
+  });
+  
+  return combinedData;
+}
+
+/**
+ * Get the value for a first objective (firstblood, firstdragon, etc.)
+ * from the combined team data
+ */
+function getFirstObjectiveValue(data: Record<string, any>, objectiveKey: string, teamId: string): string | null {
+  if (!data[objectiveKey]) return null;
+  
+  return checkTeamObjectiveValue(data[objectiveKey], teamId);
+}
+
+/**
+ * Get a numeric stat value from the combined team data
+ * Returns a numeric value or 0 if not found or not numeric
+ */
+function getStatValue(data: Record<string, any>, statKey: string): number {
+  const value = data[statKey];
+  
+  if (value === undefined || value === null || value === '') {
+    return 0;
+  }
+  
+  // Try to parse as float first, then as int if that fails
+  const parsed = safeParseFloat(value);
+  return isNaN(parsed) ? safeParseInt(value) : parsed;
 }
 
 /**
