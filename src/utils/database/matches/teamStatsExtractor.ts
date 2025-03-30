@@ -98,7 +98,7 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
   };
 
-  // Pour l'équipe rouge, on utilise aussi les données sans préfixe "opp_" pour les types de dragons
+  // Pour l'équipe rouge, on utilise les données avec préfixe "opp_" pour les types de dragons
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
@@ -107,16 +107,16 @@ export function extractTeamSpecificStats(match: Match): {
     deaths: safeParseInt(match.extraStats.team_kills), // inversé pour l'équipe rouge
     kpm: 0, // Non disponible directement
     
-    // Dragons pour l'équipe rouge - valeurs sans préfixe comme pour l'équipe bleue
+    // Dragons pour l'équipe rouge - valeurs avec préfixe "opp_" pour l'équipe rouge
     dragons: totalDragonsByTeam.red,
-    infernals: safeParseInt(match.extraStats.infernals),
-    mountains: safeParseInt(match.extraStats.mountains),
-    clouds: safeParseInt(match.extraStats.clouds),
-    oceans: safeParseInt(match.extraStats.oceans),
-    chemtechs: safeParseInt(match.extraStats.chemtechs),
-    hextechs: safeParseInt(match.extraStats.hextechs),
-    drakes_unknown: safeParseInt(match.extraStats.drakes_unknown),
-    elemental_drakes: safeParseInt(match.extraStats.elemental_drakes),
+    infernals: safeParseInt(match.extraStats.opp_infernals),
+    mountains: safeParseInt(match.extraStats.opp_mountains),
+    clouds: safeParseInt(match.extraStats.opp_clouds),
+    oceans: safeParseInt(match.extraStats.opp_oceans),
+    chemtechs: safeParseInt(match.extraStats.opp_chemtechs),
+    hextechs: safeParseInt(match.extraStats.opp_hextechs),
+    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown),
+    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes),
     
     // Autres objectifs pour l'équipe rouge
     elders: safeParseInt(match.extraStats.opp_elders),
