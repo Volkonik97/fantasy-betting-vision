@@ -6,7 +6,7 @@ import { groupGamesByGameId } from '../gameDataExtractor';
 import { initializeGameTracker, identifyTeamSides, identifyGameResult } from '../gameTracker';
 import { extractTeamStats } from '../teamStatsExtractor';
 import { extractPlayerStats } from '../playerStatsExtractor';
-import { convertToMatchCsv } from '../converter';
+import { convertToMatchCsv } from '../converter/matchCsvConverter';
 import { extractPicksAndBans } from '../picksAndBansExtractor';
 
 /**

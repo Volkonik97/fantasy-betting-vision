@@ -44,10 +44,11 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     Object.assign(matchCsv, resultData);
   }
   
-  // Extract picks and bans data
-  const rows = Array.from(game.rows || []);
-  if (rows.length > 0) {
-    const { picks, bans } = extractPicksAndBans(rows);
+  // Extract picks and bans data if available
+  if (game.rows && game.rows.size > 0) {
+    // Pass the rows Set directly to extractPicksAndBans which now handles both arrays and Sets
+    const { picks, bans } = extractPicksAndBans(game.rows);
+    
     if (picks) {
       matchCsv.picks = picks;
       console.log(`[matchCsvConverter] Match ${game.id} - Picks data found:`, Object.keys(picks).length);

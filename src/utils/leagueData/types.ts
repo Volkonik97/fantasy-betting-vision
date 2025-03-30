@@ -13,6 +13,7 @@ export interface GameTracker {
   };
   result?: string;
   duration?: string;
+  rows?: Set<any>; // Add this property to store game rows
 }
 
 export interface MatchTeamStats {

@@ -1,16 +1,18 @@
-
 import { LeagueGameDataRow } from '../../csv/types';
 import { PicksAndBans, prepareJsonData } from '../types';
 
 /**
  * Extract picks and bans data from game rows
  */
-export function extractPicksAndBans(rows: LeagueGameDataRow[]): {
+export function extractPicksAndBans(rows: LeagueGameDataRow[] | Set<LeagueGameDataRow>): {
   picks: any | undefined;
   bans: any | undefined;
 } {
+  // Convert Set to Array if needed
+  const rowsArray = rows instanceof Set ? Array.from(rows) : rows;
+
   // Vérification que les données sont disponibles
-  if (!rows || rows.length === 0) {
+  if (!rowsArray || rowsArray.length === 0) {
     return { picks: undefined, bans: undefined };
   }
 
@@ -22,15 +24,15 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[]): {
     const positions = ['Top', 'Jungle', 'Mid', 'ADC', 'Support'];
     
     // Extraire les données de picks de manière plus efficace
-    const blueTeamRows = rows.filter(row => row.side && row.side.toLowerCase() === 'blue');
-    const redTeamRows = rows.filter(row => row.side && row.side.toLowerCase() === 'red');
+    const blueTeamRows = rowsArray.filter(row => row.side && row.side.toLowerCase() === 'blue');
+    const redTeamRows = rowsArray.filter(row => row.side && row.side.toLowerCase() === 'red');
     
     // Log pour le débogage
     console.log(`Extraction des picks et bans: ${blueTeamRows.length} joueurs bleus, ${redTeamRows.length} joueurs rouges`);
     
     // Check if we have direct picks/bans data in JSON format
-    const jsonPicksRow = rows.find(row => row.picks && typeof row.picks === 'string');
-    const jsonBansRow = rows.find(row => row.bans && typeof row.bans === 'string');
+    const jsonPicksRow = rowsArray.find(row => row.picks && typeof row.picks === 'string');
+    const jsonBansRow = rowsArray.find(row => row.bans && typeof row.bans === 'string');
     
     if (jsonPicksRow?.picks) {
       // Try to directly use JSON data if available
