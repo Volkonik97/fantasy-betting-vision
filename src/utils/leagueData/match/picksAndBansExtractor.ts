@@ -32,9 +32,9 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[]): {
     processTeamPlayerPicks(redTeamRows, picks, 'red');
     
     // Si certains picks ne sont pas trouvés via les joueurs,
-    // essayer de les extraire via les colonnes pick1, pick2, etc.
-    processTeamColumnPicks(blueTeamRows, picks, 'blue');
-    processTeamColumnPicks(redTeamRows, picks, 'red');
+    // essayer de les extraire via les colonnes dynamiques
+    processTeamDynamicPicks(blueTeamRows, picks, 'blue');
+    processTeamDynamicPicks(redTeamRows, picks, 'red');
     
     // Extraire les bans
     const bans: { [key: string]: { championId: string; championName?: string } } = {};
@@ -92,9 +92,10 @@ function processTeamPlayerPicks(
 }
 
 /**
- * Process picks from pick1, pick2, etc. columns
+ * Process picks from dynamic properties in the row
+ * This handles the case where pick data might be in different column formats
  */
-function processTeamColumnPicks(
+function processTeamDynamicPicks(
   teamRows: LeagueGameDataRow[],
   picks: { [key: string]: { championId: string; championName?: string; role?: string; playerName?: string } },
   teamPrefix: 'blue' | 'red'
@@ -104,30 +105,43 @@ function processTeamColumnPicks(
   
   // Utiliser la première ligne qui contient des données de picks
   const pickRow = teamRows.find(row => {
-    return row.pick1 || row.pick2 || row.pick3 || row.pick4 || row.pick5;
+    // Check for possible pick data in any column
+    return Object.keys(row).some(key => 
+      key.startsWith('pick') && 
+      typeof row[key as keyof LeagueGameDataRow] === 'string' &&
+      row[key as keyof LeagueGameDataRow] !== ''
+    );
   });
   
   if (!pickRow) return;
   
-  // Extraire les picks des colonnes pick1, pick2, etc.
-  for (let i = 1; i <= 5; i++) {
-    const pickKey = `pick${i}` as keyof LeagueGameDataRow;
-    if (pickRow[pickKey] && typeof pickRow[pickKey] === 'string') {
-      const champName = pickRow[pickKey] as string;
-      const role = positions[i - 1] || `Position${i}`;
-      
-      const fullPickKey = `${teamPrefix}_${role.toLowerCase()}`;
-      
-      // N'ajouter que si ce pick n'a pas déjà été ajouté
-      if (!picks[fullPickKey]) {
-        picks[fullPickKey] = {
-          championId: champName,
-          championName: champName,
-          role: role
-        };
-      }
+  // Extraire les picks en cherchant dynamiquement les colonnes
+  const pickKeys = Object.keys(pickRow).filter(key => 
+    key.startsWith('pick') && 
+    /pick\d+/.test(key) && 
+    typeof pickRow[key as keyof LeagueGameDataRow] === 'string'
+  );
+  
+  pickKeys.sort(); // Sort to ensure we go in order (pick1, pick2, etc.)
+  
+  pickKeys.forEach((key, index) => {
+    if (index >= 5) return; // Only process the first 5 picks
+    
+    const champName = pickRow[key as keyof LeagueGameDataRow] as string;
+    if (!champName) return;
+    
+    const role = positions[index] || `Position${index+1}`;
+    const fullPickKey = `${teamPrefix}_${role.toLowerCase()}`;
+    
+    // N'ajouter que si ce pick n'a pas déjà été ajouté
+    if (!picks[fullPickKey] && champName.trim() !== '') {
+      picks[fullPickKey] = {
+        championId: champName,
+        championName: champName,
+        role: role
+      };
     }
-  }
+  });
 }
 
 /**
@@ -140,24 +154,37 @@ function processBans(
 ) {
   // Utiliser la première ligne qui contient des données de bans
   const banRow = teamRows.find(row => {
-    return row.ban1 || row.ban2 || row.ban3 || row.ban4 || row.ban5;
+    return Object.keys(row).some(key => 
+      key.startsWith('ban') && 
+      /ban\d+/.test(key) && 
+      typeof row[key as keyof LeagueGameDataRow] === 'string' && 
+      row[key as keyof LeagueGameDataRow] !== ''
+    );
   });
   
   if (!banRow) return;
   
-  // Extraire les bans
-  for (let i = 1; i <= 5; i++) {
-    const banKey = `ban${i}` as keyof LeagueGameDataRow;
-    if (banRow[banKey] && typeof banRow[banKey] === 'string') {
-      const champName = banRow[banKey] as string;
-      
-      // Créer une clé unique pour ce ban
-      const fullBanKey = `${teamPrefix}_ban${i}`;
-      
-      bans[fullBanKey] = {
-        championId: champName,
-        championName: champName
-      };
-    }
-  }
+  // Find all ban columns dynamically
+  const banKeys = Object.keys(banRow).filter(key => 
+    key.startsWith('ban') && 
+    /ban\d+/.test(key) && 
+    typeof banRow[key as keyof LeagueGameDataRow] === 'string'
+  );
+  
+  banKeys.sort(); // Sort to ensure we go in order (ban1, ban2, etc.)
+  
+  banKeys.forEach((key, index) => {
+    if (index >= 5) return; // Only process the first 5 bans
+    
+    const champName = banRow[key as keyof LeagueGameDataRow] as string;
+    if (!champName || champName.trim() === '') return;
+    
+    // Créer une clé unique pour ce ban
+    const fullBanKey = `${teamPrefix}_ban${index+1}`;
+    
+    bans[fullBanKey] = {
+      championId: champName,
+      championName: champName
+    };
+  });
 }
