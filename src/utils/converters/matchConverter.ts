@@ -27,7 +27,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
       // Log dragon data for debugging specific matches
       if (match.id === 'LOLTMNT02_215152' || match.id === 'LOLTMNT02_222859') {
         console.log(`[CSV Converter] Dragon data for match ${match.id}:`, { 
-          // Blue team dragon data
+          // Dragons data directly from CSV
           dragons: match.dragons,
           infernals: match.infernals,
           mountains: match.mountains, 
@@ -52,7 +52,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         first_baron: match.firstBaron,
         first_tower: match.firstTower,
         
-        // Drakes - Pour l'équipe bleue (valeurs directes)
+        // Drakes - valeurs directes
         dragons: parseInt(match.dragons || '0'),
         infernals: parseInt(match.infernals || '0'),
         mountains: parseInt(match.mountains || '0'), 
@@ -62,9 +62,6 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         hextechs: parseInt(match.hextechs || '0'),
         drakes_unknown: parseInt(match.drakesUnknown || '0'),
         elemental_drakes: parseInt(match.elementalDrakes || '0'),
-        
-        // Note: Nous ne stockons plus les données de l'équipe rouge avec le préfixe "opp_"
-        // Ces données seront fournies séparément lors du traitement des données
         
         // Autres objectifs
         barons: parseInt(match.barons || '0'),
