@@ -68,9 +68,9 @@ export async function saveTeamMatchStats(
       const isValid = stat && stat.match_id && existingMatchIds.has(stat.match_id);
       if (!isValid && stat && stat.match_id) {
         if (missingMatchIds.has(stat.match_id)) {
-          // Expected issue - match doesn't exist
+          console.log(`Statistique d'équipe ignorée pour le match ${stat.match_id} - match inexistant dans la BDD`);
         } else {
-          console.log(`Statistiques d'équipe ignorées pour le match ${stat.match_id} - match inexistant`);
+          console.log(`Statistiques d'équipe ignorées pour le match ${stat.match_id} - match inexistant ou problème de données`);
         }
       }
       return isValid;
@@ -88,40 +88,57 @@ export async function saveTeamMatchStats(
       return true;
     }
     
+    // Debug a specific match if needed (LOLTMNT02_222859)
+    const specificMatch = validTeamStats.filter(stat => stat.match_id === 'LOLTMNT02_222859');
+    if (specificMatch.length > 0) {
+      console.log(`Statistiques pour le match LOLTMNT02_222859:`, specificMatch);
+    }
+    
     // Préparation des données pour l'insertion
-    const statsToInsert = validTeamStats.map(stat => ({
-      match_id: stat.match_id,
-      team_id: stat.team_id,
-      is_blue_side: stat.side === 'blue',
-      kills: stat.team_kills,
-      deaths: stat.team_deaths,
-      kpm: stat.team_kpm,
-      dragons: stat.dragons,
-      elemental_drakes: stat.elemental_drakes,
-      infernals: stat.infernals,
-      mountains: stat.mountains,
-      clouds: stat.clouds,
-      oceans: stat.oceans,
-      chemtechs: stat.chemtechs,
-      hextechs: stat.hextechs,
-      drakes_unknown: stat.drakes_unknown,
-      elders: stat.elders,
-      heralds: stat.heralds,
-      barons: stat.barons,
-      void_grubs: stat.void_grubs,
-      towers: stat.towers,
-      turret_plates: stat.turret_plates,
-      inhibitors: stat.inhibitors,
-      first_blood: stat.first_blood === true,
-      first_dragon: stat.first_dragon === true,
-      first_herald: stat.first_herald === true,
-      first_baron: stat.first_baron === true,
-      first_tower: stat.first_tower === true,
-      first_mid_tower: stat.first_mid_tower === true,
-      first_three_towers: stat.first_three_towers === true,
-      picks: stat.picks ? JSON.stringify(stat.picks) : null,
-      bans: stat.bans ? JSON.stringify(stat.bans) : null
-    }));
+    const statsToInsert = validTeamStats.map(stat => {
+      // Log des dragons clouds pour ce match spécifique
+      if (stat.match_id === 'LOLTMNT02_222859') {
+        console.log(`Préparation insertion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
+          clouds: stat.clouds,
+          side: stat.side,
+          dragons: stat.dragons
+        });
+      }
+      
+      return {
+        match_id: stat.match_id,
+        team_id: stat.team_id,
+        is_blue_side: stat.side === 'blue',
+        kills: stat.team_kills || 0,
+        deaths: stat.team_deaths || 0,
+        kpm: stat.team_kpm || 0,
+        dragons: stat.dragons || 0,
+        elemental_drakes: stat.elemental_drakes || 0,
+        infernals: stat.infernals || 0,
+        mountains: stat.mountains || 0,
+        clouds: stat.clouds || 0,
+        oceans: stat.oceans || 0,
+        chemtechs: stat.chemtechs || 0,
+        hextechs: stat.hextechs || 0,
+        drakes_unknown: stat.drakes_unknown || 0,
+        elders: stat.elders || 0,
+        heralds: stat.heralds || 0,
+        barons: stat.barons || 0,
+        void_grubs: stat.void_grubs || 0,
+        towers: stat.towers || 0,
+        turret_plates: stat.turret_plates || 0,
+        inhibitors: stat.inhibitors || 0,
+        first_blood: stat.first_blood === true,
+        first_dragon: stat.first_dragon === true,
+        first_herald: stat.first_herald === true,
+        first_baron: stat.first_baron === true,
+        first_tower: stat.first_tower === true,
+        first_mid_tower: stat.first_mid_tower === true,
+        first_three_towers: stat.first_three_towers === true,
+        picks: stat.picks ? JSON.stringify(stat.picks) : null,
+        bans: stat.bans ? JSON.stringify(stat.bans) : null
+      };
+    });
     
     // Diviser les données en lots pour éviter les limitations de taille de requête
     const chunkSize = 100;
@@ -155,6 +172,8 @@ export async function saveTeamMatchStats(
                 
               if (!individualError) {
                 individualSuccessCount++;
+              } else {
+                console.error(`Erreur individuelle pour l'équipe ${stat.team_id} match ${stat.match_id}:`, individualError);
               }
             } catch (err) {
               console.error(`Erreur individuelle pour l'équipe ${stat.team_id} match ${stat.match_id}:`, err);
@@ -162,6 +181,8 @@ export async function saveTeamMatchStats(
           }
           
           console.log(`Lot ${index + 1} fallback: ${individualSuccessCount}/${batch.length} réussis individuellement`);
+        } else {
+          console.log(`Lot ${index + 1}/${chunks.length} inséré avec succès (${batch.length} stats)`);
         }
         
         currentCount += batch.length;
