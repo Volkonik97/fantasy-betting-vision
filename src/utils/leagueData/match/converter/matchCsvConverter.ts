@@ -6,6 +6,7 @@ import { extractTeamStatistics } from './teamStatsExtractor';
 import { extractMatchResultData } from './matchResultExtractor';
 import { extractObjectiveStats } from './objectiveStatsExtractor';
 import { debugMatchData } from './debugHelper';
+import { extractPicksAndBans } from '../picksAndBansExtractor';
 
 /**
  * Convert a game tracker to a CSV row for matches
@@ -41,6 +42,21 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   if (status === 'Completed' && game.result) {
     const resultData = extractMatchResultData(game);
     Object.assign(matchCsv, resultData);
+  }
+  
+  // Extract picks and bans data
+  const rows = Array.from(game.rows || []);
+  if (rows.length > 0) {
+    const { picks, bans } = extractPicksAndBans(rows);
+    if (picks) {
+      matchCsv.picks = picks;
+      console.log(`[matchCsvConverter] Match ${game.id} - Picks data found:`, Object.keys(picks).length);
+    }
+    
+    if (bans) {
+      matchCsv.bans = bans;
+      console.log(`[matchCsvConverter] Match ${game.id} - Bans data found:`, Object.keys(bans).length);
+    }
   }
   
   // Debug specific matches if needed

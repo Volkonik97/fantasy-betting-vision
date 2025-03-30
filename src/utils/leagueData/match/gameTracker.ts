@@ -1,64 +1,95 @@
 
-import { GameTracker } from '../types';
 import { LeagueGameDataRow } from '../../csv/types';
-import { parseBoolean } from '../types';
+import { GameTracker } from '../types';
 
 /**
- * Initialize game tracker from the first row of game data
+ * Initialize a game tracker object
  */
 export function initializeGameTracker(gameId: string, firstRow: LeagueGameDataRow): GameTracker {
   return {
     id: gameId,
-    date: firstRow.date || new Date().toISOString(),
+    date: firstRow.date || '',
     league: firstRow.league || '',
     year: firstRow.year || '',
     split: firstRow.split || '',
     patch: firstRow.patch || '',
-    playoffs: parseBoolean(firstRow.playoffs),
-    teams: { blue: '', red: '' },
-    result: undefined,
-    duration: firstRow.gamelength,
+    playoffs: firstRow.playoffs === 'TRUE' || firstRow.playoffs === 'true',
+    teams: {
+      blue: '',
+      red: ''
+    },
+    rows: new Set()  // Add this to store all rows for this game
   };
 }
 
 /**
- * Identify team sides (blue/red) from game data
+ * Identify teams and their sides
  */
-export function identifyTeamSides(game: GameTracker, gameRows: LeagueGameDataRow[]): { 
-  updatedGame: GameTracker, 
-  blueTeamId: string, 
-  redTeamId: string 
-} {
-  let blueTeamId = '';
-  let redTeamId = '';
+export function identifyTeamSides(game: GameTracker, rows: LeagueGameDataRow[]): { updatedGame: GameTracker } {
+  const updatedGame = { ...game };
   
-  // First pass - identify teams and their sides
-  gameRows.forEach(row => {
-    if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
-      game.teams.blue = row.teamid;
-      blueTeamId = row.teamid;
-    } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
-      game.teams.red = row.teamid;
-      redTeamId = row.teamid;
+  // Store all rows in the game object for later use with picks/bans
+  rows.forEach(row => {
+    if (updatedGame.rows instanceof Set) {
+      updatedGame.rows.add(row);
     }
   });
   
-  return { updatedGame: game, blueTeamId, redTeamId };
+  // Find blue and red team rows
+  const blueTeamRow = rows.find(row => 
+    (row.side && row.side.toLowerCase() === 'blue') || 
+    (row.teamposition && row.teamposition.toLowerCase() === 'blue')
+  );
+  
+  const redTeamRow = rows.find(row => 
+    (row.side && row.side.toLowerCase() === 'red') || 
+    (row.teamposition && row.teamposition.toLowerCase() === 'red')
+  );
+  
+  // Extract team IDs
+  if (blueTeamRow && blueTeamRow.teamid) {
+    updatedGame.teams.blue = blueTeamRow.teamid;
+  }
+  
+  if (redTeamRow && redTeamRow.teamid) {
+    updatedGame.teams.red = redTeamRow.teamid;
+  }
+  
+  // If we couldn't find teams by side, try to extract from the first row
+  if (!updatedGame.teams.blue && !updatedGame.teams.red && rows.length > 0) {
+    // Sometimes the data is structured with team1 and team2
+    if (rows[0].teamid) {
+      const teamIds = rows
+        .map(row => row.teamid)
+        .filter((value, index, self) => value && self.indexOf(value) === index);
+      
+      if (teamIds.length >= 2) {
+        updatedGame.teams.blue = teamIds[0] || '';
+        updatedGame.teams.red = teamIds[1] || '';
+      }
+    }
+  }
+  
+  return { updatedGame };
 }
 
 /**
- * Identify game result from the rows
+ * Identify the game result
  */
-export function identifyGameResult(game: GameTracker, gameRows: LeagueGameDataRow[]): GameTracker {
+export function identifyGameResult(game: GameTracker, rows: LeagueGameDataRow[]): GameTracker {
   const updatedGame = { ...game };
   
-  // Find the winning team
-  gameRows.forEach(row => {
-    // Track game result
-    if (row.result === '1' && row.teamid) {
-      updatedGame.result = row.teamid;
+  // Find a row with result data
+  const resultRow = rows.find(row => row.result === '1' || row.result === 'TRUE' || row.result === 'true');
+  
+  if (resultRow && resultRow.teamid) {
+    updatedGame.result = resultRow.teamid;
+    
+    // Get the game duration if available
+    if (resultRow.gamelength) {
+      updatedGame.duration = resultRow.gamelength;
     }
-  });
+  }
   
   return updatedGame;
 }

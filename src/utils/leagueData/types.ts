@@ -294,12 +294,13 @@ export function booleanToString(value: any): string | null {
 
 /**
  * Convert JSON data to a proper format for database storage
+ * Improved to handle both string and object inputs
  */
 export function prepareJsonData(data: any): any {
   if (!data) return null;
   
   // Si c'est déjà un objet mais pas une chaîne
-  if (typeof data === 'object') {
+  if (typeof data === 'object' && data !== null) {
     return data;
   }
   
@@ -316,4 +317,37 @@ export function prepareJsonData(data: any): any {
   
   // Pour tout autre type de données
   return data;
+}
+
+// Helper function to parse objective values
+export function parseObjectiveValue(value: any, teamId: string | null = null): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  
+  // Handle boolean values
+  if (typeof value === 'boolean') {
+    return value ? (teamId || 'true') : '';
+  }
+  
+  // Handle string values
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase().trim();
+    if (['true', '1', 'yes', 'oui', 't', 'y'].includes(normalized)) {
+      return teamId || 'true';
+    }
+    if (['false', '0', 'no', 'non', 'f', 'n'].includes(normalized)) {
+      return '';
+    }
+    
+    // If the value is already a team ID, return it directly
+    return value;
+  }
+  
+  // Handle numeric values
+  if (typeof value === 'number') {
+    return value === 1 ? (teamId || 'true') : '';
+  }
+  
+  return null;
 }
