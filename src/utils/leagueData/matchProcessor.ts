@@ -291,7 +291,8 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           deaths_at_25: safeParseInt(row.deathsat25),
           opp_kills_at_25: safeParseInt(row.opp_killsat25),
           opp_assists_at_25: safeParseInt(row.opp_assistsat25),
-          opp_deaths_at_25: safeParseInt(row.opp_deaths_at_25) || 0
+          // Fix: Fixed property name - opp_deathsat25 instead of opp_deaths_at_25
+          opp_deaths_at_25: safeParseInt(row.opp_deathsat25) || 0
         });
       }
     });

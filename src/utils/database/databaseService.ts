@@ -95,7 +95,8 @@ export async function clearDatabase(): Promise<boolean> {
     ];
     
     for (const table of tables) {
-      const { error } = await supabase.from(table).delete().neq('id', 'sentinel_value');
+      // Fix: Use type assertion to specify that table is a valid table name
+      const { error } = await supabase.from(table as "player_match_stats" | "players" | "matches" | "teams" | "data_updates").delete().neq('id', 'sentinel_value');
       
       if (error) {
         console.error(`Error clearing ${table}:`, error);

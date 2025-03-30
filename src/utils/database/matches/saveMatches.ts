@@ -51,18 +51,22 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
         
         // Safely extract objective data
         const matchObjectives = matchChunk.map(match => {
+          // Initialize with default values to prevent undefined errors
+          const result = match.result || {};
+          const extraStats = match.extraStats || {};
+          
           // Explicit debug to help identify issues with match data
-          const firstBlood = match.result?.firstBlood || (match.extraStats ? match.extraStats.first_blood : null);
-          const firstDragon = match.result?.firstDragon || (match.extraStats ? match.extraStats.first_dragon : null);
-          const firstBaron = match.result?.firstBaron || (match.extraStats ? match.extraStats.first_baron : null);
-          const firstHerald = match.result?.firstHerald || (match.extraStats ? match.extraStats.first_herald : null);
+          const firstBlood = result.firstBlood || extraStats.first_blood || null;
+          const firstDragon = result.firstDragon || extraStats.first_dragon || null;
+          const firstBaron = result.firstBaron || extraStats.first_baron || null;
+          const firstHerald = result.firstHerald || extraStats.first_herald || null;
           
           console.log(`Match ${match.id} objectives:`, {
             firstBlood,
             firstDragon,
             firstBaron,
             firstHerald,
-            extraStats: !!match.extraStats
+            extraStats: !!extraStats
           });
           
           return {
