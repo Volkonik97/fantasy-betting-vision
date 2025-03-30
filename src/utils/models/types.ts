@@ -67,6 +67,14 @@ export interface Match {
     chemtechs?: number;
     hextechs?: number;
     drakes_unknown?: number;
+    // Add the opponent drake-specific properties
+    opp_infernals?: number;
+    opp_mountains?: number;
+    opp_clouds?: number;
+    opp_oceans?: number;
+    opp_chemtechs?: number;
+    opp_hextechs?: number;
+    opp_drakes_unknown?: number;
     elders?: number;
     opp_elders?: number;
     first_herald?: string;

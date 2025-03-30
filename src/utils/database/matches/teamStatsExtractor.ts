@@ -78,8 +78,10 @@ export function extractTeamSpecificStats(match: Match): {
   // Si nous avons le nombre total de dragons élémentaires pour l'équipe rouge
   // mais pas le détail par type, on fait une estimation proportionnelle
   const hasRedDrakeTotal = redTeamStats.elemental_drakes > 0;
-  const hasRedDrakeDetails = Object.keys(stats).some(key => key.startsWith('opp_') && 
-    ['infernals', 'mountains', 'clouds', 'oceans', 'chemtechs', 'hextechs'].includes(key.replace('opp_', '')));
+  const hasRedDrakeDetails = [
+    'opp_infernals', 'opp_mountains', 'opp_clouds', 
+    'opp_oceans', 'opp_chemtechs', 'opp_hextechs'
+  ].some(key => typeof stats[key] !== 'undefined' && stats[key] !== null);
   
   if (hasRedDrakeTotal && !hasRedDrakeDetails) {
     // Distribution proportionnelle basée sur les données de l'équipe bleue
