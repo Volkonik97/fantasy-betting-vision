@@ -26,12 +26,7 @@ export function extractTeamSpecificStats(match: Match): {
       
       // Red team data
       opp_dragons: match.extraStats.opp_dragons,
-      opp_infernals: match.extraStats.opp_infernals,
-      opp_mountains: match.extraStats.opp_mountains,
-      opp_clouds: match.extraStats.opp_clouds,
-      opp_oceans: match.extraStats.opp_oceans,
-      opp_chemtechs: match.extraStats.opp_chemtechs,
-      opp_hextechs: match.extraStats.opp_hextechs
+      opp_elemental_drakes: match.extraStats.opp_elemental_drakes
     });
   }
 
@@ -87,6 +82,10 @@ export function extractTeamSpecificStats(match: Match): {
   };
 
   // Pour l'équipe rouge, utiliser les stats opp_* des extraStats
+  // Note: Nous n'avons pas de détails par type de drake pour l'équipe rouge,
+  // alors nous allons simplement utiliser le total et laisser les autres à 0
+  const totalRedDragons = safeParseInt(match.extraStats.opp_dragons);
+  
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
@@ -96,14 +95,15 @@ export function extractTeamSpecificStats(match: Match): {
     kpm: 0, // Non disponible directement
     
     // Dragons - Red Team (opp_ values)
-    dragons: safeParseInt(match.extraStats.opp_dragons),
-    infernals: safeParseInt(match.extraStats.opp_infernals),
-    mountains: safeParseInt(match.extraStats.opp_mountains),
-    clouds: safeParseInt(match.extraStats.opp_clouds),
-    oceans: safeParseInt(match.extraStats.opp_oceans),
-    chemtechs: safeParseInt(match.extraStats.opp_chemtechs),
-    hextechs: safeParseInt(match.extraStats.opp_hextechs),
-    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown),
+    // Nous n'avons que le total des dragons pour l'équipe rouge
+    dragons: totalRedDragons,
+    infernals: 0,  // Pas de données détaillées pour l'équipe rouge
+    mountains: 0,  // Pas de données détaillées pour l'équipe rouge
+    clouds: 0,     // Pas de données détaillées pour l'équipe rouge
+    oceans: 0,     // Pas de données détaillées pour l'équipe rouge
+    chemtechs: 0,  // Pas de données détaillées pour l'équipe rouge
+    hextechs: 0,   // Pas de données détaillées pour l'équipe rouge
+    drakes_unknown: 0, // Pas de données détaillées pour l'équipe rouge
     elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes),
     
     // Autres objectifs pour l'équipe rouge
