@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -87,7 +88,7 @@ export async function saveTeamMatchStats(
       return true;
     }
     
-    // Ajouter un debug pour les matchs spécifiques
+    // Debug specific match IDs we're having trouble with
     const specificMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
     const debugMatches = validTeamStats.filter(stat => specificMatchIds.includes(stat.match_id));
     if (debugMatches.length > 0) {
@@ -249,8 +250,24 @@ export async function saveTeamMatchStats(
     const chunks = chunk(statsToInsert, chunkSize);
     let currentCount = 0;
     
-    // Insérer chaque lot
-    for (const [index, batch] of chunks.entries()) {
+    // Create a map to deduplicate stats by match_id and team_id combination
+    const uniqueStatsMap = new Map<string, any>();
+    
+    // Use the map to ensure only one row per match_id + team_id
+    statsToInsert.forEach(stat => {
+      const key = `${stat.match_id}-${stat.team_id}`;
+      uniqueStatsMap.set(key, stat);
+    });
+    
+    // Convert back to array with unique combinations
+    const uniqueStats = Array.from(uniqueStatsMap.values());
+    console.log(`Après déduplication: ${uniqueStats.length} statistiques d'équipe uniques (éliminé ${statsToInsert.length - uniqueStats.length} doublons)`);
+    
+    // Recalculate chunks with deduplicated data
+    const uniqueChunks = chunk(uniqueStats, chunkSize);
+    
+    // Insérer chaque lot avec les données dédupliquées
+    for (const [index, batch] of uniqueChunks.entries()) {
       try {
         const { error } = await supabase
           .from('team_match_stats')
@@ -260,7 +277,7 @@ export async function saveTeamMatchStats(
           });
         
         if (error) {
-          console.error(`Erreur lors de l'insertion du lot ${index + 1}/${chunks.length}:`, error);
+          console.error(`Erreur lors de l'insertion du lot ${index + 1}/${uniqueChunks.length}:`, error);
           toast.error(`Erreur lors de la sauvegarde des statistiques d'équipe: ${error.message}`);
           
           // Try individual inserts if batch fails
@@ -286,16 +303,16 @@ export async function saveTeamMatchStats(
           
           console.log(`Lot ${index + 1} fallback: ${individualSuccessCount}/${batch.length} réussis individuellement`);
         } else {
-          console.log(`Lot ${index + 1}/${chunks.length} inséré avec succès (${batch.length} stats)`);
+          console.log(`Lot ${index + 1}/${uniqueChunks.length} inséré avec succès (${batch.length} stats)`);
         }
         
         currentCount += batch.length;
         if (progressCallback) {
-          progressCallback(currentCount, validTeamStats.length);
+          progressCallback(currentCount, uniqueStats.length);
         }
         
         // Petite pause pour éviter de surcharger la base de données
-        if (chunks.length > 10) {
+        if (uniqueChunks.length > 10) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (error) {
@@ -307,7 +324,7 @@ export async function saveTeamMatchStats(
       toast.warning(`${skippedCount} statistiques d'équipe ont été ignorées car les matchs associés n'existent pas.`);
     }
     
-    console.log(`${statsToInsert.length} statistiques d'équipe par match sauvegardées avec succès.`);
+    console.log(`${uniqueStats.length} statistiques d'équipe par match sauvegardées avec succès.`);
     return true;
   } catch (error) {
     console.error('Erreur lors de la sauvegarde des statistiques d\'équipe:', error);
