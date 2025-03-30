@@ -92,6 +92,11 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
     : 0;
     
   console.log(`Match ${match.id} - Final score calculation: Blue ${blueScore}, Red ${redScore}`);
+
+  // Determine winner name
+  const winnerName = match.result?.winner 
+    ? (match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name)
+    : '';
   
   return (
     <div 
@@ -140,10 +145,10 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           <UpcomingMatchInfo matchDate={matchDate} />
         )}
         
-        {match.status === "Completed" && match.result && (
+        {match.status === "Completed" && match.result && winnerName && (
           <CompletedMatchInfo 
             result={match.result}
-            winnerName={match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}
+            winnerName={winnerName}
             matchId={match.id}
             seriesAggregation={isSeries}
             teamBlueId={match.teamBlue.id}

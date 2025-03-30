@@ -12,8 +12,8 @@ import {
 
 interface CompletedMatchInfoProps {
   result: {
-    winner: string;
-    score: [number, number];
+    winner?: string;
+    score?: [number, number];
     duration?: string;
     mvp?: string;
   };

@@ -15,8 +15,8 @@ interface MatchTeamsProps {
   onRedLogoError: () => void;
   status: string;
   result?: {
-    winner: string;
-    score: [number, number];
+    winner?: string;
+    score?: [number, number];
   } | undefined;
   blueScore: number;
   redScore: number;

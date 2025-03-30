@@ -210,7 +210,7 @@ export interface TeamGameDamageMap extends Map<string, Map<string, number>> {}
 // Type pour une map des pourcentages de dégâts par joueur
 export interface PlayerDamageSharesMap extends Map<string, number[]> {}
 
-// Define PicksAndBans interface which was missing
+// Define PicksAndBans interface for champion pick/ban data
 export interface PicksAndBans {
   [key: string]: {
     championId: string;
