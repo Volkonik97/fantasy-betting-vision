@@ -37,8 +37,8 @@ export interface Match {
   redWinOdds: number;
   status: 'Upcoming' | 'Live' | 'Completed';
   result?: {
-    winner: string;
-    score: [number, number];
+    winner?: string;
+    score?: [number, number];
     duration?: string;
     mvp?: string;
     firstBlood?: string;

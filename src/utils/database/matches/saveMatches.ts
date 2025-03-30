@@ -57,9 +57,13 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
             extraStats: sampleMatch.extraStats ? {
               dragons: sampleMatch.extraStats.dragons,
               barons: sampleMatch.extraStats.barons,
-              first_blood: sampleMatch.extraStats.first_blood,
-              first_dragon: sampleMatch.extraStats.first_dragon
-            } : 'No extraStats'
+              first_blood: sampleMatch.extraStats.first_blood
+            } : 'No extraStats',
+            result: sampleMatch.result ? {
+              winner: sampleMatch.result.winner,
+              firstBlood: sampleMatch.result.firstBlood,
+              firstDragon: sampleMatch.result.firstDragon
+            } : 'No result'
           });
         }
         
@@ -67,7 +71,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
           .from('matches')
           .upsert(
             matchChunk.map(match => {
-              // Extract stats and result data, ensuring they exist
+              // Extract stats and result data, ensuring they exist with default empty objects
               const extraStats = match.extraStats || {};
               const result = match.result || {};
               
@@ -75,9 +79,10 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               console.log(`Match ${match.id} objective data for DB:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
-                first_blood: result.firstBlood || extraStats.first_blood || null
+                first_blood: extraStats.first_blood || result.firstBlood || null
               });
               
+              // Type-safe access to nested properties using optional chaining
               return {
                 id: match.id,
                 tournament: match.tournament,
@@ -109,15 +114,15 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
-                first_herald: result.firstHerald || extraStats.first_herald || null,
+                first_herald: extraStats.first_herald || (result && 'firstHerald' in result ? result.firstHerald : null),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
-                first_baron: result.firstBaron || extraStats.first_baron || null,
+                first_baron: extraStats.first_baron || (result && 'firstBaron' in result ? result.firstBaron : null),
                 barons: extraStats.barons || 0,
                 opp_barons: extraStats.opp_barons || 0,
                 void_grubs: extraStats.void_grubs || 0,
                 opp_void_grubs: extraStats.opp_void_grubs || 0,
-                first_tower: result.firstTower || extraStats.first_tower || null,
+                first_tower: extraStats.first_tower || (result && 'firstTower' in result ? result.firstTower : null),
                 first_mid_tower: extraStats.first_mid_tower || null,
                 first_three_towers: extraStats.first_three_towers || null,
                 towers: extraStats.towers || 0,
@@ -126,13 +131,13 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 opp_turret_plates: extraStats.opp_turret_plates || 0,
                 inhibitors: extraStats.inhibitors || 0,
                 opp_inhibitors: extraStats.opp_inhibitors || 0,
-                winner_team_id: result.winner || null,
-                score_blue: result.score ? result.score[0] : 0,
-                score_red: result.score ? result.score[1] : 0,
-                duration: result.duration || '',
-                mvp: result.mvp || '',
-                first_blood: result.firstBlood || extraStats.first_blood || null,
-                first_dragon: result.firstDragon || extraStats.first_dragon || null,
+                winner_team_id: result && 'winner' in result ? result.winner : null,
+                score_blue: result && 'score' in result && Array.isArray(result.score) && result.score.length > 0 ? result.score[0] : 0,
+                score_red: result && 'score' in result && Array.isArray(result.score) && result.score.length > 1 ? result.score[1] : 0,
+                duration: result && 'duration' in result ? result.duration : '',
+                mvp: result && 'mvp' in result ? result.mvp : '',
+                first_blood: result && 'firstBlood' in result ? result.firstBlood : extraStats.first_blood || null,
+                first_dragon: result && 'firstDragon' in result ? result.firstDragon : extraStats.first_dragon || null,
                 picks: extraStats.picks || null,
                 bans: extraStats.bans || null
               };
