@@ -1,4 +1,3 @@
-
 import { LeagueGameDataRow, MatchCSV } from '../csvTypes';
 import { 
   GameTracker, 
@@ -63,13 +62,19 @@ export function processMatchData(data: LeagueGameDataRow[]): {
     const teamStatsMap = new Map<string, MatchTeamStats>();
     const playerStatsMap = new Map<string, PlayerMatchStats>();
     
+    // Ensure we convert objective ownership data correctly
+    let blueTeamId = '';
+    let redTeamId = '';
+    
     // Process all rows for this game at once
     gameRows.forEach(row => {
-      // Track team sides
+      // Track team sides for objective attribution
       if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
         game.teams.blue = row.teamid;
+        blueTeamId = row.teamid;
       } else if (row.side && row.side.toLowerCase() === 'red' && row.teamid) {
         game.teams.red = row.teamid;
+        redTeamId = row.teamid;
       }
       
       // Track game result
@@ -79,6 +84,36 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       
       // Collect match-level team statistics
       if (row.teamid && !teamStatsMap.has(row.teamid)) {
+        // Determine which team got the first blood/dragon/baron/etc.
+        // For first objectives, we need to ensure the values are team IDs and not true/false
+        let firstBloodTeam = null;
+        let firstDragonTeam = null;
+        let firstHeraldTeam = null;
+        let firstBaronTeam = null;
+        let firstTowerTeam = null;
+        
+        // If row has firstblood=1, then this team got first blood
+        if (row.firstblood === '1' || row.firstblood === 'TRUE' || row.firstblood === 'true') {
+          firstBloodTeam = row.teamid;
+        }
+        
+        // Similarly for other objectives
+        if (row.firstdragon === '1' || row.firstdragon === 'TRUE' || row.firstdragon === 'true') {
+          firstDragonTeam = row.teamid;
+        }
+        
+        if (row.firstherald === '1' || row.firstherald === 'TRUE' || row.firstherald === 'true') {
+          firstHeraldTeam = row.teamid;
+        }
+        
+        if (row.firstbaron === '1' || row.firstbaron === 'TRUE' || row.firstbaron === 'true') {
+          firstBaronTeam = row.teamid;
+        }
+        
+        if (row.firsttower === '1' || row.firsttower === 'TRUE' || row.firsttower === 'true') {
+          firstTowerTeam = row.teamid;
+        }
+        
         teamStatsMap.set(row.teamid, {
           team_id: row.teamid,
           match_id: gameId,
@@ -86,10 +121,10 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           is_winner: row.result === '1',
           team_kpm: safeParseFloat(row['team kpm']),
           ckpm: safeParseFloat(row.ckpm),
-          first_blood: parseBoolean(row.firstblood),
+          first_blood: firstBloodTeam,
           team_kills: safeParseInt(row.teamkills),
           team_deaths: safeParseInt(row.teamdeaths),
-          first_dragon: parseBoolean(row.firstdragon),
+          first_dragon: firstDragonTeam,
           dragons: safeParseInt(row.dragons),
           opp_dragons: safeParseInt(row.opp_dragons),
           elemental_drakes: safeParseInt(row.elementaldrakes),
@@ -103,17 +138,17 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           drakes_unknown: safeParseInt(row['dragons (type unknown)']),
           elders: safeParseInt(row.elders),
           opp_elders: safeParseInt(row.opp_elders),
-          first_herald: parseBoolean(row.firstherald),
+          first_herald: firstHeraldTeam,
           heralds: safeParseInt(row.heralds),
           opp_heralds: safeParseInt(row.opp_heralds),
-          first_baron: parseBoolean(row.firstbaron),
+          first_baron: firstBaronTeam,
           barons: safeParseInt(row.barons),
           opp_barons: safeParseInt(row.opp_barons),
           void_grubs: safeParseInt(row.void_grubs),
           opp_void_grubs: safeParseInt(row.opp_void_grubs),
-          first_tower: parseBoolean(row.firsttower),
-          first_mid_tower: parseBoolean(row.firstmidtower),
-          first_three_towers: parseBoolean(row.firsttothreetowers),
+          first_tower: firstTowerTeam,
+          first_mid_tower: row.firstmidtower === '1' ? row.teamid : null,
+          first_three_towers: row.firsttothreetowers === '1' ? row.teamid : null,
           towers: safeParseInt(row.towers),
           opp_towers: safeParseInt(row.opp_towers),
           turret_plates: safeParseInt(row.turretplates),
@@ -125,6 +160,11 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       
       // Collect detailed player stats for this match
       if (row.playerid && row.teamid && !playerStatsMap.has(row.playerid)) {
+        // Handle first blood participation for player stats
+        const firstBloodKill = parseBoolean(row.firstbloodkill);
+        const firstBloodAssist = parseBoolean(row.firstbloodassist);
+        const firstBloodVictim = parseBoolean(row.firstbloodvictim);
+        
         // Create a new player match stats entry
         playerStatsMap.set(row.playerid, {
           participant_id: row.participantid || '',
@@ -138,7 +178,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           // Set is_winner based on the result column
           is_winner: row.result === '1',
           
-          // Combat stats
+          // Combat stats - correctly handle first blood stats
           kills: safeParseInt(row.kills),
           deaths: safeParseInt(row.deaths),
           assists: safeParseInt(row.assists),
@@ -146,9 +186,9 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           triple_kills: safeParseInt(row.triplekills),
           quadra_kills: safeParseInt(row.quadrakills),
           penta_kills: safeParseInt(row.pentakills),
-          first_blood_kill: parseBoolean(row.firstbloodkill),
-          first_blood_assist: parseBoolean(row.firstbloodassist),
-          first_blood_victim: parseBoolean(row.firstbloodvictim),
+          first_blood_kill: firstBloodKill,
+          first_blood_assist: firstBloodAssist,
+          first_blood_victim: firstBloodVictim,
           
           // Damage stats
           damage_to_champions: safeParseInt(row.damagetochampions),
@@ -255,6 +295,23 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       }
     });
     
+    // Post-process team stats after all rows are processed
+    // For first objectives, if none of the rows indicated which team got it,
+    // try to infer from player first blood participation
+    for (const teamStats of teamStatsMap.values()) {
+      // Process first blood attribution through player stats
+      if (!teamStats.first_blood) {
+        // Check if any player from this team has first blood kill or assist
+        for (const playerStats of playerStatsMap.values()) {
+          if (playerStats.team_id === teamStats.team_id && 
+             (playerStats.first_blood_kill || playerStats.first_blood_assist)) {
+            teamStats.first_blood = teamStats.team_id;
+            break;
+          }
+        }
+      }
+    }
+    
     // Save the processed data for this game
     uniqueGames.set(gameId, game);
     matchStats.set(gameId, teamStatsMap);
@@ -265,6 +322,38 @@ export function processMatchData(data: LeagueGameDataRow[]): {
   const matchesArray: MatchCSV[] = Array.from(uniqueGames.values())
     .filter(match => match.teams.blue && match.teams.red) // Make sure both teams are defined
     .map(match => {
+      // Collect team level stats for both blue and red teams
+      const matchTeamStats = matchStats.get(match.id);
+      const blueTeamStats = matchTeamStats?.get(match.teams.blue);
+      const redTeamStats = matchTeamStats?.get(match.teams.red);
+
+      // Improve first objectives attribution
+      let firstBlood = null;
+      let firstDragon = null;
+      let firstHerald = null;
+      let firstBaron = null;
+      let firstTower = null;
+
+      // Team that got first blood
+      if (blueTeamStats?.first_blood) firstBlood = match.teams.blue;
+      else if (redTeamStats?.first_blood) firstBlood = match.teams.red;
+
+      // Team that got first dragon
+      if (blueTeamStats?.first_dragon) firstDragon = match.teams.blue;
+      else if (redTeamStats?.first_dragon) firstDragon = match.teams.red;
+
+      // Team that got first herald
+      if (blueTeamStats?.first_herald) firstHerald = match.teams.blue;
+      else if (redTeamStats?.first_herald) firstHerald = match.teams.red;
+
+      // Team that got first baron
+      if (blueTeamStats?.first_baron) firstBaron = match.teams.blue;
+      else if (redTeamStats?.first_baron) firstBaron = match.teams.red;
+
+      // Team that got first tower
+      if (blueTeamStats?.first_tower) firstTower = match.teams.blue;
+      else if (redTeamStats?.first_tower) firstTower = match.teams.red;
+
       const matchCSV: MatchCSV = {
         id: match.id,
         tournament: `${match.league || 'Unknown'} ${match.year || ''} ${match.split || ''}`,
@@ -274,7 +363,12 @@ export function processMatchData(data: LeagueGameDataRow[]): {
         predictedWinner: match.teams.blue, // Default predicted winner to blue side
         blueWinOdds: '0.5',
         redWinOdds: '0.5',
-        status: match.result ? 'Completed' : 'Upcoming'
+        status: match.result ? 'Completed' : 'Upcoming',
+        first_blood: firstBlood,
+        first_dragon: firstDragon,
+        first_herald: firstHerald,
+        first_baron: firstBaron,
+        first_tower: firstTower
       };
       
       if (match.result) {

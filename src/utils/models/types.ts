@@ -44,8 +44,8 @@ export interface Match {
     firstBlood?: string;
     firstDragon?: string;
     firstBaron?: string;
-    firstHerald?: string; // Add firstHerald
-    firstTower?: string; // Add firstTower
+    firstHerald?: string;
+    firstTower?: string;
   };
   extraStats?: {
     patch?: string;
@@ -74,6 +74,8 @@ export interface Match {
     opp_heralds?: number;
     barons?: number;
     opp_barons?: number;
+    void_grubs?: number;
+    opp_void_grubs?: number;
     first_tower?: string;
     first_mid_tower?: string;
     first_three_towers?: string;
@@ -83,13 +85,11 @@ export interface Match {
     opp_turret_plates?: number;
     inhibitors?: number;
     opp_inhibitors?: number;
-    void_grubs?: number;
-    opp_void_grubs?: number;
     blueTeamStats?: any;
     redTeamStats?: any;
-    first_blood?: string; // Add first_blood
-    first_dragon?: string; // Add first_dragon
-    first_baron?: string; // Add first_baron
+    first_blood?: string;
+    first_dragon?: string;
+    first_baron?: string;
   };
   playerStats?: any[];
 }

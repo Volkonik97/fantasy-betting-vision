@@ -32,27 +32,65 @@ export const savePlayerMatchStats = async (
         stat.is_winner = false;
       }
       
+      // Handle first blood stats
+      if (typeof stat.first_blood_kill !== 'boolean') {
+        stat.first_blood_kill = !!stat.first_blood_kill;
+      }
+      
+      if (typeof stat.first_blood_assist !== 'boolean') {
+        stat.first_blood_assist = !!stat.first_blood_assist;
+      }
+      
+      if (typeof stat.first_blood_victim !== 'boolean') {
+        stat.first_blood_victim = !!stat.first_blood_victim;
+      }
+      
       return stat;
     }).filter(stat => stat.player_id && stat.match_id);
     
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
-    // Improved batch size for better performance
-    const BATCH_SIZE = 100; // Increased from 50 to 100 for better performance
-    const MAX_CONCURRENT = 5; // Increased from 3 to 5 for better parallel processing
-    const totalStats = validStats.length;
+    // Check if we have any stats where match_id doesn't exist in the matches table
+    // Instead of failing completely, we'll filter these out
+    const uniqueMatchIds = [...new Set(validStats.map(stat => stat.match_id))];
+    console.log(`Found ${uniqueMatchIds.length} unique match IDs in player stats`);
     
-    // First check which records already exist to implement incremental updates
-    console.log("Checking for existing records...");
+    // Check which match IDs exist in the database
+    const { data: existingMatches, error: matchCheckError } = await supabase
+      .from('matches')
+      .select('id')
+      .in('id', uniqueMatchIds);
     
-    // Use a more efficient approach - insert directly with upsert
-    // instead of checking each record individually
+    if (matchCheckError) {
+      console.error("Error checking existing matches:", matchCheckError);
+      // Continue anyway, but warn the user
+      toast.warning("Certains matchs référencés dans les statistiques de joueurs pourraient ne pas exister");
+    }
+    
+    // Create a set of existing match IDs for quick lookup
+    const existingMatchIds = new Set((existingMatches || []).map(m => m.id));
+    console.log(`Found ${existingMatchIds.size} existing matches out of ${uniqueMatchIds.length}`);
+    
+    // Filter out player stats for non-existent matches to avoid foreign key errors
+    const filteredStats = validStats.filter(stat => existingMatchIds.has(stat.match_id));
+    console.log(`Filtered down to ${filteredStats.length} player stats after match ID validation`);
+    
+    if (filteredStats.length === 0) {
+      toast.warning("Aucune statistique de joueur valide n'a pu être importée");
+      return true; // Still return success to continue with the rest of the import
+    }
+    
+    // Process the filtered stats
+    const BATCH_SIZE = 100;
+    const MAX_CONCURRENT = 5;
+    const totalStats = filteredStats.length;
+    
     let successCount = 0;
     let errorCount = 0;
     let processedCount = 0;
     
     // Split records into chunks for faster processing
-    const statsChunks = chunk(validStats, BATCH_SIZE);
+    const statsChunks = chunk(filteredStats, BATCH_SIZE);
     console.log(`Processing ${statsChunks.length} batches with batch size ${BATCH_SIZE}`);
     
     // Process chunks in parallel with improved concurrency
@@ -64,7 +102,6 @@ export const savePlayerMatchStats = async (
         const results = await Promise.all(chunksToProcess.map(async (statsChunk) => {
           try {
             // Use upsert instead of separate insert/update operations
-            // This dramatically reduces the number of database operations
             const { error } = await supabase
               .from('player_match_stats')
               .upsert(statsChunk, {
@@ -75,7 +112,7 @@ export const savePlayerMatchStats = async (
             if (error) {
               console.error("Error upserting player match stats batch:", error);
               
-              // If batch fails, try individual upserts instead of separate insert/update operations
+              // If batch fails, try individual upserts
               let individualSuccessCount = 0;
               for (const stat of statsChunk) {
                 try {
@@ -125,7 +162,6 @@ export const savePlayerMatchStats = async (
       }
       
       // Add a small delay between batch groups to avoid overwhelming the database
-      // This counter-intuitively can lead to better overall performance
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     

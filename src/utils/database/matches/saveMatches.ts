@@ -46,7 +46,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     
     for (const matchChunk of matchChunks) {
       try {
-        // Debug match data
+        // Debug match data - improve logging for objectives data
         console.log(`Processing match batch with objectives data:`, 
           matchChunk.map(m => ({
             id: m.id,
@@ -54,7 +54,9 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
             first_dragon: m.result?.firstDragon || m.extraStats?.first_dragon || null,
             first_baron: m.result?.firstBaron || m.extraStats?.first_baron || null,
             first_herald: m.extraStats?.first_herald || m.result?.firstHerald || null,
-            first_tower: m.extraStats?.first_tower || m.result?.firstTower || null
+            first_tower: m.extraStats?.first_tower || m.result?.firstTower || null,
+            dragons: m.extraStats?.dragons,
+            elders: m.extraStats?.elders
           }))
         );
         
@@ -79,6 +81,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               ckpm: match.extraStats?.ckpm || 0,
               team_kills: match.extraStats?.team_kills || 0,
               team_deaths: match.extraStats?.team_deaths || 0,
+              // Objectifs attribués au bon champ
               dragons: match.extraStats?.dragons || 0,
               opp_dragons: match.extraStats?.opp_dragons || 0,
               elemental_drakes: match.extraStats?.elemental_drakes || 0,
@@ -92,16 +95,17 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               drakes_unknown: match.extraStats?.drakes_unknown || 0,
               elders: match.extraStats?.elders || 0,
               opp_elders: match.extraStats?.opp_elders || 0,
-              first_herald: match.extraStats?.first_herald || match.result?.firstHerald || '',
+              first_herald: match.extraStats?.first_herald || match.result?.firstHerald || null,
               heralds: match.extraStats?.heralds || 0,
               opp_heralds: match.extraStats?.opp_heralds || 0,
+              first_baron: match.extraStats?.first_baron || match.result?.firstBaron || null,
               barons: match.extraStats?.barons || 0,
               opp_barons: match.extraStats?.opp_barons || 0,
               void_grubs: match.extraStats?.void_grubs || 0,
               opp_void_grubs: match.extraStats?.opp_void_grubs || 0,
-              first_tower: match.extraStats?.first_tower || match.result?.firstTower || '',
-              first_mid_tower: match.extraStats?.first_mid_tower || '',
-              first_three_towers: match.extraStats?.first_three_towers || '',
+              first_tower: match.extraStats?.first_tower || match.result?.firstTower || null,
+              first_mid_tower: match.extraStats?.first_mid_tower || null,
+              first_three_towers: match.extraStats?.first_three_towers || null,
               towers: match.extraStats?.towers || 0,
               opp_towers: match.extraStats?.opp_towers || 0,
               turret_plates: match.extraStats?.turret_plates || 0,
@@ -113,9 +117,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               score_red: match.result?.score?.[1] || 0,
               duration: match.result?.duration || '',
               mvp: match.result?.mvp || '',
-              first_blood: match.result?.firstBlood || match.extraStats?.first_blood || '',
-              first_dragon: match.result?.firstDragon || match.extraStats?.first_dragon || '',
-              first_baron: match.result?.firstBaron || match.extraStats?.first_baron || ''
+              first_blood: match.extraStats?.first_blood || match.result?.firstBlood || null,
+              first_dragon: match.extraStats?.first_dragon || match.result?.firstDragon || null
             })),
             { onConflict: 'id' }
           );

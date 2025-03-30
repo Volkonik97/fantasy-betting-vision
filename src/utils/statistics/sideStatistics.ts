@@ -72,7 +72,7 @@ function calculateSideStatistics(
   
   console.log(`[sideStatistics] Win rates - Blue: ${blueWinRate}%, Red: ${redWinRate}%`);
   
-  // Calculate first objectives stats - fixed to properly use objective fields
+  // Calculate first objectives stats - corrected to use the team_id to identify objective attribution
   const blueFirstBlood = calculateObjectiveRate(completedBlueMatches, 'first_blood', teamId);
   const redFirstBlood = calculateObjectiveRate(completedRedMatches, 'first_blood', teamId);
   
@@ -124,9 +124,14 @@ function calculateSideStatistics(
 function calculateObjectiveRate(matches: any[], objectiveKey: string, teamId: string): number {
   if (matches.length === 0) return 50;
   
+  // Filter for matches where the objective field exists and has a valid value
+  const validMatches = matches.filter(m => m[objectiveKey] !== null && m[objectiveKey] !== undefined);
+  if (validMatches.length === 0) return 50;
+  
   // Count how many times this team got the first objective
-  const objectiveCount = matches.filter(m => m[objectiveKey] === teamId).length;
-  return Math.round((objectiveCount / matches.length) * 100);
+  // Here, we're looking for matches where the objective team_id matches our team's id
+  const objectiveCount = validMatches.filter(m => m[objectiveKey] === teamId).length;
+  return Math.round((objectiveCount / validMatches.length) * 100);
 }
 
 // Create default side statistics
