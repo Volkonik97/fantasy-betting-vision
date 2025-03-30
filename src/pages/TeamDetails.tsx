@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,7 +12,6 @@ import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
-import SideAnalysis from "@/components/SideAnalysis";
 import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
@@ -168,17 +166,6 @@ const TeamDetails = () => {
             >
               <TeamStatistics team={team} timelineStats={timelineStats} />
             </motion.div>
-            
-            {sideStats && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-              >
-                <h2 className="text-2xl font-bold mb-4">Analyse par côté</h2>
-                <SideAnalysis statistics={sideStats} />
-              </motion.div>
-            )}
           </div>
         </div>
       </main>
