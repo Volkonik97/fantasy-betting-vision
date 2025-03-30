@@ -2,7 +2,7 @@
 import { Team, Player, Match, Tournament } from '../models/types';
 import { getTeams, saveTeams } from './teamsService';
 import { getPlayers } from './playersService';
-import { getMatches, getMatchesByTeamId } from './matches/matchesService';
+import { getMatches, getMatchesByTeamId, saveTeamMatchStats } from './matches/matchesService';
 import { getTournaments } from './tournamentsService';
 import { saveMatches } from './matches/saveMatches';
 import { savePlayers } from './playersService';
@@ -17,12 +17,13 @@ export async function saveToDatabase(
     teams: Team[],
     players: Player[],
     matches: Match[],
-    playerMatchStats?: any[]
+    playerMatchStats?: any[],
+    teamMatchStats?: any[]
   },
   progressCallback?: (phase: string, percent: number, current?: number, total?: number) => void
 ): Promise<boolean> {
   try {
-    console.log(`Saving data to database (${data.teams.length} teams, ${data.players.length} players, ${data.matches.length} matches, ${data.playerMatchStats?.length || 0} player stats)`);
+    console.log(`Saving data to database (${data.teams.length} teams, ${data.players.length} players, ${data.matches.length} matches, ${data.playerMatchStats?.length || 0} player stats, ${data.teamMatchStats?.length || 0} team stats)`);
     
     // Save data update timestamp first
     await updateTimestamp();
@@ -66,6 +67,15 @@ export async function saveToDatabase(
       
       await savePlayerMatchStats(data.playerMatchStats, (current, total) => {
         progressCallback?.('playerStats', Math.round((current / total) * 100), current, total);
+      });
+    }
+    
+    // Save team match stats if provided
+    if (data.teamMatchStats && data.teamMatchStats.length > 0) {
+      progressCallback?.('teamStats', 0, 0, data.teamMatchStats.length);
+      
+      await saveTeamMatchStats(data.teamMatchStats, (current, total) => {
+        progressCallback?.('teamStats', Math.round((current / total) * 100), current, total);
       });
     }
     

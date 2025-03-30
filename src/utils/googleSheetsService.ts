@@ -112,13 +112,16 @@ export const loadFromGoogleSheets = async (
       teamsCount: processedData.teams.length,
       playersCount: processedData.players.length,
       matchesCount: processedData.matches.length,
-      playerStatsCount: processedData.playerMatchStats.length
+      playerStatsCount: processedData.playerMatchStats.length,
+      teamStatsCount: processedData.teamMatchStats.length
     });
     progressCallback?.("Traitement terminé", 50);
     
     // Keep track of player stats count for accurate progress
     const totalPlayerStats = processedData.playerMatchStats.length;
+    const totalTeamStats = processedData.teamMatchStats.length;
     console.log(`Total player match stats to save: ${totalPlayerStats}`);
+    console.log(`Total team match stats to save: ${totalTeamStats}`);
     
     // Save the processed data to Supabase in steps to show progress
     progressCallback?.("Enregistrement des équipes", 55);
@@ -129,21 +132,26 @@ export const loadFromGoogleSheets = async (
       // Map the database phase to an overall progress percentage
       switch (phase) {
         case 'teams':
-          totalProgress = 55 + percent * 0.1; // 55-65%
+          totalProgress = 55 + percent * 0.08; // 55-63%
           progressCallback?.("Enregistrement des équipes", totalProgress);
           break;
         case 'players':
-          totalProgress = 65 + percent * 0.1; // 65-75%
+          totalProgress = 63 + percent * 0.07; // 63-70%
           progressCallback?.("Enregistrement des joueurs", totalProgress);
           break;
         case 'matches':
-          totalProgress = 75 + percent * 0.05; // 75-80%
+          totalProgress = 70 + percent * 0.05; // 70-75%
           progressCallback?.("Enregistrement des matchs", totalProgress);
           break;
         case 'playerStats':
           // Instead of percentage, use actual count/total for more precise progress
-          totalProgress = 80 + (current / total) * 0.2; // 80-100% - give more weight to player stats
-          progressCallback?.(`Enregistrement des statistiques (${current} sur ${total})`, totalProgress);
+          totalProgress = 75 + (current / total) * 0.15; // 75-90%
+          progressCallback?.(`Enregistrement des statistiques des joueurs (${current} sur ${total})`, totalProgress);
+          break;
+        case 'teamStats':
+          // Instead of percentage, use actual count/total for more precise progress
+          totalProgress = 90 + (current / total) * 0.1; // 90-100%
+          progressCallback?.(`Enregistrement des statistiques des équipes (${current} sur ${total})`, totalProgress);
           break;
       }
     });
@@ -151,7 +159,7 @@ export const loadFromGoogleSheets = async (
     
     if (saveResult) {
       progressCallback?.("Importation terminée", 100);
-      toast.success(`Données importées avec succès: ${processedData.teams.length} équipes, ${processedData.players.length} joueurs, ${processedData.matches.length} matchs, ${processedData.playerMatchStats.length} statistiques`);
+      toast.success(`Données importées avec succès: ${processedData.teams.length} équipes, ${processedData.players.length} joueurs, ${processedData.matches.length} matchs, ${processedData.playerMatchStats.length} statistiques de joueurs, ${processedData.teamMatchStats.length} statistiques d'équipes`);
       return processedData; // Return the processed data instead of boolean
     } else {
       toast.error("Erreur lors de la sauvegarde des données");

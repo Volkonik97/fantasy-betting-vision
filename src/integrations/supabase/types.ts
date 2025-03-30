@@ -615,6 +615,129 @@ export type Database = {
           },
         ]
       }
+      team_match_stats: {
+        Row: {
+          bans: Json | null
+          barons: number | null
+          chemtechs: number | null
+          clouds: number | null
+          created_at: string | null
+          deaths: number | null
+          dragons: number | null
+          drakes_unknown: number | null
+          elders: number | null
+          elemental_drakes: number | null
+          first_baron: boolean | null
+          first_blood: boolean | null
+          first_dragon: boolean | null
+          first_herald: boolean | null
+          first_mid_tower: boolean | null
+          first_three_towers: boolean | null
+          first_tower: boolean | null
+          heralds: number | null
+          hextechs: number | null
+          id: string
+          infernals: number | null
+          inhibitors: number | null
+          is_blue_side: boolean
+          kills: number | null
+          kpm: number | null
+          match_id: string
+          mountains: number | null
+          oceans: number | null
+          picks: Json | null
+          team_id: string
+          towers: number | null
+          turret_plates: number | null
+          void_grubs: number | null
+        }
+        Insert: {
+          bans?: Json | null
+          barons?: number | null
+          chemtechs?: number | null
+          clouds?: number | null
+          created_at?: string | null
+          deaths?: number | null
+          dragons?: number | null
+          drakes_unknown?: number | null
+          elders?: number | null
+          elemental_drakes?: number | null
+          first_baron?: boolean | null
+          first_blood?: boolean | null
+          first_dragon?: boolean | null
+          first_herald?: boolean | null
+          first_mid_tower?: boolean | null
+          first_three_towers?: boolean | null
+          first_tower?: boolean | null
+          heralds?: number | null
+          hextechs?: number | null
+          id?: string
+          infernals?: number | null
+          inhibitors?: number | null
+          is_blue_side: boolean
+          kills?: number | null
+          kpm?: number | null
+          match_id: string
+          mountains?: number | null
+          oceans?: number | null
+          picks?: Json | null
+          team_id: string
+          towers?: number | null
+          turret_plates?: number | null
+          void_grubs?: number | null
+        }
+        Update: {
+          bans?: Json | null
+          barons?: number | null
+          chemtechs?: number | null
+          clouds?: number | null
+          created_at?: string | null
+          deaths?: number | null
+          dragons?: number | null
+          drakes_unknown?: number | null
+          elders?: number | null
+          elemental_drakes?: number | null
+          first_baron?: boolean | null
+          first_blood?: boolean | null
+          first_dragon?: boolean | null
+          first_herald?: boolean | null
+          first_mid_tower?: boolean | null
+          first_three_towers?: boolean | null
+          first_tower?: boolean | null
+          heralds?: number | null
+          hextechs?: number | null
+          id?: string
+          infernals?: number | null
+          inhibitors?: number | null
+          is_blue_side?: boolean
+          kills?: number | null
+          kpm?: number | null
+          match_id?: string
+          mountains?: number | null
+          oceans?: number | null
+          picks?: Json | null
+          team_id?: string
+          towers?: number | null
+          turret_plates?: number | null
+          void_grubs?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_match_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_match_stats_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           average_game_time: number | null

@@ -5,12 +5,14 @@ import { processMatchData } from './match/matchProcessor';
 import { processTeamData } from './teamProcessor';
 import { processPlayerData } from './playerProcessor';
 import { extractPicksAndBans } from './match/picksAndBansExtractor';
+import { extractTeamSpecificStats } from '../database/matches/teamStatsExtractor';
 
 export function assembleLeagueData(data: LeagueGameDataRow[]): {
   teams: Team[];
   players: Player[];
   matches: Match[];
   playerMatchStats: any[];
+  teamMatchStats: any[];
 } {
   console.log(`Assembling League data from ${data.length} rows...`);
   
@@ -52,6 +54,9 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       championPool: playerCsv.championPool ? playerCsv.championPool.split(',').map(champ => champ.trim()) : []
     };
   });
+  
+  // Préparation des tableaux pour les statistiques d'équipe par match
+  const teamMatchStatsArray: any[] = [];
   
   // Convert the matchesArray to Match objects
   const matches: Match[] = matchesArray.map(match => {
@@ -133,7 +138,23 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       }
     };
     
-    // Add team-specific stats if available from teamStatsMap
+    // Extraire statistiques spécifiques à chaque équipe
+    const { blueTeamStats, redTeamStats } = extractTeamSpecificStats(matchObject);
+    
+    // Ajouter aux statistiques d'équipe par match pour les deux équipes
+    teamMatchStatsArray.push({
+      ...blueTeamStats,
+      match_id: match.id,
+      side: 'blue'
+    });
+    
+    teamMatchStatsArray.push({
+      ...redTeamStats,
+      match_id: match.id,
+      side: 'red'
+    });
+    
+    // Ajouter les stats d'équipe à l'objet match pour la rétrocompatibilité
     if (teamStatsMap) {
       const blueTeamStats = teamStatsMap.get(blueTeam.id);
       const redTeamStats = teamStatsMap.get(redTeam.id);
@@ -183,6 +204,7 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     teams,
     players,
     matches,
-    playerMatchStats: playerMatchStatsArray
+    playerMatchStats: playerMatchStatsArray,
+    teamMatchStats: teamMatchStatsArray
   };
 }

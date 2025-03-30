@@ -20,10 +20,17 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [importProgress, setImportProgress] = useState(0);
   const [isImportComplete, setIsImportComplete] = useState(false);
   const [hasDataInDb, setHasDataInDb] = useState(false);
-  const [importStats, setImportStats] = useState<{teams: number, players: number, matches: number, playerStats: number} | null>(null);
+  const [importStats, setImportStats] = useState<{
+    teams: number, 
+    players: number, 
+    matches: number, 
+    playerStats: number,
+    teamStats: number
+  } | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(true);
   const [progressStep, setProgressStep] = useState<string>("");
   const [playerStatsProgress, setPlayerStatsProgress] = useState<{current: number, total: number} | null>(null);
+  const [teamStatsProgress, setTeamStatsProgress] = useState<{current: number, total: number} | null>(null);
 
   useEffect(() => {
     const checkData = async () => {
@@ -46,6 +53,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
       setIsImportComplete(false);
       setImportStats(null);
       setPlayerStatsProgress(null);
+      setTeamStatsProgress(null);
       console.log("Début de l'importation depuis Google Sheets:", sheetsUrl);
       
       const progressCallback = (step: string, progress: number) => {
@@ -53,8 +61,8 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         setProgressStep(step);
         setImportProgress(progress);
         
-        // Check if this is player stats progress with detailed info
-        if (step.includes("statistiques") && step.includes("sur")) {
+        // Vérifier si c'est la progression des statistiques de joueurs
+        if (step.includes("statistiques des joueurs") && step.includes("sur")) {
           const match = step.match(/\((\d+) sur (\d+)\)/);
           if (match && match.length === 3) {
             setPlayerStatsProgress({
@@ -62,8 +70,24 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
               total: parseInt(match[2], 10)
             });
           }
+        } 
+        // Vérifier si c'est la progression des statistiques d'équipes
+        else if (step.includes("statistiques des équipes") && step.includes("sur")) {
+          const match = step.match(/\((\d+) sur (\d+)\)/);
+          if (match && match.length === 3) {
+            setTeamStatsProgress({
+              current: parseInt(match[1], 10),
+              total: parseInt(match[2], 10)
+            });
+          }
         } else {
-          setPlayerStatsProgress(null);
+          // Si ce n'est ni l'un ni l'autre, réinitialiser les progressions spécifiques
+          if (!step.includes("statistiques des joueurs")) {
+            setPlayerStatsProgress(null);
+          }
+          if (!step.includes("statistiques des équipes")) {
+            setTeamStatsProgress(null);
+          }
         }
       };
       
@@ -83,17 +107,19 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         teams: result.teams.length,
         players: result.players.length,
         matches: result.matches.length,
-        playerStats: result.playerMatchStats?.length || 0
+        playerStats: result.playerMatchStats?.length || 0,
+        teamStats: result.teamMatchStats?.length || 0
       });
       
       console.log("Résultat de l'importation:", {
         teams: result.teams.length,
         players: result.players.length, 
         matches: result.matches.length,
-        playerStats: result.playerMatchStats?.length || 0
+        playerStats: result.playerMatchStats?.length || 0,
+        teamStats: result.teamMatchStats?.length || 0
       });
       
-      toast.success(`Données chargées avec succès depuis Google Sheets: ${result.teams.length} équipes, ${result.players.length} joueurs, ${result.matches.length} matchs, ${result.playerMatchStats?.length || 0} statistiques de match`);
+      toast.success(`Données chargées avec succès depuis Google Sheets: ${result.teams.length} équipes, ${result.players.length} joueurs, ${result.matches.length} matchs, ${result.playerMatchStats?.length || 0} statistiques de joueurs, ${result.teamMatchStats?.length || 0} statistiques d'équipes`);
       
       if (onDataImported) {
         await onDataImported();
@@ -124,6 +150,7 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
               <li>• {importStats.players} joueurs importés</li>
               <li>• {importStats.matches} matchs importés</li>
               <li>• {importStats.playerStats} statistiques de joueurs importées</li>
+              <li>• {importStats.teamStats} statistiques d'équipes importées</li>
             </ul>
           </AlertDescription>
         </Alert>
@@ -144,6 +171,16 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
               Enregistrement des statistiques de joueurs: {playerStatsProgress.current} sur {playerStatsProgress.total}
               <Progress 
                 value={(playerStatsProgress.current / playerStatsProgress.total) * 100} 
+                className="h-1 mt-1" 
+              />
+            </div>
+          )}
+          
+          {teamStatsProgress && (
+            <div className="mt-3 text-xs text-gray-500">
+              Enregistrement des statistiques d'équipes: {teamStatsProgress.current} sur {teamStatsProgress.total}
+              <Progress 
+                value={(teamStatsProgress.current / teamStatsProgress.total) * 100} 
                 className="h-1 mt-1" 
               />
             </div>

@@ -17,6 +17,8 @@ import {
   calculateSeriesScore
 } from './series';
 import { extractTeamSpecificStats } from './teamStatsExtractor';
+import { saveTeamMatchStats } from './saveTeamStats';
+import { getTeamMatchStats, getAllTeamMatchStats, getMatchTeamStats } from './getTeamStats';
 
 export {
   getMatches,
@@ -31,6 +33,11 @@ export {
   clearMatchCache,
   savePlayerMatchStats,
   extractTeamSpecificStats,
+  // Nouvelles fonctions pour les statistiques d'équipe
+  saveTeamMatchStats,
+  getTeamMatchStats,
+  getAllTeamMatchStats,
+  getMatchTeamStats,
   // Series-related exports
   isSeriesMatch,
   getSeriesScore,
