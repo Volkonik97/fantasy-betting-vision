@@ -2,13 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { loadFromGoogleSheets, hasDatabaseData } from "@/utils/csvService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Link, Database, AlertCircle, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import ImportStatusDisplay from "./csv/ImportStatusDisplay";
+import DataImportForm from "./csv/DataImportForm";
+import DataFormatInfo from "./csv/DataFormatInfo";
 
 interface CsvDataManagerProps {
   onDataImported?: () => void;
@@ -140,60 +137,6 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
     }
   };
 
-  const renderImportStatus = () => {
-    if (isImportComplete && importStats) {
-      return (
-        <Alert className="mt-4 bg-green-50 border border-green-200">
-          <Check className="h-5 w-5 text-green-600 mr-2" />
-          <AlertTitle className="text-green-800">Importation terminée !</AlertTitle>
-          <AlertDescription>
-            <ul className="mt-2 space-y-1 text-sm text-green-700">
-              <li>• {importStats.teams} équipes importées</li>
-              <li>• {importStats.players} joueurs importés</li>
-              <li>• {importStats.matches} matchs importés</li>
-              <li>• {importStats.playerStats} statistiques de joueurs importées</li>
-              <li>• {importStats.teamStats} statistiques d'équipes importées</li>
-            </ul>
-          </AlertDescription>
-        </Alert>
-      );
-    }
-    
-    if (isLoading) {
-      return (
-        <div className="mt-4">
-          <div className="flex justify-between mb-2">
-            <span className="text-sm text-gray-500">{progressStep}</span>
-            <span className="text-sm font-medium">{Math.round(importProgress)}%</span>
-          </div>
-          <Progress value={importProgress} className="h-2" />
-          
-          {playerStatsProgress && (
-            <div className="mt-3 text-xs text-gray-500">
-              Enregistrement des statistiques de joueurs: {playerStatsProgress.current} sur {playerStatsProgress.total}
-              <Progress 
-                value={(playerStatsProgress.current / playerStatsProgress.total) * 100} 
-                className="h-1 mt-1" 
-              />
-            </div>
-          )}
-          
-          {teamStatsProgress && (
-            <div className="mt-3 text-xs text-gray-500">
-              Enregistrement des statistiques d'équipes: {teamStatsProgress.current} sur {teamStatsProgress.total}
-              <Progress 
-                value={(teamStatsProgress.current / teamStatsProgress.total) * 100} 
-                className="h-1 mt-1" 
-              />
-            </div>
-          )}
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
@@ -203,88 +146,27 @@ const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {hasDataInDb && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center text-blue-700">
-              <Database className="mr-2 h-5 w-5" />
-              <p className="text-sm font-medium">
-                Les données sont stockées dans Supabase.
-              </p>
-            </div>
-            
-            <div className="flex items-center mt-2">
-              <Checkbox 
-                id="deleteExisting" 
-                checked={deleteExisting} 
-                onCheckedChange={(checked) => setDeleteExisting(checked as boolean)}
-                className="mr-2"
-              />
-              <label htmlFor="deleteExisting" className="text-sm cursor-pointer text-blue-700">
-                Supprimer les données existantes avant l'importation
-              </label>
-            </div>
-          </div>
-        )}
+        <DataImportForm 
+          sheetsUrl={sheetsUrl}
+          setSheetsUrl={setSheetsUrl}
+          deleteExisting={deleteExisting}
+          setDeleteExisting={setDeleteExisting}
+          hasDataInDb={hasDataInDb}
+          isLoading={isLoading}
+          handleSheetImport={handleSheetImport}
+        />
         
-        <div className="border rounded-lg p-4">
-          <h3 className="font-medium mb-2">URL Google Sheets</h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Entrez l'URL d'un document Google Sheets contenant les données au format Oracle's Elixir
-          </p>
-          <div className="space-y-4">
-            <Input
-              type="url"
-              placeholder="https://docs.google.com/spreadsheets/d/..."
-              value={sheetsUrl}
-              onChange={(e) => setSheetsUrl(e.target.value)}
-            />
-            
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Conseil:</strong> Pour les données au format Oracle's Elixir avec toutes les colonnes 
-                (gameid, league, year, split, playername, teamname, etc.), l'importation Google Sheets 
-                offre la meilleure compatibilité.
-              </p>
-            </div>
-            
-            <Button 
-              className="w-full" 
-              onClick={handleSheetImport} 
-              disabled={!sheetsUrl || isLoading}
-            >
-              {isLoading ? (
-                <>Importation en cours...</>
-              ) : (
-                <>
-                  <Link className="mr-2 h-4 w-4" />
-                  Importer depuis Google Sheets
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        <DataFormatInfo />
         
-        <div className="border rounded-lg p-4 bg-amber-50">
-          <div className="flex items-start">
-            <AlertCircle className="text-amber-500 mr-3 mt-1" size={20} />
-            <div>
-              <h3 className="font-medium text-amber-800">Format des données</h3>
-              <p className="text-sm text-amber-700 mt-1">
-                L'importation supporte deux formats:
-              </p>
-              <ul className="list-disc list-inside mt-2 text-sm text-amber-700">
-                <li>
-                  <strong>Format standard:</strong> Un document avec trois onglets nommés "teams", "players" et "matches"
-                </li>
-                <li>
-                  <strong>Format Oracle's Elixir:</strong> Un document avec un seul onglet au format Oracle's Elixir (recommandé)
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        
-        {renderImportStatus()}
+        <ImportStatusDisplay 
+          isImportComplete={isImportComplete}
+          isLoading={isLoading}
+          importProgress={importProgress}
+          importStats={importStats}
+          progressStep={progressStep}
+          playerStatsProgress={playerStatsProgress}
+          teamStatsProgress={teamStatsProgress}
+        />
       </CardContent>
     </Card>
   );
