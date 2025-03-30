@@ -1,3 +1,6 @@
 
-// This file is now a simple re-export from the match module to maintain backward compatibility
-export { processMatchData } from './match/matchProcessor';
+import { processMatchData } from './match/matchProcessor';
+
+// Export the function for backward compatibility
+export { processMatchData };
+export default processMatchData;
