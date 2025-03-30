@@ -71,7 +71,6 @@ function processTeamRows(
   
   // Extraire les statistiques de dragons
   const dragons = getStatValue(allTeamData, 'dragons');
-  const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
   const infernals = getStatValue(allTeamData, 'infernals');
   const mountains = getStatValue(allTeamData, 'mountains');
   const clouds = getStatValue(allTeamData, 'clouds');
@@ -102,9 +101,6 @@ function processTeamRows(
     team_deaths: teamDeaths,
     first_dragon: hasFirstDragon,
     dragons: dragons,
-    opp_dragons: 0, // Will be calculated later
-    elemental_drakes: elementalDrakes,
-    opp_elemental_drakes: 0, // Will be calculated later
     infernals: infernals,
     mountains: mountains,
     clouds: clouds,
@@ -113,24 +109,17 @@ function processTeamRows(
     hextechs: hextechs,
     drakes_unknown: drakesUnknown,
     elders: elders,
-    opp_elders: 0, // Will be calculated later
     first_herald: hasFirstHerald,
     heralds: heralds,
-    opp_heralds: 0, // Will be calculated later
     first_baron: hasFirstBaron,
     barons: barons,
-    opp_barons: 0, // Will be calculated later
     void_grubs: voidGrubs,
-    opp_void_grubs: 0, // Will be calculated later
     first_tower: hasFirstTower,
     first_mid_tower: hasFirstMidTower,
     first_three_towers: hasFirstThreeTowers,
     towers: towers,
-    opp_towers: 0, // Will be calculated later
     turret_plates: turretPlates,
-    opp_turret_plates: 0, // Will be calculated later
-    inhibitors: inhibitors,
-    opp_inhibitors: 0 // Will be calculated later
+    inhibitors: inhibitors
   });
 }
 
