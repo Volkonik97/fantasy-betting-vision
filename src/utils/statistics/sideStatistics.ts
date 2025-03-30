@@ -128,6 +128,14 @@ function calculateSideStatistics(
     redFirstBaron
   });
   
+  // Verbose logging of the raw data used for calculations
+  console.log("[sideStatistics] Blue team stats (for First Blood):", 
+    blueTeamStats.map(stat => ({ match: stat.match_id, firstBlood: stat.first_blood }))
+  );
+  console.log("[sideStatistics] Red team stats (for First Blood):", 
+    redTeamStats.map(stat => ({ match: stat.match_id, firstBlood: stat.first_blood }))
+  );
+  
   // Return the calculated statistics
   return {
     teamId,
@@ -151,7 +159,16 @@ function calculateSideStatistics(
 function calculateObjectivePercentage(stats: any[], objectiveKey: string): number {
   if (stats.length === 0) return 50;
   
+  // Count matches where the team got the objective
   const trueCount = stats.filter(stat => stat[objectiveKey] === true).length;
+  
+  // Log detailed info for first blood calculations
+  if (objectiveKey === 'first_blood') {
+    console.log(`[sideStatistics] First Blood detail - Total matches: ${stats.length}, True values: ${trueCount}`);
+    console.log(`[sideStatistics] First Blood values:`, stats.map(s => s[objectiveKey]));
+  }
+  
+  // Calculate percentage (0-100)
   return Math.round((trueCount / stats.length) * 100);
 }
 

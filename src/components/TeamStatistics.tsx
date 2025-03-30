@@ -54,6 +54,21 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
     fetchLogo();
   }, [team.id, team.logo, team.name]);
 
+  // Ensure values are numerical and within the valid range (0-100)
+  const ensureValidPercentage = (value: any): number => {
+    const num = typeof value === 'number' ? value : parseInt(value, 10);
+    if (isNaN(num)) return 50;
+    return Math.min(100, Math.max(0, num));
+  };
+
+  // Log the first blood values for debugging
+  console.log(`First Blood stats for ${team.name}:`, {
+    blueRaw: team.blueFirstBlood,
+    redRaw: team.redFirstBlood,
+    blueFormatted: ensureValidPercentage(team.blueFirstBlood),
+    redFormatted: ensureValidPercentage(team.redFirstBlood)
+  });
+
   const stats = [
     { 
       name: "Win Rate", 
@@ -236,7 +251,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Bleu</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.blueFirstBlood || 50}%
+                  {ensureValidPercentage(team.blueFirstBlood)}%
                 </span>
               </div>
               <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
@@ -245,7 +260,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Rouge</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.redFirstBlood || 50}%
+                  {ensureValidPercentage(team.redFirstBlood)}%
                 </span>
               </div>
             </div>
@@ -261,7 +276,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Bleu</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.blueFirstDragon || 50}%
+                  {ensureValidPercentage(team.blueFirstDragon)}%
                 </span>
               </div>
               <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
@@ -270,7 +285,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Rouge</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.redFirstDragon || 50}%
+                  {ensureValidPercentage(team.redFirstDragon)}%
                 </span>
               </div>
             </div>
@@ -286,7 +301,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Bleu</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.blueFirstHerald || 50}%
+                  {ensureValidPercentage(team.blueFirstHerald)}%
                 </span>
               </div>
               <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
@@ -295,7 +310,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Rouge</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.redFirstHerald || 50}%
+                  {ensureValidPercentage(team.redFirstHerald)}%
                 </span>
               </div>
             </div>
@@ -311,7 +326,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Bleu</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.blueFirstTower || 50}%
+                  {ensureValidPercentage(team.blueFirstTower)}%
                 </span>
               </div>
               <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
@@ -320,7 +335,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <span className="text-xs text-gray-500">Côté Rouge</span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {team.redFirstTower || 50}%
+                  {ensureValidPercentage(team.redFirstTower)}%
                 </span>
               </div>
             </div>

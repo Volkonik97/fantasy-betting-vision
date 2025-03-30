@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -47,7 +48,10 @@ const TeamDetails = () => {
         
         // Mettre à jour les statistiques par côté dans l'objet de l'équipe
         const sideStatsData = await getSideStatistics(id);
+        console.log("Side statistics data:", sideStatsData); // Log pour déboguer
+        
         if (sideStatsData) {
+          // Assign side statistics to the team object
           foundTeam.blueFirstBlood = sideStatsData.blueFirstBlood;
           foundTeam.redFirstBlood = sideStatsData.redFirstBlood;
           foundTeam.blueFirstDragon = sideStatsData.blueFirstDragon;
@@ -58,6 +62,12 @@ const TeamDetails = () => {
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
           foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
+          
+          // Log pour vérifier les valeurs
+          console.log("First Blood stats (raw):", {
+            blue: sideStatsData.blueFirstBlood,
+            red: sideStatsData.redFirstBlood
+          });
         }
         
         setTeam(foundTeam);
