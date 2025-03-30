@@ -35,6 +35,18 @@ export function extractTeamSpecificStats(match: Match): {
     });
   }
 
+  // Helper function to safely convert any value to an integer
+  const safeParseInt = (value: any): number => {
+    if (typeof value === 'number') {
+      return Math.floor(value); // Convert to integer if it's already a number
+    }
+    if (value === null || value === undefined || value === '') {
+      return 0;
+    }
+    const parsed = parseInt(String(value), 10);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   // Pour l'équipe bleue, utiliser directement les stats extraStats
   const blueTeamStats = {
     team_id: match.teamBlue.id,
@@ -45,24 +57,24 @@ export function extractTeamSpecificStats(match: Match): {
     kpm: match.extraStats.team_kpm || 0,
     
     // Dragons - Blue Team (direct values)
-    dragons: parseInt(match.extraStats.dragons || '0'),
-    infernals: parseInt(match.extraStats.infernals || '0'),
-    mountains: parseInt(match.extraStats.mountains || '0'), 
-    clouds: parseInt(match.extraStats.clouds || '0'),
-    oceans: parseInt(match.extraStats.oceans || '0'),
-    chemtechs: parseInt(match.extraStats.chemtechs || '0'),
-    hextechs: parseInt(match.extraStats.hextechs || '0'),
-    drakes_unknown: parseInt(match.extraStats.drakes_unknown || '0'),
-    elemental_drakes: parseInt(match.extraStats.elemental_drakes || '0'),
+    dragons: safeParseInt(match.extraStats.dragons),
+    infernals: safeParseInt(match.extraStats.infernals),
+    mountains: safeParseInt(match.extraStats.mountains), 
+    clouds: safeParseInt(match.extraStats.clouds),
+    oceans: safeParseInt(match.extraStats.oceans),
+    chemtechs: safeParseInt(match.extraStats.chemtechs),
+    hextechs: safeParseInt(match.extraStats.hextechs),
+    drakes_unknown: safeParseInt(match.extraStats.drakes_unknown),
+    elemental_drakes: safeParseInt(match.extraStats.elemental_drakes),
     
     // Autres objectifs
-    elders: parseInt(match.extraStats.elders || '0'),
-    heralds: parseInt(match.extraStats.heralds || '0'),
-    barons: parseInt(match.extraStats.barons || '0'),
-    towers: parseInt(match.extraStats.towers || '0'),
-    turret_plates: parseInt(match.extraStats.turret_plates || '0'),
-    inhibitors: parseInt(match.extraStats.inhibitors || '0'),
-    void_grubs: parseInt(match.extraStats.void_grubs || '0'),
+    elders: safeParseInt(match.extraStats.elders),
+    heralds: safeParseInt(match.extraStats.heralds),
+    barons: safeParseInt(match.extraStats.barons),
+    towers: safeParseInt(match.extraStats.towers),
+    turret_plates: safeParseInt(match.extraStats.turret_plates),
+    inhibitors: safeParseInt(match.extraStats.inhibitors),
+    void_grubs: safeParseInt(match.extraStats.void_grubs),
     
     // First objectives
     first_blood: match.extraStats.first_blood === match.teamBlue.id,
@@ -84,24 +96,24 @@ export function extractTeamSpecificStats(match: Match): {
     kpm: 0, // Non disponible directement
     
     // Dragons - Red Team (opp_ values)
-    dragons: parseInt(match.extraStats.opp_dragons || '0'),
-    infernals: parseInt(match.extraStats.opp_infernals || '0'),
-    mountains: parseInt(match.extraStats.opp_mountains || '0'),
-    clouds: parseInt(match.extraStats.opp_clouds || '0'),
-    oceans: parseInt(match.extraStats.opp_oceans || '0'),
-    chemtechs: parseInt(match.extraStats.opp_chemtechs || '0'),
-    hextechs: parseInt(match.extraStats.opp_hextechs || '0'),
-    drakes_unknown: parseInt(match.extraStats.opp_drakes_unknown || '0'),
-    elemental_drakes: parseInt(match.extraStats.opp_elemental_drakes || '0'),
+    dragons: safeParseInt(match.extraStats.opp_dragons),
+    infernals: safeParseInt(match.extraStats.opp_infernals),
+    mountains: safeParseInt(match.extraStats.opp_mountains),
+    clouds: safeParseInt(match.extraStats.opp_clouds),
+    oceans: safeParseInt(match.extraStats.opp_oceans),
+    chemtechs: safeParseInt(match.extraStats.opp_chemtechs),
+    hextechs: safeParseInt(match.extraStats.opp_hextechs),
+    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown),
+    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes),
     
     // Autres objectifs pour l'équipe rouge
-    elders: parseInt(match.extraStats.opp_elders || '0'),
-    heralds: parseInt(match.extraStats.opp_heralds || '0'),
-    barons: parseInt(match.extraStats.opp_barons || '0'),
-    towers: parseInt(match.extraStats.opp_towers || '0'),
-    turret_plates: parseInt(match.extraStats.opp_turret_plates || '0'),
-    inhibitors: parseInt(match.extraStats.opp_inhibitors || '0'),
-    void_grubs: parseInt(match.extraStats.opp_void_grubs || '0'),
+    elders: safeParseInt(match.extraStats.opp_elders),
+    heralds: safeParseInt(match.extraStats.opp_heralds),
+    barons: safeParseInt(match.extraStats.opp_barons),
+    towers: safeParseInt(match.extraStats.opp_towers),
+    turret_plates: safeParseInt(match.extraStats.opp_turret_plates),
+    inhibitors: safeParseInt(match.extraStats.opp_inhibitors),
+    void_grubs: safeParseInt(match.extraStats.opp_void_grubs),
     
     // First objectives pour l'équipe rouge
     first_blood: match.extraStats.first_blood === match.teamRed.id,
