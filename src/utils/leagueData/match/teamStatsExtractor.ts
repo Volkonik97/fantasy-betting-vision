@@ -1,4 +1,3 @@
-
 import { MatchTeamStats } from '../types';
 import { LeagueGameDataRow } from '../../csv/types';
 import { safeParseFloat, safeParseInt } from '../types';
@@ -26,6 +25,31 @@ export function extractTeamStats(
     teamRows.get(row.teamid)?.push(row);
   });
   
+  // Get direct dragon values (not case-sensitive)
+  const getDragonValue = (data: Record<string, any>, drakeType: string, isOpp: boolean = false): number => {
+    const prefix = isOpp ? 'opp_' : '';
+    const fullKey = `${prefix}${drakeType}`;
+    
+    // Try specific variations of the key with and without prefix
+    const possibleKeys = [
+      fullKey,
+      fullKey.toLowerCase(),
+      `${prefix}${drakeType.toLowerCase()}`,
+      drakeType,
+      drakeType.toLowerCase()
+    ];
+    
+    // Find the first key that exists in the data
+    for (const key of possibleKeys) {
+      if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        const value = parseInt(data[key]);
+        return isNaN(value) ? 0 : value;
+      }
+    }
+    
+    return 0;
+  };
+  
   // Process each team's data
   teamRows.forEach((rows, teamId) => {
     if (teamStatsMap.has(teamId)) return; // Skip if already processed
@@ -47,88 +71,114 @@ export function extractTeamStats(
     const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
     const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
     
-    // Récupérer explicitement les données pour l'équipe actuelle (blue ou red)
-    const isBlueTeam = baseRow.side?.toLowerCase() === 'blue';
-    const drakePrefix = isBlueTeam ? '' : 'opp_';
+    // Determine side (blue or red)
+    const isBlueTeam = (baseRow.side?.toLowerCase() === 'blue');
     
-    // Parse numeric values with explicit type handling and prefixing for dragon data
-    const dragons = getStatValue(allTeamData, `${drakePrefix}dragons`) || getStatValue(allTeamData, 'dragons');
-    const elementalDrakes = getStatValue(allTeamData, `${drakePrefix}elementaldrakes`) || getStatValue(allTeamData, 'elementaldrakes');
+    // Prepare empty dragon stats object
+    const dragonStats = {
+      total: 0,
+      infernals: 0,
+      mountains: 0,
+      clouds: 0,
+      oceans: 0,
+      chemtechs: 0,
+      hextechs: 0,
+      unknown: 0
+    };
     
-    // Parse specific drake types using the appropriate prefix
-    const infernals = getStatValue(allTeamData, `${drakePrefix}infernals`) || getStatValue(allTeamData, 'infernals');
-    const mountains = getStatValue(allTeamData, `${drakePrefix}mountains`) || getStatValue(allTeamData, 'mountains');
-    const clouds = getStatValue(allTeamData, `${drakePrefix}clouds`) || getStatValue(allTeamData, 'clouds');
-    const oceans = getStatValue(allTeamData, `${drakePrefix}oceans`) || getStatValue(allTeamData, 'oceans');
-    const chemtechs = getStatValue(allTeamData, `${drakePrefix}chemtechs`) || getStatValue(allTeamData, 'chemtechs');
-    const hextechs = getStatValue(allTeamData, `${drakePrefix}hextechs`) || getStatValue(allTeamData, 'hextechs');
-    const drakesUnknown = getStatValue(allTeamData, `${drakePrefix}drakes_unknown`) || getStatValue(allTeamData, `${drakePrefix}dragons (type unknown)`) || getStatValue(allTeamData, 'dragons (type unknown)');
+    const oppDragonStats = {
+      total: 0,
+      infernals: 0,
+      mountains: 0,
+      clouds: 0,
+      oceans: 0,
+      chemtechs: 0,
+      hextechs: 0,
+      unknown: 0
+    };
     
-    // Make sure we get the right data for opponent team
-    const oppPrefix = isBlueTeam ? 'opp_' : '';
-    const oppDragons = getStatValue(allTeamData, `${oppPrefix}dragons`);
-    const oppElementalDrakes = getStatValue(allTeamData, `${oppPrefix}elementaldrakes`);
-    const oppInfernals = getStatValue(allTeamData, `${oppPrefix}infernals`);
-    const oppMountains = getStatValue(allTeamData, `${oppPrefix}mountains`);
-    const oppClouds = getStatValue(allTeamData, `${oppPrefix}clouds`);
-    const oppOceans = getStatValue(allTeamData, `${oppPrefix}oceans`);
-    const oppChemtechs = getStatValue(allTeamData, `${oppPrefix}chemtechs`);
-    const oppHextechs = getStatValue(allTeamData, `${oppPrefix}hextechs`);
-    const oppDrakesUnknown = getStatValue(allTeamData, `${oppPrefix}drakes_unknown`) || getStatValue(allTeamData, `${oppPrefix}dragons (type unknown)`);
-    
-    const elders = getStatValue(allTeamData, `${drakePrefix}elders`);
-    const oppElders = getStatValue(allTeamData, `${oppPrefix}elders`);
-    const heralds = getStatValue(allTeamData, `${drakePrefix}heralds`);
-    const oppHeralds = getStatValue(allTeamData, `${oppPrefix}heralds`);
-    const barons = getStatValue(allTeamData, `${drakePrefix}barons`);
-    const oppBarons = getStatValue(allTeamData, `${oppPrefix}barons`);
-    const towers = getStatValue(allTeamData, `${drakePrefix}towers`);
-    const oppTowers = getStatValue(allTeamData, `${oppPrefix}towers`);
-    const turretPlates = getStatValue(allTeamData, `${drakePrefix}turretplates`);
-    const oppTurretPlates = getStatValue(allTeamData, `${oppPrefix}turretplates`);
-    const inhibitors = getStatValue(allTeamData, `${drakePrefix}inhibitors`);
-    const oppInhibitors = getStatValue(allTeamData, `${oppPrefix}inhibitors`);
-    const voidGrubs = getStatValue(allTeamData, `${drakePrefix}void_grubs`);
-    const oppVoidGrubs = getStatValue(allTeamData, `${oppPrefix}void_grubs`);
-    const teamKills = getStatValue(allTeamData, 'teamkills');
-    const teamDeaths = getStatValue(allTeamData, 'teamdeaths');
-    const teamKpm = getStatValue(allTeamData, 'team kpm');
-    const ckpm = getStatValue(allTeamData, 'ckpm');
+    // Extract direct dragon values based on team side
+    if (isBlueTeam) {
+      // Blue team uses direct dragon values
+      dragonStats.total = getDragonValue(allTeamData, 'dragons');
+      dragonStats.infernals = getDragonValue(allTeamData, 'infernals');
+      dragonStats.mountains = getDragonValue(allTeamData, 'mountains');
+      dragonStats.clouds = getDragonValue(allTeamData, 'clouds');
+      dragonStats.oceans = getDragonValue(allTeamData, 'oceans');
+      dragonStats.chemtechs = getDragonValue(allTeamData, 'chemtechs');
+      dragonStats.hextechs = getDragonValue(allTeamData, 'hextechs');
+      dragonStats.unknown = getDragonValue(allTeamData, 'drakes_unknown') || getDragonValue(allTeamData, 'dragons (type unknown)');
+
+      // Opponent (red team) uses opp_ values
+      oppDragonStats.total = getDragonValue(allTeamData, 'dragons', true);
+      oppDragonStats.infernals = getDragonValue(allTeamData, 'infernals', true);
+      oppDragonStats.mountains = getDragonValue(allTeamData, 'mountains', true);
+      oppDragonStats.clouds = getDragonValue(allTeamData, 'clouds', true);
+      oppDragonStats.oceans = getDragonValue(allTeamData, 'oceans', true);
+      oppDragonStats.chemtechs = getDragonValue(allTeamData, 'chemtechs', true);
+      oppDragonStats.hextechs = getDragonValue(allTeamData, 'hextechs', true);
+      oppDragonStats.unknown = getDragonValue(allTeamData, 'drakes_unknown', true) || getDragonValue(allTeamData, 'dragons (type unknown)', true);
+    } else {
+      // Red team uses opp_ values
+      dragonStats.total = getDragonValue(allTeamData, 'dragons', true);
+      dragonStats.infernals = getDragonValue(allTeamData, 'infernals', true);
+      dragonStats.mountains = getDragonValue(allTeamData, 'mountains', true);
+      dragonStats.clouds = getDragonValue(allTeamData, 'clouds', true);
+      dragonStats.oceans = getDragonValue(allTeamData, 'oceans', true);
+      dragonStats.chemtechs = getDragonValue(allTeamData, 'chemtechs', true);
+      dragonStats.hextechs = getDragonValue(allTeamData, 'hextechs', true);
+      dragonStats.unknown = getDragonValue(allTeamData, 'drakes_unknown', true) || getDragonValue(allTeamData, 'dragons (type unknown)', true);
+
+      // Opponent (blue team) uses direct values
+      oppDragonStats.total = getDragonValue(allTeamData, 'dragons');
+      oppDragonStats.infernals = getDragonValue(allTeamData, 'infernals');
+      oppDragonStats.mountains = getDragonValue(allTeamData, 'mountains');
+      oppDragonStats.clouds = getDragonValue(allTeamData, 'clouds');
+      oppDragonStats.oceans = getDragonValue(allTeamData, 'oceans');
+      oppDragonStats.chemtechs = getDragonValue(allTeamData, 'chemtechs');
+      oppDragonStats.hextechs = getDragonValue(allTeamData, 'hextechs');
+      oppDragonStats.unknown = getDragonValue(allTeamData, 'drakes_unknown') || getDragonValue(allTeamData, 'dragons (type unknown)');
+    }
     
     // Log detailed drake information for debugging
     if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(gameId)) {
-      console.log(`[Extraction] Match ${gameId}, Équipe ${teamId} (${baseRow.side}) - données détaillées des dragons:`, {
+      console.log(`[Extraction] Match ${gameId}, Team ${teamId} (${baseRow.side}) - extracted dragon data:`, {
         isBlueTeam,
-        drakePrefix,
+        dragonStats,
+        oppDragonStats,
         rawData: {
-          allKeys: Object.keys(allTeamData)
+          dragonsKeys: Object.keys(allTeamData)
             .filter(k => k.includes('dragon') || k.includes('drake') || 
                         k.includes('infernal') || k.includes('mountain') || 
                         k.includes('cloud') || k.includes('ocean') || 
                         k.includes('chemtech') || k.includes('hextech'))
             .reduce((obj, key) => ({...obj, [key]: allTeamData[key]}), {})
-        },
-        extractedStats: {
-          dragons,
-          infernals,
-          mountains,
-          clouds,
-          oceans,
-          chemtechs,
-          hextechs,
-          drakesUnknown
-        },
-        opponent: {
-          dragons: oppDragons,
-          infernals: oppInfernals,
-          mountains: oppMountains,
-          clouds: oppClouds,
-          oceans: oppOceans,
-          chemtechs: oppChemtechs,
-          hextechs: oppHextechs
         }
       });
     }
+    
+    // Get other stats
+    const elementalDrakes = getDragonValue(allTeamData, 'elementaldrakes', !isBlueTeam);
+    const oppElementalDrakes = getDragonValue(allTeamData, 'elementaldrakes', isBlueTeam);
+    
+    const elders = getDragonValue(allTeamData, 'elders', !isBlueTeam);
+    const oppElders = getDragonValue(allTeamData, 'elders', isBlueTeam);
+    const heralds = getDragonValue(allTeamData, 'heralds', !isBlueTeam);
+    const oppHeralds = getDragonValue(allTeamData, 'heralds', isBlueTeam);
+    const barons = getDragonValue(allTeamData, 'barons', !isBlueTeam);
+    const oppBarons = getDragonValue(allTeamData, 'barons', isBlueTeam);
+    const towers = getDragonValue(allTeamData, 'towers', !isBlueTeam);
+    const oppTowers = getDragonValue(allTeamData, 'towers', isBlueTeam);
+    const turretPlates = getDragonValue(allTeamData, 'turretplates', !isBlueTeam);
+    const oppTurretPlates = getDragonValue(allTeamData, 'turretplates', isBlueTeam);
+    const inhibitors = getDragonValue(allTeamData, 'inhibitors', !isBlueTeam);
+    const oppInhibitors = getDragonValue(allTeamData, 'inhibitors', isBlueTeam);
+    const voidGrubs = getDragonValue(allTeamData, 'void_grubs', !isBlueTeam);
+    const oppVoidGrubs = getDragonValue(allTeamData, 'void_grubs', isBlueTeam);
+    const teamKills = getStatValue(allTeamData, 'teamkills');
+    const teamDeaths = getStatValue(allTeamData, 'teamdeaths');
+    const teamKpm = getStatValue(allTeamData, 'team kpm');
+    const ckpm = getStatValue(allTeamData, 'ckpm');
     
     // Création des statistiques pour l'équipe
     teamStatsMap.set(teamId, {
@@ -142,17 +192,17 @@ export function extractTeamStats(
       team_kills: teamKills,
       team_deaths: teamDeaths,
       first_dragon: hasFirstDragon,
-      dragons: dragons,
-      opp_dragons: oppDragons,
-      elemental_drakes: elementalDrakes,
-      opp_elemental_drakes: oppElementalDrakes,
-      infernals: infernals,
-      mountains: mountains,
-      clouds: clouds,
-      oceans: oceans,
-      chemtechs: chemtechs,
-      hextechs: hextechs,
-      drakes_unknown: drakesUnknown,
+      dragons: dragonStats.total,
+      opp_dragons: oppDragonStats.total,
+      elemental_drakes: elementalDrakes || dragonStats.total, // Fallback
+      opp_elemental_drakes: oppElementalDrakes || oppDragonStats.total, // Fallback
+      infernals: dragonStats.infernals,
+      mountains: dragonStats.mountains,
+      clouds: dragonStats.clouds,
+      oceans: dragonStats.oceans,
+      chemtechs: dragonStats.chemtechs,
+      hextechs: dragonStats.hextechs,
+      drakes_unknown: dragonStats.unknown,
       elders: elders,
       opp_elders: oppElders,
       first_herald: hasFirstHerald,
@@ -283,17 +333,7 @@ function getStatValue(data: Record<string, any>, statKey: string): number {
   
   // Try to parse as float first, then as int if that fails
   const parsed = safeParseFloat(value);
-  const result = isNaN(parsed) ? safeParseInt(value) : parsed;
-  
-  // Extra debug logging for specific drake fields if the statKey contains drake-related words
-  if (statKey.includes('dragon') || statKey.includes('drake') ||
-      statKey.includes('cloud') || statKey.includes('infernal') || 
-      statKey.includes('mountain') || statKey.includes('ocean') ||
-      statKey.includes('chemtech') || statKey.includes('hextech')) {
-    console.log(`Parsing ${statKey}: value "${value}" (type: ${typeof value}) --> parsed as ${result}`);
-  }
-  
-  return result;
+  return isNaN(parsed) ? safeParseInt(value) : parsed;
 }
 
 /**
