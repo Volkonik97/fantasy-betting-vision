@@ -259,7 +259,7 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     const row = rows[0];
     
     // Create team stats object
-    return {
+    const stats = {
       team_id: teamId,
       match_id: matchId,
       is_blue_side: isBlue,
@@ -268,7 +268,7 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       kills: parseInt(row.teamkills || '0') || 0,
       deaths: parseInt(row.teamdeaths || '0') || 0,
       
-      // Dragons
+      // Dragons - assurons-nous que toutes les stats sont là
       dragons: parseInt(row.dragons || '0') || 0,
       elemental_drakes: parseInt(row.elementaldrakes || '0') || 0,
       infernals: parseInt(row.infernals || '0') || 0,
@@ -297,6 +297,21 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       first_mid_tower: row.firstmidtower === 'True' || row.firstmidtower === '1',
       first_three_towers: row.firsttothreetowers === 'True' || row.firsttothreetowers === '1'
     };
+    
+    // Debug logging pour les statistiques des dragons
+    if ((stats.dragons > 0 || stats.elemental_drakes > 0 || stats.infernals > 0 || 
+         stats.mountains > 0 || stats.clouds > 0 || stats.oceans > 0 || 
+         stats.chemtechs > 0 || stats.hextechs > 0 || stats.drakes_unknown > 0 || 
+         stats.elders > 0) && Math.random() < 0.1) { // Log only 10% of matches to avoid spam
+      console.log(`[dataAssembler] Dragon stats for team ${teamId}, match ${matchId}: ` +
+                  `Total=${stats.dragons}, Elemental=${stats.elemental_drakes}, ` +
+                  `Infernal=${stats.infernals}, Mountain=${stats.mountains}, ` +
+                  `Cloud=${stats.clouds}, Ocean=${stats.oceans}, ` +
+                  `Chemtech=${stats.chemtechs}, Hextech=${stats.hextechs}, ` +
+                  `Unknown=${stats.drakes_unknown}, Elder=${stats.elders}`);
+    }
+    
+    return stats;
   }
   
   // Collect player match statistics as array

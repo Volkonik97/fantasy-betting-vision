@@ -69,7 +69,7 @@ function processTeamRows(
   const teamKpm = getStatValue(allTeamData, 'team kpm');
   const ckpm = getStatValue(allTeamData, 'ckpm');
   
-  // Extraire les statistiques de dragons
+  // Extraire les statistiques de dragons avec recherche de noms alternatifs
   const dragons = getStatValue(allTeamData, 'dragons');
   const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
   const infernals = getStatValue(allTeamData, 'infernals');
@@ -78,7 +78,12 @@ function processTeamRows(
   const oceans = getStatValue(allTeamData, 'oceans');
   const chemtechs = getStatValue(allTeamData, 'chemtechs');
   const hextechs = getStatValue(allTeamData, 'hextechs');
-  const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)') || getStatValue(allTeamData, 'dragons_type_unknown');
+  
+  // Handle differently named columns as well
+  const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)') || 
+                        getStatValue(allTeamData, 'dragons_type_unknown') ||
+                        getStatValue(allTeamData, 'drakes_unknown');
+  
   const elders = getStatValue(allTeamData, 'elders');
   
   // Extraire les autres statistiques d'objectifs
@@ -88,6 +93,14 @@ function processTeamRows(
   const turretPlates = getStatValue(allTeamData, 'turretplates');
   const inhibitors = getStatValue(allTeamData, 'inhibitors');
   const voidGrubs = getStatValue(allTeamData, 'void_grubs');
+  
+  // Log dragon stats for debugging
+  if (dragons > 0 || elementalDrakes > 0 || infernals > 0 || mountains > 0 || 
+      clouds > 0 || oceans > 0 || chemtechs > 0 || hextechs > 0 || drakesUnknown > 0 || elders > 0) {
+    console.log(`Match ${gameId}, Team ${teamId}: Dragons=${dragons}, Elemental=${elementalDrakes}, ` +
+                `Infernal=${infernals}, Mountain=${mountains}, Cloud=${clouds}, Ocean=${oceans}, ` +
+                `Chemtech=${chemtechs}, Hextech=${hextechs}, Unknown=${drakesUnknown}, Elder=${elders}`);
+  }
   
   // Créer l'objet de statistiques pour cette équipe
   teamStatsMap.set(teamId, {

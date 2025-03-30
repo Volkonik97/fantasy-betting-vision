@@ -122,6 +122,19 @@ export async function saveTeamMatchStats(
       stat.hextechs = convertToInteger(stat.hextechs);
       stat.drakes_unknown = convertToInteger(stat.drakes_unknown);
       stat.elders = convertToInteger(stat.elders);
+      
+      // Debug log pour les statistiques de dragons
+      if ((stat.dragons > 0 || stat.elemental_drakes > 0 || stat.infernals > 0 || 
+           stat.mountains > 0 || stat.clouds > 0 || stat.oceans > 0 || 
+           stat.chemtechs > 0 || stat.hextechs > 0 || stat.drakes_unknown > 0 || 
+           stat.elders > 0) && Math.random() < 0.05) { // Log seulement 5% des matchs pour éviter de spammer
+        console.log(`Stats dragons pour team ${stat.team_id} match ${stat.match_id}: ` +
+                    `Total=${stat.dragons}, Elemental=${stat.elemental_drakes}, ` +
+                    `Infernal=${stat.infernals}, Mountain=${stat.mountains}, ` +
+                    `Cloud=${stat.clouds}, Ocean=${stat.oceans}, ` +
+                    `Chemtech=${stat.chemtechs}, Hextech=${stat.hextechs}, ` +
+                    `Unknown=${stat.drakes_unknown}, Elder=${stat.elders}`);
+      }
     });
     
     // Préparation des données pour l'insertion avec une vérification plus approfondie
