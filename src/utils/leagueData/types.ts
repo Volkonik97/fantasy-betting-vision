@@ -1,135 +1,309 @@
-export interface LeagueGameDataRow {
-  [key: string]: string;
-  gameid?: string;
-  datacompleteness?: string;
-  url?: string;
-  league?: string;
-  year?: string;
-  split?: string;
-  playoffs?: string;
-  date?: string;
-  game?: string;
-  patch?: string;
-  participantid?: string;
-  side?: string;
-  position?: string;
-  teamposition?: string; // Added field for team position (Blue/Red)
-  playername?: string;
-  teamname?: string;
-  teamid?: string;
-  champion?: string;
-  // Direct ban columns
-  ban1?: string;
-  ban2?: string;
-  ban3?: string;
-  ban4?: string;
-  ban5?: string;
-  // Direct pick columns
-  pick1?: string;
-  pick2?: string;
-  pick3?: string;
-  pick4?: string;
-  pick5?: string;
-  gamelength?: string;
+
+import { LeagueGameDataRow } from '../csv/types';
+
+/**
+ * GameTracker interface for tracking unique games
+ */
+export interface GameTracker {
+  id: string;
+  date: string;
+  league: string;
+  year: string;
+  split: string;
+  patch: string;
+  playoffs: boolean;
+  teams: {
+    blue: string;
+    red: string;
+  };
   result?: string;
-  kills?: string;
-  deaths?: string;
-  assists?: string;
-  teamkills?: string;
-  teamdeaths?: string;
-  doublekills?: string;
-  triplekills?: string;
-  quadrakills?: string;
-  pentakills?: string;
-  firstblood?: string;
-  firstbloodkill?: string;
-  firstbloodassist?: string;
-  firstbloodvictim?: string;
-  team_kpm?: string;
-  ckpm?: string;
-  firstdragon?: string;
-  dragons?: string;
-  opp_dragons?: string;
-  elementaldrakes?: string;
-  opp_elementaldrakes?: string;
-  infernals?: string;
-  mountains?: string;
-  clouds?: string;
-  oceans?: string;
-  chemtechs?: string;
-  hextechs?: string;
-  dragons_type_unknown?: string;
-  elders?: string;
-  opp_elders?: string;
-  firstherald?: string;
-  heralds?: string;
-  opp_heralds?: string;
-  firstbaron?: string;
-  barons?: string;
-  opp_barons?: string;
-  firsttower?: string;
-  towers?: string;
-  opp_towers?: string;
-  firstmidtower?: string;
-  firsttothreetowers?: string;
-  turretplates?: string;
-  opp_turretplates?: string;
-  inhibitors?: string;
-  opp_inhibitors?: string;
-  damagetochampions?: string;
-  dpm?: string;
-  damageshare?: string;
-  damagetakenperminute?: string;
-  damagemitigatedperminute?: string;
-  wardsplaced?: string;
-  wpm?: string;
-  wardskilled?: string;
-  wcpm?: string;
-  controlwardsbought?: string;
-  visionscore?: string;
-  vspm?: string;
-  totalgold?: string;
-  earnedgold?: string;
-  earnedgpm?: string;
-  earnedgoldshare?: string;
-  goldspent?: string;
-  gspd?: string;
-  total_cs?: string;
-  minionkills?: string;
-  monsterkills?: string;
-  monsterkillsownjungle?: string;
-  monsterkillsenemyjungle?: string;
-  cspm?: string;
-  goldat10?: string;
-  xpat10?: string;
-  csat10?: string;
-  opp_goldat10?: string;
-  opp_xpat10?: string;
-  opp_csat10?: string;
-  golddiffat10?: string;
-  xpdiffat10?: string;
-  csdiffat10?: string;
-  killsat10?: string;
-  assistsat10?: string;
-  deathsat10?: string;
-  opp_killsat10?: string;
-  opp_assistsat10?: string;
-  opp_deathsat10?: string;
-  goldat15?: string;
-  xpat15?: string;
-  csat15?: string;
-  opp_goldat15?: string;
-  opp_xpat15?: string;
-  opp_csat15?: string;
-  golddiffat15?: string;
-  xpdiffat15?: string;
-  csdiffat15?: string;
-  killsat15?: string;
-  assistsat15?: string;
-  deathsat15?: string;
-  opp_killsat15?: string;
-  opp_assistsat15?: string;
-  opp_deathsat15?: string;
+  duration?: string;
+  rows?: Set<LeagueGameDataRow>;
+}
+
+/**
+ * Match team statistics interface
+ */
+export interface MatchTeamStats {
+  team_id: string;
+  match_id: string;
+  side: string;
+  is_winner: boolean;
+  team_kpm?: number;
+  ckpm?: number;
+  first_blood?: boolean;
+  team_kills?: number;
+  team_deaths?: number;
+  first_dragon?: boolean;
+  dragons?: number;
+  elemental_drakes?: number;
+  infernals?: number;
+  mountains?: number;
+  clouds?: number;
+  oceans?: number;
+  chemtechs?: number;
+  hextechs?: number;
+  drakes_unknown?: number;
+  elders?: number;
+  first_herald?: boolean;
+  heralds?: number;
+  first_baron?: boolean;
+  barons?: number;
+  void_grubs?: number;
+  first_tower?: boolean;
+  first_mid_tower?: boolean;
+  first_three_towers?: boolean;
+  towers?: number;
+  turret_plates?: number;
+  inhibitors?: number;
+}
+
+/**
+ * Player match statistics interface
+ */
+export interface PlayerMatchStats {
+  participant_id: string;
+  player_id: string;
+  team_id: string;
+  match_id: string;
+  side: string;
+  position: string;
+  champion: string;
+  is_winner: boolean;
+  
+  // Combat stats
+  kills: number;
+  deaths: number;
+  assists: number;
+  double_kills?: number;
+  triple_kills?: number;
+  quadra_kills?: number;
+  penta_kills?: number;
+  first_blood_kill?: boolean;
+  first_blood_assist?: boolean;
+  first_blood_victim?: boolean;
+  
+  // Damage stats
+  damage_to_champions?: number;
+  dpm?: number;
+  damage_share?: number;
+  damage_taken_per_minute?: number;
+  damage_mitigated_per_minute?: number;
+  
+  // Vision stats
+  wards_placed?: number;
+  wpm?: number;
+  wards_killed?: number;
+  wcpm?: number;
+  control_wards_bought?: number;
+  vision_score?: number;
+  vspm?: number;
+  
+  // Gold stats
+  total_gold?: number;
+  earned_gold?: number;
+  earned_gpm?: number;
+  earned_gold_share?: number;
+  gold_spent?: number;
+  gspd?: number;
+  gpr?: number;
+  
+  // CS stats
+  total_cs?: number;
+  minion_kills?: number;
+  monster_kills?: number;
+  monster_kills_own_jungle?: number;
+  monster_kills_enemy_jungle?: number;
+  cspm?: number;
+  
+  // Timeline stats: 10 min
+  gold_at_10?: number;
+  xp_at_10?: number;
+  cs_at_10?: number;
+  opp_gold_at_10?: number;
+  opp_xp_at_10?: number;
+  opp_cs_at_10?: number;
+  gold_diff_at_10?: number;
+  xp_diff_at_10?: number;
+  cs_diff_at_10?: number;
+  kills_at_10?: number;
+  assists_at_10?: number;
+  deaths_at_10?: number;
+  opp_kills_at_10?: number;
+  opp_assists_at_10?: number;
+  opp_deaths_at_10?: number;
+  
+  // Timeline stats: 15 min
+  gold_at_15?: number;
+  xp_at_15?: number;
+  cs_at_15?: number;
+  opp_gold_at_15?: number;
+  opp_xp_at_15?: number;
+  opp_cs_at_15?: number;
+  gold_diff_at_15?: number;
+  xp_diff_at_15?: number;
+  cs_diff_at_15?: number;
+  kills_at_15?: number;
+  assists_at_15?: number;
+  deaths_at_15?: number;
+  opp_kills_at_15?: number;
+  opp_assists_at_15?: number;
+  opp_deaths_at_15?: number;
+  
+  // Timeline stats: 20 min
+  gold_at_20?: number;
+  xp_at_20?: number;
+  cs_at_20?: number;
+  opp_gold_at_20?: number;
+  opp_xp_at_20?: number;
+  opp_cs_at_20?: number;
+  gold_diff_at_20?: number;
+  xp_diff_at_20?: number;
+  cs_diff_at_20?: number;
+  kills_at_20?: number;
+  assists_at_20?: number;
+  deaths_at_20?: number;
+  opp_kills_at_20?: number;
+  opp_assists_at_20?: number;
+  opp_deaths_at_20?: number;
+  
+  // Timeline stats: 25 min
+  gold_at_25?: number;
+  xp_at_25?: number;
+  cs_at_25?: number;
+  opp_gold_at_25?: number;
+  opp_xp_at_25?: number;
+  opp_cs_at_25?: number;
+  gold_diff_at_25?: number;
+  xp_diff_at_25?: number;
+  cs_diff_at_25?: number;
+  kills_at_25?: number;
+  assists_at_25?: number;
+  deaths_at_25?: number;
+  opp_kills_at_25?: number;
+  opp_assists_at_25?: number;
+  opp_deaths_at_25?: number;
+}
+
+/**
+ * Picks and Bans interface
+ */
+export interface PicksAndBans {
+  picks?: Record<string, string[]>;
+  bans?: Record<string, string[]>;
+}
+
+/**
+ * Player stats tracker for aggregating player data
+ */
+export interface PlayerStatsTracker {
+  id: string;
+  name: string;
+  team: string;
+  role: string;
+  games: number;
+  wins: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  kda: number;
+  csPerMin: number;
+  championPool: Set<string>;
+}
+
+/**
+ * Team damage map for tracking damage per game
+ */
+export interface TeamGameDamageMap {
+  [teamId: string]: {
+    [gameId: string]: number;
+  };
+}
+
+/**
+ * Player damage shares map
+ */
+export interface PlayerDamageSharesMap {
+  [playerId: string]: number[];
+}
+
+/**
+ * Team stats tracker for aggregating team data
+ */
+export interface TeamStatsTracker {
+  id: string;
+  name: string;
+  logo?: string;
+  region?: string;
+  subRegion?: string;
+  games: number;
+  wins: number;
+  players: string[];
+}
+
+/**
+ * Parse a string value to a float safely
+ */
+export function safeParseFloat(value: any): number {
+  if (value === undefined || value === null) return 0;
+  
+  if (typeof value === 'number') return value;
+  
+  if (typeof value === 'string') {
+    const parsedValue = parseFloat(value);
+    return isNaN(parsedValue) ? 0 : parsedValue;
+  }
+  
+  return 0;
+}
+
+/**
+ * Parse a string value to an integer safely
+ */
+export function safeParseInt(value: any): number {
+  if (value === undefined || value === null) return 0;
+  
+  if (typeof value === 'number') return Math.floor(value);
+  
+  if (typeof value === 'string') {
+    const parsedValue = parseInt(value, 10);
+    return isNaN(parsedValue) ? 0 : parsedValue;
+  }
+  
+  return 0;
+}
+
+/**
+ * Parse a value to boolean safely
+ */
+export function parseBoolean(value: any): boolean {
+  if (value === undefined || value === null) return false;
+  
+  if (typeof value === 'boolean') return value;
+  
+  if (typeof value === 'string') {
+    const lowerValue = value.toLowerCase();
+    return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes';
+  }
+  
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  
+  return false;
+}
+
+/**
+ * Convert boolean to string representation
+ */
+export function booleanToString(value: boolean | string | undefined | null): string | null {
+  if (value === undefined || value === null) return null;
+  
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  
+  return value;
 }
 
 /**
