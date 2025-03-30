@@ -54,6 +54,21 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
 
     // Create extraStats object with data for both teams
     if (blueTeamRow.teamStats) {
+      // Process picks and bans data first to properly log everything
+      const processedPicks = prepareJsonData(blueTeamRow.picks);
+      const processedBans = prepareJsonData(blueTeamRow.bans);
+      
+      console.log(`[CSV Converter] Match ${blueTeamRow.id} - Picks and bans:`, {
+        rawPicks: blueTeamRow.picks ? (typeof blueTeamRow.picks === 'object' ? 
+          Object.keys(blueTeamRow.picks).length + ' picks' : typeof blueTeamRow.picks) : 'undefined',
+        rawBans: blueTeamRow.bans ? (typeof blueTeamRow.bans === 'object' ? 
+          Object.keys(blueTeamRow.bans).length + ' bans' : typeof blueTeamRow.bans) : 'undefined',
+        processedPicks: processedPicks ? (typeof processedPicks === 'object' ? 
+          Object.keys(processedPicks).length + ' picks' : typeof processedPicks) : 'undefined',
+        processedBans: processedBans ? (typeof processedBans === 'object' ? 
+          Object.keys(processedBans).length + ' bans' : typeof processedBans) : 'undefined'
+      });
+      
       // Log dragon data for debugging specific matches
       if (blueTeamRow.id === 'LOLTMNT02_215152' || blueTeamRow.id === 'LOLTMNT02_222859') {
         console.log(`[CSV Converter] Dragon data for match ${blueTeamRow.id}:`, { 
@@ -68,18 +83,6 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         });
       }
 
-      // Process picks and bans data
-      const processedPicks = prepareJsonData(blueTeamRow.picks);
-      const processedBans = prepareJsonData(blueTeamRow.bans);
-      
-      console.log(`[CSV Converter] Match ${blueTeamRow.id} - Picks and bans:`, {
-        rawPicks: blueTeamRow.picks ? typeof blueTeamRow.picks : 'undefined',
-        rawBans: blueTeamRow.bans ? typeof blueTeamRow.bans : 'undefined',
-        processedPicks: processedPicks ? typeof processedPicks : 'undefined',
-        processedBans: processedBans ? typeof processedBans : 'undefined',
-        picksKeys: processedPicks ? Object.keys(processedPicks) : []
-      });
-      
       // Directly use the numeric values from the CSV data
       matchObject.extraStats = {
         patch: blueTeamRow.patch || '',

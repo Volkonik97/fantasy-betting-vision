@@ -47,7 +47,21 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   // Extract picks and bans data if available
   if (game.rows && game.rows.size > 0) {
     // Pass the rows Set directly to extractPicksAndBans which now handles both arrays and Sets
-    const { picks, bans } = extractPicksAndBans(game.rows);
+    const rowsArray = Array.from(game.rows);
+    console.log(`[matchCsvConverter] Match ${game.id} - Processing ${rowsArray.length} rows for picks/bans`);
+    
+    // Check if we have pick/ban columns in the data
+    const hasBanColumns = rowsArray.some(row => 
+      row.ban1 || row.ban2 || row.ban3 || row.ban4 || row.ban5
+    );
+    
+    const hasPickColumns = rowsArray.some(row => 
+      row.pick1 || row.pick2 || row.pick3 || row.pick4 || row.pick5
+    );
+    
+    console.log(`[matchCsvConverter] Match ${game.id} - Has ban columns: ${hasBanColumns}, has pick columns: ${hasPickColumns}`);
+    
+    const { picks, bans } = extractPicksAndBans(rowsArray);
     
     if (picks) {
       matchCsv.picks = picks;

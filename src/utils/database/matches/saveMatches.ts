@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -59,8 +60,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               barons: sampleMatch.extraStats.barons,
               first_blood: sampleMatch.extraStats.first_blood,
               first_blood_type: typeof sampleMatch.extraStats.first_blood,
-              picks: sampleMatch.extraStats.picks ? typeof sampleMatch.extraStats.picks : 'Pas de picks',
-              bans: sampleMatch.extraStats.bans ? typeof sampleMatch.extraStats.bans : 'Pas de bans'
+              picks: sampleMatch.extraStats.picks ? Object.keys(sampleMatch.extraStats.picks).length : 'Pas de picks',
+              bans: sampleMatch.extraStats.bans ? Object.keys(sampleMatch.extraStats.bans).length : 'Pas de bans'
             } : 'Pas de extraStats',
             result: sampleMatch.result ? {
               winner: sampleMatch.result.winner,
@@ -83,18 +84,31 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               const teamRedId = match.teamRed?.id || '';
               
               // Process picks and bans to ensure they are in the correct JSON format
-              const picks = prepareJsonData(extraStats.picks);
-              const bans = prepareJsonData(extraStats.bans);
+              // This is critical to ensure they're stored properly in the database
+              let picksData = null;
+              let bansData = null;
+              
+              if (extraStats.picks) {
+                picksData = prepareJsonData(extraStats.picks);
+                console.log(`Match ${match.id} - Picks data ready for DB:`, 
+                  picksData ? `${Object.keys(picksData).length} picks found` : 'No picks');
+              }
+              
+              if (extraStats.bans) {
+                bansData = prepareJsonData(extraStats.bans);
+                console.log(`Match ${match.id} - Bans data ready for DB:`, 
+                  bansData ? `${Object.keys(bansData).length} bans found` : 'No bans');
+              }
               
               // Log objective data for this match
               console.log(`Match ${match.id} données d'objectifs et picks/bans pour la BD:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
                 first_blood: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
-                hasPicks: !!picks,
-                hasBans: !!bans,
-                picksType: picks ? typeof picks : 'undefined',
-                bansType: bans ? typeof bans : 'undefined'
+                hasPicks: !!picksData,
+                hasBans: !!bansData,
+                picksCount: picksData ? Object.keys(picksData).length : 0,
+                bansCount: bansData ? Object.keys(bansData).length : 0
               });
               
               // Assemble match object with safe property access and proper boolean -> string conversion
@@ -153,8 +167,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 mvp: result && 'mvp' in result ? result.mvp : '',
                 first_blood: booleanToString(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
                 first_dragon: booleanToString(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
-                picks: picks,
-                bans: bans,
+                picks: picksData,
+                bans: bansData,
                 game_number: match.id.includes('_') ? match.id.split('_').pop() || null : null
               };
             }),

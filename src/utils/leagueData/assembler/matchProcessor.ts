@@ -26,8 +26,39 @@ export function processMatchObject(
   // Find team stats for this match
   const teamStatsMap = matchStats.get(match.id);
   
-  // Extract picks and bans data from group data for this match
-  const { picks: picksData, bans: bansData } = extractPicksAndBans(gameRows);
+  // Check if we have picks and bans data direct in the match object
+  let picksData = match.picks;
+  let bansData = match.bans;
+  
+  // If not in the match object, try to extract from game rows
+  if ((!picksData || !bansData) && gameRows && gameRows.length > 0) {
+    console.log(`[matchProcessor] Match ${match.id} - Extracting picks and bans from ${gameRows.length} game rows`);
+    
+    // Check if we have pick/ban columns in the data
+    const hasBanColumns = gameRows.some(row => 
+      row.ban1 || row.ban2 || row.ban3 || row.ban4 || row.ban5
+    );
+    
+    const hasPickColumns = gameRows.some(row => 
+      row.pick1 || row.pick2 || row.pick3 || row.pick4 || row.pick5
+    );
+    
+    console.log(`[matchProcessor] Match ${match.id} - Has ban columns: ${hasBanColumns}, has pick columns: ${hasPickColumns}`);
+    
+    // Extract picks and bans from game data rows
+    const { picks, bans } = extractPicksAndBans(gameRows);
+    
+    // Only override if we found data
+    if (picks && Object.keys(picks).length > 0) {
+      picksData = picks;
+      console.log(`[matchProcessor] Match ${match.id} - Found ${Object.keys(picks).length} picks from rows`);
+    }
+    
+    if (bans && Object.keys(bans).length > 0) {
+      bansData = bans;
+      console.log(`[matchProcessor] Match ${match.id} - Found ${Object.keys(bans).length} bans from rows`);
+    }
+  }
   
   // Identify blue and red team rows
   const blueTeamRows = gameRows.filter(row => 
@@ -105,7 +136,7 @@ export function processMatchObject(
       team_kills: parseInt(match.teamKills || '0') || 0,
       team_deaths: parseInt(match.teamDeaths || '0') || 0,
       
-      // Include picks and bans
+      // Include picks and bans - use the data we determined above
       picks: picksData || null,
       bans: bansData || null
     }
