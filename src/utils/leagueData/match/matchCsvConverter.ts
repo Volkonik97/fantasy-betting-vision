@@ -1,4 +1,3 @@
-
 import { GameTracker } from '../types';
 import { MatchCSV } from '../../csv/types';
 
@@ -18,7 +17,8 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   if (game.result !== undefined) {
     status = 'Completed';
   } else {
-    status = statusMap[game.status || ''] || 'Upcoming';
+    // Since 'status' doesn't exist in GameTracker, we default to 'Upcoming'
+    status = 'Upcoming';
   }
   
   // Get team stats if available
