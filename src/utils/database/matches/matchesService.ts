@@ -16,6 +16,7 @@ import {
   fetchSeriesMatches,
   calculateSeriesScore
 } from './series';
+import { extractTeamSpecificStats } from './teamStatsExtractor';
 
 export {
   getMatches,
@@ -29,6 +30,7 @@ export {
   clearPlayerStatsCache,
   clearMatchCache,
   savePlayerMatchStats,
+  extractTeamSpecificStats,
   // Series-related exports
   isSeriesMatch,
   getSeriesScore,

@@ -82,22 +82,8 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       blueWinOdds: parseFloat(match.blueWinOdds) || 0.5,
       redWinOdds: parseFloat(match.redWinOdds) || 0.5,
       status: match.status as 'Upcoming' | 'Live' | 'Completed',
-    };
-    
-    // Add extra stats from the Oracle's Elixir data
-    if (teamStatsMap) {
-      // Get blue team stats
-      const blueTeamStats = teamStatsMap.get(match.teamBlueId);
-      // Get red team stats
-      const redTeamStats = teamStatsMap.get(match.teamRedId);
-      
-      console.log(`Match ${match.id} team stats:`, { 
-        hasBlueStats: !!blueTeamStats, 
-        hasRedStats: !!redTeamStats 
-      });
-      
-      // Always create extraStats object, even if no team stats available
-      matchObject.extraStats = {
+      // Always initialize extraStats, even if no team stats available
+      extraStats: {
         patch: match.patch || '',
         year: match.year || '',
         split: match.split || '',
@@ -113,82 +99,51 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
         first_three_towers: match.firstThreeTowers || null,
         
         // Initialize objective stats with zeros to ensure they're always present
-        dragons: 0,
-        opp_dragons: 0,
-        elemental_drakes: 0,
-        opp_elemental_drakes: 0,
-        infernals: 0,
-        mountains: 0,
-        clouds: 0,
-        oceans: 0,
-        chemtechs: 0,
-        hextechs: 0,
-        drakes_unknown: 0,
-        elders: 0,
-        opp_elders: 0,
-        heralds: 0,
-        opp_heralds: 0,
-        barons: 0,
-        opp_barons: 0,
-        void_grubs: 0,
-        opp_void_grubs: 0,
-        towers: 0,
-        opp_towers: 0,
-        turret_plates: 0,
-        opp_turret_plates: 0,
-        inhibitors: 0,
-        opp_inhibitors: 0,
-        team_kills: 0,
-        team_deaths: 0,
+        dragons: parseInt(match.dragons || '0') || 0,
+        opp_dragons: parseInt(match.oppDragons || '0') || 0,
+        elemental_drakes: parseInt(match.elementalDrakes || '0') || 0,
+        opp_elemental_drakes: parseInt(match.oppElementalDrakes || '0') || 0,
+        infernals: parseInt(match.infernals || '0') || 0,
+        mountains: parseInt(match.mountains || '0') || 0,
+        clouds: parseInt(match.clouds || '0') || 0,
+        oceans: parseInt(match.oceans || '0') || 0,
+        chemtechs: parseInt(match.chemtechs || '0') || 0,
+        hextechs: parseInt(match.hextechs || '0') || 0,
+        drakes_unknown: parseInt(match.drakesUnknown || '0') || 0,
+        elders: parseInt(match.elders || '0') || 0,
+        opp_elders: parseInt(match.oppElders || '0') || 0,
+        heralds: parseInt(match.heralds || '0') || 0,
+        opp_heralds: parseInt(match.oppHeralds || '0') || 0,
+        barons: parseInt(match.barons || '0') || 0,
+        opp_barons: parseInt(match.oppBarons || '0') || 0,
+        void_grubs: parseInt(match.voidGrubs || '0') || 0,
+        opp_void_grubs: parseInt(match.oppVoidGrubs || '0') || 0,
+        towers: parseInt(match.towers || '0') || 0,
+        opp_towers: parseInt(match.oppTowers || '0') || 0,
+        turret_plates: parseInt(match.turretPlates || '0') || 0,
+        opp_turret_plates: parseInt(match.oppTurretPlates || '0') || 0,
+        inhibitors: parseInt(match.inhibitors || '0') || 0,
+        opp_inhibitors: parseInt(match.oppInhibitors || '0') || 0,
+        team_kills: parseInt(match.teamKills || '0') || 0,
+        team_deaths: parseInt(match.teamDeaths || '0') || 0,
         
         // Include picks and bans
-        picks: picksData,
-        bans: bansData
-      };
+        picks: picksData || null,
+        bans: bansData || null
+      }
+    };
+    
+    // Add team-specific stats if available from teamStatsMap
+    if (teamStatsMap) {
+      const blueTeamStats = teamStatsMap.get(blueTeam.id);
+      const redTeamStats = teamStatsMap.get(redTeam.id);
       
-      // If blue team stats exist, use them
       if (blueTeamStats) {
-        matchObject.extraStats = {
-          ...matchObject.extraStats,
-          team_kpm: blueTeamStats.team_kpm || 0,
-          ckpm: blueTeamStats.ckpm || 0,
-          first_blood: blueTeamStats.first_blood || null,
-          first_dragon: blueTeamStats.first_dragon || null,
-          first_herald: blueTeamStats.first_herald || null,
-          first_baron: blueTeamStats.first_baron || null,
-          first_tower: blueTeamStats.first_tower || null,
-          first_mid_tower: blueTeamStats.first_mid_tower || null,
-          first_three_towers: blueTeamStats.first_three_towers || null,
-          dragons: blueTeamStats.dragons || 0,
-          opp_dragons: blueTeamStats.opp_dragons || 0,
-          elemental_drakes: blueTeamStats.elemental_drakes || 0,
-          opp_elemental_drakes: blueTeamStats.opp_elemental_drakes || 0,
-          infernals: blueTeamStats.infernals || 0,
-          mountains: blueTeamStats.mountains || 0,
-          clouds: blueTeamStats.clouds || 0,
-          oceans: blueTeamStats.oceans || 0,
-          chemtechs: blueTeamStats.chemtechs || 0,
-          hextechs: blueTeamStats.hextechs || 0,
-          drakes_unknown: blueTeamStats.drakes_unknown || 0,
-          elders: blueTeamStats.elders || 0,
-          opp_elders: blueTeamStats.opp_elders || 0,
-          heralds: blueTeamStats.heralds || 0,
-          opp_heralds: blueTeamStats.opp_heralds || 0,
-          barons: blueTeamStats.barons || 0,
-          opp_barons: blueTeamStats.opp_barons || 0,
-          void_grubs: blueTeamStats.void_grubs || 0,
-          opp_void_grubs: blueTeamStats.opp_void_grubs || 0,
-          towers: blueTeamStats.towers || 0,
-          opp_towers: blueTeamStats.opp_towers || 0,
-          turret_plates: blueTeamStats.turret_plates || 0,
-          opp_turret_plates: blueTeamStats.opp_turret_plates || 0,
-          inhibitors: blueTeamStats.inhibitors || 0,
-          opp_inhibitors: blueTeamStats.opp_inhibitors || 0,
-          team_kills: blueTeamStats.team_kills || 0,
-          team_deaths: blueTeamStats.team_deaths || 0,
-          blueTeamStats: blueTeamStats || {},
-          redTeamStats: redTeamStats || {}
-        };
+        matchObject.extraStats.blueTeamStats = blueTeamStats;
+      }
+      
+      if (redTeamStats) {
+        matchObject.extraStats.redTeamStats = redTeamStats;
       }
     }
     
