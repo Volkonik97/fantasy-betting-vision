@@ -1,3 +1,4 @@
+
 import { Match } from '@/utils/models/types';
 
 /**
@@ -5,13 +6,13 @@ import { Match } from '@/utils/models/types';
  */
 export function extractTeamSpecificStats(
   match: Match, 
-  allMatches: Match[] = [] // Full dataset to find the correct row for each team
+  allMatches: Match[] = []
 ): { blueTeamStats: any, redTeamStats: any } {
   
   if (!match.extraStats) {
     return { blueTeamStats: null, redTeamStats: null };
   }
-
+  
   // Helper function to safely convert any value to an integer
   const safeParseInt = (value: any): number => {
     if (typeof value === 'number') return Math.floor(value);
@@ -20,24 +21,14 @@ export function extractTeamSpecificStats(
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // 🔹 Find the row corresponding to the red team
-  // We need to find a match where the blue team is our current red team
-  const redTeamRow = allMatches.find(row => 
-    row.teamBlue.id === match.teamRed.id || 
-    row.teamRed.id === match.teamRed.id
-  );
-
-  if (!redTeamRow) {
-    console.warn(`⚠️ Warning: No row found for red team ${match.teamRed.id}`);
-  }
-
-  // Extract dragon stats for each team
+  // Based on the spreadsheet, it seems the data is organized in rows
+  // where index 0 represents one team and index 1 represents the other
+  
+  // Extract dragon stats for blue team
   const blueTeamStats = {
     team_id: match.teamBlue.id,
     match_id: match.id,
     is_blue_side: true,
-
-    // 🔹 Blue team dragons (from match.extraStats)
     dragons: safeParseInt(match.extraStats.dragons),
     infernals: safeParseInt(match.extraStats.infernals),
     mountains: safeParseInt(match.extraStats.mountains), 
@@ -47,32 +38,25 @@ export function extractTeamSpecificStats(
     hextechs: safeParseInt(match.extraStats.hextechs),
     drakes_unknown: safeParseInt(match.extraStats.drakes_unknown),
     elemental_drakes: safeParseInt(match.extraStats.elemental_drakes),
-
-    // First objectives
     first_dragon: match.extraStats.first_dragon === match.teamBlue.id
   };
 
-  // 🔹 Red team stats: Extract from its own row
+  // Extract dragon stats for red team
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
     is_blue_side: false,
-
-    // 🔹 Extract detailed dragon types from red team's own row
     dragons: safeParseInt(match.extraStats.opp_dragons),
-    
-    // If we found a matching row for the red team, use its data
-    // Otherwise, we don't have detailed breakdown by drake type
-    infernals: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.infernals) : 0,
-    mountains: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.mountains) : 0,
-    clouds: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.clouds) : 0,
-    oceans: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.oceans) : 0,
-    chemtechs: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.chemtechs) : 0,
-    hextechs: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.hextechs) : 0,
-    drakes_unknown: redTeamRow?.extraStats ? safeParseInt(redTeamRow.extraStats.drakes_unknown) : 0,
-    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || 0),
-
-    // First objectives
+    // For the specific dragon types, we need to access the same properties
+    // as we have no dedicated opp_ versions for these
+    infernals: safeParseInt(match.extraStats.opp_infernals || 0),
+    mountains: safeParseInt(match.extraStats.opp_mountains || 0),
+    clouds: safeParseInt(match.extraStats.opp_clouds || 0),
+    oceans: safeParseInt(match.extraStats.opp_oceans || 0),
+    chemtechs: safeParseInt(match.extraStats.opp_chemtechs || 0),
+    hextechs: safeParseInt(match.extraStats.opp_hextechs || 0),
+    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown || 0),
+    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes),
     first_dragon: match.extraStats.first_dragon === match.teamRed.id
   };
 
