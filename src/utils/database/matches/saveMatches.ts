@@ -48,43 +48,34 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
         // Debug match data for better debugging
         console.log(`Processing match batch (${matchChunk.length} matches) with objectives data`);
         
-        // Safely extract objective data
-        const matchObjectives = matchChunk.map(match => {
-          // Initialize with default values to prevent undefined errors
-          // Explicitly cast as any to avoid TypeScript errors for now
-          const result = (match.result || {}) as any;
-          const extraStats = (match.extraStats || {}) as any;
-          
-          // Explicit debug to help identify issues with match data
-          const firstBlood = result.firstBlood || extraStats.first_blood || null;
-          const firstDragon = result.firstDragon || extraStats.first_dragon || null;
-          const firstBaron = result.firstBaron || extraStats.first_baron || null;
-          const firstHerald = result.firstHerald || extraStats.first_herald || null;
-          
-          console.log(`Match ${match.id} objectives:`, {
-            firstBlood,
-            firstDragon,
-            firstBaron,
-            firstHerald,
-            extraStats: !!extraStats
+        // Log a sample match to verify data
+        if (matchChunk.length > 0) {
+          const sampleMatch = matchChunk[0];
+          console.log('Sample match data:', {
+            id: sampleMatch.id,
+            extraStats: sampleMatch.extraStats ? {
+              dragons: sampleMatch.extraStats.dragons,
+              barons: sampleMatch.extraStats.barons,
+              first_blood: sampleMatch.extraStats.first_blood,
+              first_dragon: sampleMatch.extraStats.first_dragon
+            } : 'No extraStats'
           });
-          
-          return {
-            id: match.id,
-            firstBlood,
-            firstDragon,
-            firstBaron,
-            firstHerald
-          };
-        });
+        }
         
         const { error: matchesError } = await supabase
           .from('matches')
           .upsert(
             matchChunk.map(match => {
-              // Explicitly cast as any to avoid TypeScript errors
-              const extraStats = (match.extraStats || {}) as any;
-              const result = (match.result || {}) as any;
+              // Extraire les statistiques et données objectives
+              const extraStats = match.extraStats || {};
+              const result = match.result || {};
+              
+              // Log les données objectives pour ce match
+              console.log(`Match ${match.id} objective data for DB:`, {
+                dragons: extraStats.dragons || 0,
+                barons: extraStats.barons || 0,
+                first_blood: result.firstBlood || extraStats.first_blood || null
+              });
               
               return {
                 id: match.id,
@@ -140,7 +131,9 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 duration: result.duration || '',
                 mvp: result.mvp || '',
                 first_blood: result.firstBlood || extraStats.first_blood || null,
-                first_dragon: result.firstDragon || extraStats.first_dragon || null
+                first_dragon: result.firstDragon || extraStats.first_dragon || null,
+                picks: extraStats.picks || null,
+                bans: extraStats.bans || null
               };
             }),
             { onConflict: 'id' }

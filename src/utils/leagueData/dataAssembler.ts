@@ -82,31 +82,80 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       blueWinOdds: parseFloat(match.blueWinOdds) || 0.5,
       redWinOdds: parseFloat(match.redWinOdds) || 0.5,
       status: match.status as 'Upcoming' | 'Live' | 'Completed',
+    };
+    
+    // Add extra stats from the Oracle's Elixir data
+    if (teamStatsMap) {
+      // Get blue team stats
+      const blueTeamStats = teamStatsMap.get(match.teamBlueId);
+      // Get red team stats
+      const redTeamStats = teamStatsMap.get(match.teamRedId);
       
-      // Add extra stats from the Oracle's Elixir data
-      extraStats: teamStatsMap ? {
+      console.log(`Match ${match.id} team stats:`, { 
+        hasBlueStats: !!blueTeamStats, 
+        hasRedStats: !!redTeamStats 
+      });
+      
+      // Combine stats to get match level stats
+      matchObject.extraStats = {
         patch: match.patch,
         year: match.year,
         split: match.split,
         playoffs: match.playoffs === 'true',
-        team_kpm: 0,
-        ckpm: 0,
+        team_kpm: parseFloat(match.teamKpm || '0'),
+        ckpm: parseFloat(match.ckpm || '0'),
         first_blood: match.firstBlood,
         first_dragon: match.firstDragon,
         first_herald: match.firstHerald,
         first_baron: match.firstBaron,
         first_tower: match.firstTower,
-        dragons: 0,
-        barons: 0,
-        towers: 0,
-        heralds: 0,
-        team_kills: 0,
-        team_deaths: 0,
+        
+        // Add blue team objective stats
+        dragons: blueTeamStats?.dragons || 0,
+        opp_dragons: blueTeamStats?.opp_dragons || 0,
+        elemental_drakes: blueTeamStats?.elemental_drakes || 0,
+        opp_elemental_drakes: blueTeamStats?.opp_elemental_drakes || 0,
+        infernals: blueTeamStats?.infernals || 0,
+        mountains: blueTeamStats?.mountains || 0,
+        clouds: blueTeamStats?.clouds || 0,
+        oceans: blueTeamStats?.oceans || 0,
+        chemtechs: blueTeamStats?.chemtechs || 0,
+        hextechs: blueTeamStats?.hextechs || 0,
+        drakes_unknown: blueTeamStats?.drakes_unknown || 0,
+        elders: blueTeamStats?.elders || 0,
+        opp_elders: blueTeamStats?.opp_elders || 0,
+        heralds: blueTeamStats?.heralds || 0,
+        opp_heralds: blueTeamStats?.opp_heralds || 0,
+        barons: blueTeamStats?.barons || 0,
+        opp_barons: blueTeamStats?.opp_barons || 0,
+        void_grubs: blueTeamStats?.void_grubs || 0,
+        opp_void_grubs: blueTeamStats?.opp_void_grubs || 0,
+        towers: blueTeamStats?.towers || 0,
+        opp_towers: blueTeamStats?.opp_towers || 0,
+        turret_plates: blueTeamStats?.turret_plates || 0,
+        opp_turret_plates: blueTeamStats?.opp_turret_plates || 0,
+        inhibitors: blueTeamStats?.inhibitors || 0,
+        opp_inhibitors: blueTeamStats?.opp_inhibitors || 0,
+        team_kills: blueTeamStats?.team_kills || 0,
+        team_deaths: blueTeamStats?.team_deaths || 0,
+        
+        // Store full team stats for reference if needed
+        blueTeamStats: blueTeamStats || {},
+        redTeamStats: redTeamStats || {},
+        
         // Include picks and bans
         picks: picksData,
         bans: bansData
-      } : undefined
-    };
+      };
+      
+      // Log the extracted objective data for debugging
+      console.log(`Match ${match.id} objective data:`, {
+        dragons: matchObject.extraStats.dragons,
+        barons: matchObject.extraStats.barons,
+        heralds: matchObject.extraStats.heralds,
+        towers: matchObject.extraStats.towers
+      });
+    }
     
     // Add result if the match is completed
     if (match.status === 'Completed' && match.winnerTeamId) {

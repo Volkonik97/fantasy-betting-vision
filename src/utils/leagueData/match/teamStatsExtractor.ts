@@ -12,82 +12,139 @@ export function extractTeamStats(
 ): Map<string, MatchTeamStats> {
   const teamStatsMap = new Map<string, MatchTeamStats>();
   
+  // Process rows by team to avoid duplicate processing
+  const teamRows = new Map<string, LeagueGameDataRow[]>();
+  
+  // Group rows by team ID
   gameRows.forEach(row => {
-    // Skip if not team data or already processed
-    if (!row.teamid || teamStatsMap.has(row.teamid)) return;
+    if (!row.teamid) return;
     
-    // Determine which team got the first blood/dragon/baron/etc.
-    let firstBloodTeam = null;
-    let firstDragonTeam = null;
-    let firstHeraldTeam = null;
-    let firstBaronTeam = null;
-    let firstTowerTeam = null;
-    
-    // If row has firstblood=1, then this team got first blood
-    if (row.firstblood === '1' || row.firstblood === 'TRUE' || row.firstblood === 'true') {
-      firstBloodTeam = row.teamid;
+    if (!teamRows.has(row.teamid)) {
+      teamRows.set(row.teamid, []);
     }
     
-    // Similarly for other objectives
-    if (row.firstdragon === '1' || row.firstdragon === 'TRUE' || row.firstdragon === 'true') {
-      firstDragonTeam = row.teamid;
+    teamRows.get(row.teamid)?.push(row);
+  });
+  
+  // Process each team's data
+  teamRows.forEach((rows, teamId) => {
+    if (teamStatsMap.has(teamId)) return; // Skip if already processed
+    
+    // Use the first row as base data for this team
+    const baseRow = rows[0];
+    if (!baseRow) return;
+    
+    console.log(`Extracting team stats for team ${teamId} in game ${gameId}`);
+    
+    // Log sample data to verify values
+    if (rows.length > 0) {
+      console.log(`Sample row data for team ${teamId}:`, {
+        dragons: baseRow.dragons,
+        barons: baseRow.barons,
+        firstblood: baseRow.firstblood,
+        firstdragon: baseRow.firstdragon,
+        firstbaron: baseRow.firstbaron
+      });
     }
     
-    if (row.firstherald === '1' || row.firstherald === 'TRUE' || row.firstherald === 'true') {
-      firstHeraldTeam = row.teamid;
-    }
+    // Determine if this team got first objectives
+    const hasFirstBlood = checkBooleanValue(baseRow.firstblood);
+    const hasFirstDragon = checkBooleanValue(baseRow.firstdragon);
+    const hasFirstHerald = checkBooleanValue(baseRow.firstherald);
+    const hasFirstBaron = checkBooleanValue(baseRow.firstbaron);
+    const hasFirstTower = checkBooleanValue(baseRow.firsttower);
+    const hasFirstMidTower = checkBooleanValue(baseRow.firstmidtower);
+    const hasFirstThreeTowers = checkBooleanValue(baseRow.firsttothreetowers);
     
-    if (row.firstbaron === '1' || row.firstbaron === 'TRUE' || row.firstbaron === 'true') {
-      firstBaronTeam = row.teamid;
-    }
+    // Parse numeric values with safeParse helpers
+    const dragons = safeParseInt(baseRow.dragons);
+    const oppDragons = safeParseInt(baseRow.opp_dragons);
+    const elementalDrakes = safeParseInt(baseRow.elementaldrakes);
+    const oppElementalDrakes = safeParseInt(baseRow.opp_elementaldrakes);
+    const infernals = safeParseInt(baseRow.infernals);
+    const mountains = safeParseInt(baseRow.mountains);
+    const clouds = safeParseInt(baseRow.clouds);
+    const oceans = safeParseInt(baseRow.oceans);
+    const chemtechs = safeParseInt(baseRow.chemtechs);
+    const hextechs = safeParseInt(baseRow.hextechs);
+    const drakesUnknown = safeParseInt(baseRow['dragons (type unknown)']);
+    const elders = safeParseInt(baseRow.elders);
+    const oppElders = safeParseInt(baseRow.opp_elders);
+    const heralds = safeParseInt(baseRow.heralds);
+    const oppHeralds = safeParseInt(baseRow.opp_heralds);
+    const voidGrubs = safeParseInt(baseRow.void_grubs);
+    const oppVoidGrubs = safeParseInt(baseRow.opp_void_grubs);
+    const barons = safeParseInt(baseRow.barons);
+    const oppBarons = safeParseInt(baseRow.opp_barons);
+    const towers = safeParseInt(baseRow.towers);
+    const oppTowers = safeParseInt(baseRow.opp_towers);
+    const turretPlates = safeParseInt(baseRow.turretplates);
+    const oppTurretPlates = safeParseInt(baseRow.opp_turretplates);
+    const inhibitors = safeParseInt(baseRow.inhibitors);
+    const oppInhibitors = safeParseInt(baseRow.opp_inhibitors);
+    const teamKills = safeParseInt(baseRow.teamkills);
+    const teamDeaths = safeParseInt(baseRow.teamdeaths);
+    const teamKpm = safeParseFloat(baseRow['team kpm']);
+    const ckpm = safeParseFloat(baseRow.ckpm);
     
-    if (row.firsttower === '1' || row.firsttower === 'TRUE' || row.firsttower === 'true') {
-      firstTowerTeam = row.teamid;
-    }
-    
-    teamStatsMap.set(row.teamid, {
-      team_id: row.teamid,
+    teamStatsMap.set(teamId, {
+      team_id: teamId,
       match_id: gameId,
-      side: row.side || '',
-      is_winner: row.result === '1',
-      team_kpm: safeParseFloat(row['team kpm']),
-      ckpm: safeParseFloat(row.ckpm),
-      first_blood: firstBloodTeam,
-      team_kills: safeParseInt(row.teamkills),
-      team_deaths: safeParseInt(row.teamdeaths),
-      first_dragon: firstDragonTeam,
-      dragons: safeParseInt(row.dragons),
-      opp_dragons: safeParseInt(row.opp_dragons),
-      elemental_drakes: safeParseInt(row.elementaldrakes),
-      opp_elemental_drakes: safeParseInt(row.opp_elementaldrakes),
-      infernals: safeParseInt(row.infernals),
-      mountains: safeParseInt(row.mountains),
-      clouds: safeParseInt(row.clouds),
-      oceans: safeParseInt(row.oceans),
-      chemtechs: safeParseInt(row.chemtechs),
-      hextechs: safeParseInt(row.hextechs),
-      drakes_unknown: safeParseInt(row['dragons (type unknown)']),
-      elders: safeParseInt(row.elders),
-      opp_elders: safeParseInt(row.opp_elders),
-      first_herald: firstHeraldTeam,
-      heralds: safeParseInt(row.heralds),
-      opp_heralds: safeParseInt(row.opp_heralds),
-      first_baron: firstBaronTeam,
-      barons: safeParseInt(row.barons),
-      opp_barons: safeParseInt(row.opp_barons),
-      void_grubs: safeParseInt(row.void_grubs),
-      opp_void_grubs: safeParseInt(row.opp_void_grubs),
-      first_tower: firstTowerTeam,
-      first_mid_tower: row.firstmidtower === '1' ? row.teamid : null,
-      first_three_towers: row.firsttothreetowers === '1' ? row.teamid : null,
-      towers: safeParseInt(row.towers),
-      opp_towers: safeParseInt(row.opp_towers),
-      turret_plates: safeParseInt(row.turretplates),
-      opp_turret_plates: safeParseInt(row.opp_turretplates),
-      inhibitors: safeParseInt(row.inhibitors),
-      opp_inhibitors: safeParseInt(row.opp_inhibitors)
+      side: baseRow.side || '',
+      is_winner: baseRow.result === '1',
+      team_kpm: teamKpm,
+      ckpm: ckpm,
+      first_blood: hasFirstBlood ? teamId : null,
+      team_kills: teamKills,
+      team_deaths: teamDeaths,
+      first_dragon: hasFirstDragon ? teamId : null,
+      dragons: dragons,
+      opp_dragons: oppDragons,
+      elemental_drakes: elementalDrakes,
+      opp_elemental_drakes: oppElementalDrakes,
+      infernals: infernals,
+      mountains: mountains,
+      clouds: clouds,
+      oceans: oceans,
+      chemtechs: chemtechs,
+      hextechs: hextechs,
+      drakes_unknown: drakesUnknown,
+      elders: elders,
+      opp_elders: oppElders,
+      first_herald: hasFirstHerald ? teamId : null,
+      heralds: heralds,
+      opp_heralds: oppHeralds,
+      first_baron: hasFirstBaron ? teamId : null,
+      barons: barons,
+      opp_barons: oppBarons,
+      void_grubs: voidGrubs,
+      opp_void_grubs: oppVoidGrubs,
+      first_tower: hasFirstTower ? teamId : null,
+      first_mid_tower: hasFirstMidTower ? teamId : null,
+      first_three_towers: hasFirstThreeTowers ? teamId : null,
+      towers: towers,
+      opp_towers: oppTowers,
+      turret_plates: turretPlates,
+      opp_turret_plates: oppTurretPlates,
+      inhibitors: inhibitors,
+      opp_inhibitors: oppInhibitors
+    });
+    
+    console.log(`Team ${teamId} stats extracted:`, {
+      dragons: dragons,
+      barons: barons,
+      firstBlood: hasFirstBlood ? teamId : null,
+      firstDragon: hasFirstDragon ? teamId : null
     });
   });
   
   return teamStatsMap;
+}
+
+/**
+ * Helper function to check if a value represents a boolean true
+ */
+function checkBooleanValue(value: string | undefined): boolean {
+  if (!value) return false;
+  return value === '1' || value.toLowerCase() === 'true';
 }
