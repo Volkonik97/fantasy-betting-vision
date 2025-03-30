@@ -14,19 +14,21 @@ interface CsvDataManagerProps {
   onDataImported?: () => void;
 }
 
+interface ImportStats {
+  teams: number;
+  players: number;
+  matches: number;
+  playerStats: number;
+  teamStats: number;
+}
+
 const CsvDataManager = ({ onDataImported }: CsvDataManagerProps) => {
   const [sheetsUrl, setSheetsUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [isImportComplete, setIsImportComplete] = useState(false);
   const [hasDataInDb, setHasDataInDb] = useState(false);
-  const [importStats, setImportStats] = useState<{
-    teams: number, 
-    players: number, 
-    matches: number, 
-    playerStats: number,
-    teamStats: number
-  } | null>(null);
+  const [importStats, setImportStats] = useState<ImportStats | null>(null);
   const [deleteExisting, setDeleteExisting] = useState(true);
   const [progressStep, setProgressStep] = useState<string>("");
   const [playerStatsProgress, setPlayerStatsProgress] = useState<{current: number, total: number} | null>(null);
