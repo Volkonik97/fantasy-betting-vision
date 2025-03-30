@@ -29,6 +29,12 @@ export function processTeamData(data: LeagueGameDataRow[]): {
       });
       
       teamStats.set(row.teamid, {
+        id: row.teamid,
+        name: row.teamname,
+        logo: '',
+        region: row.league || '',
+        players: [],
+        games: 0,
         wins: 0,
         losses: 0,
         blueWins: 0,

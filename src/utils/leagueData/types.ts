@@ -195,6 +195,7 @@ export interface PicksAndBans {
 
 /**
  * Player stats tracker for aggregating player data
+ * Updated with missing properties
  */
 export interface PlayerStatsTracker {
   id: string;
@@ -209,10 +210,15 @@ export interface PlayerStatsTracker {
   kda: number;
   csPerMin: number;
   championPool: Set<string>;
+  // Add missing properties used in playerProcessor.ts
+  cs: number;
+  totalDamage: number;
+  championsPlayed: Set<string>;
 }
 
 /**
  * Team damage map for tracking damage per game
+ * Changed from Map to Record to avoid type errors
  */
 export interface TeamGameDamageMap {
   [teamId: string]: {
@@ -222,6 +228,7 @@ export interface TeamGameDamageMap {
 
 /**
  * Player damage shares map
+ * Changed from Map to Record to avoid type errors
  */
 export interface PlayerDamageSharesMap {
   [playerId: string]: number[];
@@ -229,6 +236,7 @@ export interface PlayerDamageSharesMap {
 
 /**
  * Team stats tracker for aggregating team data
+ * Updated with missing properties
  */
 export interface TeamStatsTracker {
   id: string;
@@ -239,6 +247,13 @@ export interface TeamStatsTracker {
   games: number;
   wins: number;
   players: string[];
+  // Add missing properties used in teamProcessor.ts
+  losses: number;
+  blueWins: number;
+  blueLosses: number;
+  redWins: number;
+  redLosses: number;
+  gameTimes: number[];
 }
 
 /**

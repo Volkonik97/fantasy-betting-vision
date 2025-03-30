@@ -47,10 +47,18 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
     const playerId = row.playerid;
     if (!playerStats.has(playerId)) {
       playerStats.set(playerId, { 
+        id: playerId,
+        name: row.playername || playerId,
+        team: row.teamid,
+        role: row.position || 'Jungle',
+        games: 0,
+        wins: 0,
         kills: 0, 
         deaths: 0, 
-        assists: 0, 
-        games: 0, 
+        assists: 0,
+        kda: 0,
+        csPerMin: 0,
+        championPool: new Set(),
         cs: 0, 
         totalDamage: 0,
         championsPlayed: new Set() 
@@ -77,7 +85,7 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
   });
 
   // Calculate team total damage for each game separately
-  const teamGameDamage: TeamGameDamageMap = new Map();
+  const teamGameDamage: TeamGameDamageMap = {};
   
   // First pass to calculate total team damage per game
   data.forEach(row => {
@@ -87,22 +95,21 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
     const gameId = row.gameid;
     const damageDone = safeParseInt(row.damagetochampions);
     
-    // Create nested map structure if it doesn't exist
-    if (!teamGameDamage.has(teamId)) {
-      teamGameDamage.set(teamId, new Map<string, number>());
+    // Create nested structure if it doesn't exist
+    if (!teamGameDamage[teamId]) {
+      teamGameDamage[teamId] = {};
     }
     
-    const teamGames = teamGameDamage.get(teamId)!;
-    if (!teamGames.has(gameId)) {
-      teamGames.set(gameId, 0);
+    if (!teamGameDamage[teamId][gameId]) {
+      teamGameDamage[teamId][gameId] = 0;
     }
     
     // Add this player's damage to the team's total for this game
-    teamGames.set(gameId, teamGames.get(gameId)! + damageDone);
+    teamGameDamage[teamId][gameId] += damageDone;
   });
   
   // Calculate player damage share per game and average it
-  const playerDamageShares: PlayerDamageSharesMap = new Map();
+  const playerDamageShares: PlayerDamageSharesMap = {};
   
   data.forEach(row => {
     if (!row.teamid || !row.playerid || !row.gameid) return;
@@ -113,25 +120,24 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
     const damageDone = safeParseInt(row.damagetochampions);
     
     // Get team's total damage for this game
-    const teamGameMap = teamGameDamage.get(teamId);
-    if (!teamGameMap) return;
+    if (!teamGameDamage[teamId]) return;
     
-    const teamGameTotalDamage = teamGameMap.get(gameId) || 0;
+    const teamGameTotalDamage = teamGameDamage[teamId][gameId] || 0;
     if (teamGameTotalDamage <= 0) return;
     
     // Calculate damage share for this game
     const damageShare = damageDone / teamGameTotalDamage;
     
     // Store the damage share for averaging later
-    if (!playerDamageShares.has(playerId)) {
-      playerDamageShares.set(playerId, []);
+    if (!playerDamageShares[playerId]) {
+      playerDamageShares[playerId] = [];
     }
     
-    playerDamageShares.get(playerId)!.push(damageShare);
+    playerDamageShares[playerId].push(damageShare);
   });
   
   // Update player stats with calculated averages
-  playerDamageShares.forEach((damageShares, playerId) => {
+  Object.entries(playerDamageShares).forEach(([playerId, damageShares]) => {
     const player = uniquePlayers.get(playerId);
     if (player && damageShares.length > 0) {
       const avgDamageShare = damageShares.reduce((sum, share) => sum + share, 0) / damageShares.length;
