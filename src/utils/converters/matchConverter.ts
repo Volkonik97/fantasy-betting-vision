@@ -27,14 +27,17 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
       // Log dragon data for debugging specific matches
       if (match.id === 'LOLTMNT02_215152' || match.id === 'LOLTMNT02_222859') {
         console.log(`[CSV Converter] Dragon data for match ${match.id}:`, { 
+          // Blue team dragon data
           dragons: match.dragons,
-          oppDragons: match.oppDragons,
           infernals: match.infernals,
           mountains: match.mountains, 
           clouds: match.clouds,
           oceans: match.oceans,
           chemtechs: match.chemtechs,
           hextechs: match.hextechs,
+          
+          // Red team dragon data
+          oppDragons: match.oppDragons,
           oppInfernals: match.oppInfernals,
           oppMountains: match.oppMountains,
           oppClouds: match.oppClouds,
@@ -107,43 +110,43 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
 
       // Validation and logging for important matches
       if (match.id === 'LOLTMNT02_215152' || match.id === 'LOLTMNT02_222859') {
-        const blueSum = matchObject.extraStats.infernals + 
-                       matchObject.extraStats.mountains + 
-                       matchObject.extraStats.clouds + 
-                       matchObject.extraStats.oceans + 
-                       matchObject.extraStats.chemtechs + 
-                       matchObject.extraStats.hextechs;
+        const blueSum = parseInt(match.infernals || '0') + 
+                       parseInt(match.mountains || '0') + 
+                       parseInt(match.clouds || '0') + 
+                       parseInt(match.oceans || '0') + 
+                       parseInt(match.chemtechs || '0') + 
+                       parseInt(match.hextechs || '0');
                        
-        const redSum = matchObject.extraStats.opp_infernals + 
-                     matchObject.extraStats.opp_mountains + 
-                     matchObject.extraStats.opp_clouds + 
-                     matchObject.extraStats.opp_oceans + 
-                     matchObject.extraStats.opp_chemtechs + 
-                     matchObject.extraStats.opp_hextechs;
+        const redSum = parseInt(match.oppInfernals || '0') + 
+                     parseInt(match.oppMountains || '0') + 
+                     parseInt(match.oppClouds || '0') + 
+                     parseInt(match.oppOceans || '0') + 
+                     parseInt(match.oppChemtechs || '0') + 
+                     parseInt(match.oppHextechs || '0');
                      
         console.log(`[CSV Converter] Match ${match.id} - Sums compared:`, {
           blueTeam: {
-            totalDragons: matchObject.extraStats.dragons,
-            calulatedSum: blueSum,
+            totalDragons: parseInt(match.dragons || '0'),
+            calculatedSum: blueSum,
             detailDragons: {
-              infernals: matchObject.extraStats.infernals,
-              mountains: matchObject.extraStats.mountains,
-              clouds: matchObject.extraStats.clouds,
-              oceans: matchObject.extraStats.oceans,
-              chemtechs: matchObject.extraStats.chemtechs,
-              hextechs: matchObject.extraStats.hextechs
+              infernals: parseInt(match.infernals || '0'),
+              mountains: parseInt(match.mountains || '0'),
+              clouds: parseInt(match.clouds || '0'),
+              oceans: parseInt(match.oceans || '0'),
+              chemtechs: parseInt(match.chemtechs || '0'),
+              hextechs: parseInt(match.hextechs || '0')
             }
           },
           redTeam: {
-            totalDragons: matchObject.extraStats.opp_dragons,
+            totalDragons: parseInt(match.oppDragons || '0'),
             calculatedSum: redSum,
             detailDragons: {
-              infernals: matchObject.extraStats.opp_infernals,
-              mountains: matchObject.extraStats.opp_mountains,
-              clouds: matchObject.extraStats.opp_clouds,
-              oceans: matchObject.extraStats.opp_oceans,
-              chemtechs: matchObject.extraStats.opp_chemtechs,
-              hextechs: matchObject.extraStats.opp_hextechs
+              infernals: parseInt(match.oppInfernals || '0'),
+              mountains: parseInt(match.oppMountains || '0'),
+              clouds: parseInt(match.oppClouds || '0'),
+              oceans: parseInt(match.oppOceans || '0'),
+              chemtechs: parseInt(match.oppChemtechs || '0'),
+              hextechs: parseInt(match.oppHextechs || '0')
             }
           }
         });
