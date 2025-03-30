@@ -98,21 +98,22 @@ function calculateSideStatistics(
   
   console.log(`[sideStatistics] Team stats - Blue: ${blueTeamStats.length}, Red: ${redTeamStats.length}`);
   
-  // Calculate objective rates from team_match_stats (more accurate)
-  const blueFirstBlood = calculateObjectivePercentage(blueTeamStats, 'first_blood');
-  const redFirstBlood = calculateObjectivePercentage(redTeamStats, 'first_blood');
+  // Calculate objective rates from team_match_stats
+  // CORRECTION: Calcul basé sur le nombre de matchs où l'équipe a obtenu l'objectif
+  const blueFirstBlood = calculateObjectiveCountPercentage(blueTeamStats, 'first_blood', true);
+  const redFirstBlood = calculateObjectiveCountPercentage(redTeamStats, 'first_blood', true);
   
-  const blueFirstDragon = calculateObjectivePercentage(blueTeamStats, 'first_dragon');
-  const redFirstDragon = calculateObjectivePercentage(redTeamStats, 'first_dragon');
+  const blueFirstDragon = calculateObjectiveCountPercentage(blueTeamStats, 'first_dragon', true);
+  const redFirstDragon = calculateObjectiveCountPercentage(redTeamStats, 'first_dragon', true);
   
-  const blueFirstHerald = calculateObjectivePercentage(blueTeamStats, 'first_herald');
-  const redFirstHerald = calculateObjectivePercentage(redTeamStats, 'first_herald');
+  const blueFirstHerald = calculateObjectiveCountPercentage(blueTeamStats, 'first_herald', true);
+  const redFirstHerald = calculateObjectiveCountPercentage(redTeamStats, 'first_herald', true);
   
-  const blueFirstTower = calculateObjectivePercentage(blueTeamStats, 'first_tower');
-  const redFirstTower = calculateObjectivePercentage(redTeamStats, 'first_tower');
+  const blueFirstTower = calculateObjectiveCountPercentage(blueTeamStats, 'first_tower', true);
+  const redFirstTower = calculateObjectiveCountPercentage(redTeamStats, 'first_tower', true);
   
-  const blueFirstBaron = calculateObjectivePercentage(blueTeamStats, 'first_baron');
-  const redFirstBaron = calculateObjectivePercentage(redTeamStats, 'first_baron');
+  const blueFirstBaron = calculateObjectiveCountPercentage(blueTeamStats, 'first_baron', true);
+  const redFirstBaron = calculateObjectiveCountPercentage(redTeamStats, 'first_baron', true);
   
   // Log the calculated stats for debugging
   console.log(`[sideStatistics] First objectives:`, {
@@ -155,22 +156,26 @@ function calculateSideStatistics(
   };
 }
 
-// Helper function to calculate objective rates using team_match_stats
-function calculateObjectivePercentage(stats: any[], objectiveKey: string): number {
+// NOUVEAU: Fonction corrigée pour calculer le pourcentage d'objectifs
+// Compte le nombre de matchs où l'équipe a obtenu l'objectif divisé par le nombre total de matchs
+function calculateObjectiveCountPercentage(stats: any[], objectiveKey: string, logDetails: boolean = false): number {
   if (stats.length === 0) return 50;
   
   // Count matches where the team got the objective
-  const trueCount = stats.filter(stat => stat[objectiveKey] === true).length;
+  const objectiveCount = stats.filter(stat => stat[objectiveKey] === true).length;
+  const totalMatches = stats.length;
+  const percentage = Math.round((objectiveCount / totalMatches) * 100);
   
-  // Log detailed info for first blood calculations
-  if (objectiveKey === 'first_blood') {
-    console.log(`[sideStatistics] First Blood detail - Total matches: ${stats.length}, True values: ${trueCount}`);
-    console.log(`[sideStatistics] First Blood values:`, stats.map(s => s[objectiveKey]));
+  // Log detailed information if requested
+  if (logDetails) {
+    console.log(`[sideStatistics] ${objectiveKey} detail - Total matches: ${totalMatches}, Objectives obtained: ${objectiveCount}, Percentage: ${percentage}%`);
+    console.log(`[sideStatistics] ${objectiveKey} values:`, stats.map(s => s[objectiveKey]));
   }
   
-  // Calculate percentage (0-100)
-  return Math.round((trueCount / stats.length) * 100);
+  return percentage;
 }
+
+// La fonction calculateObjectivePercentage n'est plus utilisée et peut être supprimée
 
 // Create default side statistics
 function createDefaultSideStatistics(teamId: string): SideStatistics {

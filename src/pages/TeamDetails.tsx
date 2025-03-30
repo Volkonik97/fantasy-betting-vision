@@ -46,7 +46,7 @@ const TeamDetails = () => {
           return;
         }
         
-        // Mettre à jour les statistiques par côté dans l'objet de l'équipe
+        // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
         console.log("Side statistics data:", sideStatsData); // Log pour déboguer
         
@@ -64,9 +64,9 @@ const TeamDetails = () => {
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
           
           // Log pour vérifier les valeurs
-          console.log("First Blood stats (raw):", {
-            blue: sideStatsData.blueFirstBlood,
-            red: sideStatsData.redFirstBlood
+          console.log("First Blood stats (after correction):", {
+            blue: foundTeam.blueFirstBlood,
+            red: foundTeam.redFirstBlood
           });
         }
         
