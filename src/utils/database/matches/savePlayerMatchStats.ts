@@ -18,8 +18,39 @@ export const savePlayerMatchStats = async (
       return true;
     }
     
-    // Ensure all required fields are present
-    const validStats = playerStats.filter(stat => stat !== null && stat !== undefined).map(stat => {
+    // Extract all unique match IDs from player stats
+    const matchIds = [...new Set(playerStats.map(stat => stat.match_id))];
+    console.log(`Found ${matchIds.length} unique matches referenced in player stats`);
+    
+    // Get all existing match IDs from the matches table
+    const { data: existingMatches, error: matchesError } = await supabase
+      .from('matches')
+      .select('id')
+      .in('id', matchIds);
+    
+    if (matchesError) {
+      console.error("Error fetching existing matches:", matchesError);
+      toast.error("Erreur lors de la vérification des matchs existants");
+      return false;
+    }
+    
+    // Create a Set of existing match IDs for quick lookup
+    const existingMatchIds = new Set(existingMatches?.map(match => match.id) || []);
+    console.log(`Found ${existingMatchIds.size} matches in database out of ${matchIds.length} referenced`);
+    
+    // Filter stats to only include those with valid match references
+    const validStats = playerStats.filter(stat => {
+      const isValid = stat !== null && 
+                      stat !== undefined && 
+                      stat.match_id && 
+                      existingMatchIds.has(stat.match_id);
+      
+      if (!isValid && stat && stat.match_id) {
+        console.log(`Skipping player stat for match ${stat.match_id} - match does not exist in database`);
+      }
+      
+      return isValid;
+    }).map(stat => {
       // Make sure we have the required fields for each stat
       if (!stat.participant_id && stat.player_id && stat.match_id) {
         // Generate a participant_id if it doesn't exist
@@ -58,12 +89,17 @@ export const savePlayerMatchStats = async (
       }
       
       return stat;
-    }).filter(stat => stat && stat.player_id && stat.match_id);
+    });
     
-    console.log(`Found ${validStats.length} valid player match statistics records`);
+    console.log(`Found ${validStats.length} valid player match statistics records (${playerStats.length - validStats.length} skipped)`);
+    
+    if (validStats.length === 0) {
+      toast.warning("Aucune statistique valide de joueur n'a été trouvée pour les matchs existants");
+      return true;
+    }
     
     // Process all stats without match validation
-    console.log("Processing all player stats without match validation");
+    console.log("Processing player stats with validation complete");
     
     // Split records into manageable chunks for faster processing
     const BATCH_SIZE = 50;
@@ -145,9 +181,15 @@ export const savePlayerMatchStats = async (
     
     console.log(`Successfully processed ${successCount}/${totalStats} player match statistics (${errorCount} errors)`);
     
-    // Return true even if some stats failed to save
+    // Customize the messages based on the results
     if (errorCount > 0) {
       const successRate = successCount / totalStats;
+      const skippedCount = playerStats.length - validStats.length;
+      
+      if (skippedCount > 0) {
+        toast.warning(`${skippedCount} statistiques de joueurs ont été ignorées car les matchs associés n'existent pas dans la base de données.`);
+      }
+      
       if (successRate < 0.9) {
         toast.warning(`Seulement ${Math.round(successRate * 100)}% des statistiques de joueurs ont été importées. Certaines données peuvent être manquantes.`);
       } else {
