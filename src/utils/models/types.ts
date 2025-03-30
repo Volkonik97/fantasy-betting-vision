@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -40,11 +41,11 @@ export interface Match {
     score?: [number, number];
     duration?: string;
     mvp?: string;
-    firstBlood?: string;
-    firstDragon?: string;
-    firstBaron?: string;
-    firstHerald?: string;
-    firstTower?: string;
+    firstBlood?: string | boolean;
+    firstDragon?: string | boolean;
+    firstBaron?: string | boolean;
+    firstHerald?: string | boolean;
+    firstTower?: string | boolean;
   };
   extraStats?: {
     patch?: string;
@@ -76,16 +77,16 @@ export interface Match {
     opp_drakes_unknown?: number;
     elders?: number;
     opp_elders?: number;
-    first_herald?: string;
+    first_herald?: string | boolean;
     heralds?: number;
     opp_heralds?: number;
     barons?: number;
     opp_barons?: number;
     void_grubs?: number;
     opp_void_grubs?: number;
-    first_tower?: string;
-    first_mid_tower?: string;
-    first_three_towers?: string;
+    first_tower?: string | boolean;
+    first_mid_tower?: string | boolean;
+    first_three_towers?: string | boolean;
     towers?: number;
     opp_towers?: number;
     turret_plates?: number;
@@ -94,9 +95,9 @@ export interface Match {
     opp_inhibitors?: number;
     blueTeamStats?: any;
     redTeamStats?: any;
-    first_blood?: string;
-    first_dragon?: string;
-    first_baron?: string;
+    first_blood?: string | boolean;
+    first_dragon?: string | boolean;
+    first_baron?: string | boolean;
     // Ajout des propriétés picks et bans
     picks?: any;
     bans?: any;

@@ -23,10 +23,10 @@ export interface MatchTeamStats {
   is_winner: boolean;
   team_kpm: number;
   ckpm: number;
-  first_blood: string | null;
+  first_blood: boolean | null;
   team_kills: number;
   team_deaths: number;
-  first_dragon: string | null;
+  first_dragon: boolean | null;
   
   // Dragon statistics
   dragons: number;
@@ -40,14 +40,14 @@ export interface MatchTeamStats {
   drakes_unknown: number;
   
   elders: number;
-  first_herald: string | null;
+  first_herald: boolean | null;
   heralds: number;
-  first_baron: string | null;
+  first_baron: boolean | null;
   barons: number;
   void_grubs: number;
-  first_tower: string | null;
-  first_mid_tower: string | null;
-  first_three_towers: string | null;
+  first_tower: boolean | null;
+  first_mid_tower: boolean | null;
+  first_three_towers: boolean | null;
   towers: number;
   turret_plates: number;
   inhibitors: number;

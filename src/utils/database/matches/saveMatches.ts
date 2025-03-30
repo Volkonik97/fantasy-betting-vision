@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -55,6 +54,25 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
       
       if (typeof value === 'number') {
         return value === 1;
+      }
+      
+      return null;
+    };
+
+    // Function to convert boolean to string representation for DB compatibility
+    const booleanToString = (value: any): string | null => {
+      if (value === null || value === undefined) return null;
+      
+      if (typeof value === 'boolean') {
+        return value ? 'true' : 'false';
+      }
+      
+      if (typeof value === 'string') {
+        return value;
+      }
+      
+      if (typeof value === 'number') {
+        return value === 1 ? 'true' : 'false';
       }
       
       return null;
@@ -122,7 +140,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               console.log(`Match ${match.id} données d'objectifs et picks/bans pour la BD:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
-                first_blood: extraStats.first_blood || result.firstBlood || null,
+                first_blood: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
                 hasPicks: !!picks,
                 hasBans: !!bans
               });
@@ -159,17 +177,17 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
-                first_herald: convertToBoolean(extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null)),
+                first_herald: booleanToString(extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null)),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
-                first_baron: convertToBoolean(extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null)),
+                first_baron: booleanToString(extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null)),
                 barons: extraStats.barons || 0,
                 opp_barons: extraStats.opp_barons || 0,
                 void_grubs: extraStats.void_grubs || 0,
                 opp_void_grubs: extraStats.opp_void_grubs || 0,
-                first_tower: convertToBoolean(extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null)),
-                first_mid_tower: convertToBoolean(extraStats.first_mid_tower),
-                first_three_towers: convertToBoolean(extraStats.first_three_towers),
+                first_tower: booleanToString(extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null)),
+                first_mid_tower: booleanToString(extraStats.first_mid_tower),
+                first_three_towers: booleanToString(extraStats.first_three_towers),
                 towers: extraStats.towers || 0,
                 opp_towers: extraStats.opp_towers || 0,
                 turret_plates: extraStats.turret_plates || 0,
@@ -181,8 +199,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 score_red: result && 'score' in result && Array.isArray(result.score) && result.score.length > 1 ? result.score[1] : 0,
                 duration: result && 'duration' in result ? result.duration : '',
                 mvp: result && 'mvp' in result ? result.mvp : '',
-                first_blood: convertToBoolean(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
-                first_dragon: convertToBoolean(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
+                first_blood: booleanToString(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
+                first_dragon: booleanToString(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
                 picks: picks,
                 bans: bans,
                 game_number: match.id.includes('_') ? match.id.split('_').pop() || null : null
