@@ -31,11 +31,6 @@ export function extractTeamStats(
     processTeamRows(gameId, redTeamRows, teamStatsMap);
   }
   
-  // Debug pour certains matchs spécifiques
-  if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(gameId)) {
-    logMatchDebugInfo(gameId, teamStatsMap);
-  }
-  
   return teamStatsMap;
 }
 
@@ -68,17 +63,6 @@ function processTeamRows(
   const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
   const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
   
-  // Extraire les statistiques des dragons directement des données de cette équipe
-  const dragons = getStatValue(allTeamData, 'dragons');
-  const infernals = getStatValue(allTeamData, 'infernals');
-  const mountains = getStatValue(allTeamData, 'mountains');
-  const clouds = getStatValue(allTeamData, 'clouds');
-  const oceans = getStatValue(allTeamData, 'oceans');
-  const chemtechs = getStatValue(allTeamData, 'chemtechs');
-  const hextechs = getStatValue(allTeamData, 'hextechs');
-  const drakesUnknown = getStatValue(allTeamData, 'drakes_unknown') || getStatValue(allTeamData, 'dragons (type unknown)');
-  const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
-  
   // Extraire les autres statistiques d'objectifs
   const elders = getStatValue(allTeamData, 'elders');
   const heralds = getStatValue(allTeamData, 'heralds');
@@ -104,58 +88,36 @@ function processTeamRows(
     team_kills: teamKills,
     team_deaths: teamDeaths,
     first_dragon: hasFirstDragon,
-    dragons: dragons,
-    opp_dragons: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
-    elemental_drakes: elementalDrakes || dragons, // Fallback si elementalDrakes n'est pas disponible
-    opp_elemental_drakes: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
-    infernals: infernals,
-    mountains: mountains,
-    clouds: clouds,
-    oceans: oceans,
-    chemtechs: chemtechs,
-    hextechs: hextechs,
-    drakes_unknown: drakesUnknown,
+    dragons: 0,
+    opp_dragons: 0, 
+    elemental_drakes: 0,
+    opp_elemental_drakes: 0,
+    infernals: 0,
+    mountains: 0,
+    clouds: 0,
+    oceans: 0,
+    chemtechs: 0,
+    hextechs: 0,
+    drakes_unknown: 0,
     elders: elders,
-    opp_elders: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_elders: 0,
     first_herald: hasFirstHerald,
     heralds: heralds,
-    opp_heralds: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_heralds: 0,
     first_baron: hasFirstBaron,
     barons: barons,
-    opp_barons: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_barons: 0,
     void_grubs: voidGrubs,
-    opp_void_grubs: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_void_grubs: 0,
     first_tower: hasFirstTower,
     first_mid_tower: hasFirstMidTower,
     first_three_towers: hasFirstThreeTowers,
     towers: towers,
-    opp_towers: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_towers: 0,
     turret_plates: turretPlates,
-    opp_turret_plates: 0, // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
+    opp_turret_plates: 0,
     inhibitors: inhibitors,
-    opp_inhibitors: 0 // Ces valeurs ne sont plus utilisées, mais conservées pour compatibilité
-  });
-}
-
-/**
- * Log debug information for specific matches
- */
-function logMatchDebugInfo(gameId: string, teamStatsMap: Map<string, MatchTeamStats>): void {
-  console.log(`[Debug] Match ${gameId} - Team stats extracted:`, {
-    teams: Array.from(teamStatsMap.entries()).map(([teamId, stats]) => ({
-      teamId,
-      side: stats.side,
-      dragonStats: {
-        total: stats.dragons,
-        infernals: stats.infernals,
-        mountains: stats.mountains,
-        clouds: stats.clouds,
-        oceans: stats.oceans,
-        chemtechs: stats.chemtechs,
-        hextechs: stats.hextechs,
-        unknown: stats.drakes_unknown
-      }
-    }))
+    opp_inhibitors: 0
   });
 }
 
@@ -179,21 +141,6 @@ function combineTeamRowData(rows: LeagueGameDataRow[]): Record<string, any> {
         // Pour les cases minuscules et majuscules, stocker les deux versions
         if (lowerKey !== key) {
           combinedData[lowerKey] = combinedData[lowerKey] || value;
-          
-          // Pour les clés spécifiques comme les dragons, toujours prendre la valeur la plus haute
-          if (lowerKey.includes('dragon') || lowerKey.includes('drake') || 
-              lowerKey.includes('infernal') || lowerKey.includes('mountain') || 
-              lowerKey.includes('cloud') || lowerKey.includes('ocean') || 
-              lowerKey.includes('chemtech') || lowerKey.includes('hextech')) {
-              
-            const newVal = safeParseInt(value);
-            const existingVal = safeParseInt(combinedData[lowerKey]);
-            
-            if (newVal > existingVal) {
-              combinedData[lowerKey] = value;
-              combinedData[key] = value; // Mettre à jour aussi la clé d'origine
-            }
-          }
         }
       }
     });

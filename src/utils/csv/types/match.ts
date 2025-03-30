@@ -37,16 +37,7 @@ export interface MatchCSV {
   ckpm?: string;
   teamKills?: string;
   teamDeaths?: string;
-  dragons?: string;
-  elementalDrakes?: string;
-  infernals?: string;
-  mountains?: string;
-  clouds?: string;
-  oceans?: string;
-  chemtechs?: string;
-  hextechs?: string;
-  drakesUnknown?: string;
-  elders?: string;
+  
   heralds?: string;
   barons?: string;
   voidGrubs?: string;

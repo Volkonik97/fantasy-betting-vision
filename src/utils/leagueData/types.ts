@@ -231,13 +231,13 @@ export function parseBoolean(value?: string | null): boolean {
 // Helper function to safely parse integers
 export function safeParseInt(value?: string | null): number {
   if (!value) return 0;
-  const parsedValue = parseInt(value, 10);
+  const parsedValue = parseInt(String(value), 10);
   return isNaN(parsedValue) ? 0 : parsedValue;
 }
 
 // Helper function to safely parse floats
 export function safeParseFloat(value?: string | null): number {
   if (!value) return 0;
-  const parsedValue = parseFloat(value);
+  const parsedValue = parseFloat(String(value));
   return isNaN(parsedValue) ? 0 : parsedValue;
 }

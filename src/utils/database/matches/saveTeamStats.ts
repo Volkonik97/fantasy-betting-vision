@@ -88,28 +88,7 @@ export async function saveTeamMatchStats(
       return true;
     }
     
-    // Debug specific match IDs we're having trouble with
-    const specificMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
-    const debugMatches = validTeamStats.filter(stat => specificMatchIds.includes(stat.match_id));
-    if (debugMatches.length > 0) {
-      debugMatches.forEach(stat => {
-        console.log(`[Debug avant insertion] Match ${stat.match_id}, Équipe ${stat.team_id}:`, {
-          is_blue_side: stat.is_blue_side,
-          dragons: stat.dragons,
-          specific: {
-            infernals: stat.infernals,
-            mountains: stat.mountains, 
-            clouds: stat.clouds,
-            oceans: stat.oceans,
-            chemtechs: stat.chemtechs,
-            hextechs: stat.hextechs,
-            unknown: stat.drakes_unknown
-          }
-        });
-      });
-    }
-    
-    // Ensure we're working with the correct numeric type for drakes
+    // Ensure we're working with the correct numeric type for stats
     const convertToInteger = (value: any): number => {
       if (typeof value === 'number') {
         return Math.floor(value); // Convert float to integer if needed
@@ -121,35 +100,17 @@ export async function saveTeamMatchStats(
       return isNaN(num) ? 0 : num;
     };
     
-    // Fix stats with incorrect dragon values
+    // Fix stats with incorrect values
     validTeamStats.forEach(stat => {
-      // Force all drake stats to be integers
-      stat.dragons = convertToInteger(stat.dragons);
-      stat.infernals = convertToInteger(stat.infernals);
-      stat.mountains = convertToInteger(stat.mountains);
-      stat.clouds = convertToInteger(stat.clouds);
-      stat.oceans = convertToInteger(stat.oceans);
-      stat.chemtechs = convertToInteger(stat.chemtechs);
-      stat.hextechs = convertToInteger(stat.hextechs);
-      stat.drakes_unknown = convertToInteger(stat.drakes_unknown);
-      stat.elemental_drakes = convertToInteger(stat.elemental_drakes);
-      
-      // Debug special matches after conversion
-      if (specificMatchIds.includes(stat.match_id)) {
-        console.log(`[Debug après conversion] Match ${stat.match_id}, Équipe ${stat.team_id}:`, {
-          is_blue_side: stat.is_blue_side,
-          dragons: stat.dragons,
-          specific: {
-            infernals: stat.infernals,
-            mountains: stat.mountains,
-            clouds: stat.clouds,
-            oceans: stat.oceans,
-            chemtechs: stat.chemtechs,
-            hextechs: stat.hextechs,
-            unknown: stat.drakes_unknown
-          }
-        });
-      }
+      // Force numeric stats to be integers
+      stat.kills = convertToInteger(stat.kills);
+      stat.deaths = convertToInteger(stat.deaths);
+      stat.towers = convertToInteger(stat.towers);
+      stat.inhibitors = convertToInteger(stat.inhibitors);
+      stat.heralds = convertToInteger(stat.heralds);
+      stat.barons = convertToInteger(stat.barons);
+      stat.turret_plates = convertToInteger(stat.turret_plates);
+      stat.void_grubs = convertToInteger(stat.void_grubs);
     });
     
     // Préparation des données pour l'insertion avec une vérification plus approfondie
@@ -169,47 +130,6 @@ export async function saveTeamMatchStats(
         return false;
       };
       
-      // Debug pour les matchs spécifiques
-      if (specificMatchIds.includes(stat.match_id)) {
-        console.log(`Préparation insertion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
-          is_blue_side: stat.is_blue_side,
-          totalDragons: stat.dragons,
-          specificDragons: {
-            infernals: stat.infernals,
-            mountains: stat.mountains,
-            clouds: stat.clouds, 
-            oceans: stat.oceans,
-            chemtechs: stat.chemtechs,
-            hextechs: stat.hextechs,
-            unknown: stat.drakes_unknown
-          }
-        });
-      }
-      
-      // S'assurer que les valeurs des types de dragons sont non-nulles
-      // Traiter spécialement les types de dragons pour éviter les valeurs nulles ou undefined
-      const dragons = convertToInteger(stat.dragons);
-      const infernals = convertToInteger(stat.infernals);
-      const mountains = convertToInteger(stat.mountains);
-      const clouds = convertToInteger(stat.clouds);
-      const oceans = convertToInteger(stat.oceans);
-      const chemtechs = convertToInteger(stat.chemtechs);
-      const hextechs = convertToInteger(stat.hextechs);
-      const drakes_unknown = convertToInteger(stat.drakes_unknown);
-      
-      if (specificMatchIds.includes(stat.match_id)) {
-        console.log(`Valeurs après conversion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
-          dragons,
-          infernals,
-          mountains,
-          clouds,
-          oceans,
-          chemtechs,
-          hextechs,
-          drakes_unknown
-        });
-      }
-      
       return {
         match_id: stat.match_id,
         team_id: stat.team_id,
@@ -217,24 +137,13 @@ export async function saveTeamMatchStats(
         kills: convertToInteger(stat.kills),
         deaths: convertToInteger(stat.deaths),
         kpm: ensureNumber(stat.kpm),
-        dragons: dragons,
-        elemental_drakes: convertToInteger(stat.elemental_drakes),
-        infernals: infernals,
-        mountains: mountains,
-        clouds: clouds,
-        oceans: oceans,
-        chemtechs: chemtechs,
-        hextechs: hextechs,
-        drakes_unknown: drakes_unknown,
-        elders: convertToInteger(stat.elders),
-        heralds: convertToInteger(stat.heralds),
-        barons: convertToInteger(stat.barons),
-        void_grubs: convertToInteger(stat.void_grubs),
         towers: convertToInteger(stat.towers),
         turret_plates: convertToInteger(stat.turret_plates),
         inhibitors: convertToInteger(stat.inhibitors),
+        heralds: convertToInteger(stat.heralds),
+        barons: convertToInteger(stat.barons),
+        void_grubs: convertToInteger(stat.void_grubs),
         first_blood: ensureBoolean(stat.first_blood),
-        first_dragon: ensureBoolean(stat.first_dragon),
         first_herald: ensureBoolean(stat.first_herald),
         first_baron: ensureBoolean(stat.first_baron),
         first_tower: ensureBoolean(stat.first_tower),
