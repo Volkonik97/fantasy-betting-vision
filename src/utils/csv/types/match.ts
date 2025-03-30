@@ -17,6 +17,8 @@ export interface MatchCSV {
   scoreRed?: string;
   duration?: string;
   mvp?: string;
+  // Team position (blue/red)
+  teamPosition?: string;
   // Objectif data
   firstBlood?: string;
   firstDragon?: string;
@@ -36,9 +38,7 @@ export interface MatchCSV {
   teamKills?: string;
   teamDeaths?: string;
   dragons?: string;
-  oppDragons?: string;
   elementalDrakes?: string;
-  oppElementalDrakes?: string;
   infernals?: string;
   mountains?: string;
   clouds?: string;
@@ -46,28 +46,13 @@ export interface MatchCSV {
   chemtechs?: string;
   hextechs?: string;
   drakesUnknown?: string;
-  // Opponent drake types
-  oppInfernals?: string;
-  oppMountains?: string;
-  oppClouds?: string;
-  oppOceans?: string;
-  oppChemtechs?: string;
-  oppHextechs?: string;
-  oppDrakesUnknown?: string;
   elders?: string;
-  oppElders?: string;
   heralds?: string;
-  oppHeralds?: string;
   barons?: string;
-  oppBarons?: string;
   voidGrubs?: string;
-  oppVoidGrubs?: string;
   towers?: string;
-  oppTowers?: string;
   turretPlates?: string;
-  oppTurretPlates?: string;
   inhibitors?: string;
-  oppInhibitors?: string;
   
   // Additional data
   teamStats?: boolean;

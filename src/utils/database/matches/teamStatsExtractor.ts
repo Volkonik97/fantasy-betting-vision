@@ -15,89 +15,26 @@ export function extractTeamSpecificStats(match: Match): {
 
   // Debug pour les matchs spécifiques
   if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
-    console.log(`[Raw Data for ${match.id}]`, {
-      // Statistiques disponibles dans extraStats
-      dragons: match.extraStats.dragons,
-      infernals: match.extraStats.infernals,
-      mountains: match.extraStats.mountains,
-      clouds: match.extraStats.clouds,
-      oceans: match.extraStats.oceans,
-      chemtechs: match.extraStats.chemtechs,
-      hextechs: match.extraStats.hextechs,
-      elemental_drakes: match.extraStats.elemental_drakes
+    console.log(`[teamStatsExtractor] Raw Data for ${match.id}:`, {
+      blueTeamStats: match.extraStats.blueTeamStats || 'Missing blue team stats',
+      redTeamStats: match.extraStats.redTeamStats || 'Missing red team stats'
     });
   }
-
-  // Helper function to safely convert any value to an integer
-  const safeParseInt = (value: any): number => {
-    if (typeof value === 'number') {
-      return Math.floor(value); // Convert to integer if it's already a number
-    }
-    if (value === null || value === undefined || value === '') {
-      return 0;
-    }
-    const parsed = parseInt(String(value), 10);
-    return isNaN(parsed) ? 0 : parsed;
-  };
   
-  // Vérifier si nous avons des statistiques spécifiques pour chaque équipe
+  // Si nous avons déjà des statistiques spécifiques pour chaque équipe, les utiliser directement
+  // En vérifiant leur existence
   const hasBlueTeamSpecificStats = match.extraStats.blueTeamStats !== undefined;
   const hasRedTeamSpecificStats = match.extraStats.redTeamStats !== undefined;
   
-  // Si nous avons des statistiques spécifiques pour l'équipe bleue, les utiliser directement
+  // Récupérer les statistiques de l'équipe bleue
   const blueTeamStats = hasBlueTeamSpecificStats ? match.extraStats.blueTeamStats : {
     team_id: match.teamBlue.id,
     match_id: match.id,
     is_blue_side: true,
-    // Pour l'équipe bleue, nous utilisons les valeurs par défaut de extraStats
-    // car historiquement ces valeurs étaient remplies pour l'équipe bleue
-    kills: safeParseInt(match.extraStats.team_kills),
-    deaths: safeParseInt(match.extraStats.team_deaths),
-    kpm: match.extraStats.team_kpm || 0,
-    
-    // Dragons pour l'équipe bleue
-    dragons: safeParseInt(match.extraStats.dragons),
-    infernals: safeParseInt(match.extraStats.infernals),
-    mountains: safeParseInt(match.extraStats.mountains), 
-    clouds: safeParseInt(match.extraStats.clouds),
-    oceans: safeParseInt(match.extraStats.oceans),
-    chemtechs: safeParseInt(match.extraStats.chemtechs),
-    hextechs: safeParseInt(match.extraStats.hextechs),
-    drakes_unknown: safeParseInt(match.extraStats.drakes_unknown),
-    elemental_drakes: safeParseInt(match.extraStats.elemental_drakes),
-    
-    // Autres objectifs
-    elders: safeParseInt(match.extraStats.elders),
-    heralds: safeParseInt(match.extraStats.heralds),
-    barons: safeParseInt(match.extraStats.barons),
-    towers: safeParseInt(match.extraStats.towers),
-    turret_plates: safeParseInt(match.extraStats.turret_plates),
-    inhibitors: safeParseInt(match.extraStats.inhibitors),
-    void_grubs: safeParseInt(match.extraStats.void_grubs),
-    
-    // First objectives
-    first_blood: match.extraStats.first_blood === match.teamBlue.id,
-    first_dragon: match.extraStats.first_dragon === match.teamBlue.id,
-    first_herald: match.extraStats.first_herald === match.teamBlue.id,
-    first_baron: match.extraStats.first_baron === match.teamBlue.id,
-    first_tower: match.extraStats.first_tower === match.teamBlue.id,
-    first_mid_tower: match.extraStats.first_mid_tower === match.teamBlue.id,
-    first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
-  };
-
-  // Pour l'équipe rouge, soit nous utilisons les statistiques spécifiques si disponibles,
-  // soit nous initialisons avec des valeurs par défaut qui devront être remplacées ultérieurement
-  const redTeamStats = hasRedTeamSpecificStats ? match.extraStats.redTeamStats : {
-    team_id: match.teamRed.id,
-    match_id: match.id,
-    is_blue_side: false,
-    
-    // Les valeurs par défaut pour l'équipe rouge (à remplacer)
+    // Fallback si les données spécifiques à l'équipe bleue sont manquantes
     kills: 0,
     deaths: 0,
     kpm: 0,
-    
-    // Dragons pour l'équipe rouge (à remplir)
     dragons: 0,
     infernals: 0,
     mountains: 0,
@@ -107,8 +44,6 @@ export function extractTeamSpecificStats(match: Match): {
     hextechs: 0,
     drakes_unknown: 0,
     elemental_drakes: 0,
-    
-    // Autres objectifs pour l'équipe rouge (à remplir)
     elders: 0,
     heralds: 0,
     barons: 0,
@@ -117,7 +52,43 @@ export function extractTeamSpecificStats(match: Match): {
     inhibitors: 0,
     void_grubs: 0,
     
-    // First objectives
+    // First objectives - vérifier si l'équipe bleue est le premier à réaliser l'objectif
+    first_blood: match.extraStats.first_blood === match.teamBlue.id,
+    first_dragon: match.extraStats.first_dragon === match.teamBlue.id,
+    first_herald: match.extraStats.first_herald === match.teamBlue.id,
+    first_baron: match.extraStats.first_baron === match.teamBlue.id,
+    first_tower: match.extraStats.first_tower === match.teamBlue.id,
+    first_mid_tower: match.extraStats.first_mid_tower === match.teamBlue.id,
+    first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
+  };
+
+  // Récupérer les statistiques de l'équipe rouge
+  const redTeamStats = hasRedTeamSpecificStats ? match.extraStats.redTeamStats : {
+    team_id: match.teamRed.id,
+    match_id: match.id,
+    is_blue_side: false,
+    // Fallback si les données spécifiques à l'équipe rouge sont manquantes
+    kills: 0,
+    deaths: 0,
+    kpm: 0,
+    dragons: 0,
+    infernals: 0,
+    mountains: 0,
+    clouds: 0,
+    oceans: 0,
+    chemtechs: 0,
+    hextechs: 0,
+    drakes_unknown: 0,
+    elemental_drakes: 0,
+    elders: 0,
+    heralds: 0,
+    barons: 0,
+    towers: 0,
+    turret_plates: 0,
+    inhibitors: 0,
+    void_grubs: 0,
+    
+    // First objectives - vérifier si l'équipe rouge est le premier à réaliser l'objectif
     first_blood: match.extraStats.first_blood === match.teamRed.id,
     first_dragon: match.extraStats.first_dragon === match.teamRed.id,
     first_herald: match.extraStats.first_herald === match.teamRed.id,
@@ -130,7 +101,7 @@ export function extractTeamSpecificStats(match: Match): {
   // Debugging pour les matchs spécifiques qui posent problème
   const debugMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
   if (debugMatchIds.includes(match.id)) {
-    console.log(`[Debug] Match ${match.id} - statistiques extraites:`, {
+    console.log(`[teamStatsExtractor] Match ${match.id} - statistiques extraites:`, {
       teamBlue: {
         id: match.teamBlue.id,
         totalDragons: blueTeamStats.dragons,
@@ -142,7 +113,8 @@ export function extractTeamSpecificStats(match: Match): {
           chemtechs: blueTeamStats.chemtechs,
           hextechs: blueTeamStats.hextechs,
           unknown: blueTeamStats.drakes_unknown
-        }
+        },
+        usingSpecificStats: hasBlueTeamSpecificStats
       },
       teamRed: {
         id: match.teamRed.id,

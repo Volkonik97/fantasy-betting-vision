@@ -1,4 +1,3 @@
-
 import { LeagueGameDataRow } from '../csv/types';
 import { Match, Player, Team } from '../models/types';
 import { processMatchData } from './match/matchProcessor';
@@ -58,6 +57,16 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
   // Préparation des tableaux pour les statistiques d'équipe par match
   const teamMatchStatsArray: any[] = [];
   
+  // Group data by game ID to process both teams together
+  const rowsByGameId = new Map<string, LeagueGameDataRow[]>();
+  data.forEach(row => {
+    if (row.gameid) {
+      const rows = rowsByGameId.get(row.gameid) || [];
+      rows.push(row);
+      rowsByGameId.set(row.gameid, rows);
+    }
+  });
+  
   // Convert the matchesArray to Match objects
   const matches: Match[] = matchesArray.map(match => {
     const blueTeam = teams.find(t => t.id === match.teamBlueId);
@@ -72,9 +81,31 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     // Find team stats for this match
     const teamStatsMap = matchStats.get(match.id);
     
+    // Get game rows for this match to extract team positions
+    const gameRows = rowsByGameId.get(match.id) || [];
+    
     // Extract picks and bans data from group data for this match
-    const gameRows = data.filter(row => row.gameid === match.id);
     const { picks: picksData, bans: bansData } = extractPicksAndBans(gameRows);
+    
+    // Identify blue and red team rows
+    const blueTeamRows = gameRows.filter(row => 
+      row.side?.toLowerCase() === 'blue' || 
+      row.teamposition?.toLowerCase() === 'blue'
+    );
+    
+    const redTeamRows = gameRows.filter(row => 
+      row.side?.toLowerCase() === 'red' || 
+      row.teamposition?.toLowerCase() === 'red'
+    );
+    
+    // Log warnings if team rows are missing
+    if (blueTeamRows.length === 0) {
+      console.warn(`Match ${match.id}: No blue team rows found`);
+    }
+    
+    if (redTeamRows.length === 0) {
+      console.warn(`Match ${match.id}: No red team rows found`);
+    }
     
     // Create match object
     const matchObject: Match = {
@@ -138,22 +169,48 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       }
     };
     
-    // Extraire statistiques spécifiques à chaque équipe
-    const { blueTeamStats, redTeamStats } = extractTeamSpecificStats(matchObject);
-    
-    // Ajouter aux statistiques d'équipe par match pour les deux équipes
-    if (blueTeam && blueTeamStats) {
+    // Process blue team stats
+    const blueTeamStats = processTeamRows(blueTeamRows, match.id, blueTeam.id, true);
+    if (blueTeamStats) {
+      matchObject.extraStats.blueTeamStats = blueTeamStats;
+      // Add to team match stats array
       teamMatchStatsArray.push({
         ...blueTeamStats,
+        match_id: match.id,
+        team_id: blueTeam.id,
+        side: 'blue'
+      });
+    }
+    
+    // Process red team stats
+    const redTeamStats = processTeamRows(redTeamRows, match.id, redTeam.id, false);
+    if (redTeamStats) {
+      matchObject.extraStats.redTeamStats = redTeamStats;
+      // Add to team match stats array
+      teamMatchStatsArray.push({
+        ...redTeamStats,
+        match_id: match.id,
+        team_id: redTeam.id,
+        side: 'red'
+      });
+    }
+    
+    // Extraire statistiques spécifiques à chaque équipe
+    const { blueTeamStats: extractedBlueStats, redTeamStats: extractedRedStats } = extractTeamSpecificStats(matchObject);
+    
+    // Ajouter aux statistiques d'équipe par match pour les deux équipes
+    if (blueTeam && extractedBlueStats) {
+      teamMatchStatsArray.push({
+        ...extractedBlueStats,
         team_id: blueTeam.id,
         match_id: match.id,
         side: 'blue'
       });
     }
     
-    if (redTeam && redTeamStats) {
+    if (redTeam && extractedRedStats) {
       teamMatchStatsArray.push({
-        ...redTeamStats,
+        ...extractedRedStats,
         team_id: redTeam.id,
         match_id: match.id,
         side: 'red'
@@ -191,6 +248,56 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     
     return matchObject;
   }).filter(Boolean) as Match[];
+  
+  // Helper function to process team rows
+  function processTeamRows(rows: LeagueGameDataRow[], matchId: string, teamId: string, isBlue: boolean): any {
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    // Use the first row for team stats
+    const row = rows[0];
+    
+    // Create team stats object
+    return {
+      team_id: teamId,
+      match_id: matchId,
+      is_blue_side: isBlue,
+      team_kpm: parseFloat(row.team_kpm || '0') || 0,
+      ckpm: parseFloat(row.ckpm || '0') || 0,
+      kills: parseInt(row.teamkills || '0') || 0,
+      deaths: parseInt(row.teamdeaths || '0') || 0,
+      
+      // Dragons
+      dragons: parseInt(row.dragons || '0') || 0,
+      elemental_drakes: parseInt(row.elementaldrakes || '0') || 0,
+      infernals: parseInt(row.infernals || '0') || 0,
+      mountains: parseInt(row.mountains || '0') || 0,
+      clouds: parseInt(row.clouds || '0') || 0,
+      oceans: parseInt(row.oceans || '0') || 0,
+      chemtechs: parseInt(row.chemtechs || '0') || 0,
+      hextechs: parseInt(row.hextechs || '0') || 0,
+      drakes_unknown: parseInt(row.dragons_type_unknown || '0') || 0,
+      
+      // Other objectives
+      elders: parseInt(row.elders || '0') || 0,
+      heralds: parseInt(row.heralds || '0') || 0,
+      barons: parseInt(row.barons || '0') || 0,
+      towers: parseInt(row.towers || '0') || 0,
+      turret_plates: parseInt(row.turretplates || '0') || 0,
+      inhibitors: parseInt(row.inhibitors || '0') || 0,
+      void_grubs: parseInt(row.void_grubs || '0') || 0,
+      
+      // First objectives
+      first_blood: row.firstblood === 'True' || row.firstblood === '1',
+      first_dragon: row.firstdragon === 'True' || row.firstdragon === '1',
+      first_herald: row.firstherald === 'True' || row.firstherald === '1',
+      first_baron: row.firstbaron === 'True' || row.firstbaron === '1',
+      first_tower: row.firsttower === 'True' || row.firsttower === '1',
+      first_mid_tower: row.firstmidtower === 'True' || row.firstmidtower === '1',
+      first_three_towers: row.firsttothreetowers === 'True' || row.firsttothreetowers === '1'
+    };
+  }
   
   // Collect player match statistics as array
   const playerMatchStatsArray: any[] = [];

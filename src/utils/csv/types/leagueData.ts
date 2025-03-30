@@ -1,7 +1,9 @@
 
-// Types for League of Legends game data (Oracle's Elixir format)
 export interface LeagueGameDataRow {
+  [key: string]: string;
   gameid?: string;
+  datacompleteness?: string;
+  url?: string;
   league?: string;
   year?: string;
   split?: string;
@@ -12,8 +14,8 @@ export interface LeagueGameDataRow {
   participantid?: string;
   side?: string;
   position?: string;
+  teamposition?: string; // Added field for team position (Blue/Red)
   playername?: string;
-  playerid?: string;
   teamname?: string;
   teamid?: string;
   champion?: string;
@@ -37,8 +39,7 @@ export interface LeagueGameDataRow {
   firstbloodkill?: string;
   firstbloodassist?: string;
   firstbloodvictim?: string;
-  team?: string;
-  'team kpm'?: string;
+  team_kpm?: string;
   ckpm?: string;
   firstdragon?: string;
   dragons?: string;
@@ -51,7 +52,7 @@ export interface LeagueGameDataRow {
   oceans?: string;
   chemtechs?: string;
   hextechs?: string;
-  'dragons (type unknown)'?: string;
+  dragons_type_unknown?: string;
   elders?: string;
   opp_elders?: string;
   firstherald?: string;
@@ -60,13 +61,11 @@ export interface LeagueGameDataRow {
   firstbaron?: string;
   barons?: string;
   opp_barons?: string;
-  void_grubs?: string;
-  opp_void_grubs?: string;
   firsttower?: string;
-  firstmidtower?: string;
-  firsttothreetowers?: string;
   towers?: string;
   opp_towers?: string;
+  firstmidtower?: string;
+  firsttothreetowers?: string;
   turretplates?: string;
   opp_turretplates?: string;
   inhibitors?: string;
@@ -85,12 +84,11 @@ export interface LeagueGameDataRow {
   vspm?: string;
   totalgold?: string;
   earnedgold?: string;
-  'earned gpm'?: string;
+  earnedgpm?: string;
   earnedgoldshare?: string;
   goldspent?: string;
   gspd?: string;
-  gpr?: string;
-  'total cs'?: string;
+  total_cs?: string;
   minionkills?: string;
   monsterkills?: string;
   monsterkillsownjungle?: string;
@@ -126,36 +124,4 @@ export interface LeagueGameDataRow {
   opp_killsat15?: string;
   opp_assistsat15?: string;
   opp_deathsat15?: string;
-  goldat20?: string;
-  xpat20?: string;
-  csat20?: string;
-  opp_goldat20?: string;
-  opp_xpat20?: string;
-  opp_csat20?: string;
-  golddiffat20?: string;
-  xpdiffat20?: string;
-  csdiffat20?: string;
-  killsat20?: string;
-  assistsat20?: string;
-  deathsat20?: string;
-  opp_killsat20?: string;
-  opp_assistsat20?: string;
-  opp_deathsat20?: string;
-  goldat25?: string;
-  xpat25?: string;
-  csat25?: string;
-  opp_goldat25?: string;
-  opp_xpat25?: string;
-  opp_csat25?: string;
-  golddiffat25?: string;
-  xpdiffat25?: string;
-  csdiffat25?: string;
-  killsat25?: string;
-  assistsat25?: string;
-  deathsat25?: string;
-  opp_killsat25?: string;
-  opp_assistsat25?: string;
-  opp_deathsat25?: string;
-  picks?: any;
-  bans?: any;
 }
