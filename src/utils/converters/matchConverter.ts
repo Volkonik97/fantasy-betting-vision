@@ -25,7 +25,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
     // Add extraStats for objective data
     if (match.teamStats) {
       // Log dragon data for debugging
-      if (match.id === 'LOLTMNT02_215152') {
+      if (match.id === 'LOLTMNT02_215152' || match.id === 'LOLTMNT02_222859') {
         console.log(`Dragon data for match ${match.id}:`, { 
           dragons: match.dragons,
           oppDragons: match.oppDragons,
@@ -44,6 +44,13 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         });
       }
 
+      // Parse specific drake types with safe conversion
+      const parseIntSafe = (value: string | undefined): number => {
+        if (!value) return 0;
+        const parsed = parseInt(value);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
       matchObject.extraStats = {
         patch: match.patch || '',
         year: match.year || '',
@@ -56,51 +63,56 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         first_herald: match.firstHerald,
         first_baron: match.firstBaron,
         first_tower: match.firstTower,
-        dragons: parseInt(match.dragons || '0'),
-        barons: parseInt(match.barons || '0'),
-        towers: parseInt(match.towers || '0'),
-        heralds: parseInt(match.heralds || '0'),
-        team_kills: parseInt(match.teamKills || '0'),
-        team_deaths: parseInt(match.teamDeaths || '0'),
-        // Include additional objective stats
-        opp_dragons: parseInt(match.oppDragons || '0'),
-        elemental_drakes: parseInt(match.elementalDrakes || '0'),
-        opp_elemental_drakes: parseInt(match.oppElementalDrakes || '0'),
-        infernals: parseInt(match.infernals || '0'),
-        mountains: parseInt(match.mountains || '0'),
-        clouds: parseInt(match.clouds || '0'),
-        oceans: parseInt(match.oceans || '0'),
-        chemtechs: parseInt(match.chemtechs || '0'),
-        hextechs: parseInt(match.hextechs || '0'),
-        drakes_unknown: parseInt(match.drakesUnknown || '0'),
-        // Include opponent drake-specific properties
-        opp_infernals: parseInt(match.oppInfernals || '0'),
-        opp_mountains: parseInt(match.oppMountains || '0'),
-        opp_clouds: parseInt(match.oppClouds || '0'),
-        opp_oceans: parseInt(match.oppOceans || '0'),
-        opp_chemtechs: parseInt(match.oppChemtechs || '0'),
-        opp_hextechs: parseInt(match.oppHextechs || '0'),
-        opp_drakes_unknown: parseInt(match.oppDrakesUnknown || '0'),
-        elders: parseInt(match.elders || '0'),
-        opp_elders: parseInt(match.oppElders || '0'),
-        opp_heralds: parseInt(match.oppHeralds || '0'),
-        opp_barons: parseInt(match.oppBarons || '0'),
-        void_grubs: parseInt(match.voidGrubs || '0'),
-        opp_void_grubs: parseInt(match.oppVoidGrubs || '0'),
+        
+        // Drakes - Pour l'équipe bleue
+        dragons: parseIntSafe(match.dragons),
+        infernals: parseIntSafe(match.infernals),
+        mountains: parseIntSafe(match.mountains), 
+        clouds: parseIntSafe(match.clouds),
+        oceans: parseIntSafe(match.oceans),
+        chemtechs: parseIntSafe(match.chemtechs),
+        hextechs: parseIntSafe(match.hextechs),
+        drakes_unknown: parseIntSafe(match.drakesUnknown),
+        elemental_drakes: parseIntSafe(match.elementalDrakes),
+        
+        // Drakes - Pour l'équipe rouge (opp_)
+        opp_dragons: parseIntSafe(match.oppDragons),
+        opp_elemental_drakes: parseIntSafe(match.oppElementalDrakes),
+        opp_infernals: parseIntSafe(match.oppInfernals),
+        opp_mountains: parseIntSafe(match.oppMountains),
+        opp_clouds: parseIntSafe(match.oppClouds),
+        opp_oceans: parseIntSafe(match.oppOceans),
+        opp_chemtechs: parseIntSafe(match.oppChemtechs),
+        opp_hextechs: parseIntSafe(match.oppHextechs),
+        opp_drakes_unknown: parseIntSafe(match.oppDrakesUnknown),
+        
+        // Autres objectifs
+        barons: parseIntSafe(match.barons),
+        towers: parseIntSafe(match.towers),
+        heralds: parseIntSafe(match.heralds),
+        team_kills: parseIntSafe(match.teamKills),
+        team_deaths: parseIntSafe(match.teamDeaths),
+        elders: parseIntSafe(match.elders),
+        opp_elders: parseIntSafe(match.oppElders),
+        opp_heralds: parseIntSafe(match.oppHeralds),
+        opp_barons: parseIntSafe(match.oppBarons),
+        void_grubs: parseIntSafe(match.voidGrubs),
+        opp_void_grubs: parseIntSafe(match.oppVoidGrubs),
         first_mid_tower: match.firstMidTower,
         first_three_towers: match.firstThreeTowers,
-        opp_towers: parseInt(match.oppTowers || '0'),
-        turret_plates: parseInt(match.turretPlates || '0'),
-        opp_turret_plates: parseInt(match.oppTurretPlates || '0'),
-        inhibitors: parseInt(match.inhibitors || '0'),
-        opp_inhibitors: parseInt(match.oppInhibitors || '0'),
+        opp_towers: parseIntSafe(match.oppTowers),
+        turret_plates: parseIntSafe(match.turretPlates),
+        opp_turret_plates: parseIntSafe(match.oppTurretPlates),
+        inhibitors: parseIntSafe(match.inhibitors),
+        opp_inhibitors: parseIntSafe(match.oppInhibitors),
+        
         // Ensures picks and bans are included
         picks: match.picks,
         bans: match.bans
       };
 
       // Validation and logging for important matches
-      if (match.id === 'LOLTMNT02_215152') {
+      if (match.id === 'LOLTMNT02_215152' || match.id === 'LOLTMNT02_222859') {
         const drakeSum = matchObject.extraStats.infernals + 
                          matchObject.extraStats.mountains + 
                          matchObject.extraStats.clouds + 
@@ -115,26 +127,32 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
                            matchObject.extraStats.opp_chemtechs + 
                            matchObject.extraStats.opp_hextechs;
                            
-        console.log(`Match ${match.id} - Converted dragon counts:`, {
-          totalDragons: matchObject.extraStats.dragons,
-          drakeSum: drakeSum,
-          specificDragons: {
-            infernals: matchObject.extraStats.infernals,
-            mountains: matchObject.extraStats.mountains,
-            clouds: matchObject.extraStats.clouds,
-            oceans: matchObject.extraStats.oceans,
-            chemtechs: matchObject.extraStats.chemtechs,
-            hextechs: matchObject.extraStats.hextechs
+        console.log(`Match ${match.id} - Données dragons après conversion:`, {
+          blueTeam: {
+            totalDragons: matchObject.extraStats.dragons,
+            drakeSum: drakeSum,
+            detailDragons: {
+              infernals: matchObject.extraStats.infernals,
+              mountains: matchObject.extraStats.mountains,
+              clouds: matchObject.extraStats.clouds,
+              oceans: matchObject.extraStats.oceans,
+              chemtechs: matchObject.extraStats.chemtechs,
+              hextechs: matchObject.extraStats.hextechs,
+              unknown: matchObject.extraStats.drakes_unknown
+            }
           },
-          oppTotalDragons: matchObject.extraStats.opp_dragons,
-          oppDrakeSum: oppDrakeSum,
-          oppSpecificDragons: {
-            oppInfernals: matchObject.extraStats.opp_infernals,
-            oppMountains: matchObject.extraStats.opp_mountains,
-            oppClouds: matchObject.extraStats.opp_clouds,
-            oppOceans: matchObject.extraStats.opp_oceans,
-            oppChemtechs: matchObject.extraStats.opp_chemtechs,
-            oppHextechs: matchObject.extraStats.opp_hextechs
+          redTeam: {
+            totalDragons: matchObject.extraStats.opp_dragons,
+            drakeSum: oppDrakeSum,
+            detailDragons: {
+              infernals: matchObject.extraStats.opp_infernals,
+              mountains: matchObject.extraStats.opp_mountains,
+              clouds: matchObject.extraStats.opp_clouds,
+              oceans: matchObject.extraStats.opp_oceans,
+              chemtechs: matchObject.extraStats.opp_chemtechs,
+              hextechs: matchObject.extraStats.opp_hextechs,
+              unknown: matchObject.extraStats.opp_drakes_unknown
+            }
           }
         });
       }

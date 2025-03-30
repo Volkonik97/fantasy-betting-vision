@@ -20,6 +20,8 @@ export function extractTeamSpecificStats(match: Match): {
     kills: match.extraStats.team_kills || 0,
     deaths: match.extraStats.team_deaths || 0,
     kpm: match.extraStats.team_kpm || 0,
+    
+    // Dragons
     dragons: match.extraStats.dragons || 0,
     infernals: match.extraStats.infernals || 0,
     mountains: match.extraStats.mountains || 0, 
@@ -28,6 +30,8 @@ export function extractTeamSpecificStats(match: Match): {
     chemtechs: match.extraStats.chemtechs || 0,
     hextechs: match.extraStats.hextechs || 0,
     drakes_unknown: match.extraStats.drakes_unknown || 0,
+    
+    // Autres objectifs
     elders: match.extraStats.elders || 0,
     heralds: match.extraStats.heralds || 0,
     barons: match.extraStats.barons || 0,
@@ -35,6 +39,8 @@ export function extractTeamSpecificStats(match: Match): {
     turret_plates: match.extraStats.turret_plates || 0,
     inhibitors: match.extraStats.inhibitors || 0,
     void_grubs: match.extraStats.void_grubs || 0,
+    
+    // First objectives
     first_blood: match.extraStats.first_blood === match.teamBlue.id,
     first_dragon: match.extraStats.first_dragon === match.teamBlue.id,
     first_herald: match.extraStats.first_herald === match.teamBlue.id,
@@ -52,6 +58,8 @@ export function extractTeamSpecificStats(match: Match): {
     kills: match.extraStats.team_deaths || 0, // inversé pour l'équipe rouge
     deaths: match.extraStats.team_kills || 0, // inversé pour l'équipe rouge
     kpm: 0, // Non disponible directement
+    
+    // Dragons pour l'équipe rouge (utiliser les opp_* values)
     dragons: match.extraStats.opp_dragons || 0,
     infernals: match.extraStats.opp_infernals || 0,
     mountains: match.extraStats.opp_mountains || 0,
@@ -60,6 +68,8 @@ export function extractTeamSpecificStats(match: Match): {
     chemtechs: match.extraStats.opp_chemtechs || 0,
     hextechs: match.extraStats.opp_hextechs || 0,
     drakes_unknown: match.extraStats.opp_drakes_unknown || 0,
+    
+    // Autres objectifs pour l'équipe rouge
     elders: match.extraStats.opp_elders || 0,
     heralds: match.extraStats.opp_heralds || 0,
     barons: match.extraStats.opp_barons || 0,
@@ -67,6 +77,8 @@ export function extractTeamSpecificStats(match: Match): {
     turret_plates: match.extraStats.opp_turret_plates || 0,
     inhibitors: match.extraStats.opp_inhibitors || 0,
     void_grubs: match.extraStats.opp_void_grubs || 0,
+    
+    // First objectives pour l'équipe rouge
     first_blood: match.extraStats.first_blood === match.teamRed.id,
     first_dragon: match.extraStats.first_dragon === match.teamRed.id,
     first_herald: match.extraStats.first_herald === match.teamRed.id,
@@ -76,11 +88,11 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamRed.id
   };
 
-  // Debugging for specific matches
+  // Debugging pour les matchs spécifiques qui posent problème
   const debugMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
   if (debugMatchIds.includes(match.id)) {
-    console.log(`[Debug] Match ${match.id} - extraStats dragon data:`, {
-      blue: {
+    console.log(`[Debug] Match ${match.id} - données brutes des dragons:`, {
+      équipeBleue: {
         dragons: match.extraStats.dragons,
         infernals: match.extraStats.infernals,
         mountains: match.extraStats.mountains,
@@ -89,7 +101,7 @@ export function extractTeamSpecificStats(match: Match): {
         chemtechs: match.extraStats.chemtechs,
         hextechs: match.extraStats.hextechs
       },
-      red: {
+      équipeRouge: {
         opp_dragons: match.extraStats.opp_dragons,
         opp_infernals: match.extraStats.opp_infernals,
         opp_mountains: match.extraStats.opp_mountains,
@@ -100,11 +112,11 @@ export function extractTeamSpecificStats(match: Match): {
       }
     });
     
-    console.log(`[Debug] Match ${match.id} - Processed team stats:`, {
-      blueTeam: {
+    console.log(`[Debug] Match ${match.id} - statistiques d'équipe extraites:`, {
+      teamBlue: {
         id: match.teamBlue.id,
         totalDragons: blueTeamStats.dragons,
-        specificDragons: {
+        detailDragons: {
           infernals: blueTeamStats.infernals,
           mountains: blueTeamStats.mountains,
           clouds: blueTeamStats.clouds,
@@ -114,10 +126,10 @@ export function extractTeamSpecificStats(match: Match): {
           unknown: blueTeamStats.drakes_unknown
         }
       },
-      redTeam: {
+      teamRed: {
         id: match.teamRed.id,
         totalDragons: redTeamStats.dragons,
-        specificDragons: {
+        detailDragons: {
           infernals: redTeamStats.infernals,
           mountains: redTeamStats.mountains,
           clouds: redTeamStats.clouds,

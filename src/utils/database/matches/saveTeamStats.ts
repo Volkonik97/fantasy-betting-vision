@@ -93,7 +93,7 @@ export async function saveTeamMatchStats(
     const debugMatches = validTeamStats.filter(stat => specificMatchIds.includes(stat.match_id));
     if (debugMatches.length > 0) {
       debugMatches.forEach(stat => {
-        console.log(`[Debug] Match ${stat.match_id}, Équipe ${stat.team_id}:`, {
+        console.log(`[Debug avant insertion] Match ${stat.match_id}, Équipe ${stat.team_id}:`, {
           is_blue_side: stat.is_blue_side,
           dragons: stat.dragons,
           specific: {
@@ -114,6 +114,7 @@ export async function saveTeamMatchStats(
       // Ensure numeric fields are properly converted
       const ensureNumber = (value: any): number => {
         if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return value; // Déjà un nombre, retourner tel quel
         const num = Number(value);
         return isNaN(num) ? 0 : num;
       };
@@ -136,8 +137,33 @@ export async function saveTeamMatchStats(
             clouds: stat.clouds, 
             oceans: stat.oceans,
             chemtechs: stat.chemtechs,
-            hextechs: stat.hextechs
+            hextechs: stat.hextechs,
+            unknown: stat.drakes_unknown
           }
+        });
+      }
+      
+      // S'assurer que les valeurs des types de dragons sont non-nulles
+      // Traiter spécialement les types de dragons pour éviter les valeurs nulles ou undefined
+      const dragons = ensureNumber(stat.dragons);
+      const infernals = ensureNumber(stat.infernals);
+      const mountains = ensureNumber(stat.mountains);
+      const clouds = ensureNumber(stat.clouds);
+      const oceans = ensureNumber(stat.oceans);
+      const chemtechs = ensureNumber(stat.chemtechs);
+      const hextechs = ensureNumber(stat.hextechs);
+      const drakes_unknown = ensureNumber(stat.drakes_unknown);
+      
+      if (specificMatchIds.includes(stat.match_id)) {
+        console.log(`Valeurs après conversion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
+          dragons,
+          infernals,
+          mountains,
+          clouds,
+          oceans,
+          chemtechs,
+          hextechs,
+          drakes_unknown
         });
       }
       
@@ -148,15 +174,15 @@ export async function saveTeamMatchStats(
         kills: ensureNumber(stat.kills),
         deaths: ensureNumber(stat.deaths),
         kpm: ensureNumber(stat.kpm),
-        dragons: ensureNumber(stat.dragons),
+        dragons: dragons,
         elemental_drakes: ensureNumber(stat.elemental_drakes),
-        infernals: ensureNumber(stat.infernals),
-        mountains: ensureNumber(stat.mountains),
-        clouds: ensureNumber(stat.clouds),
-        oceans: ensureNumber(stat.oceans),
-        chemtechs: ensureNumber(stat.chemtechs),
-        hextechs: ensureNumber(stat.hextechs),
-        drakes_unknown: ensureNumber(stat.drakes_unknown),
+        infernals: infernals,
+        mountains: mountains,
+        clouds: clouds,
+        oceans: oceans,
+        chemtechs: chemtechs,
+        hextechs: hextechs,
+        drakes_unknown: drakes_unknown,
         elders: ensureNumber(stat.elders),
         heralds: ensureNumber(stat.heralds),
         barons: ensureNumber(stat.barons),
