@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -99,6 +100,24 @@ export async function saveTeamMatchStats(
       return isNaN(num) ? 0 : num;
     };
     
+    // Helper function pour convertir les booléens
+    const convertToBoolean = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      
+      if (typeof value === 'boolean') return value;
+      
+      if (typeof value === 'string') {
+        const lowerValue = value.toLowerCase().trim();
+        return lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'oui';
+      }
+      
+      if (typeof value === 'number') {
+        return value === 1;
+      }
+      
+      return false;
+    };
+    
     // Fix stats with incorrect values
     validTeamStats.forEach(stat => {
       // Force numeric stats to be integers
@@ -123,6 +142,15 @@ export async function saveTeamMatchStats(
       stat.drakes_unknown = convertToInteger(stat.drakes_unknown);
       stat.elders = convertToInteger(stat.elders);
       
+      // Convertir les "first" en booléens
+      stat.first_blood = convertToBoolean(stat.first_blood);
+      stat.first_dragon = convertToBoolean(stat.first_dragon);
+      stat.first_herald = convertToBoolean(stat.first_herald);
+      stat.first_baron = convertToBoolean(stat.first_baron);
+      stat.first_tower = convertToBoolean(stat.first_tower);
+      stat.first_mid_tower = convertToBoolean(stat.first_mid_tower);
+      stat.first_three_towers = convertToBoolean(stat.first_three_towers);
+      
       // Log pour les objectifs
       if ((stat.heralds > 0 || stat.barons > 0 || stat.towers > 0 || 
            stat.turret_plates > 0 || stat.inhibitors > 0 || stat.void_grubs > 0)) {
@@ -130,6 +158,17 @@ export async function saveTeamMatchStats(
                     `Heralds=${stat.heralds}, Barons=${stat.barons}, ` +
                     `Towers=${stat.towers}, TurretPlates=${stat.turret_plates}, ` +
                     `Inhibitors=${stat.inhibitors}, VoidGrubs=${stat.void_grubs}`);
+      }
+      
+      // Log pour les first objectives
+      if (stat.first_blood || stat.first_dragon || stat.first_herald || 
+          stat.first_baron || stat.first_tower || stat.first_mid_tower || 
+          stat.first_three_towers) {
+        console.log(`[saveTeamStats] Match ${stat.match_id}, Team ${stat.team_id} - First objectives: ` +
+                    `Blood=${stat.first_blood}, Dragon=${stat.first_dragon}, ` +
+                    `Herald=${stat.first_herald}, Baron=${stat.first_baron}, ` +
+                    `Tower=${stat.first_tower}, MidTower=${stat.first_mid_tower}, ` +
+                    `ThreeTowers=${stat.first_three_towers}`);
       }
       
       // Log pour les dragons spécifiques aussi
@@ -143,6 +182,16 @@ export async function saveTeamMatchStats(
                     `Cloud=${stat.clouds}, Ocean=${stat.oceans}, ` +
                     `Chemtech=${stat.chemtechs}, Hextech=${stat.hextechs}, ` +
                     `Unknown=${stat.drakes_unknown}, Elder=${stat.elders}`);
+      }
+      
+      // Log pour picks et bans
+      if (stat.picks || stat.bans) {
+        console.log(`[saveTeamStats] Match ${stat.match_id}, Team ${stat.team_id} - Picks/Bans disponibles:`, {
+          hasPicks: !!stat.picks,
+          hasBans: !!stat.bans,
+          picksType: stat.picks ? typeof stat.picks : 'none',
+          bansType: stat.bans ? typeof stat.bans : 'none'
+        });
       }
     });
     
@@ -161,6 +210,26 @@ export async function saveTeamMatchStats(
         if (typeof value === 'boolean') return value;
         if (value === 1 || value === '1' || value === 'true' || value === true) return true;
         return false;
+      };
+      
+      // Prepare picks for JSON serialization
+      const preparePicks = (picks: any): any => {
+        if (!picks) return null;
+        if (typeof picks === 'string') {
+          try {
+            return JSON.parse(picks);
+          } catch (e) {
+            return picks; // Si ce n'est pas un JSON valide, retourner tel quel
+          }
+        }
+        return picks; // Already an object or array
+      };
+      
+      // Ensure we JSON stringify objects if needed
+      const ensureJson = (value: any): string | null => {
+        if (value === null || value === undefined) return null;
+        if (typeof value === 'string') return value; // Déjà une chaîne, retourner tel quel
+        return JSON.stringify(value); // Convertir en JSON
       };
       
       return {
@@ -192,17 +261,17 @@ export async function saveTeamMatchStats(
         void_grubs: convertToInteger(stat.void_grubs),
         
         // First objectives
-        first_blood: ensureBoolean(stat.first_blood),
-        first_dragon: ensureBoolean(stat.first_dragon),
-        first_herald: ensureBoolean(stat.first_herald),
-        first_baron: ensureBoolean(stat.first_baron),
-        first_tower: ensureBoolean(stat.first_tower),
-        first_mid_tower: ensureBoolean(stat.first_mid_tower),
-        first_three_towers: ensureBoolean(stat.first_three_towers),
+        first_blood: convertToBoolean(stat.first_blood),
+        first_dragon: convertToBoolean(stat.first_dragon),
+        first_herald: convertToBoolean(stat.first_herald),
+        first_baron: convertToBoolean(stat.first_baron),
+        first_tower: convertToBoolean(stat.first_tower),
+        first_mid_tower: convertToBoolean(stat.first_mid_tower),
+        first_three_towers: convertToBoolean(stat.first_three_towers),
         
-        // Picks and bans if available
-        picks: stat.picks ? JSON.stringify(stat.picks) : null,
-        bans: stat.bans ? JSON.stringify(stat.bans) : null
+        // Picks and bans if available - ensure proper serialization
+        picks: stat.picks ? preparePicks(stat.picks) : null,
+        bans: stat.bans ? preparePicks(stat.bans) : null
       };
     });
     

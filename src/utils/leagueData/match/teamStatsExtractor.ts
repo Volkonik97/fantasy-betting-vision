@@ -57,13 +57,13 @@ function processTeamRows(
   console.log(`[teamStatsExtractor] Processing team ${teamId} for match ${gameId}, found ${teamRows.length} rows`);
   
   // Détermine si cette équipe a obtenu les premiers objectifs
-  const hasFirstBlood = getFirstObjectiveValue(allTeamData, 'firstblood', teamId);
-  const hasFirstDragon = getFirstObjectiveValue(allTeamData, 'firstdragon', teamId);
-  const hasFirstHerald = getFirstObjectiveValue(allTeamData, 'firstherald', teamId);
-  const hasFirstBaron = getFirstObjectiveValue(allTeamData, 'firstbaron', teamId);
-  const hasFirstTower = getFirstObjectiveValue(allTeamData, 'firsttower', teamId);
-  const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
-  const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
+  const hasFirstBlood = getBooleanObjectiveValue(allTeamData, ['firstblood', 'first_blood', 'first blood']);
+  const hasFirstDragon = getBooleanObjectiveValue(allTeamData, ['firstdragon', 'first_dragon', 'first dragon']);
+  const hasFirstHerald = getBooleanObjectiveValue(allTeamData, ['firstherald', 'first_herald', 'first herald']);
+  const hasFirstBaron = getBooleanObjectiveValue(allTeamData, ['firstbaron', 'first_baron', 'first baron']);
+  const hasFirstTower = getBooleanObjectiveValue(allTeamData, ['firsttower', 'first_tower', 'first tower']);
+  const hasFirstMidTower = getBooleanObjectiveValue(allTeamData, ['firstmidtower', 'first_mid_tower', 'first mid tower', 'first middle tower']);
+  const hasFirstThreeTowers = getBooleanObjectiveValue(allTeamData, ['firsttothreetowers', 'first_three_towers', 'first to three towers', 'first 3 towers']);
   
   // Extraire les stats de base
   const teamKills = getStatValue(allTeamData, 'teamkills');
@@ -153,6 +153,17 @@ function processTeamRows(
     heralds, barons, towers, turretPlates, inhibitors, voidGrubs
   });
   
+  // Log pour les first objectives
+  console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - First objectives:`, {
+    firstBlood: hasFirstBlood,
+    firstDragon: hasFirstDragon,
+    firstHerald: hasFirstHerald,
+    firstBaron: hasFirstBaron,
+    firstTower: hasFirstTower,
+    firstMidTower: hasFirstMidTower,
+    firstThreeTowers: hasFirstThreeTowers,
+  });
+  
   // Log détaillé pour le débogage des dragons
   console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Raw dragon values:`, { 
     dragons: findRawValue(allTeamData, dragonAlternatives),
@@ -205,6 +216,40 @@ function processTeamRows(
     turret_plates: turretPlates,
     inhibitors: inhibitors
   });
+}
+
+/**
+ * Convert value to boolean considering many possible formats
+ */
+function getBooleanObjectiveValue(data: Record<string, any>, objectiveKeys: string[]): boolean {
+  for (const key of objectiveKeys) {
+    // Try both the original and lowercase versions
+    const value = data[key] || data[key.toLowerCase()];
+    if (value === undefined || value === null) continue;
+    
+    // Handle string values
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'oui') {
+        return true;
+      }
+      // Special case: if it's the team's name or ID, it means this team got the objective
+      if (data.teamid && value === data.teamid) {
+        return true;
+      }
+      if (data.teamname && value === data.teamname) {
+        return true;
+      }
+    } 
+    // Handle boolean or numeric values
+    else if (typeof value === 'boolean') {
+      return value;
+    } else if (typeof value === 'number') {
+      return value === 1;
+    }
+  }
+  
+  return false;
 }
 
 /**
@@ -291,18 +336,6 @@ function combineTeamRowData(rows: LeagueGameDataRow[]): Record<string, any> {
   });
   
   return combinedData;
-}
-
-/**
- * Get the value for a first objective (firstblood, firstdragon, etc.)
- * from the combined team data
- */
-function getFirstObjectiveValue(data: Record<string, any>, objectiveKey: string, teamId: string): string | null {
-  // Try both the key as provided and lowercase version
-  const value = data[objectiveKey] || data[objectiveKey.toLowerCase()];
-  if (!value) return null;
-  
-  return checkTeamObjectiveValue(value, teamId);
 }
 
 /**

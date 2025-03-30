@@ -40,6 +40,39 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
       matches = uniqueMatches;
     }
     
+    // Fonction pour convertir les booléens
+    const convertToBoolean = (value: any): boolean | null => {
+      if (value === null || value === undefined) return null;
+      
+      if (typeof value === 'boolean') return value;
+      
+      if (typeof value === 'string') {
+        const lowerValue = value.toLowerCase().trim();
+        if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'oui') return true;
+        if (lowerValue === 'false' || lowerValue === '0' || lowerValue === 'no' || lowerValue === 'non') return false;
+        return null;
+      }
+      
+      if (typeof value === 'number') {
+        return value === 1;
+      }
+      
+      return null;
+    };
+    
+    // Fonction pour préparer les données JSON
+    const prepareJsonData = (value: any): any => {
+      if (!value) return null;
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          return value; // Return as is if not valid JSON
+        }
+      }
+      return value; // Already an object
+    };
+    
     // Insert matches in batches of 50 using upsert
     const matchChunks = chunk(matches, 50);
     let successCount = 0;
@@ -57,7 +90,9 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
             extraStats: sampleMatch.extraStats ? {
               dragons: sampleMatch.extraStats.dragons,
               barons: sampleMatch.extraStats.barons,
-              first_blood: sampleMatch.extraStats.first_blood
+              first_blood: sampleMatch.extraStats.first_blood,
+              picks: sampleMatch.extraStats.picks ? typeof sampleMatch.extraStats.picks : 'Pas de picks',
+              bans: sampleMatch.extraStats.bans ? typeof sampleMatch.extraStats.bans : 'Pas de bans'
             } : 'Pas de extraStats',
             result: sampleMatch.result ? {
               winner: sampleMatch.result.winner,
@@ -79,11 +114,17 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               const teamBlueId = match.teamBlue?.id || '';
               const teamRedId = match.teamRed?.id || '';
               
+              // Process picks and bans to ensure they are in the correct JSON format
+              const picks = prepareJsonData(extraStats.picks);
+              const bans = prepareJsonData(extraStats.bans);
+              
               // Log objective data for this match
-              console.log(`Match ${match.id} données d'objectifs pour la BD:`, {
+              console.log(`Match ${match.id} données d'objectifs et picks/bans pour la BD:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
-                first_blood: extraStats.first_blood || result.firstBlood || null
+                first_blood: extraStats.first_blood || result.firstBlood || null,
+                hasPicks: !!picks,
+                hasBans: !!bans
               });
               
               // Assemble match object with safe property access
@@ -118,17 +159,17 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
-                first_herald: extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null),
+                first_herald: convertToBoolean(extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null)),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
-                first_baron: extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null),
+                first_baron: convertToBoolean(extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null)),
                 barons: extraStats.barons || 0,
                 opp_barons: extraStats.opp_barons || 0,
                 void_grubs: extraStats.void_grubs || 0,
                 opp_void_grubs: extraStats.opp_void_grubs || 0,
-                first_tower: extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null),
-                first_mid_tower: extraStats.first_mid_tower || null,
-                first_three_towers: extraStats.first_three_towers || null,
+                first_tower: convertToBoolean(extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null)),
+                first_mid_tower: convertToBoolean(extraStats.first_mid_tower),
+                first_three_towers: convertToBoolean(extraStats.first_three_towers),
                 towers: extraStats.towers || 0,
                 opp_towers: extraStats.opp_towers || 0,
                 turret_plates: extraStats.turret_plates || 0,
@@ -140,10 +181,10 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 score_red: result && 'score' in result && Array.isArray(result.score) && result.score.length > 1 ? result.score[1] : 0,
                 duration: result && 'duration' in result ? result.duration : '',
                 mvp: result && 'mvp' in result ? result.mvp : '',
-                first_blood: extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null),
-                first_dragon: extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null),
-                picks: extraStats.picks || null,
-                bans: extraStats.bans || null,
+                first_blood: convertToBoolean(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
+                first_dragon: convertToBoolean(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
+                picks: picks,
+                bans: bans,
                 game_number: match.id.includes('_') ? match.id.split('_').pop() || null : null
               };
             }),
