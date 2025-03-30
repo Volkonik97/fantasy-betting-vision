@@ -1,4 +1,3 @@
-
 import { Match } from '@/utils/models/types';
 import { parseBoolean } from '@/utils/leagueData/types';
 
@@ -29,59 +28,52 @@ export function extractTeamSpecificStats(match: Match): {
   }
   
   // Si nous avons déjà des statistiques spécifiques pour chaque équipe, les utiliser directement
-  // En vérifiant leur existence
   const hasBlueTeamSpecificStats = match.extraStats.blueTeamStats !== undefined;
   const hasRedTeamSpecificStats = match.extraStats.redTeamStats !== undefined;
   
-  // Process first_* fields to ensure they are correctly boolean for team stats
+  // Traiter les first_* objectives plus efficacement
+  // Vérifier si la valeur est égale à l'ID de l'équipe bleue ou si c'est vrai
   const first_blood_blue = match.extraStats.first_blood === match.teamBlue.id || 
-                          parseBoolean(match.extraStats.first_blood) === true;
-                          
+                          (typeof match.extraStats.first_blood === 'boolean' && match.extraStats.first_blood === true);
+  
   const first_blood_red = match.extraStats.first_blood === match.teamRed.id || 
-                         (parseBoolean(match.extraStats.first_blood) === false && 
-                          match.extraStats.first_blood !== null);
+                         (typeof match.extraStats.first_blood === 'boolean' && match.extraStats.first_blood === false);
   
   const first_dragon_blue = match.extraStats.first_dragon === match.teamBlue.id || 
-                           parseBoolean(match.extraStats.first_dragon) === true;
-                           
+                           (typeof match.extraStats.first_dragon === 'boolean' && match.extraStats.first_dragon === true);
+  
   const first_dragon_red = match.extraStats.first_dragon === match.teamRed.id || 
-                          (parseBoolean(match.extraStats.first_dragon) === false && 
-                           match.extraStats.first_dragon !== null);
+                          (typeof match.extraStats.first_dragon === 'boolean' && match.extraStats.first_dragon === false);
   
   const first_herald_blue = match.extraStats.first_herald === match.teamBlue.id || 
-                           parseBoolean(match.extraStats.first_herald) === true;
-                           
+                           (typeof match.extraStats.first_herald === 'boolean' && match.extraStats.first_herald === true);
+  
   const first_herald_red = match.extraStats.first_herald === match.teamRed.id || 
-                          (parseBoolean(match.extraStats.first_herald) === false && 
-                           match.extraStats.first_herald !== null);
+                          (typeof match.extraStats.first_herald === 'boolean' && match.extraStats.first_herald === false);
   
   const first_baron_blue = match.extraStats.first_baron === match.teamBlue.id || 
-                          parseBoolean(match.extraStats.first_baron) === true;
-                          
+                          (typeof match.extraStats.first_baron === 'boolean' && match.extraStats.first_baron === true);
+  
   const first_baron_red = match.extraStats.first_baron === match.teamRed.id || 
-                         (parseBoolean(match.extraStats.first_baron) === false && 
-                          match.extraStats.first_baron !== null);
+                         (typeof match.extraStats.first_baron === 'boolean' && match.extraStats.first_baron === false);
   
   const first_tower_blue = match.extraStats.first_tower === match.teamBlue.id || 
-                          parseBoolean(match.extraStats.first_tower) === true;
-                          
+                          (typeof match.extraStats.first_tower === 'boolean' && match.extraStats.first_tower === true);
+  
   const first_tower_red = match.extraStats.first_tower === match.teamRed.id || 
-                         (parseBoolean(match.extraStats.first_tower) === false && 
-                          match.extraStats.first_tower !== null);
+                         (typeof match.extraStats.first_tower === 'boolean' && match.extraStats.first_tower === false);
   
   const first_mid_tower_blue = match.extraStats.first_mid_tower === match.teamBlue.id || 
-                              parseBoolean(match.extraStats.first_mid_tower) === true;
-                              
+                              (typeof match.extraStats.first_mid_tower === 'boolean' && match.extraStats.first_mid_tower === true);
+  
   const first_mid_tower_red = match.extraStats.first_mid_tower === match.teamRed.id || 
-                             (parseBoolean(match.extraStats.first_mid_tower) === false && 
-                              match.extraStats.first_mid_tower !== null);
+                             (typeof match.extraStats.first_mid_tower === 'boolean' && match.extraStats.first_mid_tower === false);
   
   const first_three_towers_blue = match.extraStats.first_three_towers === match.teamBlue.id || 
-                                 parseBoolean(match.extraStats.first_three_towers) === true;
-                                 
+                                 (typeof match.extraStats.first_three_towers === 'boolean' && match.extraStats.first_three_towers === true);
+  
   const first_three_towers_red = match.extraStats.first_three_towers === match.teamRed.id || 
-                                (parseBoolean(match.extraStats.first_three_towers) === false && 
-                                 match.extraStats.first_three_towers !== null);
+                                (typeof match.extraStats.first_three_towers === 'boolean' && match.extraStats.first_three_towers === false);
   
   // Debug first_* values
   if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
@@ -106,12 +98,15 @@ export function extractTeamSpecificStats(match: Match): {
       },
       rawValues: {
         first_blood: match.extraStats.first_blood,
+        first_blood_type: typeof match.extraStats.first_blood,
         first_dragon: match.extraStats.first_dragon,
+        first_dragon_type: typeof match.extraStats.first_dragon,
         first_herald: match.extraStats.first_herald,
+        first_herald_type: typeof match.extraStats.first_herald,
         first_baron: match.extraStats.first_baron,
+        first_baron_type: typeof match.extraStats.first_baron,
         first_tower: match.extraStats.first_tower,
-        first_mid_tower: match.extraStats.first_mid_tower,
-        first_three_towers: match.extraStats.first_three_towers
+        first_tower_type: typeof match.extraStats.first_tower
       }
     });
   }

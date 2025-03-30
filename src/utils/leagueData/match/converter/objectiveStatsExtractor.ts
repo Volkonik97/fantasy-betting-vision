@@ -1,3 +1,4 @@
+
 import { safeConvertToString } from './utils';
 
 /**
@@ -5,6 +6,28 @@ import { safeConvertToString } from './utils';
  */
 export function extractObjectiveStats(teamBlueStats: any, teamRedStats: any, gameId: string): any {
   let stats: any = {};
+  
+  // Log détaillé pour le débogage
+  if (gameId === 'LOLTMNT02_215152' || gameId === 'LOLTMNT02_222859') {
+    console.log(`[objectiveStatsExtractor] Extracting stats for match ${gameId}:`, {
+      blueTeam: teamBlueStats ? {
+        first_blood: teamBlueStats.first_blood,
+        first_dragon: teamBlueStats.first_dragon,
+        first_herald: teamBlueStats.first_herald,
+        first_baron: teamBlueStats.first_baron,
+        first_tower: teamBlueStats.first_tower,
+        teamId: teamBlueStats.team_id
+      } : 'No blue team stats',
+      redTeam: teamRedStats ? {
+        first_blood: teamRedStats.first_blood,
+        first_dragon: teamRedStats.first_dragon,
+        first_herald: teamRedStats.first_herald,
+        first_baron: teamRedStats.first_baron,
+        first_tower: teamRedStats.first_tower,
+        teamId: teamRedStats.team_id
+      } : 'No red team stats'
+    });
+  }
   
   // If blue team stats are available, extract from there
   if (teamBlueStats) {
@@ -27,6 +50,16 @@ export function extractObjectiveStats(teamBlueStats: any, teamRedStats: any, gam
  * Extract stats when blue team data is available
  */
 function extractStatsFromBlueTeam(teamBlueStats: any): any {
+  // Conversion pour les objectifs "first_*"
+  // Ajouter le team_id pour les objectifs pour pouvoir les identifier par équipe
+  const firstBlood = teamBlueStats.first_blood === true ? teamBlueStats.team_id : '';
+  const firstDragon = teamBlueStats.first_dragon === true ? teamBlueStats.team_id : '';
+  const firstHerald = teamBlueStats.first_herald === true ? teamBlueStats.team_id : '';
+  const firstBaron = teamBlueStats.first_baron === true ? teamBlueStats.team_id : '';
+  const firstTower = teamBlueStats.first_tower === true ? teamBlueStats.team_id : '';
+  const firstMidTower = teamBlueStats.first_mid_tower === true ? teamBlueStats.team_id : '';
+  const firstThreeTowers = teamBlueStats.first_three_towers === true ? teamBlueStats.team_id : '';
+
   return {
     // Basic game stats
     teamKpm: safeConvertToString(teamBlueStats.team_kpm),
@@ -35,13 +68,13 @@ function extractStatsFromBlueTeam(teamBlueStats: any): any {
     teamDeaths: safeConvertToString(teamBlueStats.team_deaths),
     
     // First objectives
-    firstBlood: teamBlueStats.first_blood || '',
-    firstDragon: teamBlueStats.first_dragon || '',
-    firstHerald: teamBlueStats.first_herald || '',
-    firstBaron: teamBlueStats.first_baron || '',
-    firstTower: teamBlueStats.first_tower || '',
-    firstMidTower: teamBlueStats.first_mid_tower || '',
-    firstThreeTowers: teamBlueStats.first_three_towers || '',
+    firstBlood: firstBlood,
+    firstDragon: firstDragon,
+    firstHerald: firstHerald,
+    firstBaron: firstBaron,
+    firstTower: firstTower,
+    firstMidTower: firstMidTower,
+    firstThreeTowers: firstThreeTowers,
     
     // Dragon stats
     dragons: safeConvertToString(teamBlueStats.dragons),
@@ -96,6 +129,16 @@ function extractOpponentStatsFromRedTeam(teamRedStats: any): any {
  * Extract stats when only red team data is available
  */
 function extractStatsFromRedTeam(teamRedStats: any): any {
+  // Conversion pour les objectifs "first_*"
+  // Ajouter le team_id pour les objectifs pour pouvoir les identifier par équipe
+  const firstBlood = teamRedStats.first_blood === true ? teamRedStats.team_id : '';
+  const firstDragon = teamRedStats.first_dragon === true ? teamRedStats.team_id : '';
+  const firstHerald = teamRedStats.first_herald === true ? teamRedStats.team_id : '';
+  const firstBaron = teamRedStats.first_baron === true ? teamRedStats.team_id : '';
+  const firstTower = teamRedStats.first_tower === true ? teamRedStats.team_id : '';
+  const firstMidTower = teamRedStats.first_mid_tower === true ? teamRedStats.team_id : '';
+  const firstThreeTowers = teamRedStats.first_three_towers === true ? teamRedStats.team_id : '';
+
   return {
     // Basic game stats - using red team perspective
     teamKpm: safeConvertToString(teamRedStats.team_kpm),
@@ -104,13 +147,13 @@ function extractStatsFromRedTeam(teamRedStats: any): any {
     teamDeaths: safeConvertToString(teamRedStats.team_deaths),
     
     // First objectives
-    firstBlood: teamRedStats.first_blood || '',
-    firstDragon: teamRedStats.first_dragon || '',
-    firstHerald: teamRedStats.first_herald || '',
-    firstBaron: teamRedStats.first_baron || '',
-    firstTower: teamRedStats.first_tower || '',
-    firstMidTower: teamRedStats.first_mid_tower || '',
-    firstThreeTowers: teamRedStats.first_three_towers || '',
+    firstBlood: firstBlood,
+    firstDragon: firstDragon,
+    firstHerald: firstHerald,
+    firstBaron: firstBaron,
+    firstTower: firstTower,
+    firstMidTower: firstMidTower,
+    firstThreeTowers: firstThreeTowers,
     
     // Dragon stats - swapping team and opponent stats
     dragons: safeConvertToString(teamRedStats.opp_dragons),

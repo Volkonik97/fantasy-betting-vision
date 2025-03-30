@@ -1,4 +1,3 @@
-
 // Types for processing League data
 export interface GameTracker {
   id: string;
@@ -214,24 +213,28 @@ export interface PicksAndBans {
 }
 
 // Improved helper function to parse boolean values from strings with more robust logic
-export function parseBoolean(value?: string | null | boolean): boolean | null {
-  if (value === undefined) return null;
-  if (value === null) return null;
-  
-  // If it's already a boolean, return it
-  if (typeof value === 'boolean') return value;
-  
-  // Convert strings to lowercase for comparison
-  if (typeof value === 'string') {
-    const normalizedValue = value.toLowerCase().trim();
-    if (['true', '1', 'yes', 'y', 'oui'].includes(normalizedValue)) return true;
-    if (['false', '0', 'no', 'n', 'non'].includes(normalizedValue)) return false;
-    // If it matches a team ID or name format, might be true
-    // but we'll return null as we can't determine for sure in this function
+export function parseBoolean(value: any): boolean | null {
+  if (value === undefined || value === null) {
     return null;
   }
   
-  // Number conversion
+  // Si c'est déjà un booléen
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  
+  // Si c'est une chaîne
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase().trim();
+    if (['true', '1', 'yes', 'oui', 't', 'y'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'non', 'f', 'n'].includes(normalized)) {
+      return false;
+    }
+  }
+  
+  // Si c'est un nombre
   if (typeof value === 'number') {
     return value === 1;
   }
@@ -240,53 +243,77 @@ export function parseBoolean(value?: string | null | boolean): boolean | null {
 }
 
 // Helper function to safely parse integers
-export function safeParseInt(value?: string | null): number {
-  if (!value) return 0;
-  const parsedValue = parseInt(String(value), 10);
-  return isNaN(parsedValue) ? 0 : parsedValue;
+export function safeParseInt(value: any): number {
+  if (value === undefined || value === null || value === '') {
+    return 0;
+  }
+  
+  if (typeof value === 'number') {
+    return Math.floor(value);
+  }
+  
+  const parsed = parseInt(String(value), 10);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 // Helper function to safely parse floats
-export function safeParseFloat(value?: string | null): number {
-  if (!value) return 0;
-  const parsedValue = parseFloat(String(value));
-  return isNaN(parsedValue) ? 0 : parsedValue;
+export function safeParseFloat(value: any): number {
+  if (value === undefined || value === null || value === '') {
+    return 0;
+  }
+  
+  if (typeof value === 'number') {
+    return value;
+  }
+  
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? 0 : parsed;
 }
 
-// Helper function to convert boolean to string representation that's safe for database storage
-export function booleanToString(value?: boolean | string | null): string | null {
-  if (value === undefined || value === null) return null;
+/**
+ * Convert a value to a string representation suitable for database storage
+ */
+export function booleanToString(value: any): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
   
+  // Si c'est un booléen, le convertir directement
   if (typeof value === 'boolean') {
     return value ? 'true' : 'false';
   }
   
+  // Si c'est déjà une chaîne, la retourner telle quelle
   if (typeof value === 'string') {
-    // If it's already a string, ensure it's normalized to 'true'/'false'
-    const lowerValue = value.toLowerCase().trim();
-    if (['true', '1', 'yes', 'y', 'oui'].includes(lowerValue)) return 'true';
-    if (['false', '0', 'no', 'n', 'non'].includes(lowerValue)) return 'false';
-    // For team IDs and other strings, return as is
     return value;
   }
   
-  return null;
+  // Pour d'autres types, convertir en string
+  return String(value);
 }
 
-// Helper function to prepare JSON data for database storage
-export function prepareJsonData(value: any): any {
-  if (!value) return null;
+/**
+ * Convert JSON data to a proper format for database storage
+ */
+export function prepareJsonData(data: any): any {
+  if (!data) return null;
   
-  // If it's a string, try to parse it as JSON
-  if (typeof value === 'string') {
+  // Si c'est déjà un objet mais pas une chaîne
+  if (typeof data === 'object') {
+    return data;
+  }
+  
+  // Si c'est une chaîne, essayer de la parser en JSON
+  if (typeof data === 'string') {
     try {
-      return JSON.parse(value);
+      return JSON.parse(data);
     } catch (e) {
-      // If parsing fails, it's not valid JSON; return as is
-      return value;
+      console.warn('Failed to parse JSON string:', e);
+      // Si ce n'est pas un JSON valide, le retourner tel quel
+      return data;
     }
   }
   
-  // If it's already an object or array, return as is
-  return value;
+  // Pour tout autre type de données
+  return data;
 }

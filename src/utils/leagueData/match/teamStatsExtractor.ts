@@ -56,13 +56,14 @@ function processTeamRows(
   console.log(`[teamStatsExtractor] Processing team ${teamId} for match ${gameId}, found ${teamRows.length} rows`);
   
   // Détermine si cette équipe a obtenu les premiers objectifs
-  const hasFirstBlood = getBooleanObjectiveValue(allTeamData, ['firstblood', 'first_blood', 'first blood']);
-  const hasFirstDragon = getBooleanObjectiveValue(allTeamData, ['firstdragon', 'first_dragon', 'first dragon']);
-  const hasFirstHerald = getBooleanObjectiveValue(allTeamData, ['firstherald', 'first_herald', 'first herald']);
-  const hasFirstBaron = getBooleanObjectiveValue(allTeamData, ['firstbaron', 'first_baron', 'first baron']);
-  const hasFirstTower = getBooleanObjectiveValue(allTeamData, ['firsttower', 'first_tower', 'first tower']);
-  const hasFirstMidTower = getBooleanObjectiveValue(allTeamData, ['firstmidtower', 'first_mid_tower', 'first mid tower', 'first middle tower']);
-  const hasFirstThreeTowers = getBooleanObjectiveValue(allTeamData, ['firsttothreetowers', 'first_three_towers', 'first to three towers', 'first 3 towers']);
+  // Amélioration: Utilisation d'une fonction améliorée pour mieux détecter les objectifs
+  const hasFirstBlood = parseObjectiveValue(allTeamData, ['firstblood', 'first_blood', 'first blood'], teamId);
+  const hasFirstDragon = parseObjectiveValue(allTeamData, ['firstdragon', 'first_dragon', 'first dragon'], teamId);
+  const hasFirstHerald = parseObjectiveValue(allTeamData, ['firstherald', 'first_herald', 'first herald'], teamId);
+  const hasFirstBaron = parseObjectiveValue(allTeamData, ['firstbaron', 'first_baron', 'first baron'], teamId);
+  const hasFirstTower = parseObjectiveValue(allTeamData, ['firsttower', 'first_tower', 'first tower'], teamId);
+  const hasFirstMidTower = parseObjectiveValue(allTeamData, ['firstmidtower', 'first_mid_tower', 'first mid tower', 'first middle tower'], teamId);
+  const hasFirstThreeTowers = parseObjectiveValue(allTeamData, ['firsttothreetowers', 'first_three_towers', 'first to three towers', 'first 3 towers'], teamId);
   
   // Extraire les stats de base
   const teamKills = getStatValue(allTeamData, 'teamkills');
@@ -161,6 +162,15 @@ function processTeamRows(
     firstTower: hasFirstTower,
     firstMidTower: hasFirstMidTower,
     firstThreeTowers: hasFirstThreeTowers,
+    rawValues: {
+      firstBlood: findRawValue(allTeamData, ['firstblood', 'first_blood']),
+      firstDragon: findRawValue(allTeamData, ['firstdragon', 'first_dragon']),
+      firstHerald: findRawValue(allTeamData, ['firstherald', 'first_herald']),
+      firstBaron: findRawValue(allTeamData, ['firstbaron', 'first_baron']),
+      firstTower: findRawValue(allTeamData, ['firsttower', 'first_tower']),
+      firstMidTower: findRawValue(allTeamData, ['firstmidtower', 'first_mid_tower']),
+      firstThreeTowers: findRawValue(allTeamData, ['firsttothreetowers', 'first_three_towers'])
+    }
   });
   
   // Log détaillé pour le débogage des dragons
@@ -218,121 +228,56 @@ function processTeamRows(
 }
 
 /**
- * Convert value to boolean considering many possible formats
- * This enhanced version handles more edge cases and logs details for debugging
+ * Analyse et interprète correctement les valeurs d'objectifs premiers
+ * Nouvelle fonction plus robuste pour traiter les formats variés
  */
-function getBooleanObjectiveValue(data: Record<string, any>, objectiveKeys: string[]): boolean | null {
-  // First, try direct boolean properties that might exist
+function parseObjectiveValue(data: Record<string, any>, objectiveKeys: string[], teamId: string): boolean {
+  // Vérifier toutes les clés possibles
   for (const key of objectiveKeys) {
-    // Try both the original and lowercase versions
-    const value = data[key] !== undefined ? data[key] : data[key.toLowerCase()];
+    // Essayer avec la clé originale et sa version en minuscules
+    const rawValue = data[key] !== undefined ? data[key] : data[key.toLowerCase()];
     
-    if (value === undefined || value === null) continue;
+    if (rawValue === undefined || rawValue === null) continue;
     
-    // Log the raw value for debugging
-    console.log(`[getBooleanObjectiveValue] For key ${key}, found raw value:`, {
-      value,
-      type: typeof value,
-      teamId: data.teamid || 'unknown'
-    });
+    // Log détaillé pour le débogage
+    console.log(`[parseObjectiveValue] Key: ${key}, Raw value: ${rawValue}, Type: ${typeof rawValue}, TeamId: ${teamId}`);
     
-    // Handle string values
-    if (typeof value === 'string') {
-      const lowerValue = value.toLowerCase().trim();
-      
-      // If it's a clear boolean string
-      if (['true', '1', 'yes', 'oui'].includes(lowerValue)) {
+    // Cas 1: La valeur est le nom/ID de l'équipe
+    if (typeof rawValue === 'string' && 
+        (rawValue === teamId || rawValue.toLowerCase() === teamId.toLowerCase())) {
+      return true;
+    }
+    
+    // Cas 2: La valeur est "True", "1", "Yes", etc.
+    if (typeof rawValue === 'string') {
+      const normValue = rawValue.toLowerCase().trim();
+      if (['true', '1', 'yes', 'oui', 't', 'y'].includes(normValue)) {
         return true;
       }
-      
-      if (['false', '0', 'no', 'non'].includes(lowerValue)) {
+      if (['false', '0', 'no', 'non', 'f', 'n'].includes(normValue)) {
         return false;
       }
       
-      // Special case: if it's the team's name or ID, it means this team got the objective
-      if (data.teamid && (value === data.teamid || lowerValue === data.teamid.toLowerCase())) {
-        console.log(`[getBooleanObjectiveValue] Value matches team ID for ${key}: ${value} === ${data.teamid}`);
-        return true;
-      }
-      
-      if (data.teamname && (value === data.teamname || lowerValue === data.teamname.toLowerCase())) {
-        console.log(`[getBooleanObjectiveValue] Value matches team name for ${key}: ${value} === ${data.teamname}`);
-        return true;
-      }
-      
-      // If the value is a different team ID/name, it means this team didn't get the objective
-      if (value !== '' && value !== '0' && value !== 'false' && value !== 'no') {
-        console.log(`[getBooleanObjectiveValue] Value appears to be another team ID/name for ${key}: ${value}`);
+      // Cas 3: Si c'est une autre chaîne non vide, cela pourrait être l'ID d'une autre équipe
+      if (rawValue !== '' && !['false', '0', 'no', 'non', 'f', 'n', 'null', 'undefined'].includes(normValue)) {
+        // Si c'est un autre ID d'équipe, alors notre équipe n'a pas eu l'objectif
         return false;
       }
-    } 
-    // Handle boolean or numeric values
-    else if (typeof value === 'boolean') {
-      return value;
-    } else if (typeof value === 'number') {
-      return value === 1;
+    }
+    
+    // Cas 4: Valeur booléenne directe
+    if (typeof rawValue === 'boolean') {
+      return rawValue;
+    }
+    
+    // Cas 5: Valeur numérique (1 = vrai, 0 = faux)
+    if (typeof rawValue === 'number') {
+      return rawValue === 1;
     }
   }
   
-  return null;
-}
-
-/**
- * Recherche une valeur statistique en essayant plusieurs noms de colonnes alternatifs
- */
-function findStatValueWithAlternatives(data: Record<string, any>, alternatives: string[]): number {
-  // D'abord, essayez d'obtenir des valeurs numériques directes
-  for (const alt of alternatives) {
-    const value = data[alt] || data[alt.toLowerCase()];
-    if (value !== undefined && value !== null && value !== '') {
-      // Si la valeur est une chaîne, essayez de la convertir en nombre
-      if (typeof value === 'string') {
-        // Si c'est un nombre sous forme de chaîne, analysez-le
-        const parsedNumber = parseFloat(value);
-        if (!isNaN(parsedNumber)) {
-          return parsedNumber;
-        }
-        // Si c'est "true" ou "1", retourner 1
-        if (value.toLowerCase() === 'true' || value === '1') {
-          return 1;
-        }
-      } 
-      // Si c'est déjà un nombre
-      else if (typeof value === 'number') {
-        return value;
-      }
-      // Si c'est un booléen "true"
-      else if (value === true) {
-        return 1;
-      }
-    }
-  }
-
-  // Si aucune valeur directe n'est trouvée, essayez d'analyser la valeur en tant que nombre
-  for (const alt of alternatives) {
-    const value = getStatValue(data, alt);
-    if (value > 0) {
-      return value;
-    }
-  }
-  return 0;
-}
-
-/**
- * Récupère la valeur brute (non parsée) pour le débogage
- */
-function findRawValue(data: Record<string, any>, alternatives: string[]): any {
-  for (const alt of alternatives) {
-    if (data[alt] !== undefined) {
-      return data[alt];
-    }
-    
-    // Essayer aussi la version en minuscules
-    if (data[alt.toLowerCase()] !== undefined) {
-      return data[alt.toLowerCase()];
-    }
-  }
-  return 'not found';
+  // Par défaut, si aucune information n'est trouvée, on suppose que l'équipe n'a pas obtenu l'objectif
+  return false;
 }
 
 /**
@@ -421,4 +366,62 @@ function checkTeamObjectiveValue(value: string | undefined, teamId: string): str
   
   // Sinon, on retourne la valeur telle quelle (pourrait être un nom d'équipe)
   return value;
+}
+
+/**
+ * Recherche une valeur statistique en essayant plusieurs noms de colonnes alternatifs
+ */
+function findStatValueWithAlternatives(data: Record<string, any>, alternatives: string[]): number {
+  // D'abord, essayez d'obtenir des valeurs numériques directes
+  for (const alt of alternatives) {
+    const value = data[alt] || data[alt.toLowerCase()];
+    if (value !== undefined && value !== null && value !== '') {
+      // Si la valeur est une chaîne, essayez de la convertir en nombre
+      if (typeof value === 'string') {
+        // Si c'est un nombre sous forme de chaîne, analysez-le
+        const parsedNumber = parseFloat(value);
+        if (!isNaN(parsedNumber)) {
+          return parsedNumber;
+        }
+        // Si c'est "true" ou "1", retourner 1
+        if (value.toLowerCase() === 'true' || value === '1') {
+          return 1;
+        }
+      } 
+      // Si c'est déjà un nombre
+      else if (typeof value === 'number') {
+        return value;
+      }
+      // Si c'est un booléen "true"
+      else if (value === true) {
+        return 1;
+      }
+    }
+  }
+
+  // Si aucune valeur directe n'est trouvée, essayez d'analyser la valeur en tant que nombre
+  for (const alt of alternatives) {
+    const value = getStatValue(data, alt);
+    if (value > 0) {
+      return value;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Récupère la valeur brute (non parsée) pour le débogage
+ */
+function findRawValue(data: Record<string, any>, alternatives: string[]): any {
+  for (const alt of alternatives) {
+    if (data[alt] !== undefined) {
+      return data[alt];
+    }
+    
+    // Essayer aussi la version en minuscules
+    if (data[alt.toLowerCase()] !== undefined) {
+      return data[alt.toLowerCase()];
+    }
+  }
+  return 'not found';
 }
