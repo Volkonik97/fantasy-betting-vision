@@ -125,12 +125,12 @@ function processTeamRows(
   const elders = findStatValueWithAlternatives(allTeamData, elderAlternatives);
   
   // Extraire les autres statistiques d'objectifs avec les alternatives
-  const heraldAlternatives = ['heralds', 'herald', 'riftherald', 'rift_herald', 'rift_heralds'];
-  const baronAlternatives = ['barons', 'baron', 'baron_nashor', 'baronnashor'];
-  const towerAlternatives = ['towers', 'tower', 'turrets', 'turret'];
-  const turretPlateAlternatives = ['turretplates', 'turret_plates', 'plates'];
-  const inhibitorAlternatives = ['inhibitors', 'inhibitor', 'inhibs', 'inhib'];
-  const voidGrubAlternatives = ['void_grubs', 'voidgrubs', 'void_grub', 'voidgrub'];
+  const heraldAlternatives = ['heralds', 'herald', 'riftherald', 'rift_herald', 'rift_heralds', 'riftherald', 'riftherald_taken', 'heralds_taken'];
+  const baronAlternatives = ['barons', 'baron', 'baron_nashor', 'baronnashor', 'barons_taken', 'baron_taken'];
+  const towerAlternatives = ['towers', 'tower', 'turrets', 'turret', 'towers_taken', 'turrets_taken'];
+  const turretPlateAlternatives = ['turretplates', 'turret_plates', 'plates', 'turretplates_taken', 'plates_taken'];
+  const inhibitorAlternatives = ['inhibitors', 'inhibitor', 'inhibs', 'inhib', 'inhibitors_taken', 'inhibs_taken'];
+  const voidGrubAlternatives = ['void_grubs', 'voidgrubs', 'void_grub', 'voidgrub', 'voidgrub_taken', 'voidgrubs_taken'];
   
   const heralds = findStatValueWithAlternatives(allTeamData, heraldAlternatives);
   const barons = findStatValueWithAlternatives(allTeamData, baronAlternatives);
@@ -139,7 +139,21 @@ function processTeamRows(
   const inhibitors = findStatValueWithAlternatives(allTeamData, inhibitorAlternatives);
   const voidGrubs = findStatValueWithAlternatives(allTeamData, voidGrubAlternatives);
   
-  // Log détaillé pour le débogage
+  // Log détaillé des objectifs pour le débogage
+  console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Raw objective values:`, {
+    heralds: findRawValue(allTeamData, heraldAlternatives),
+    barons: findRawValue(allTeamData, baronAlternatives),
+    towers: findRawValue(allTeamData, towerAlternatives),
+    turretPlates: findRawValue(allTeamData, turretPlateAlternatives),
+    inhibitors: findRawValue(allTeamData, inhibitorAlternatives),
+    voidGrubs: findRawValue(allTeamData, voidGrubAlternatives)
+  });
+  
+  console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Parsed objective values:`, {
+    heralds, barons, towers, turretPlates, inhibitors, voidGrubs
+  });
+  
+  // Log détaillé pour le débogage des dragons
   console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Raw dragon values:`, { 
     dragons: findRawValue(allTeamData, dragonAlternatives),
     elementalDrakes: findRawValue(allTeamData, elementalDrakeAlternatives),
@@ -197,6 +211,34 @@ function processTeamRows(
  * Recherche une valeur statistique en essayant plusieurs noms de colonnes alternatifs
  */
 function findStatValueWithAlternatives(data: Record<string, any>, alternatives: string[]): number {
+  // D'abord, essayez d'obtenir des valeurs numériques directes
+  for (const alt of alternatives) {
+    const value = data[alt] || data[alt.toLowerCase()];
+    if (value !== undefined && value !== null && value !== '') {
+      // Si la valeur est une chaîne, essayez de la convertir en nombre
+      if (typeof value === 'string') {
+        // Si c'est un nombre sous forme de chaîne, analysez-le
+        const parsedNumber = parseFloat(value);
+        if (!isNaN(parsedNumber)) {
+          return parsedNumber;
+        }
+        // Si c'est "true" ou "1", retourner 1
+        if (value.toLowerCase() === 'true' || value === '1') {
+          return 1;
+        }
+      } 
+      // Si c'est déjà un nombre
+      else if (typeof value === 'number') {
+        return value;
+      }
+      // Si c'est un booléen "true"
+      else if (value === true) {
+        return 1;
+      }
+    }
+  }
+
+  // Si aucune valeur directe n'est trouvée, essayez d'analyser la valeur en tant que nombre
   for (const alt of alternatives) {
     const value = getStatValue(data, alt);
     if (value > 0) {
@@ -277,14 +319,25 @@ function getStatValue(data: Record<string, any>, statKey: string): number {
   
   // Handle various string formats
   if (typeof value === 'string') {
-    // If it's "1" or "true", convert to 1
-    if (value.toLowerCase() === 'true' || value === '1' || value === 'yes') {
+    // Si c'est un nombre sous forme de chaîne, analysez-le
+    const parsedNumber = parseFloat(value);
+    if (!isNaN(parsedNumber)) {
+      return parsedNumber;
+    }
+    // Si c'est "1" ou "true", convert to 1
+    if (value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes') {
       return 1;
     }
-    // If it's "0" or "false", convert to 0
-    if (value.toLowerCase() === 'false' || value === '0' || value === 'no') {
+    // Si c'est "0" ou "false", convert to 0
+    if (value.toLowerCase() === 'false' || value === '0' || value.toLowerCase() === 'no') {
       return 0;
     }
+  } else if (typeof value === 'number') {
+    return value;
+  } else if (value === true) {
+    return 1;
+  } else if (value === false) {
+    return 0;
   }
   
   // Try to parse as float first, then as int if that fails

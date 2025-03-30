@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -124,12 +123,20 @@ export async function saveTeamMatchStats(
       stat.drakes_unknown = convertToInteger(stat.drakes_unknown);
       stat.elders = convertToInteger(stat.elders);
       
-      // Debug log pour les statistiques de dragons
+      // Log pour les objectifs
+      if ((stat.heralds > 0 || stat.barons > 0 || stat.towers > 0 || 
+           stat.turret_plates > 0 || stat.inhibitors > 0 || stat.void_grubs > 0)) {
+        console.log(`[saveTeamStats] Match ${stat.match_id}, Team ${stat.team_id}: ` +
+                    `Heralds=${stat.heralds}, Barons=${stat.barons}, ` +
+                    `Towers=${stat.towers}, TurretPlates=${stat.turret_plates}, ` +
+                    `Inhibitors=${stat.inhibitors}, VoidGrubs=${stat.void_grubs}`);
+      }
+      
+      // Log pour les dragons spécifiques aussi
       if ((stat.dragons > 0 || stat.elemental_drakes > 0 || stat.infernals > 0 || 
            stat.mountains > 0 || stat.clouds > 0 || stat.oceans > 0 || 
            stat.chemtechs > 0 || stat.hextechs > 0 || stat.drakes_unknown > 0 || 
            stat.elders > 0)) {
-        // Log tous les stats qui ont des dragons pour le débogage (même si ça génère beaucoup de logs)
         console.log(`[saveTeamStats] Match ${stat.match_id}, Team ${stat.team_id}: ` +
                     `Dragons=${stat.dragons}, Elemental=${stat.elemental_drakes}, ` +
                     `Infernal=${stat.infernals}, Mountain=${stat.mountains}, ` +
@@ -176,7 +183,7 @@ export async function saveTeamMatchStats(
         drakes_unknown: convertToInteger(stat.drakes_unknown),
         elders: convertToInteger(stat.elders),
         
-        // Other objectives
+        // Other objectives - utiliser des valeurs sécurisées
         towers: convertToInteger(stat.towers),
         turret_plates: convertToInteger(stat.turret_plates),
         inhibitors: convertToInteger(stat.inhibitors),

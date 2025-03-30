@@ -183,7 +183,13 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
         oceans: blueTeamStats.oceans,
         chemtechs: blueTeamStats.chemtechs,
         hextechs: blueTeamStats.hextechs,
-        drakes_unknown: blueTeamStats.drakes_unknown
+        drakes_unknown: blueTeamStats.drakes_unknown,
+        heralds: blueTeamStats.heralds,
+        barons: blueTeamStats.barons,
+        towers: blueTeamStats.towers,
+        turret_plates: blueTeamStats.turret_plates,
+        inhibitors: blueTeamStats.inhibitors,
+        void_grubs: blueTeamStats.void_grubs
       });
       
       matchObject.extraStats.blueTeamStats = blueTeamStats;
@@ -208,7 +214,13 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
         oceans: redTeamStats.oceans,
         chemtechs: redTeamStats.chemtechs,
         hextechs: redTeamStats.hextechs,
-        drakes_unknown: redTeamStats.drakes_unknown
+        drakes_unknown: redTeamStats.drakes_unknown,
+        heralds: redTeamStats.heralds,
+        barons: redTeamStats.barons,
+        towers: redTeamStats.towers,
+        turret_plates: redTeamStats.turret_plates,
+        inhibitors: redTeamStats.inhibitors,
+        void_grubs: redTeamStats.void_grubs
       });
       
       matchObject.extraStats.redTeamStats = redTeamStats;
@@ -296,7 +308,7 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     });
     
     // Log les données brutes pour le débogage (NOUVELLE LIGNE)
-    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, raw dragon data:`, {
+    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, raw data:`, {
       dragons: allTeamData.dragons,
       elementaldrakes: allTeamData.elementaldrakes,
       infernals: allTeamData.infernals,
@@ -305,7 +317,13 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       oceans: allTeamData.oceans,
       chemtechs: allTeamData.chemtechs,
       hextechs: allTeamData.hextechs,
-      dragons_type_unknown: allTeamData.dragons_type_unknown
+      dragons_type_unknown: allTeamData.dragons_type_unknown,
+      heralds: allTeamData.heralds,
+      barons: allTeamData.barons,
+      towers: allTeamData.towers,
+      turretplates: allTeamData.turretplates,
+      inhibitors: allTeamData.inhibitors,
+      void_grubs: allTeamData.void_grubs
     });
     
     // Use the first row for team stats
@@ -316,10 +334,17 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       for (const alt of alternatives) {
         const value = allTeamData[alt] || allTeamData[alt.toLowerCase()];
         if (value !== undefined && value !== null && value !== '') {
-          const num = parseInt(String(value).trim());
-          if (!isNaN(num)) return num;
-          // Si c'est "true" ou "1", retourner 1
-          if (value === "true" || value === "1" || value === true) return 1;
+          if (typeof value === 'string') {
+            const num = parseInt(value.trim());
+            if (!isNaN(num)) return num;
+            if (value.toLowerCase() === 'true' || value === '1') return 1;
+          } 
+          else if (typeof value === 'number') {
+            return value;
+          }
+          else if (value === true) {
+            return 1;
+          }
         }
       }
       return 0;
@@ -337,7 +362,15 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     const unknownDrakeAlts = ['dragons (type unknown)', 'dragons_type_unknown', 'drakes_unknown'];
     const elderAlts = ['elders', 'elder', 'elderdragon', 'elder_dragon'];
     
-    // Extraire les valeurs
+    // Alternatives pour les objectifs
+    const heraldAlts = ['heralds', 'herald', 'riftherald', 'rift_herald', 'rift_heralds'];
+    const baronAlts = ['barons', 'baron', 'baron_nashor', 'baronnashor'];
+    const towerAlts = ['towers', 'tower', 'turrets', 'turret'];
+    const turretPlateAlts = ['turretplates', 'turret_plates', 'plates'];
+    const inhibitorAlts = ['inhibitors', 'inhibitor', 'inhibs', 'inhib'];
+    const voidGrubAlts = ['void_grubs', 'voidgrubs', 'void_grub', 'voidgrub'];
+    
+    // Extraire les valeurs des dragons
     const dragons = getStatWithAlternatives(dragonAlts);
     const elementalDrakes = getStatWithAlternatives(elementalDrakeAlts);
     const infernals = getStatWithAlternatives(infernalAlts);
@@ -349,12 +382,21 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     const drakesUnknown = getStatWithAlternatives(unknownDrakeAlts);
     const elders = getStatWithAlternatives(elderAlts);
     
+    // Extraire les valeurs des objectifs
+    const heralds = getStatWithAlternatives(heraldAlts);
+    const barons = getStatWithAlternatives(baronAlts);
+    const towers = getStatWithAlternatives(towerAlts);
+    const turretPlates = getStatWithAlternatives(turretPlateAlts);
+    const inhibitors = getStatWithAlternatives(inhibitorAlts);
+    const voidGrubs = getStatWithAlternatives(voidGrubAlts);
+    
     // Log les valeurs extraites
-    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, extracted dragon values:`, {
-      dragons, elementalDrakes, infernals, mountains, clouds, oceans, chemtechs, hextechs, drakesUnknown, elders
+    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, extracted values:`, {
+      dragons, elementalDrakes, infernals, mountains, clouds, oceans, chemtechs, hextechs, drakesUnknown, elders,
+      heralds, barons, towers, turretPlates, inhibitors, voidGrubs
     });
     
-    // Create team stats object with all dragon statistics
+    // Create team stats object with all statistics
     const stats = {
       team_id: teamId,
       match_id: matchId,
@@ -377,12 +419,12 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       
       // Other objectives
       elders,
-      heralds: parseInt(row.heralds || '0') || 0,
-      barons: parseInt(row.barons || '0') || 0,
-      towers: parseInt(row.towers || '0') || 0,
-      turret_plates: parseInt(row.turretplates || '0') || 0,
-      inhibitors: parseInt(row.inhibitors || '0') || 0,
-      void_grubs: parseInt(row.void_grubs || '0') || 0,
+      heralds,
+      barons,
+      towers,
+      turret_plates: turretPlates,
+      inhibitors,
+      void_grubs: voidGrubs,
       
       // First objectives
       first_blood: row.firstblood === 'True' || row.firstblood === '1',
