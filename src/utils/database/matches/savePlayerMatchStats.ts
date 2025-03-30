@@ -19,7 +19,7 @@ export const savePlayerMatchStats = async (
     }
     
     // Ensure all required fields are present
-    const validStats = playerStats.map(stat => {
+    const validStats = playerStats.filter(Boolean).map(stat => {
       // Make sure we have the required fields for each stat
       if (!stat.participant_id && stat.player_id && stat.match_id) {
         // Generate a participant_id if it doesn't exist
@@ -28,8 +28,7 @@ export const savePlayerMatchStats = async (
       
       // Important: Ensure is_winner is passed to the database
       if (typeof stat.is_winner !== 'boolean') {
-        console.log("Setting default is_winner to false for", stat.player_id, stat.match_id);
-        stat.is_winner = false;
+        stat.is_winner = !!stat.is_winner; // Convert truthy/falsy values to boolean
       }
       
       // Handle first blood stats
@@ -45,131 +44,110 @@ export const savePlayerMatchStats = async (
         stat.first_blood_victim = !!stat.first_blood_victim;
       }
       
+      // Pour éviter d'avoir des valeurs indéfinies ou nulles
+      for (const key in stat) {
+        if (typeof stat[key] === 'undefined') {
+          if (typeof stat[key] === 'boolean') {
+            stat[key] = false;
+          } else if (typeof stat[key] === 'number') {
+            stat[key] = 0;
+          } else if (typeof stat[key] === 'string') {
+            stat[key] = '';
+          }
+        }
+      }
+      
       return stat;
     }).filter(stat => stat.player_id && stat.match_id);
     
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
-    // Check if we have any stats where match_id doesn't exist in the matches table
-    // Instead of failing completely, we'll filter these out
-    const uniqueMatchIds = [...new Set(validStats.map(stat => stat.match_id))];
-    console.log(`Found ${uniqueMatchIds.length} unique match IDs in player stats`);
+    // Skip match validation to process all player stats regardless of match existence
+    console.log("Processing all player stats without match validation");
     
-    // Check which match IDs exist in the database
-    const { data: existingMatches, error: matchCheckError } = await supabase
-      .from('matches')
-      .select('id')
-      .in('id', uniqueMatchIds);
-    
-    if (matchCheckError) {
-      console.error("Error checking existing matches:", matchCheckError);
-      // Continue anyway, but warn the user
-      toast.warning("Certains matchs référencés dans les statistiques de joueurs pourraient ne pas exister");
-    }
-    
-    // Create a set of existing match IDs for quick lookup
-    const existingMatchIds = new Set((existingMatches || []).map(m => m.id));
-    console.log(`Found ${existingMatchIds.size} existing matches out of ${uniqueMatchIds.length}`);
-    
-    // Filter out player stats for non-existent matches to avoid foreign key errors
-    const filteredStats = validStats.filter(stat => existingMatchIds.has(stat.match_id));
-    console.log(`Filtered down to ${filteredStats.length} player stats after match ID validation`);
-    
-    if (filteredStats.length === 0) {
-      toast.warning("Aucune statistique de joueur valide n'a pu être importée");
-      return true; // Still return success to continue with the rest of the import
-    }
-    
-    // Process the filtered stats
-    const BATCH_SIZE = 100;
-    const MAX_CONCURRENT = 5;
-    const totalStats = filteredStats.length;
+    // Split records into manageable chunks for faster processing
+    const BATCH_SIZE = 50; // Reduce batch size for better reliability
+    const MAX_CONCURRENT = 3; // Also reduce concurrency to avoid overwhelming DB
+    const totalStats = validStats.length;
     
     let successCount = 0;
     let errorCount = 0;
     let processedCount = 0;
     
-    // Split records into chunks for faster processing
-    const statsChunks = chunk(filteredStats, BATCH_SIZE);
+    // Split records into chunks
+    const statsChunks = chunk(validStats, BATCH_SIZE);
     console.log(`Processing ${statsChunks.length} batches with batch size ${BATCH_SIZE}`);
     
-    // Process chunks in parallel with improved concurrency
-    for (let i = 0; i < statsChunks.length; i += MAX_CONCURRENT) {
-      const chunksToProcess = statsChunks.slice(i, i + MAX_CONCURRENT);
-      
+    // Process chunks sequentially for reliability
+    for (let i = 0; i < statsChunks.length; i++) {
       try {
-        // Process the batches in parallel
-        const results = await Promise.all(chunksToProcess.map(async (statsChunk) => {
-          try {
-            // Use upsert instead of separate insert/update operations
-            const { error } = await supabase
-              .from('player_match_stats')
-              .upsert(statsChunk, {
-                onConflict: 'player_id,match_id',
-                ignoreDuplicates: false
-              });
-              
-            if (error) {
-              console.error("Error upserting player match stats batch:", error);
-              
-              // If batch fails, try individual upserts
-              let individualSuccessCount = 0;
-              for (const stat of statsChunk) {
-                try {
-                  const { error: singleError } = await supabase
-                    .from('player_match_stats')
-                    .upsert([stat], {
-                      onConflict: 'player_id,match_id',
-                      ignoreDuplicates: false
-                    });
-                    
-                  if (!singleError) {
-                    individualSuccessCount++;
-                  } else {
-                    errorCount++;
-                  }
-                } catch (singleError) {
-                  console.error(`Failed to upsert stat for player ${stat.player_id} in match ${stat.match_id}:`, singleError);
-                  errorCount++;
-                }
-              }
-              
-              return individualSuccessCount;
-            }
-            
-            return statsChunk.length;
-          } catch (batchError) {
-            console.error("Error processing player match stats batch:", batchError);
-            errorCount += statsChunk.length;
-            return 0;
-          }
-        }));
+        const statsChunk = statsChunks[i];
         
-        // Update the processed count
-        const processedInBatch = results.reduce((sum, count) => sum + count, 0);
-        processedCount += processedInBatch;
-        successCount += processedInBatch;
+        // Log each chunk processing
+        console.log(`Processing batch ${i+1}/${statsChunks.length}, ${statsChunk.length} records`);
+        
+        // Use upsert with onConflict handling
+        const { data, error } = await supabase
+          .from('player_match_stats')
+          .upsert(statsChunk, {
+            onConflict: 'participant_id',
+            ignoreDuplicates: false
+          });
+        
+        if (error) {
+          console.error("Error upserting player match stats batch:", error);
+          
+          // If the batch fails, try individual inserts
+          let individualSuccessCount = 0;
+          for (const stat of statsChunk) {
+            try {
+              const { error: individualError } = await supabase
+                .from('player_match_stats')
+                .upsert([stat], {
+                  onConflict: 'participant_id',
+                  ignoreDuplicates: false
+                });
+              
+              if (!individualError) {
+                individualSuccessCount++;
+                successCount++;
+              } else {
+                errorCount++;
+                console.error(`Individual insert error for ${stat.player_id} in match ${stat.match_id}:`, individualError);
+              }
+            } catch (individualCatchError) {
+              errorCount++;
+              console.error(`Exception for ${stat.player_id} in match ${stat.match_id}:`, individualCatchError);
+            }
+          }
+          
+          console.log(`Batch ${i+1} fallback: ${individualSuccessCount}/${statsChunk.length} succeeded individually`);
+        } else {
+          successCount += statsChunk.length;
+          console.log(`Batch ${i+1} complete: ${statsChunk.length} records saved successfully`);
+        }
+        
+        processedCount += statsChunk.length;
         
         // Report progress through callback
         if (progressCallback) {
           progressCallback(processedCount, totalStats);
         }
         
-        // Log progress
-        console.log(`Processed records: ${processedCount}/${totalStats} (${Math.round(processedCount/totalStats*100)}%) - Batch ${i/MAX_CONCURRENT + 1}/${Math.ceil(statsChunks.length/MAX_CONCURRENT)}`);
-      } catch (parallelError) {
-        console.error("Error in batch processing:", parallelError);
+        // Add a deliberate delay between batches to avoid overloading the database
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (batchError) {
+        console.error("Unexpected error processing player stats batch:", batchError);
+        errorCount += statsChunks[i].length;
       }
-      
-      // Add a small delay between batch groups to avoid overwhelming the database
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    console.log(`Successfully processed ${successCount}/${playerStats.length} player match statistics (${errorCount} errors)`);
+    console.log(`Successfully processed ${successCount}/${totalStats} player match statistics (${errorCount} errors)`);
     
-    // Return true even if some stats failed to save, so we don't block the overall import process
+    // Return true even if some stats failed to save
     if (errorCount > 0) {
-      const successRate = successCount / playerStats.length;
+      const successRate = successCount / totalStats;
       if (successRate < 0.9) {
         toast.warning(`Seulement ${Math.round(successRate * 100)}% des statistiques de joueurs ont été importées. Certaines données peuvent être manquantes.`);
       } else {
@@ -179,11 +157,10 @@ export const savePlayerMatchStats = async (
       toast.success(`${successCount} statistiques de joueurs importées avec succès.`);
     }
     
-    return true; // Always return true to continue with the rest of the import process
+    return true;
   } catch (error) {
     console.error("Error saving player match statistics:", error);
     toast.error("Une erreur s'est produite lors de l'enregistrement des statistiques des joueurs");
-    // We'll still return true to avoid blocking the rest of the import
     return true;
   }
 };

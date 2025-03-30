@@ -1,3 +1,4 @@
+
 import { LeagueGameDataRow, MatchCSV } from '../csvTypes';
 import { 
   GameTracker, 
@@ -167,7 +168,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
         
         // Create a new player match stats entry
         playerStatsMap.set(row.playerid, {
-          participant_id: row.participantid || '',
+          participant_id: row.participantid || `${row.playerid}_${gameId}`,
           player_id: row.playerid,
           team_id: row.teamid,
           match_id: gameId,
@@ -223,7 +224,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           monster_kills_enemy_jungle: safeParseInt(row.monsterkillsenemyjungle),
           cspm: safeParseFloat(row.cspm),
           
-          // Timeline stats - remaining fields are the same
+          // Timeline stats
           gold_at_10: safeParseInt(row.goldat10),
           xp_at_10: safeParseInt(row.xpat10),
           cs_at_10: safeParseInt(row.csat10),
@@ -257,6 +258,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_assists_at_15: safeParseInt(row.opp_assistsat15),
           opp_deaths_at_15: safeParseInt(row.opp_deathsat15),
           
+          // Timeline stats: 20 min
           gold_at_20: safeParseInt(row.goldat20),
           xp_at_20: safeParseInt(row.xpat20),
           cs_at_20: safeParseInt(row.csat20),
@@ -273,6 +275,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           opp_assists_at_20: safeParseInt(row.opp_assistsat20),
           opp_deaths_at_20: safeParseInt(row.opp_deathsat20),
           
+          // Timeline stats: 25 min
           gold_at_25: safeParseInt(row.goldat25),
           xp_at_25: safeParseInt(row.xpat25),
           cs_at_25: safeParseInt(row.csat25),
@@ -287,98 +290,100 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           deaths_at_25: safeParseInt(row.deathsat25),
           opp_kills_at_25: safeParseInt(row.opp_killsat25),
           opp_assists_at_25: safeParseInt(row.opp_assistsat25),
-          opp_deaths_at_25: safeParseInt(row.opp_deathsat25)
+          opp_deaths_at_25: safeParseInt(row.opp_deathsat25),
         });
-      } else if (row.result === '1' && row.playerid && playerStatsMap.has(row.playerid)) {
-        // If the player already has stats and we find a winning row, update the is_winner field
-        playerStatsMap.get(row.playerid)!.is_winner = true;
       }
     });
     
-    // Post-process team stats after all rows are processed
-    // For first objectives, if none of the rows indicated which team got it,
-    // try to infer from player first blood participation
-    for (const teamStats of teamStatsMap.values()) {
-      // Process first blood attribution through player stats
-      if (!teamStats.first_blood) {
-        // Check if any player from this team has first blood kill or assist
-        for (const playerStats of playerStatsMap.values()) {
-          if (playerStats.team_id === teamStats.team_id && 
-             (playerStats.first_blood_kill || playerStats.first_blood_assist)) {
-            teamStats.first_blood = teamStats.team_id;
-            break;
-          }
-        }
-      }
-    }
-    
-    // Save the processed data for this game
+    // Add the complete game data to our maps
     uniqueGames.set(gameId, game);
+    
+    // Add the team stats to the match stats map
     matchStats.set(gameId, teamStatsMap);
+    
+    // Add the player stats to the match player stats map
     matchPlayerStats.set(gameId, playerStatsMap);
   });
-
-  // Prepare match data for final conversion
-  const matchesArray: MatchCSV[] = Array.from(uniqueGames.values())
-    .filter(match => match.teams.blue && match.teams.red) // Make sure both teams are defined
-    .map(match => {
-      // Collect team level stats for both blue and red teams
-      const matchTeamStats = matchStats.get(match.id);
-      const blueTeamStats = matchTeamStats?.get(match.teams.blue);
-      const redTeamStats = matchTeamStats?.get(match.teams.red);
-
-      // Improve first objectives attribution
-      let firstBlood = null;
-      let firstDragon = null;
-      let firstHerald = null;
-      let firstBaron = null;
-      let firstTower = null;
-
-      // Team that got first blood
-      if (blueTeamStats?.first_blood) firstBlood = match.teams.blue;
-      else if (redTeamStats?.first_blood) firstBlood = match.teams.red;
-
-      // Team that got first dragon
-      if (blueTeamStats?.first_dragon) firstDragon = match.teams.blue;
-      else if (redTeamStats?.first_dragon) firstDragon = match.teams.red;
-
-      // Team that got first herald
-      if (blueTeamStats?.first_herald) firstHerald = match.teams.blue;
-      else if (redTeamStats?.first_herald) firstHerald = match.teams.red;
-
-      // Team that got first baron
-      if (blueTeamStats?.first_baron) firstBaron = match.teams.blue;
-      else if (redTeamStats?.first_baron) firstBaron = match.teams.red;
-
-      // Team that got first tower
-      if (blueTeamStats?.first_tower) firstTower = match.teams.blue;
-      else if (redTeamStats?.first_tower) firstTower = match.teams.red;
-
-      const matchCSV: MatchCSV = {
-        id: match.id,
-        tournament: `${match.league || 'Unknown'} ${match.year || ''} ${match.split || ''}`,
-        date: match.date,
-        teamBlueId: match.teams.blue,
-        teamRedId: match.teams.red,
-        predictedWinner: match.teams.blue, // Default predicted winner to blue side
-        blueWinOdds: '0.5',
-        redWinOdds: '0.5',
-        status: match.result ? 'Completed' : 'Upcoming',
-        firstBlood: firstBlood,  // Utilisation de la bonne casse
-        firstDragon: firstDragon,
-        firstHerald: firstHerald,
-        firstBaron: firstBaron,
-        firstTower: firstTower
-      };
+  
+  // Convert the maps to arrays for the return object
+  const matchesArray: MatchCSV[] = [];
+  
+  uniqueGames.forEach(match => {
+    // Find first blood holder for this match
+    const teamStatsMap = matchStats.get(match.id);
+    let firstBlood = '';
+    let firstDragon = '';
+    let firstHerald = '';
+    let firstBaron = '';
+    let firstTower = '';
+    
+    if (teamStatsMap) {
+      teamStatsMap.forEach(teamStats => {
+        // Check if this team got any first objectives
+        if (teamStats.first_blood === teamStats.team_id) {
+          firstBlood = teamStats.team_id;
+        }
+        if (teamStats.first_dragon === teamStats.team_id) {
+          firstDragon = teamStats.team_id;
+        }
+        if (teamStats.first_herald === teamStats.team_id) {
+          firstHerald = teamStats.team_id;
+        }
+        if (teamStats.first_baron === teamStats.team_id) {
+          firstBaron = teamStats.team_id;
+        }
+        if (teamStats.first_tower === teamStats.team_id) {
+          firstTower = teamStats.team_id;
+        }
+      });
+    }
+    
+    matchesArray.push({
+      id: match.id,
+      tournament: match.league,
+      date: match.date,
+      teamBlueId: match.teams.blue,
+      teamRedId: match.teams.red,
+      predictedWinner: match.teams.blue, // Default to blue team
+      blueWinOdds: '0.5',
+      redWinOdds: '0.5',
+      status: match.result ? 'Completed' : 'Upcoming',
+      firstBlood: firstBlood,
+      firstDragon: firstDragon,
+      firstHerald: firstHerald,
+      firstBaron: firstBaron,
+      firstTower: firstTower,
+      patch: match.patch,
+      year: match.year,
+      split: match.split,
+      playoffs: match.playoffs ? 'true' : 'false'
+    });
+    
+    if (match.result) {
+      matchesArray[matchesArray.length - 1].winnerTeamId = match.result;
       
-      if (match.result) {
-        matchCSV.winnerTeamId = match.result;
-        matchCSV.duration = match.duration;
+      // Set scores
+      if (match.result === match.teams.blue) {
+        matchesArray[matchesArray.length - 1].scoreBlue = '1';
+        matchesArray[matchesArray.length - 1].scoreRed = '0';
+      } else if (match.result === match.teams.red) {
+        matchesArray[matchesArray.length - 1].scoreBlue = '0';
+        matchesArray[matchesArray.length - 1].scoreRed = '1';
       }
       
-      return matchCSV;
-    });
-
-  console.log(`Processed ${matchesArray.length} matches with ${matchPlayerStats.size} match player statistics`);
-  return { uniqueGames, matchStats, matchPlayerStats, matchesArray };
+      // Set duration
+      if (match.duration) {
+        matchesArray[matchesArray.length - 1].duration = match.duration;
+      }
+    }
+  });
+  
+  console.log(`Processed ${uniqueGames.size} matches, ${matchPlayerStats.size} player stats groups`);
+  
+  return {
+    uniqueGames,
+    matchStats,
+    matchPlayerStats, 
+    matchesArray
+  };
 }
