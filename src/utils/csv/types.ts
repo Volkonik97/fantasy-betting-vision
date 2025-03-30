@@ -31,7 +31,6 @@ export interface TournamentCSV {
   logo: string;
 }
 
-// Add these new fields to the MatchCSV interface
 export interface MatchCSV {
   id: string;
   tournament: string;
@@ -47,6 +46,7 @@ export interface MatchCSV {
   scoreRed?: string;
   duration?: string;
   mvp?: string;
+  teamPosition?: string;
   firstBlood?: string;
   firstDragon?: string;
   firstBaron?: string;
