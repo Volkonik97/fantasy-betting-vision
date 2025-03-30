@@ -4,7 +4,8 @@ import {
   PlayerStatsTracker, 
   TeamGameDamageMap, 
   PlayerDamageSharesMap,
-  safeParseInt 
+  safeParseInt,
+  safeParseFloat
 } from './types';
 
 // Process player data from League data rows

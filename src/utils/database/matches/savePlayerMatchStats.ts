@@ -19,7 +19,7 @@ export const savePlayerMatchStats = async (
     }
     
     // Ensure all required fields are present
-    const validStats = playerStats.filter(Boolean).map(stat => {
+    const validStats = playerStats.filter(stat => stat !== null && stat !== undefined).map(stat => {
       // Make sure we have the required fields for each stat
       if (!stat.participant_id && stat.player_id && stat.match_id) {
         // Generate a participant_id if it doesn't exist
@@ -58,16 +58,16 @@ export const savePlayerMatchStats = async (
       }
       
       return stat;
-    }).filter(stat => stat.player_id && stat.match_id);
+    }).filter(stat => stat && stat.player_id && stat.match_id);
     
     console.log(`Found ${validStats.length} valid player match statistics records`);
     
-    // Skip match validation to process all player stats regardless of match existence
+    // Process all stats without match validation
     console.log("Processing all player stats without match validation");
     
     // Split records into manageable chunks for faster processing
-    const BATCH_SIZE = 50; // Reduce batch size for better reliability
-    const MAX_CONCURRENT = 3; // Also reduce concurrency to avoid overwhelming DB
+    const BATCH_SIZE = 50;
+    const MAX_CONCURRENT = 3; // Reduce concurrency to avoid overwhelming DB
     const totalStats = validStats.length;
     
     let successCount = 0;
@@ -90,7 +90,7 @@ export const savePlayerMatchStats = async (
         const { data, error } = await supabase
           .from('player_match_stats')
           .upsert(statsChunk, {
-            onConflict: 'participant_id',
+            onConflict: 'player_id,match_id',
             ignoreDuplicates: false
           });
         
@@ -104,7 +104,7 @@ export const savePlayerMatchStats = async (
               const { error: individualError } = await supabase
                 .from('player_match_stats')
                 .upsert([stat], {
-                  onConflict: 'participant_id',
+                  onConflict: 'player_id,match_id',
                   ignoreDuplicates: false
                 });
               

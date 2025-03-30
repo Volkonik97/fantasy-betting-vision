@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -48,16 +49,37 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
         // Debug match data for better debugging
         console.log(`Processing match batch (${matchChunk.length} matches) with objectives data`);
         
+        // Safely extract objective data
+        const matchObjectives = matchChunk.map(match => {
+          // Explicit debug to help identify issues with match data
+          const firstBlood = match.result?.firstBlood || (match.extraStats ? match.extraStats.first_blood : null);
+          const firstDragon = match.result?.firstDragon || (match.extraStats ? match.extraStats.first_dragon : null);
+          const firstBaron = match.result?.firstBaron || (match.extraStats ? match.extraStats.first_baron : null);
+          const firstHerald = match.result?.firstHerald || (match.extraStats ? match.extraStats.first_herald : null);
+          
+          console.log(`Match ${match.id} objectives:`, {
+            firstBlood,
+            firstDragon,
+            firstBaron,
+            firstHerald,
+            extraStats: !!match.extraStats
+          });
+          
+          return {
+            id: match.id,
+            firstBlood,
+            firstDragon,
+            firstBaron,
+            firstHerald
+          };
+        });
+        
         const { error: matchesError } = await supabase
           .from('matches')
           .upsert(
             matchChunk.map(match => {
-              // Log objectives data to debug
-              console.log(`Match ${match.id} objectives:`, {
-                firstBlood: match.result?.firstBlood || match.extraStats?.first_blood || null,
-                firstDragon: match.result?.firstDragon || match.extraStats?.first_dragon || null,
-                firstBaron: match.result?.firstBaron || match.extraStats?.first_baron || null
-              });
+              const extraStats = match.extraStats || {};
+              const result = match.result || {};
               
               return {
                 id: match.id,
@@ -69,51 +91,51 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 blue_win_odds: match.blueWinOdds,
                 red_win_odds: match.redWinOdds,
                 status: match.status,
-                patch: match.extraStats?.patch || '',
-                year: match.extraStats?.year || '',
-                split: match.extraStats?.split || '',
-                playoffs: match.extraStats?.playoffs || false,
-                team_kpm: match.extraStats?.team_kpm || 0,
-                ckpm: match.extraStats?.ckpm || 0,
-                team_kills: match.extraStats?.team_kills || 0,
-                team_deaths: match.extraStats?.team_deaths || 0,
-                dragons: match.extraStats?.dragons || 0,
-                opp_dragons: match.extraStats?.opp_dragons || 0,
-                elemental_drakes: match.extraStats?.elemental_drakes || 0,
-                opp_elemental_drakes: match.extraStats?.opp_elemental_drakes || 0,
-                infernals: match.extraStats?.infernals || 0,
-                mountains: match.extraStats?.mountains || 0,
-                clouds: match.extraStats?.clouds || 0,
-                oceans: match.extraStats?.oceans || 0,
-                chemtechs: match.extraStats?.chemtechs || 0,
-                hextechs: match.extraStats?.hextechs || 0,
-                drakes_unknown: match.extraStats?.drakes_unknown || 0,
-                elders: match.extraStats?.elders || 0,
-                opp_elders: match.extraStats?.opp_elders || 0,
-                first_herald: match.result?.firstHerald || match.extraStats?.first_herald || null,
-                heralds: match.extraStats?.heralds || 0,
-                opp_heralds: match.extraStats?.opp_heralds || 0,
-                first_baron: match.result?.firstBaron || match.extraStats?.first_baron || null,
-                barons: match.extraStats?.barons || 0,
-                opp_barons: match.extraStats?.opp_barons || 0,
-                void_grubs: match.extraStats?.void_grubs || 0,
-                opp_void_grubs: match.extraStats?.opp_void_grubs || 0,
-                first_tower: match.result?.firstTower || match.extraStats?.first_tower || null,
-                first_mid_tower: match.extraStats?.first_mid_tower || null,
-                first_three_towers: match.extraStats?.first_three_towers || null,
-                towers: match.extraStats?.towers || 0,
-                opp_towers: match.extraStats?.opp_towers || 0,
-                turret_plates: match.extraStats?.turret_plates || 0,
-                opp_turret_plates: match.extraStats?.opp_turret_plates || 0,
-                inhibitors: match.extraStats?.inhibitors || 0,
-                opp_inhibitors: match.extraStats?.opp_inhibitors || 0,
-                winner_team_id: match.result?.winner || null,
-                score_blue: match.result?.score?.[0] || 0,
-                score_red: match.result?.score?.[1] || 0,
-                duration: match.result?.duration || '',
-                mvp: match.result?.mvp || '',
-                first_blood: match.result?.firstBlood || match.extraStats?.first_blood || null,
-                first_dragon: match.result?.firstDragon || match.extraStats?.first_dragon || null
+                patch: extraStats.patch || '',
+                year: extraStats.year || '',
+                split: extraStats.split || '',
+                playoffs: extraStats.playoffs || false,
+                team_kpm: extraStats.team_kpm || 0,
+                ckpm: extraStats.ckpm || 0,
+                team_kills: extraStats.team_kills || 0,
+                team_deaths: extraStats.team_deaths || 0,
+                dragons: extraStats.dragons || 0,
+                opp_dragons: extraStats.opp_dragons || 0,
+                elemental_drakes: extraStats.elemental_drakes || 0,
+                opp_elemental_drakes: extraStats.opp_elemental_drakes || 0,
+                infernals: extraStats.infernals || 0,
+                mountains: extraStats.mountains || 0,
+                clouds: extraStats.clouds || 0,
+                oceans: extraStats.oceans || 0,
+                chemtechs: extraStats.chemtechs || 0,
+                hextechs: extraStats.hextechs || 0,
+                drakes_unknown: extraStats.drakes_unknown || 0,
+                elders: extraStats.elders || 0,
+                opp_elders: extraStats.opp_elders || 0,
+                first_herald: result.firstHerald || extraStats.first_herald || null,
+                heralds: extraStats.heralds || 0,
+                opp_heralds: extraStats.opp_heralds || 0,
+                first_baron: result.firstBaron || extraStats.first_baron || null,
+                barons: extraStats.barons || 0,
+                opp_barons: extraStats.opp_barons || 0,
+                void_grubs: extraStats.void_grubs || 0,
+                opp_void_grubs: extraStats.opp_void_grubs || 0,
+                first_tower: result.firstTower || extraStats.first_tower || null,
+                first_mid_tower: extraStats.first_mid_tower || null,
+                first_three_towers: extraStats.first_three_towers || null,
+                towers: extraStats.towers || 0,
+                opp_towers: extraStats.opp_towers || 0,
+                turret_plates: extraStats.turret_plates || 0,
+                opp_turret_plates: extraStats.opp_turret_plates || 0,
+                inhibitors: extraStats.inhibitors || 0,
+                opp_inhibitors: extraStats.opp_inhibitors || 0,
+                winner_team_id: result.winner || null,
+                score_blue: result.score ? result.score[0] || 0 : 0,
+                score_red: result.score ? result.score[1] || 0 : 0,
+                duration: result.duration || '',
+                mvp: result.mvp || '',
+                first_blood: result.firstBlood || extraStats.first_blood || null,
+                first_dragon: result.firstDragon || extraStats.first_dragon || null
               };
             }),
             { onConflict: 'id' }

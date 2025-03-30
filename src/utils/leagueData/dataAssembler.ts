@@ -16,7 +16,7 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
   // Process match data to get games, team stats, and player stats
   const { uniqueGames, matchStats, matchPlayerStats, matchesArray } = processMatchData(data);
   
-  // Process team statistics - uniqueGames est maintenant un paramètre attendu par processTeamData
+  // Process team statistics
   const { uniqueTeams, teamStats } = processTeamData(data);
   
   // Process player statistics

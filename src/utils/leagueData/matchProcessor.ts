@@ -67,9 +67,8 @@ export function processMatchData(data: LeagueGameDataRow[]): {
     let blueTeamId = '';
     let redTeamId = '';
     
-    // Process all rows for this game at once
+    // First pass - identify teams and their sides
     gameRows.forEach(row => {
-      // Track team sides for objective attribution
       if (row.side && row.side.toLowerCase() === 'blue' && row.teamid) {
         game.teams.blue = row.teamid;
         blueTeamId = row.teamid;
@@ -77,7 +76,10 @@ export function processMatchData(data: LeagueGameDataRow[]): {
         game.teams.red = row.teamid;
         redTeamId = row.teamid;
       }
-      
+    });
+    
+    // Second pass - process statistics now that we know team sides
+    gameRows.forEach(row => {
       // Track game result
       if (row.result === '1' && row.teamid) {
         game.result = row.teamid;
@@ -86,7 +88,6 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       // Collect match-level team statistics
       if (row.teamid && !teamStatsMap.has(row.teamid)) {
         // Determine which team got the first blood/dragon/baron/etc.
-        // For first objectives, we need to ensure the values are team IDs and not true/false
         let firstBloodTeam = null;
         let firstDragonTeam = null;
         let firstHeraldTeam = null;
@@ -290,7 +291,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
           deaths_at_25: safeParseInt(row.deathsat25),
           opp_kills_at_25: safeParseInt(row.opp_killsat25),
           opp_assists_at_25: safeParseInt(row.opp_assistsat25),
-          opp_deaths_at_25: safeParseInt(row.opp_deathsat25),
+          opp_deaths_at_25: safeParseInt(row.opp_deaths_at_25) || 0
         });
       }
     });
@@ -338,7 +339,7 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       });
     }
     
-    matchesArray.push({
+    const matchCsv: MatchCSV = {
       id: match.id,
       tournament: match.league,
       date: match.date,
@@ -357,25 +358,27 @@ export function processMatchData(data: LeagueGameDataRow[]): {
       year: match.year,
       split: match.split,
       playoffs: match.playoffs ? 'true' : 'false'
-    });
+    };
     
     if (match.result) {
-      matchesArray[matchesArray.length - 1].winnerTeamId = match.result;
+      matchCsv.winnerTeamId = match.result;
       
       // Set scores
       if (match.result === match.teams.blue) {
-        matchesArray[matchesArray.length - 1].scoreBlue = '1';
-        matchesArray[matchesArray.length - 1].scoreRed = '0';
+        matchCsv.scoreBlue = '1';
+        matchCsv.scoreRed = '0';
       } else if (match.result === match.teams.red) {
-        matchesArray[matchesArray.length - 1].scoreBlue = '0';
-        matchesArray[matchesArray.length - 1].scoreRed = '1';
+        matchCsv.scoreBlue = '0';
+        matchCsv.scoreRed = '1';
       }
       
       // Set duration
       if (match.duration) {
-        matchesArray[matchesArray.length - 1].duration = match.duration;
+        matchCsv.duration = match.duration;
       }
     }
+    
+    matchesArray.push(matchCsv);
   });
   
   console.log(`Processed ${uniqueGames.size} matches, ${matchPlayerStats.size} player stats groups`);
