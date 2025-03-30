@@ -31,8 +31,25 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       return createDefaultSideStatistics(teamId);
     }
     
-    // Calculate statistics based on matches
-    const stats = calculateSideStatistics(teamId, allMatches, blueMatches || [], redMatches || []);
+    // Fetch first objectives data from team_match_stats for more accurate results
+    const { data: teamMatchStats, error: statsError } = await supabase
+      .from('team_match_stats')
+      .select('*')
+      .eq('team_id', teamId);
+    
+    if (statsError) {
+      console.error("[sideStatistics] Error fetching team match stats:", statsError);
+    }
+    
+    // Calculate statistics based on matches and team match stats
+    const stats = calculateSideStatistics(
+      teamId, 
+      allMatches, 
+      blueMatches || [], 
+      redMatches || [],
+      teamMatchStats || []
+    );
+    
     console.log("[sideStatistics] Calculated side statistics:", stats);
     return stats;
     
@@ -50,7 +67,8 @@ function calculateSideStatistics(
   teamId: string,
   allMatches: any[],
   blueMatches: any[],
-  redMatches: any[]
+  redMatches: any[],
+  teamMatchStats: any[]
 ): SideStatistics {
   // Filter for completed matches only
   const completedBlueMatches = blueMatches.filter(m => m.status === 'Completed');
@@ -72,22 +90,29 @@ function calculateSideStatistics(
   
   console.log(`[sideStatistics] Win rates - Blue: ${blueWinRate}%, Red: ${redWinRate}%`);
   
-  // Calculate first objectives stats - corrected to use the team_id to identify objective attribution
-  const blueFirstBlood = calculateObjectiveRate(completedBlueMatches, 'first_blood', teamId);
-  const redFirstBlood = calculateObjectiveRate(completedRedMatches, 'first_blood', teamId);
+  // Get blue-side and red-side team stats
+  const blueTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === true);
+  const redTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === false);
   
-  const blueFirstDragon = calculateObjectiveRate(completedBlueMatches, 'first_dragon', teamId);
-  const redFirstDragon = calculateObjectiveRate(completedRedMatches, 'first_dragon', teamId);
+  console.log(`[sideStatistics] Team stats - Blue: ${blueTeamStats.length}, Red: ${redTeamStats.length}`);
   
-  const blueFirstHerald = calculateObjectiveRate(completedBlueMatches, 'first_herald', teamId);
-  const redFirstHerald = calculateObjectiveRate(completedRedMatches, 'first_herald', teamId);
+  // Calculate objective rates from team_match_stats (more accurate)
+  const blueFirstBlood = calculateObjectivePercentage(blueTeamStats, 'first_blood');
+  const redFirstBlood = calculateObjectivePercentage(redTeamStats, 'first_blood');
   
-  const blueFirstTower = calculateObjectiveRate(completedBlueMatches, 'first_tower', teamId);
-  const redFirstTower = calculateObjectiveRate(completedRedMatches, 'first_tower', teamId);
+  const blueFirstDragon = calculateObjectivePercentage(blueTeamStats, 'first_dragon');
+  const redFirstDragon = calculateObjectivePercentage(redTeamStats, 'first_dragon');
   
-  const blueFirstBaron = calculateObjectiveRate(completedBlueMatches, 'first_baron', teamId);
-  const redFirstBaron = calculateObjectiveRate(completedRedMatches, 'first_baron', teamId);
+  const blueFirstHerald = calculateObjectivePercentage(blueTeamStats, 'first_herald');
+  const redFirstHerald = calculateObjectivePercentage(redTeamStats, 'first_herald');
   
+  const blueFirstTower = calculateObjectivePercentage(blueTeamStats, 'first_tower');
+  const redFirstTower = calculateObjectivePercentage(redTeamStats, 'first_tower');
+  
+  const blueFirstBaron = calculateObjectivePercentage(blueTeamStats, 'first_baron');
+  const redFirstBaron = calculateObjectivePercentage(redTeamStats, 'first_baron');
+  
+  // Log the calculated stats for debugging
   console.log(`[sideStatistics] First objectives:`, {
     blueFirstBlood,
     redFirstBlood,
@@ -120,18 +145,12 @@ function calculateSideStatistics(
   };
 }
 
-// Helper function to calculate objective rates
-function calculateObjectiveRate(matches: any[], objectiveKey: string, teamId: string): number {
-  if (matches.length === 0) return 50;
+// Helper function to calculate objective rates using team_match_stats
+function calculateObjectivePercentage(stats: any[], objectiveKey: string): number {
+  if (stats.length === 0) return 50;
   
-  // Filter for matches where the objective field exists and has a valid value
-  const validMatches = matches.filter(m => m[objectiveKey] !== null && m[objectiveKey] !== undefined);
-  if (validMatches.length === 0) return 50;
-  
-  // Count how many times this team got the first objective
-  // Here, we're looking for matches where the objective team_id matches our team's id
-  const objectiveCount = validMatches.filter(m => m[objectiveKey] === teamId).length;
-  return Math.round((objectiveCount / validMatches.length) * 100);
+  const trueCount = stats.filter(stat => stat[objectiveKey] === true).length;
+  return Math.round((trueCount / stats.length) * 100);
 }
 
 // Create default side statistics

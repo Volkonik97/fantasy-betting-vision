@@ -14,6 +14,7 @@ import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import SideAnalysis from "@/components/SideAnalysis";
+import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -64,13 +65,29 @@ const TeamDetails = () => {
         
         // Load side statistics and timeline data
         try {
-          const stats = await getSideStatistics(id);
-          setSideStats(stats);
+          // On utilise les requêtes en parallèle pour améliorer les performances
+          const [sideStatsData, timelineData] = await Promise.all([
+            getSideStatistics(id),
+            getTeamTimelineStats(id)
+          ]);
           
-          const timeline = await getTeamTimelineStats(id);
-          setTimelineStats(timeline);
+          console.log("Statistiques côté récupérées:", sideStatsData);
+          console.log("Données timeline récupérées:", timelineData);
+          
+          // Si on a des données timeline, on les intègre aux stats de côté
+          if (timelineData && Object.keys(timelineData).length > 0) {
+            setSideStats({
+              ...sideStatsData,
+              timelineStats: timelineData
+            });
+          } else {
+            setSideStats(sideStatsData);
+          }
+          
+          setTimelineStats(timelineData);
         } catch (statsError) {
           console.error("Erreur lors du chargement des statistiques:", statsError);
+          toast.error("Erreur lors du chargement des statistiques d'équipe");
           // Continue without statistics
         }
       } catch (err) {
@@ -136,13 +153,12 @@ const TeamDetails = () => {
           </div>
           
           <div className="space-y-8">
+            <TeamStatistics team={team} timelineStats={timelineStats} />
+            
             {sideStats && (
               <div>
                 <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
-                <SideAnalysis statistics={{
-                  ...sideStats,
-                  timelineStats: timelineStats
-                }} />
+                <SideAnalysis statistics={sideStats} />
               </div>
             )}
           </div>

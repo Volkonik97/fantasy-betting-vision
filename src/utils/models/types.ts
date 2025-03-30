@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -114,7 +113,7 @@ export interface Tournament {
   logo: string;
 }
 
-// Define TimelineStatPoint interface to strongly type timeline data
+// Ajout de la définition TimelineStatPoint pour les stats de timeline
 export interface TimelineStatPoint {
   avgGold: number;
   avgXp: number;
@@ -123,14 +122,15 @@ export interface TimelineStatPoint {
   avgCsDiff: number;
   avgKills: number;
   avgDeaths: number;
-  avgAssists: number;
+  avgAssists?: number;
 }
 
-// Define TimelineStats interface to strongly type the timeline data object
+// Type pour les statistiques de timeline par point de temps
 export interface TimelineStats {
-  [minute: string]: TimelineStatPoint;
+  [timePoint: string]: TimelineStatPoint;
 }
 
+// Statistiques par côté (bleu/rouge)
 export interface SideStatistics {
   teamId: string;
   blueWins: number;

@@ -1,202 +1,168 @@
-import { supabase } from '@/integrations/supabase/client';
-import { getTimelineStats } from '../../statistics/timelineStats';
 
-// Cache pour éviter de récupérer plusieurs fois les mêmes données
-const playerStatsCache: Record<string, any[]> = {};
-const timelineStatsCache: Record<string, any> = {};
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const lastFetch: Record<string, number> = {};
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Get player match statistics for a team
+ * Récupère les statistiques d'un joueur sur tous ses matchs
+ * @param playerId ID du joueur
+ * @returns Liste des statistiques du joueur pour tous ses matchs
  */
-export const getPlayerMatchStats = async (teamId: string, matchIds?: string[], limit?: number): Promise<any[]> => {
+export async function getPlayerMatchStats(playerId: string) {
   try {
-    const cacheKey = `team_${teamId}_${matchIds?.join('_') || 'all'}_${limit || 'unlimited'}`;
-    const now = Date.now();
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .select('*')
+      .eq('player_id', playerId);
     
-    // Check cache first
-    if (playerStatsCache[cacheKey] && lastFetch[cacheKey] && (now - lastFetch[cacheKey] < CACHE_DURATION)) {
-      console.log(`Using cached player stats for team ${teamId}`);
-      return playerStatsCache[cacheKey];
+    if (error) {
+      console.error("Erreur lors de la récupération des statistiques du joueur:", error);
+      return [];
     }
     
-    console.log(`Fetching player stats for team ${teamId}, limit: ${limit || 'unlimited'}`);
-    
-    // Build query
-    let query = supabase
+    return data || [];
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques du joueur:", error);
+    return [];
+  }
+}
+
+/**
+ * Récupère les statistiques de joueurs pour une équipe spécifique
+ * @param teamId ID de l'équipe
+ * @returns Liste des statistiques des joueurs de l'équipe
+ */
+export async function getTeamPlayersStats(teamId: string) {
+  try {
+    const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('team_id', teamId);
     
-    // Filter by match IDs if provided
-    if (matchIds && matchIds.length > 0) {
-      query = query.in('match_id', matchIds);
-    }
-    
-    // Order by more recent matches first
-    query = query.order('created_at', { ascending: false });
-    
-    // Apply limit if provided - remove limit to get ALL matches
-    if (limit && limit > 0) {
-      query = query.limit(limit);
-    }
-    
-    // Execute query
-    const { data: playerStats, error } = await query;
-    
     if (error) {
-      console.error(`Error fetching player match stats for team ${teamId}:`, error);
+      console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
       return [];
     }
     
-    if (!playerStats || playerStats.length === 0) {
-      console.log(`No player match stats found for team ${teamId}`);
-      return [];
-    }
-    
-    console.log(`Found ${playerStats.length} player stats for team ${teamId}`);
-    
-    // Update cache
-    playerStatsCache[cacheKey] = playerStats;
-    lastFetch[cacheKey] = now;
-    
-    return playerStats;
+    return data || [];
   } catch (error) {
-    console.error(`Error in getPlayerMatchStats for team ${teamId}:`, error);
+    console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
     return [];
   }
-};
+}
 
 /**
- * Get player match statistics for a specific player
+ * Génère des statistiques de timeline pour une équipe à partir des statistiques de ses joueurs
+ * @param teamId ID de l'équipe
+ * @returns Statistiques de timeline agrégées
  */
-export const getPlayerStats = async (playerId: string, limit?: number): Promise<any[]> => {
+export async function getTeamTimelineStats(teamId: string) {
   try {
-    const cacheKey = `player_${playerId}_${limit || 'unlimited'}`;
-    const now = Date.now();
+    console.log(`Récupération des statistiques timeline pour l'équipe ${teamId}`);
     
-    // Check cache first
-    if (playerStatsCache[cacheKey] && lastFetch[cacheKey] && (now - lastFetch[cacheKey] < CACHE_DURATION)) {
-      console.log(`Using cached player stats for player ${playerId}`);
-      return playerStatsCache[cacheKey];
-    }
-    
-    console.log(`Fetching player stats for player ${playerId}, limit: ${limit || 'unlimited'}`);
-    
-    // Build query
-    let query = supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId)
-      .order('created_at', { ascending: false });
-    
-    // Don't apply a limit to get ALL matches
-    // This ensures we get all matches for this player
-    
-    // Execute query
-    const { data: playerStats, error } = await query;
-    
-    if (error) {
-      console.error(`Error fetching player stats for player ${playerId}:`, error);
-      return [];
-    }
+    // Récupérer toutes les statistiques des joueurs de l'équipe
+    const playerStats = await getTeamPlayersStats(teamId);
     
     if (!playerStats || playerStats.length === 0) {
-      console.log(`No player stats found for player ${playerId}`);
-      return [];
-    }
-    
-    console.log(`Found ${playerStats.length} player stats for player ${playerId}`);
-    
-    // Update cache
-    playerStatsCache[cacheKey] = playerStats;
-    lastFetch[cacheKey] = now;
-    
-    return playerStats;
-  } catch (error) {
-    console.error(`Error in getPlayerStats for player ${playerId}:`, error);
-    return [];
-  }
-};
-
-/**
- * Get timeline statistics for a team based on player match stats
- */
-export const getTeamTimelineStats = async (teamId: string): Promise<any> => {
-  try {
-    console.log(`Getting timeline stats for team ${teamId}`);
-    const playerStats = await getPlayerMatchStats(teamId);
-    
-    if (!playerStats || playerStats.length === 0) {
-      console.log(`No player stats found for team ${teamId}, returning null`);
+      console.log(`Aucune statistique de joueur trouvée pour l'équipe ${teamId}`);
       return null;
     }
     
-    console.log(`Processing ${playerStats.length} player stats for timeline data`);
-    const timelineStats = getTimelineStats(playerStats);
+    console.log(`Trouvé ${playerStats.length} statistiques de joueurs pour l'équipe ${teamId}`);
     
-    // Log the generated timeline stats for debugging
-    console.log(`Generated timeline stats for team ${teamId}:`, timelineStats);
+    // Points de temps pour l'analyse
+    const timePoints = ['10', '15', '20', '25'];
+    const result: any = {};
     
-    return timelineStats;
+    // Pour chaque point de temps, calculer les moyennes
+    timePoints.forEach(time => {
+      // Préparer les clés pour accéder aux données
+      const goldKey = `gold_at_${time}`;
+      const xpKey = `xp_at_${time}`;
+      const csKey = `cs_at_${time}`;
+      const goldDiffKey = `gold_diff_at_${time}`;
+      const csDiffKey = `cs_diff_at_${time}`;
+      const killsKey = `kills_at_${time}`;
+      const deathsKey = `deaths_at_${time}`;
+      const assistsKey = `assists_at_${time}`;
+      
+      // Récupérer les données valides pour chaque métrique
+      const goldValues = playerStats
+        .filter(s => s[goldKey] !== null && s[goldKey] !== undefined)
+        .map(s => s[goldKey]);
+        
+      const xpValues = playerStats
+        .filter(s => s[xpKey] !== null && s[xpKey] !== undefined)
+        .map(s => s[xpKey]);
+        
+      const csValues = playerStats
+        .filter(s => s[csKey] !== null && s[csKey] !== undefined)
+        .map(s => s[csKey]);
+        
+      const goldDiffValues = playerStats
+        .filter(s => s[goldDiffKey] !== null && s[goldDiffKey] !== undefined)
+        .map(s => s[goldDiffKey]);
+        
+      const csDiffValues = playerStats
+        .filter(s => s[csDiffKey] !== null && s[csDiffKey] !== undefined)
+        .map(s => s[csDiffKey]);
+        
+      const killsValues = playerStats
+        .filter(s => s[killsKey] !== null && s[killsKey] !== undefined)
+        .map(s => s[killsKey]);
+        
+      const deathsValues = playerStats
+        .filter(s => s[deathsKey] !== null && s[deathsKey] !== undefined)
+        .map(s => s[deathsKey]);
+        
+      const assistsValues = playerStats
+        .filter(s => s[assistsKey] !== null && s[assistsKey] !== undefined)
+        .map(s => s[assistsKey]);
+      
+      // Calculer les moyennes
+      const avgGold = calculateAverage(goldValues);
+      const avgXp = calculateAverage(xpValues);
+      const avgCs = calculateAverage(csValues);
+      const avgGoldDiff = calculateAverage(goldDiffValues);
+      const avgCsDiff = calculateAverage(csDiffValues);
+      const avgKills = calculateAverage(killsValues, 1);
+      const avgDeaths = calculateAverage(deathsValues, 1);
+      const avgAssists = calculateAverage(assistsValues, 1);
+      
+      // Stocker les résultats
+      result[time] = {
+        avgGold: Math.round(avgGold),
+        avgXp: Math.round(avgXp),
+        avgCs: Math.round(avgCs),
+        avgGoldDiff: Math.round(avgGoldDiff),
+        avgCsDiff: Math.round(avgCsDiff),
+        avgKills: Math.round(avgKills * 10) / 10, // Une décimale
+        avgDeaths: Math.round(avgDeaths * 10) / 10, // Une décimale
+        avgAssists: Math.round(avgAssists * 10) / 10 // Une décimale
+      };
+    });
+    
+    console.log("Statistiques timeline calculées:", result);
+    return result;
   } catch (error) {
-    console.error(`Error getting timeline stats for team ${teamId}:`, error);
+    console.error("Erreur lors du calcul des statistiques timeline:", error);
     return null;
   }
-};
+}
 
 /**
- * Get timeline statistics for a specific player
+ * Calcule la moyenne d'un tableau de valeurs
+ * @param values Tableau de valeurs
+ * @param defaultValue Valeur par défaut si le tableau est vide
+ * @returns Moyenne des valeurs
  */
-export const getPlayerTimelineStats = async (playerId: string): Promise<any> => {
-  try {
-    const cacheKey = `timeline_player_${playerId}`;
-    const now = Date.now();
-    
-    // Check cache first
-    if (timelineStatsCache[cacheKey] && lastFetch[cacheKey] && (now - lastFetch[cacheKey] < CACHE_DURATION)) {
-      console.log(`Using cached timeline stats for player ${playerId}`);
-      return timelineStatsCache[cacheKey];
-    }
-    
-    console.log(`Getting timeline stats for player ${playerId}`);
-    const playerStats = await getPlayerStats(playerId);
-    
-    if (!playerStats || playerStats.length === 0) {
-      console.log(`No player stats found for player ${playerId}, returning null`);
-      return null;
-    }
-    
-    console.log(`Processing ${playerStats.length} player stats for timeline data`);
-    const timelineStats = getTimelineStats(playerStats);
-    
-    // Log the generated timeline stats for debugging
-    console.log(`Generated timeline stats for player ${playerId}:`, timelineStats);
-    
-    // Update cache
-    timelineStatsCache[cacheKey] = timelineStats;
-    lastFetch[cacheKey] = now;
-    
-    return timelineStats;
-  } catch (error) {
-    console.error(`Error getting timeline stats for player ${playerId}:`, error);
-    return null;
-  }
-};
-
-/**
- * Clear player stats cache
- */
-export const clearPlayerStatsCache = () => {
-  Object.keys(playerStatsCache).forEach(key => {
-    delete playerStatsCache[key];
-    delete lastFetch[key];
-  });
+function calculateAverage(values: any[], defaultValue = 0) {
+  if (!values || values.length === 0) return defaultValue;
   
-  Object.keys(timelineStatsCache).forEach(key => {
-    delete timelineStatsCache[key];
-  });
+  // Filtrer les valeurs non numériques
+  const numericValues = values.filter(v => !isNaN(Number(v)));
   
-  console.log('Player stats cache cleared');
-};
+  if (numericValues.length === 0) return defaultValue;
+  
+  // Calculer la moyenne
+  const sum = numericValues.reduce((acc, val) => acc + Number(val), 0);
+  return sum / numericValues.length;
+}
