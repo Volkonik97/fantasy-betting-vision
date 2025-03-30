@@ -106,7 +106,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         oceans: parseInt(blueTeamRow.oceans || '0'),
         chemtechs: parseInt(blueTeamRow.chemtechs || '0'),
         hextechs: parseInt(blueTeamRow.hextechs || '0'),
-        drakes_unknown: parseInt(blueTeamRow.drakes_unknown || '0'),
+        drakes_unknown: parseInt(blueTeamRow.drakesUnknown || '0'), // Fixed property name here
         elemental_drakes: parseInt(blueTeamRow.elementalDrakes || '0'),
         
         // Autres objectifs
