@@ -42,6 +42,8 @@ export interface MatchCSV {
   firstBlood?: string;
   firstDragon?: string;
   firstBaron?: string;
+  firstHerald?: string;
+  firstTower?: string;
   patch?: string;
   year?: string;
   split?: string;

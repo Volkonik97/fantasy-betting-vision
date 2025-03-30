@@ -183,6 +183,33 @@ export interface PlayerMatchStats {
   opp_deaths_at_25: number;
 }
 
+// Ajout des interfaces manquantes
+export interface TeamStatsTracker {
+  wins: number;
+  losses: number;
+  blueWins: number;
+  blueLosses: number;
+  redWins: number;
+  redLosses: number;
+  gameTimes: number[];
+}
+
+export interface PlayerStatsTracker {
+  kills: number;
+  deaths: number;
+  assists: number;
+  games: number;
+  cs: number;
+  totalDamage: number;
+  championsPlayed: Set<string>;
+}
+
+// Type pour une map de la somme des dégâts par équipe et par partie
+export interface TeamGameDamageMap extends Map<string, Map<string, number>> {}
+
+// Type pour une map des pourcentages de dégâts par joueur
+export interface PlayerDamageSharesMap extends Map<string, number[]> {}
+
 // Helper function to parse boolean values from strings
 export function parseBoolean(value?: string | null): boolean {
   if (!value) return false;

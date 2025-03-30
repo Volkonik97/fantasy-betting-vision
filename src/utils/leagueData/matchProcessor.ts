@@ -364,11 +364,11 @@ export function processMatchData(data: LeagueGameDataRow[]): {
         blueWinOdds: '0.5',
         redWinOdds: '0.5',
         status: match.result ? 'Completed' : 'Upcoming',
-        first_blood: firstBlood,
-        first_dragon: firstDragon,
-        first_herald: firstHerald,
-        first_baron: firstBaron,
-        first_tower: firstTower
+        firstBlood: firstBlood,  // Utilisation de la bonne casse
+        firstDragon: firstDragon,
+        firstHerald: firstHerald,
+        firstBaron: firstBaron,
+        firstTower: firstTower
       };
       
       if (match.result) {
