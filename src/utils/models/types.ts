@@ -90,6 +90,9 @@ export interface Match {
     first_blood?: string;
     first_dragon?: string;
     first_baron?: string;
+    // Ajout des propriétés picks et bans
+    picks?: any;
+    bans?: any;
   };
   playerStats?: any[];
 }

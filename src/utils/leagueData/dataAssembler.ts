@@ -66,6 +66,15 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     // Find team stats for this match
     const teamStatsMap = matchStats.get(match.id);
     
+    // Extract picks and bans data if present
+    const picksData = data.find(row => 
+      row.gameid === match.id && row.picks && row.picks.length > 0
+    )?.picks;
+    
+    const bansData = data.find(row => 
+      row.gameid === match.id && row.bans && row.bans.length > 0
+    )?.bans;
+    
     // Create match object
     const matchObject: Match = {
       id: match.id,
@@ -96,7 +105,10 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
         towers: 0,
         heralds: 0,
         team_kills: 0,
-        team_deaths: 0
+        team_deaths: 0,
+        // Ajout des picks et bans
+        picks: picksData ? picksData : undefined,
+        bans: bansData ? bansData : undefined
       } : undefined
     };
     
