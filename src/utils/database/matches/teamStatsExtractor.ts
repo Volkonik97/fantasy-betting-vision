@@ -76,9 +76,31 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamRed.id
   };
 
-  // Ajouter un debug pour afficher les statistiques
-  if (match.id && (match.id.includes('LOLTMNT02_215152') || match.id.includes('LOLTMNT02_222859'))) {
-    console.log(`[Debug] Match ${match.id} - Dragons statistiques:`, {
+  // Debugging for specific matches
+  const debugMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
+  if (debugMatchIds.includes(match.id)) {
+    console.log(`[Debug] Match ${match.id} - extraStats dragon data:`, {
+      blue: {
+        dragons: match.extraStats.dragons,
+        infernals: match.extraStats.infernals,
+        mountains: match.extraStats.mountains,
+        clouds: match.extraStats.clouds,
+        oceans: match.extraStats.oceans,
+        chemtechs: match.extraStats.chemtechs,
+        hextechs: match.extraStats.hextechs
+      },
+      red: {
+        opp_dragons: match.extraStats.opp_dragons,
+        opp_infernals: match.extraStats.opp_infernals,
+        opp_mountains: match.extraStats.opp_mountains,
+        opp_clouds: match.extraStats.opp_clouds,
+        opp_oceans: match.extraStats.opp_oceans,
+        opp_chemtechs: match.extraStats.opp_chemtechs,
+        opp_hextechs: match.extraStats.opp_hextechs
+      }
+    });
+    
+    console.log(`[Debug] Match ${match.id} - Processed team stats:`, {
       blueTeam: {
         id: match.teamBlue.id,
         totalDragons: blueTeamStats.dragons,
@@ -104,16 +126,6 @@ export function extractTeamSpecificStats(match: Match): {
           hextechs: redTeamStats.hextechs,
           unknown: redTeamStats.drakes_unknown
         }
-      },
-      extraStats: {
-        dragons: match.extraStats.dragons,
-        opp_dragons: match.extraStats.opp_dragons,
-        clouds: match.extraStats.clouds,
-        opp_clouds: match.extraStats.opp_clouds,
-        oceans: match.extraStats.oceans,
-        opp_oceans: match.extraStats.opp_oceans,
-        infernals: match.extraStats.infernals,
-        opp_infernals: match.extraStats.opp_infernals
       }
     });
   }

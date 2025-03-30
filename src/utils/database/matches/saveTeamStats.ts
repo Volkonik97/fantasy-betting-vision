@@ -92,11 +92,39 @@ export async function saveTeamMatchStats(
     const specificMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
     const debugMatches = validTeamStats.filter(stat => specificMatchIds.includes(stat.match_id));
     if (debugMatches.length > 0) {
-      console.log(`Debugging ${debugMatches.length} matchs spécifiques:`, debugMatches);
+      debugMatches.forEach(stat => {
+        console.log(`[Debug] Match ${stat.match_id}, Équipe ${stat.team_id}:`, {
+          is_blue_side: stat.is_blue_side,
+          dragons: stat.dragons,
+          specific: {
+            infernals: stat.infernals,
+            mountains: stat.mountains, 
+            clouds: stat.clouds,
+            oceans: stat.oceans,
+            chemtechs: stat.chemtechs,
+            hextechs: stat.hextechs,
+            unknown: stat.drakes_unknown
+          }
+        });
+      });
     }
     
     // Préparation des données pour l'insertion avec une vérification plus approfondie
     const statsToInsert = validTeamStats.map(stat => {
+      // Ensure numeric fields are properly converted
+      const ensureNumber = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        const num = Number(value);
+        return isNaN(num) ? 0 : num;
+      };
+      
+      // Ensure boolean fields are properly converted
+      const ensureBoolean = (value: any): boolean => {
+        if (typeof value === 'boolean') return value;
+        if (value === 1 || value === '1' || value === 'true' || value === true) return true;
+        return false;
+      };
+      
       // Debug pour les matchs spécifiques
       if (specificMatchIds.includes(stat.match_id)) {
         console.log(`Préparation insertion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
@@ -116,33 +144,33 @@ export async function saveTeamMatchStats(
       return {
         match_id: stat.match_id,
         team_id: stat.team_id,
-        is_blue_side: typeof stat.is_blue_side === 'boolean' ? stat.is_blue_side : stat.side === 'blue',
-        kills: stat.kills || 0,
-        deaths: stat.deaths || 0,
-        kpm: stat.kpm || 0,
-        dragons: stat.dragons || 0,
-        elemental_drakes: stat.elemental_drakes || 0,
-        infernals: stat.infernals || 0,
-        mountains: stat.mountains || 0,
-        clouds: stat.clouds || 0,
-        oceans: stat.oceans || 0,
-        chemtechs: stat.chemtechs || 0,
-        hextechs: stat.hextechs || 0,
-        drakes_unknown: stat.drakes_unknown || 0,
-        elders: stat.elders || 0,
-        heralds: stat.heralds || 0,
-        barons: stat.barons || 0,
-        void_grubs: stat.void_grubs || 0,
-        towers: stat.towers || 0,
-        turret_plates: stat.turret_plates || 0,
-        inhibitors: stat.inhibitors || 0,
-        first_blood: stat.first_blood === true,
-        first_dragon: stat.first_dragon === true,
-        first_herald: stat.first_herald === true,
-        first_baron: stat.first_baron === true,
-        first_tower: stat.first_tower === true,
-        first_mid_tower: stat.first_mid_tower === true,
-        first_three_towers: stat.first_three_towers === true,
+        is_blue_side: ensureBoolean(stat.is_blue_side),
+        kills: ensureNumber(stat.kills),
+        deaths: ensureNumber(stat.deaths),
+        kpm: ensureNumber(stat.kpm),
+        dragons: ensureNumber(stat.dragons),
+        elemental_drakes: ensureNumber(stat.elemental_drakes),
+        infernals: ensureNumber(stat.infernals),
+        mountains: ensureNumber(stat.mountains),
+        clouds: ensureNumber(stat.clouds),
+        oceans: ensureNumber(stat.oceans),
+        chemtechs: ensureNumber(stat.chemtechs),
+        hextechs: ensureNumber(stat.hextechs),
+        drakes_unknown: ensureNumber(stat.drakes_unknown),
+        elders: ensureNumber(stat.elders),
+        heralds: ensureNumber(stat.heralds),
+        barons: ensureNumber(stat.barons),
+        void_grubs: ensureNumber(stat.void_grubs),
+        towers: ensureNumber(stat.towers),
+        turret_plates: ensureNumber(stat.turret_plates),
+        inhibitors: ensureNumber(stat.inhibitors),
+        first_blood: ensureBoolean(stat.first_blood),
+        first_dragon: ensureBoolean(stat.first_dragon),
+        first_herald: ensureBoolean(stat.first_herald),
+        first_baron: ensureBoolean(stat.first_baron),
+        first_tower: ensureBoolean(stat.first_tower),
+        first_mid_tower: ensureBoolean(stat.first_mid_tower),
+        first_three_towers: ensureBoolean(stat.first_three_towers),
         picks: stat.picks ? JSON.stringify(stat.picks) : null,
         bans: stat.bans ? JSON.stringify(stat.bans) : null
       };

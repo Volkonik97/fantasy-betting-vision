@@ -44,11 +44,6 @@ export function extractTeamStats(
     const dataKeys = Object.keys(allTeamData).filter(key => allTeamData[key] !== undefined && allTeamData[key] !== null && allTeamData[key] !== '');
     console.log(`Données disponibles pour l'équipe ${teamId}:`, dataKeys.length > 0 ? dataKeys.join(', ') : 'aucune');
     
-    // Check for cloud drake data specifically
-    if (dataKeys.includes('clouds')) {
-      console.log(`Valeur de clouds pour l'équipe ${teamId}: "${allTeamData.clouds}" (type: ${typeof allTeamData.clouds})`);
-    }
-    
     // Determine if this team got first objectives by checking all collected data
     const hasFirstBlood = getFirstObjectiveValue(allTeamData, 'firstblood', teamId);
     const hasFirstDragon = getFirstObjectiveValue(allTeamData, 'firstdragon', teamId);
@@ -58,44 +53,30 @@ export function extractTeamStats(
     const hasFirstMidTower = getFirstObjectiveValue(allTeamData, 'firstmidtower', teamId);
     const hasFirstThreeTowers = getFirstObjectiveValue(allTeamData, 'firsttothreetowers', teamId);
     
-    // Parse numeric values with more careful handling of string conversions
+    // Parse numeric values with explicit type handling
     const dragons = getStatValue(allTeamData, 'dragons');
     const oppDragons = getStatValue(allTeamData, 'opp_dragons');
     const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
     const oppElementalDrakes = getStatValue(allTeamData, 'opp_elementaldrakes');
     
-    // CORRECTION: Traitement spécifique du cloud drake qui a un problème
-    let clouds = 0;
-    // S'il existe une valeur 'clouds', on essaie de la parser avec une attention particulière
-    if (allTeamData.clouds !== undefined) {
-      // Essayer d'abord comme nombre
-      clouds = getStatValue(allTeamData, 'clouds');
-      
-      // Si nous sommes sur le match problématique, affichons des détails
-      if (gameId === 'LOLTMNT02_222859') {
-        console.log(`Traitement spécial des cloud drakes pour l'équipe ${teamId}:`, {
-          rawValue: allTeamData.clouds,
-          parsedValue: clouds,
-          type: typeof allTeamData.clouds
-        });
-        
-        // Essayer différentes méthodes de parsing pour les valeurs difficiles
-        if (clouds === 0 && allTeamData.clouds) {
-          if (allTeamData.clouds === '1' || allTeamData.clouds.toLowerCase() === 'true' || 
-              allTeamData.clouds.toLowerCase() === 'yes' || allTeamData.clouds === 1) {
-            console.log(`Correction manuelle de la valeur cloud drake à 1`);
-            clouds = 1;
-          }
-        }
-      }
-    }
-    
+    // Parse specific drake types using safe parsing and handle special cases
     const infernals = getStatValue(allTeamData, 'infernals');
     const mountains = getStatValue(allTeamData, 'mountains');
+    const clouds = getStatValue(allTeamData, 'clouds');
     const oceans = getStatValue(allTeamData, 'oceans');
     const chemtechs = getStatValue(allTeamData, 'chemtechs');
     const hextechs = getStatValue(allTeamData, 'hextechs');
     const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)');
+    
+    // Parse opponent drake types specifically
+    const oppInfernals = getStatValue(allTeamData, 'opp_infernals');
+    const oppMountains = getStatValue(allTeamData, 'opp_mountains');
+    const oppClouds = getStatValue(allTeamData, 'opp_clouds');
+    const oppOceans = getStatValue(allTeamData, 'opp_oceans');
+    const oppChemtechs = getStatValue(allTeamData, 'opp_chemtechs');
+    const oppHextechs = getStatValue(allTeamData, 'opp_hextechs');
+    const oppDrakesUnknown = getStatValue(allTeamData, 'opp_drakes_unknown');
+    
     const elders = getStatValue(allTeamData, 'elders');
     const oppElders = getStatValue(allTeamData, 'opp_elders');
     const heralds = getStatValue(allTeamData, 'heralds');
@@ -115,18 +96,47 @@ export function extractTeamStats(
     const teamKpm = getStatValue(allTeamData, 'team kpm'); 
     const ckpm = getStatValue(allTeamData, 'ckpm');
     
-    // Log detailed information about drake counts for debugging
-    console.log(`Match ${gameId}, Team ${teamId} drake stats:`, {
-      dragons: dragons,
-      clouds: clouds, 
-      infernals: infernals,
-      mountains: mountains,
-      oceans: oceans,
-      chemtechs: chemtechs,
-      hextechs: hextechs,
-      elemental_drakes: elementalDrakes,
-      drakes_unknown: drakesUnknown
-    });
+    // Log detailed drake information for debugging
+    if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(gameId)) {
+      console.log(`Match ${gameId}, Team ${teamId} detailed drake stats:`, {
+        total: dragons,
+        specific: {
+          infernals,
+          mountains,
+          clouds,
+          oceans,
+          chemtechs,
+          hextechs,
+          unknown: drakesUnknown
+        },
+        opponent: {
+          total: oppDragons,
+          specific: {
+            infernals: oppInfernals,
+            mountains: oppMountains,
+            clouds: oppClouds,
+            oceans: oppOceans,
+            chemtechs: oppChemtechs,
+            hextechs: oppHextechs,
+            unknown: oppDrakesUnknown
+          }
+        },
+        raw: {
+          infernals: allTeamData.infernals,
+          mountains: allTeamData.mountains,
+          clouds: allTeamData.clouds,
+          oceans: allTeamData.oceans,
+          chemtechs: allTeamData.chemtechs,
+          hextechs: allTeamData.hextechs,
+          opp_infernals: allTeamData.opp_infernals,
+          opp_mountains: allTeamData.opp_mountains,
+          opp_clouds: allTeamData.opp_clouds,
+          opp_oceans: allTeamData.opp_oceans,
+          opp_chemtechs: allTeamData.opp_chemtechs,
+          opp_hextechs: allTeamData.opp_hextechs
+        }
+      });
+    }
     
     teamStatsMap.set(teamId, {
       team_id: teamId,
@@ -183,23 +193,32 @@ function combineTeamRowData(rows: LeagueGameDataRow[]): Record<string, any> {
   const combinedData: Record<string, any> = {};
   
   rows.forEach(row => {
-    // Iterate through all properties in the row
+    // Convert keys to lowercase for case-insensitive comparisons
+    const processedRow: Record<string, any> = {};
+    
     Object.entries(row).forEach(([key, value]) => {
+      // Store both original key and lowercase version to preserve case when needed
+      processedRow[key] = value;
+      if (key.toLowerCase() !== key) {
+        processedRow[key.toLowerCase()] = value;
+      }
+    });
+    
+    // Iterate through all properties in the processed row
+    Object.entries(processedRow).forEach(([key, value]) => {
       // Only set the value if it's not empty and not already set
-      // or if the new value is numeric and current is not
       if (value !== undefined && value !== null && value !== '') {
+        const lowerKey = key.toLowerCase();
+        
         // If the key doesn't exist yet or is empty, always set it
         if (combinedData[key] === undefined || combinedData[key] === null || combinedData[key] === '') {
           combinedData[key] = value;
         }
-        // If the new value is a number and the existing one isn't, prefer the number
-        else if (!isNaN(parseFloat(String(value))) && isNaN(parseFloat(String(combinedData[key])))) {
-          combinedData[key] = value;
-        }
         // For specific keys like drake counts, always take the highest value
-        else if (key.includes('dragons') || key.includes('drakes') || key.includes('clouds') || 
-                key.includes('infernals') || key.includes('mountains') || key.includes('oceans') || 
-                key.includes('chemtechs') || key.includes('hextechs')) {
+        else if (lowerKey.includes('dragon') || lowerKey.includes('drake') || 
+                lowerKey.includes('cloud') || lowerKey.includes('infernal') || 
+                lowerKey.includes('mountain') || lowerKey.includes('ocean') || 
+                lowerKey.includes('chemtech') || lowerKey.includes('hextech')) {
           const newVal = safeParseInt(value);
           const oldVal = safeParseInt(combinedData[key]);
           if (newVal > oldVal) {
@@ -218,9 +237,11 @@ function combineTeamRowData(rows: LeagueGameDataRow[]): Record<string, any> {
  * from the combined team data
  */
 function getFirstObjectiveValue(data: Record<string, any>, objectiveKey: string, teamId: string): string | null {
-  if (!data[objectiveKey]) return null;
+  // Try both the key as provided and lowercase version
+  const value = data[objectiveKey] || data[objectiveKey.toLowerCase()];
+  if (!value) return null;
   
-  return checkTeamObjectiveValue(data[objectiveKey], teamId);
+  return checkTeamObjectiveValue(value, teamId);
 }
 
 /**
@@ -228,7 +249,8 @@ function getFirstObjectiveValue(data: Record<string, any>, objectiveKey: string,
  * Returns a numeric value or 0 if not found or not numeric
  */
 function getStatValue(data: Record<string, any>, statKey: string): number {
-  const value = data[statKey];
+  // Try both the key as provided and lowercase version
+  const value = data[statKey] || data[statKey.toLowerCase()];
   
   if (value === undefined || value === null || value === '') {
     return 0;
@@ -250,8 +272,10 @@ function getStatValue(data: Record<string, any>, statKey: string): number {
   const parsed = safeParseFloat(value);
   const result = isNaN(parsed) ? safeParseInt(value) : parsed;
   
-  // Extra logging for debugging specific fields
-  if (statKey === 'clouds' || statKey === 'infernals' || statKey === 'mountains' || statKey === 'oceans') {
+  // Extra debug logging for specific drake fields
+  if (statKey.includes('cloud') || statKey.includes('infernal') || 
+      statKey.includes('mountain') || statKey.includes('ocean') ||
+      statKey.includes('chemtech') || statKey.includes('hextech')) {
     console.log(`Parsing ${statKey}: value "${value}" (type: ${typeof value}) --> parsed as ${result}`);
   }
   
