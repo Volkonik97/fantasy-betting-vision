@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
 import { motion } from "framer-motion";
@@ -5,6 +6,8 @@ import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Trophy, Percent, Clock, Shield, Target } from "lucide-react";
 
 interface TeamStatisticsProps {
   team: Team;
@@ -52,77 +55,108 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
   }, [team.id, team.logo, team.name]);
 
   const stats = [
-    { name: "Win Rate", value: `${(team.winRate * 100).toFixed(0)}%` },
-    { name: "Blue Side Win", value: `${(team.blueWinRate * 100).toFixed(0)}%` },
-    { name: "Red Side Win", value: `${(team.redWinRate * 100).toFixed(0)}%` },
-    { name: "Avg Game Time", value: formatTime(team.averageGameTime) },
+    { 
+      name: "Win Rate", 
+      value: `${(team.winRate * 100).toFixed(0)}%`,
+      icon: <Trophy size={18} className="text-amber-500" />,
+      color: "bg-amber-50"
+    },
+    { 
+      name: "Blue Side Win", 
+      value: `${(team.blueWinRate * 100).toFixed(0)}%`,
+      icon: <Percent size={18} className="text-blue-500" />,
+      color: "bg-blue-50"
+    },
+    { 
+      name: "Red Side Win", 
+      value: `${(team.redWinRate * 100).toFixed(0)}%`,
+      icon: <Percent size={18} className="text-red-500" />,
+      color: "bg-red-50"
+    },
+    { 
+      name: "Avg Game Time", 
+      value: formatTime(team.averageGameTime),
+      icon: <Clock size={18} className="text-green-500" />,
+      color: "bg-green-50"
+    },
   ];
 
   const hasTimeline = timelineStats && Object.keys(timelineStats).length > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-subtle overflow-hidden h-full">
-      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
-            {logoLoading ? (
-              <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
-            ) : logoUrl && !logoError ? (
-              <Avatar className="w-10 h-10">
-                <AvatarImage
-                  src={logoUrl}
-                  alt={`${team.name} logo`}
-                  className="object-contain"
-                  onError={() => {
-                    console.log(`Error loading logo for ${team.name} in statistics`);
-                    setLogoError(true);
-                  }}
-                />
-                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                  {team.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                  {team.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            )}
+    <Card className="overflow-hidden h-full">
+      <CardHeader className="pb-2 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
+              {logoLoading ? (
+                <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
+              ) : logoUrl && !logoError ? (
+                <Avatar className="w-10 h-10">
+                  <AvatarImage
+                    src={logoUrl}
+                    alt={`${team.name} logo`}
+                    className="object-contain"
+                    onError={() => {
+                      console.log(`Error loading logo for ${team.name} in statistics`);
+                      setLogoError(true);
+                    }}
+                  />
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {team.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {team.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+            <div>
+              <CardTitle className="text-lg">{team.name}</CardTitle>
+              <CardDescription>{team.region}</CardDescription>
+            </div>
           </div>
-          <div>
-            <h3 className="font-medium text-lg">{team.name}</h3>
-            <span className="text-sm text-gray-500">{team.region}</span>
-          </div>
+          
+          <span className="px-3 py-1 bg-gray-50 rounded-md text-sm font-medium">
+            Performance
+          </span>
         </div>
-        
-        <span className="px-3 py-1 bg-gray-50 rounded-md text-sm font-medium">
-          Statistiques
-        </span>
-      </div>
+      </CardHeader>
       
-      <div className="p-4">
-        <h4 className="text-sm font-medium text-gray-500 mb-3">Team Statistics</h4>
+      <CardContent className="p-4">
+        <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+          <Shield size={16} className="mr-2 text-lol-blue" />
+          Team Performance Metrics
+        </h4>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           {stats.map((stat, index) => (
             <motion.div 
               key={stat.name}
-              className="bg-gray-50 rounded-lg p-3"
+              className={`${stat.color} rounded-lg p-3 border border-gray-50 shadow-sm`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <span className="text-xs text-gray-500 block mb-1">{stat.name}</span>
+              <div className="flex items-center gap-2 mb-1">
+                {stat.icon}
+                <span className="text-xs text-gray-500">{stat.name}</span>
+              </div>
               <span className="text-lg font-semibold">{stat.value}</span>
             </motion.div>
           ))}
         </div>
         
         {hasTimeline && (
-          <div className="mt-6">
-            <h4 className="text-sm font-medium text-gray-500 mb-3">Timeline Statistics</h4>
-            <Tabs defaultValue="gold">
+          <div className="mt-4">
+            <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+              <Target size={16} className="mr-2 text-lol-blue" />
+              Timeline Performance
+            </h4>
+            <Tabs defaultValue="gold" className="bg-white border border-gray-100 rounded-lg p-3">
               <TabsList className="w-full mb-4 grid grid-cols-3">
                 <TabsTrigger value="gold">Gold</TabsTrigger>
                 <TabsTrigger value="cs">CS</TabsTrigger>
@@ -130,10 +164,10 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
               </TabsList>
               
               <TabsContent value="gold">
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="grid grid-cols-4 gap-2">
                     {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
                         <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
                         <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
@@ -146,10 +180,10 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
               </TabsContent>
               
               <TabsContent value="cs">
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="grid grid-cols-4 gap-2">
                     {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
                         <div className="font-semibold">{stats.avgCs}</div>
                         <div className="text-xs mt-1 text-gray-600">
@@ -162,10 +196,10 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
               </TabsContent>
               
               <TabsContent value="kda">
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="grid grid-cols-4 gap-2">
                     {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center">
+                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                         <div className="text-sm text-gray-500 mb-1">{time} min</div>
                         <div className="font-semibold">
                           {stats.avgKills} / {stats.avgDeaths}
@@ -181,8 +215,8 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
             </Tabs>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

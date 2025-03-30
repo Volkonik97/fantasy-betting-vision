@@ -28,34 +28,24 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
     }
   ];
   
-  // First objective data
-  const firstObjectiveData = [
-    {
-      name: "First Blood",
-      blue: ensureValidData(statistics.blueFirstBlood),
-      red: ensureValidData(statistics.redFirstBlood)
-    },
-    {
-      name: "First Dragon",
-      blue: ensureValidData(statistics.blueFirstDragon),
-      red: ensureValidData(statistics.redFirstDragon)
-    },
-    {
-      name: "First Herald",
-      blue: ensureValidData(statistics.blueFirstHerald),
-      red: ensureValidData(statistics.redFirstHerald)
-    },
-    {
-      name: "First Tower",
-      blue: ensureValidData(statistics.blueFirstTower),
-      red: ensureValidData(statistics.redFirstTower)
-    },
-    {
-      name: "First Baron",
-      blue: ensureValidData(statistics.blueFirstBaron || 0),
-      red: ensureValidData(statistics.redFirstBaron || 0)
-    }
-  ];
+  // Create array of available objectives for display
+  const objectivesToShow = [
+    { key: "blueFirstBlood", redKey: "redFirstBlood", name: "First Blood" },
+    { key: "blueFirstDragon", redKey: "redFirstDragon", name: "First Dragon" },
+    { key: "blueFirstHerald", redKey: "redFirstHerald", name: "First Herald" },
+    { key: "blueFirstTower", redKey: "redFirstTower", name: "First Tower" },
+    { key: "blueFirstBaron", redKey: "redFirstBaron", name: "First Baron" }
+  ].filter(obj => 
+    // Only include objectives that have data
+    statistics[obj.key] !== undefined || statistics[obj.redKey] !== undefined
+  );
+  
+  // First objective data - only include objectives that are present in the statistics
+  const firstObjectiveData = objectivesToShow.map(obj => ({
+    name: obj.name,
+    blue: ensureValidData(statistics[obj.key]),
+    red: ensureValidData(statistics[obj.redKey])
+  }));
   
   console.log("BarChart data:", firstObjectiveData);
   
@@ -89,30 +79,32 @@ const SideAnalysis = ({ statistics }: SideAnalysisProps) => {
         </CardContent>
       </Card>
       
-      {/* First Objectives Card */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">First Objectives</CardTitle>
-          <CardDescription>Percentage of securing objectives first</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-96">
-            <BarChart
-              data={firstObjectiveData}
-              xAxisKey="name"
-              grid={false}
-              colors={["#3b82f6", "#ef4444"]}
-              layout="vertical"
-              barSize={20}
-              showYAxis={true}
-              height={350}
-            >
-              <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </div>
-        </CardContent>
-      </Card>
+      {/* First Objectives Card - Only show if we have objective data */}
+      {firstObjectiveData.length > 0 && (
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">First Objectives</CardTitle>
+            <CardDescription>Percentage of securing objectives first</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-96">
+              <BarChart
+                data={firstObjectiveData}
+                xAxisKey="name"
+                grid={false}
+                colors={["#3b82f6", "#ef4444"]}
+                layout="vertical"
+                barSize={20}
+                showYAxis={true}
+                height={350}
+              >
+                <Bar dataKey="blue" name="Blue Side" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="red" name="Red Side" fill="#ef4444" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       
       {/* Timeline Statistics Card - Only shown if timeline data exists */}
       {hasTimeline && (

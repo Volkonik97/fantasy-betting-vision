@@ -1,251 +1,148 @@
-import { Match } from '@/utils/models/types';
-import { parseBoolean } from '@/utils/leagueData/types';
+
+import { Match } from "@/utils/models/types";
 
 /**
  * Extract team-specific stats from a match object
- * Cette fonction extrait les statistiques propres à chaque équipe à partir de l'objet match.
+ * @param match The match object
+ * @param teamId The ID of the team to extract stats for
+ * @returns Object containing team-specific stats
  */
-export function extractTeamSpecificStats(match: Match): { 
-  blueTeamStats: any, 
-  redTeamStats: any 
-} {
-  if (!match.extraStats) {
-    return { blueTeamStats: null, redTeamStats: null };
+export function extractTeamSpecificStats(match: Match, teamId: string): any {
+  if (!match || !match.extraStats) {
+    console.log(`No match extra stats found for match ${match?.id || 'unknown'}`);
+    return null;
   }
 
-  // Debug pour les matchs spécifiques
-  if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
-    console.log(`[teamStatsExtractor] Raw Data for ${match.id}:`, {
-      blueTeamStats: match.extraStats.blueTeamStats || 'Missing blue team stats',
-      redTeamStats: match.extraStats.redTeamStats || 'Missing red team stats',
-      first_blood: match.extraStats.first_blood,
-      first_blood_type: typeof match.extraStats.first_blood,
-      first_dragon: match.extraStats.first_dragon,
-      first_dragon_type: typeof match.extraStats.first_dragon,
-      picks: match.extraStats.picks ? typeof match.extraStats.picks : 'Missing picks',
-      bans: match.extraStats.bans ? typeof match.extraStats.bans : 'Missing bans'
-    });
+  // Determine if this team is blue or red
+  const isBlueTeam = match.teamBlue?.id === teamId;
+  const side = isBlueTeam ? 'blue' : 'red';
+  const oppSide = isBlueTeam ? 'red' : 'blue';
+  
+  // Determine if team won
+  let isWinner = false;
+  if (match.result && match.result.winner) {
+    isWinner = match.result.winner === teamId;
+  } else if (match.extraStats.winner_team_id) {
+    isWinner = match.extraStats.winner_team_id === teamId;
   }
   
-  // Si nous avons déjà des statistiques spécifiques pour chaque équipe, les utiliser directement
-  const hasBlueTeamSpecificStats = match.extraStats.blueTeamStats !== undefined;
-  const hasRedTeamSpecificStats = match.extraStats.redTeamStats !== undefined;
+  console.log(`Extracting ${side} side stats for team ${teamId} from match ${match.id}, isWinner: ${isWinner}`);
+
+  // Process objective stats
+  // For some objectives, we need to check if the team achieved them first
+  const firstBlood = processFirstObjective(match, 'first_blood', teamId);
+  const firstDragon = processFirstObjective(match, 'first_dragon', teamId);
+  const firstHerald = processFirstObjective(match, 'first_herald', teamId);
+  const firstTower = processFirstObjective(match, 'first_tower', teamId);
+  const firstBaron = processFirstObjective(match, 'first_baron', teamId);
+  const firstMidTower = processFirstObjective(match, 'first_mid_tower', teamId);
+  const firstThreeTowers = processFirstObjective(match, 'first_three_towers', teamId);
   
-  // Traiter les first_* objectives plus efficacement
-  // Vérifier si la valeur est égale à l'ID de l'équipe bleue ou si c'est vrai
-  const first_blood_blue = match.extraStats.first_blood === match.teamBlue.id || 
-                          (typeof match.extraStats.first_blood === 'boolean' && match.extraStats.first_blood === true);
+  console.log(`First objectives for team ${teamId} in match ${match.id}:`, {
+    firstBlood,
+    firstDragon,
+    firstHerald,
+    firstTower,
+    firstBaron,
+    firstMidTower,
+    firstThreeTowers
+  });
   
-  const first_blood_red = match.extraStats.first_blood === match.teamRed.id || 
-                         (typeof match.extraStats.first_blood === 'boolean' && match.extraStats.first_blood === false);
-  
-  const first_dragon_blue = match.extraStats.first_dragon === match.teamBlue.id || 
-                           (typeof match.extraStats.first_dragon === 'boolean' && match.extraStats.first_dragon === true);
-  
-  const first_dragon_red = match.extraStats.first_dragon === match.teamRed.id || 
-                          (typeof match.extraStats.first_dragon === 'boolean' && match.extraStats.first_dragon === false);
-  
-  const first_herald_blue = match.extraStats.first_herald === match.teamBlue.id || 
-                           (typeof match.extraStats.first_herald === 'boolean' && match.extraStats.first_herald === true);
-  
-  const first_herald_red = match.extraStats.first_herald === match.teamRed.id || 
-                          (typeof match.extraStats.first_herald === 'boolean' && match.extraStats.first_herald === false);
-  
-  const first_baron_blue = match.extraStats.first_baron === match.teamBlue.id || 
-                          (typeof match.extraStats.first_baron === 'boolean' && match.extraStats.first_baron === true);
-  
-  const first_baron_red = match.extraStats.first_baron === match.teamRed.id || 
-                         (typeof match.extraStats.first_baron === 'boolean' && match.extraStats.first_baron === false);
-  
-  const first_tower_blue = match.extraStats.first_tower === match.teamBlue.id || 
-                          (typeof match.extraStats.first_tower === 'boolean' && match.extraStats.first_tower === true);
-  
-  const first_tower_red = match.extraStats.first_tower === match.teamRed.id || 
-                         (typeof match.extraStats.first_tower === 'boolean' && match.extraStats.first_tower === false);
-  
-  const first_mid_tower_blue = match.extraStats.first_mid_tower === match.teamBlue.id || 
-                              (typeof match.extraStats.first_mid_tower === 'boolean' && match.extraStats.first_mid_tower === true);
-  
-  const first_mid_tower_red = match.extraStats.first_mid_tower === match.teamRed.id || 
-                             (typeof match.extraStats.first_mid_tower === 'boolean' && match.extraStats.first_mid_tower === false);
-  
-  const first_three_towers_blue = match.extraStats.first_three_towers === match.teamBlue.id || 
-                                 (typeof match.extraStats.first_three_towers === 'boolean' && match.extraStats.first_three_towers === true);
-  
-  const first_three_towers_red = match.extraStats.first_three_towers === match.teamRed.id || 
-                                (typeof match.extraStats.first_three_towers === 'boolean' && match.extraStats.first_three_towers === false);
-  
-  // Debug first_* values
-  if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
-    console.log(`[teamStatsExtractor] Processed first_* values for ${match.id}:`, {
-      blueTeam: {
-        first_blood: first_blood_blue,
-        first_dragon: first_dragon_blue,
-        first_herald: first_herald_blue,
-        first_baron: first_baron_blue,
-        first_tower: first_tower_blue,
-        first_mid_tower: first_mid_tower_blue,
-        first_three_towers: first_three_towers_blue
-      },
-      redTeam: {
-        first_blood: first_blood_red,
-        first_dragon: first_dragon_red,
-        first_herald: first_herald_red,
-        first_baron: first_baron_red,
-        first_tower: first_tower_red,
-        first_mid_tower: first_mid_tower_red,
-        first_three_towers: first_three_towers_red
-      },
-      rawValues: {
-        first_blood: match.extraStats.first_blood,
-        first_blood_type: typeof match.extraStats.first_blood,
-        first_dragon: match.extraStats.first_dragon,
-        first_dragon_type: typeof match.extraStats.first_dragon,
-        first_herald: match.extraStats.first_herald,
-        first_herald_type: typeof match.extraStats.first_herald,
-        first_baron: match.extraStats.first_baron,
-        first_baron_type: typeof match.extraStats.first_baron,
-        first_tower: match.extraStats.first_tower,
-        first_tower_type: typeof match.extraStats.first_tower
-      }
-    });
-  }
-  
-  // Récupérer les statistiques de l'équipe bleue
-  const blueTeamStats = hasBlueTeamSpecificStats ? match.extraStats.blueTeamStats : {
-    team_id: match.teamBlue.id,
+  // Extract own team stats
+  const teamStats = {
+    team_id: teamId,
     match_id: match.id,
-    is_blue_side: true,
-    // Fallback si les données spécifiques à l'équipe bleue sont manquantes
-    kills: 0,
-    deaths: 0,
-    kpm: 0,
+    side: side,
+    is_blue_side: isBlueTeam,
+    is_winner: isWinner,
     
-    // Statistiques des dragons
-    dragons: match.extraStats.dragons || 0,
-    elemental_drakes: match.extraStats.elemental_drakes || 0,
-    infernals: match.extraStats.infernals || 0,
-    mountains: match.extraStats.mountains || 0,
-    clouds: match.extraStats.clouds || 0,
-    oceans: match.extraStats.oceans || 0,
-    chemtechs: match.extraStats.chemtechs || 0,
-    hextechs: match.extraStats.hextechs || 0,
-    drakes_unknown: match.extraStats.drakes_unknown || 0,
-    elders: match.extraStats.elders || 0,
-
-    // Autres objectifs
-    heralds: match.extraStats.heralds || 0,
-    barons: match.extraStats.barons || 0,
-    towers: match.extraStats.towers || 0,
-    turret_plates: match.extraStats.turret_plates || 0,
-    inhibitors: match.extraStats.inhibitors || 0,
-    void_grubs: match.extraStats.void_grubs || 0,
+    // First objectives
+    first_blood: firstBlood,
+    first_dragon: firstDragon,
+    first_herald: firstHerald,
+    first_tower: firstTower,
+    first_baron: firstBaron,
+    first_mid_tower: firstMidTower,
+    first_three_towers: firstThreeTowers,
     
-    // First objectives with processed boolean values
-    first_blood: first_blood_blue,
-    first_dragon: first_dragon_blue,
-    first_herald: first_herald_blue,
-    first_baron: first_baron_blue,
-    first_tower: first_tower_blue,
-    first_mid_tower: first_mid_tower_blue,
-    first_three_towers: first_three_towers_blue,
+    // Team stats
+    kills: match.extraStats.team_kills,
+    deaths: match.extraStats.team_deaths,
+    kpm: match.extraStats.team_kpm,
     
-    // Include picks and bans
-    picks: match.extraStats.picks,
-    bans: match.extraStats.bans
+    // Dragon stats
+    dragons: isBlueTeam ? match.extraStats.dragons : match.extraStats.opp_dragons,
+    elemental_drakes: isBlueTeam ? match.extraStats.elemental_drakes : match.extraStats.opp_elemental_drakes,
+    infernals: isBlueTeam ? match.extraStats.infernals : match.extraStats.opp_infernals,
+    mountains: isBlueTeam ? match.extraStats.mountains : match.extraStats.opp_mountains,
+    clouds: isBlueTeam ? match.extraStats.clouds : match.extraStats.opp_clouds,
+    oceans: isBlueTeam ? match.extraStats.oceans : match.extraStats.opp_oceans,
+    chemtechs: isBlueTeam ? match.extraStats.chemtechs : match.extraStats.opp_chemtechs,
+    hextechs: isBlueTeam ? match.extraStats.hextechs : match.extraStats.opp_hextechs,
+    drakes_unknown: isBlueTeam ? match.extraStats.drakes_unknown : match.extraStats.opp_drakes_unknown,
+    elders: isBlueTeam ? match.extraStats.elders : match.extraStats.opp_elders,
+    
+    // Herald and Baron stats
+    heralds: isBlueTeam ? match.extraStats.heralds : match.extraStats.opp_heralds,
+    barons: isBlueTeam ? match.extraStats.barons : match.extraStats.opp_barons,
+    void_grubs: isBlueTeam ? match.extraStats.void_grubs : match.extraStats.opp_void_grubs,
+    
+    // Tower and inhibitor stats
+    towers: isBlueTeam ? match.extraStats.towers : match.extraStats.opp_towers,
+    turret_plates: isBlueTeam ? match.extraStats.turret_plates : match.extraStats.opp_turret_plates,
+    inhibitors: isBlueTeam ? match.extraStats.inhibitors : match.extraStats.opp_inhibitors,
+    
+    // Add picks and bans if available
+    picks: isBlueTeam && match.extraStats.picks?.blue 
+      ? match.extraStats.picks.blue 
+      : !isBlueTeam && match.extraStats.picks?.red 
+      ? match.extraStats.picks.red 
+      : undefined,
+      
+    bans: isBlueTeam && match.extraStats.bans?.blue 
+      ? match.extraStats.bans.blue 
+      : !isBlueTeam && match.extraStats.bans?.red 
+      ? match.extraStats.bans.red 
+      : undefined,
   };
 
-  // Récupérer les statistiques de l'équipe rouge
-  const redTeamStats = hasRedTeamSpecificStats ? match.extraStats.redTeamStats : {
-    team_id: match.teamRed.id,
-    match_id: match.id,
-    is_blue_side: false,
-    // Fallback si les données spécifiques à l'équipe rouge sont manquantes
-    kills: 0,
-    deaths: 0,
-    kpm: 0,
-    
-    // Statistiques des dragons
-    dragons: match.extraStats.opp_dragons || 0,
-    elemental_drakes: match.extraStats.opp_elemental_drakes || 0,
-    infernals: match.extraStats.opp_infernals || 0,
-    mountains: match.extraStats.opp_mountains || 0,
-    clouds: match.extraStats.opp_clouds || 0,
-    oceans: match.extraStats.opp_oceans || 0,
-    chemtechs: match.extraStats.opp_chemtechs || 0,
-    hextechs: match.extraStats.opp_hextechs || 0,
-    drakes_unknown: match.extraStats.opp_drakes_unknown || 0,
-    elders: match.extraStats.opp_elders || 0,
-    
-    // Autres objectifs
-    heralds: match.extraStats.opp_heralds || 0,
-    barons: match.extraStats.opp_barons || 0,
-    towers: match.extraStats.opp_towers || 0,
-    turret_plates: match.extraStats.opp_turret_plates || 0,
-    inhibitors: match.extraStats.opp_inhibitors || 0,
-    void_grubs: match.extraStats.opp_void_grubs || 0,
-    
-    // First objectives with processed boolean values
-    first_blood: first_blood_red,
-    first_dragon: first_dragon_red,
-    first_herald: first_herald_red,
-    first_baron: first_baron_red,
-    first_tower: first_tower_red,
-    first_mid_tower: first_mid_tower_red,
-    first_three_towers: first_three_towers_red,
-    
-    // Include picks and bans
-    picks: match.extraStats.picks,
-    bans: match.extraStats.bans
-  };
+  return teamStats;
+}
 
-  // Debugging pour les matchs spécifiques qui posent problème
-  const debugMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
-  if (debugMatchIds.includes(match.id)) {
-    console.log(`[teamStatsExtractor] Match ${match.id} - statistiques extraites:`, {
-      teamBlue: {
-        id: match.teamBlue.id,
-        totalDragons: blueTeamStats.dragons,
-        detailDragons: {
-          infernals: blueTeamStats.infernals,
-          mountains: blueTeamStats.mountains,
-          clouds: blueTeamStats.clouds,
-          oceans: blueTeamStats.oceans,
-          chemtechs: blueTeamStats.chemtechs,
-          hextechs: blueTeamStats.hextechs,
-          unknown: blueTeamStats.drakes_unknown
-        },
-        firstBlood: blueTeamStats.first_blood,
-        firstDragon: blueTeamStats.first_dragon,
-        firstHerald: blueTeamStats.first_herald,
-        firstBaron: blueTeamStats.first_baron,
-        firstTower: blueTeamStats.first_tower,
-        usingSpecificStats: hasBlueTeamSpecificStats
-      },
-      teamRed: {
-        id: match.teamRed.id,
-        totalDragons: redTeamStats.dragons,
-        detailDragons: {
-          infernals: redTeamStats.infernals,
-          mountains: redTeamStats.mountains,
-          clouds: redTeamStats.clouds,
-          oceans: redTeamStats.oceans,
-          chemtechs: redTeamStats.chemtechs,
-          hextechs: redTeamStats.hextechs,
-          unknown: redTeamStats.drakes_unknown
-        },
-        firstBlood: redTeamStats.first_blood,
-        firstDragon: redTeamStats.first_dragon,
-        firstHerald: redTeamStats.first_herald,
-        firstBaron: redTeamStats.first_baron,
-        firstTower: redTeamStats.first_tower,
-        usingSpecificStats: hasRedTeamSpecificStats
-      }
-    });
+/**
+ * Process first objective stats from match data
+ * @param match The match object
+ * @param objectiveKey The key of the objective
+ * @param teamId The ID of the team to check
+ * @returns true if team got the objective first, false otherwise, undefined if data not available
+ */
+function processFirstObjective(match: Match, objectiveKey: string, teamId: string): boolean | undefined {
+  if (!match.extraStats) return undefined;
+  
+  // Check if the objective exists in extraStats
+  if (typeof match.extraStats[objectiveKey] === 'undefined') {
+    return undefined;
   }
-
-  return {
-    blueTeamStats,
-    redTeamStats
-  };
+  
+  // If the value is boolean, we can't determine which team got it first
+  if (typeof match.extraStats[objectiveKey] === 'boolean') {
+    return undefined;
+  }
+  
+  // Check if the value matches the team ID (string comparison)
+  if (match.extraStats[objectiveKey] === teamId) {
+    return true;
+  }
+  
+  // Check if the team's name matches
+  if (match.teamBlue?.id === teamId && match.extraStats[objectiveKey] === 'blue') {
+    return true;
+  }
+  
+  if (match.teamRed?.id === teamId && match.extraStats[objectiveKey] === 'red') {
+    return true;
+  }
+  
+  // If there's a value but it doesn't match this team, return false
+  return match.extraStats[objectiveKey] ? false : undefined;
 }

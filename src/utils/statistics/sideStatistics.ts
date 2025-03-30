@@ -31,7 +31,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       return createDefaultSideStatistics(teamId);
     }
     
-    // Fetch first objectives data from team_match_stats for more accurate results
+    // Fetch team_match_stats to get more detailed objective information
     const { data: teamMatchStats, error: statsError } = await supabase
       .from('team_match_stats')
       .select('*')
@@ -39,6 +39,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     
     if (statsError) {
       console.error("[sideStatistics] Error fetching team match stats:", statsError);
+    } else {
+      console.log(`[sideStatistics] Found ${teamMatchStats?.length || 0} team match stats`);
     }
     
     // Calculate statistics based on matches and team match stats

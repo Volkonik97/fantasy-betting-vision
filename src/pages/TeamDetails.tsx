@@ -52,9 +52,16 @@ const TeamDetails = () => {
         // Clear match cache to ensure fresh data
         await clearMatchCache();
         
-        // Utiliser la nouvelle fonction pour récupérer tous les matchs de l'équipe
-        const teamMatchesArray = await getMatchesByTeamId(id);
+        // Run all data fetches in parallel for better performance
+        const [teamMatchesArray, sideStatsData, timelineData] = await Promise.all([
+          getMatchesByTeamId(id),
+          getSideStatistics(id),
+          getTeamTimelineStats(id)
+        ]);
+        
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
+        console.log("Statistiques côté récupérées:", sideStatsData);
+        console.log("Données timeline récupérées:", timelineData);
         
         // Trier les matchs par date (plus récent en premier)
         const sortedMatches = [...teamMatchesArray].sort((a, b) => {
@@ -63,33 +70,17 @@ const TeamDetails = () => {
         
         setTeamMatches(sortedMatches);
         
-        // Load side statistics and timeline data
-        try {
-          // On utilise les requêtes en parallèle pour améliorer les performances
-          const [sideStatsData, timelineData] = await Promise.all([
-            getSideStatistics(id),
-            getTeamTimelineStats(id)
-          ]);
-          
-          console.log("Statistiques côté récupérées:", sideStatsData);
-          console.log("Données timeline récupérées:", timelineData);
-          
-          // Si on a des données timeline, on les intègre aux stats de côté
-          if (timelineData && Object.keys(timelineData).length > 0) {
-            setSideStats({
-              ...sideStatsData,
-              timelineStats: timelineData
-            });
-          } else {
-            setSideStats(sideStatsData);
-          }
-          
-          setTimelineStats(timelineData);
-        } catch (statsError) {
-          console.error("Erreur lors du chargement des statistiques:", statsError);
-          toast.error("Erreur lors du chargement des statistiques d'équipe");
-          // Continue without statistics
+        // If we have timeline data, integrate it with side stats
+        if (timelineData && Object.keys(timelineData).length > 0) {
+          setSideStats({
+            ...sideStatsData,
+            timelineStats: timelineData
+          });
+        } else {
+          setSideStats(sideStatsData);
         }
+        
+        setTimelineStats(timelineData);
       } catch (err) {
         console.error("Erreur lors du chargement des données d'équipe:", err);
         setError("Erreur lors du chargement des données d'équipe");
@@ -142,24 +133,51 @@ const TeamDetails = () => {
           <span>Retour aux équipes</span>
         </a>
         
-        <motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           <TeamHeader team={team} />
         </motion.div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
-            <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
-            <TeamRecentMatches team={team} matches={teamMatches} />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <TeamRecentMatches team={team} matches={teamMatches} />
+            </motion.div>
           </div>
           
           <div className="space-y-8">
-            <TeamStatistics team={team} timelineStats={timelineStats} />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <TeamStatistics team={team} timelineStats={timelineStats} />
+            </motion.div>
             
             {sideStats && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Analyse de performance par côté</h2>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <h2 className="text-2xl font-bold mb-4">Analyse par côté</h2>
                 <SideAnalysis statistics={sideStats} />
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
