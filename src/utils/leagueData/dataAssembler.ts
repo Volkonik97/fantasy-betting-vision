@@ -16,11 +16,41 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
   // Process match data to get games, team stats, and player stats
   const { uniqueGames, matchStats, matchPlayerStats, matchesArray } = processMatchData(data);
   
-  // Process team statistics
-  const teams = processTeamData(uniqueGames, matchStats);
+  // Process team statistics - uniqueGames est maintenant un paramètre attendu par processTeamData
+  const { uniqueTeams, teamStats } = processTeamData(data);
   
   // Process player statistics
-  const { players, playerStats } = processPlayerData(matchPlayerStats, matchStats);
+  const { uniquePlayers, playerStats, teamGameDamage, playerDamageShares } = processPlayerData(data);
+  
+  // Convert the maps to arrays for the return object
+  const teams: Team[] = Array.from(uniqueTeams.values()).map(teamCsv => {
+    return {
+      id: teamCsv.id,
+      name: teamCsv.name,
+      logo: teamCsv.logo,
+      region: teamCsv.region,
+      winRate: parseFloat(teamCsv.winRate) || 0,
+      blueWinRate: parseFloat(teamCsv.blueWinRate) || 0,
+      redWinRate: parseFloat(teamCsv.redWinRate) || 0,
+      averageGameTime: parseFloat(teamCsv.averageGameTime) || 0,
+      players: [] // Will be filled later
+    };
+  });
+  
+  // Convert the maps to arrays for the return object
+  const players: Player[] = Array.from(uniquePlayers.values()).map(playerCsv => {
+    return {
+      id: playerCsv.id,
+      name: playerCsv.name,
+      role: playerCsv.role as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+      image: playerCsv.image,
+      team: playerCsv.team,
+      kda: parseFloat(playerCsv.kda) || 0,
+      csPerMin: parseFloat(playerCsv.csPerMin) || 0,
+      damageShare: parseFloat(playerCsv.damageShare) || 0,
+      championPool: playerCsv.championPool ? playerCsv.championPool.split(',').map(champ => champ.trim()) : []
+    };
+  });
   
   // Convert the matchesArray to Match objects
   const matches: Match[] = matchesArray.map(match => {
@@ -88,11 +118,24 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     return matchObject;
   }).filter(Boolean) as Match[];
   
+  // Collect player match statistics as array
+  const playerMatchStatsArray: any[] = [];
+  matchPlayerStats.forEach((playerMap, matchId) => {
+    playerMap.forEach((stats, playerId) => {
+      playerMatchStatsArray.push({
+        ...stats,
+        participant_id: `${playerId}_${matchId}`,
+        player_id: playerId,
+        match_id: matchId
+      });
+    });
+  });
+  
   // Return the assembled data
   return {
     teams,
     players,
     matches,
-    playerMatchStats: playerStats
+    playerMatchStats: playerMatchStatsArray
   };
 }

@@ -183,7 +183,7 @@ export interface PlayerMatchStats {
   opp_deaths_at_25: number;
 }
 
-// Ajout des interfaces manquantes
+// Added interfaces that were missing
 export interface TeamStatsTracker {
   wins: number;
   losses: number;
