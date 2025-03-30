@@ -45,20 +45,34 @@ const TeamDetails = () => {
           return;
         }
         
+        // Mettre à jour les statistiques par côté dans l'objet de l'équipe
+        const sideStatsData = await getSideStatistics(id);
+        if (sideStatsData) {
+          foundTeam.blueFirstBlood = sideStatsData.blueFirstBlood;
+          foundTeam.redFirstBlood = sideStatsData.redFirstBlood;
+          foundTeam.blueFirstDragon = sideStatsData.blueFirstDragon;
+          foundTeam.redFirstDragon = sideStatsData.redFirstDragon;
+          foundTeam.blueFirstHerald = sideStatsData.blueFirstHerald;
+          foundTeam.redFirstHerald = sideStatsData.redFirstHerald;
+          foundTeam.blueFirstTower = sideStatsData.blueFirstTower;
+          foundTeam.redFirstTower = sideStatsData.redFirstTower;
+          foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
+          foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
+        }
+        
         setTeam(foundTeam);
+        setSideStats(sideStatsData);
         
         // Clear match cache to ensure fresh data
         await clearMatchCache();
         
         // Run all data fetches in parallel for better performance
-        const [teamMatchesArray, sideStatsData, timelineData] = await Promise.all([
+        const [teamMatchesArray, timelineData] = await Promise.all([
           getMatchesByTeamId(id),
-          getSideStatistics(id),
           getTeamTimelineStats(id)
         ]);
         
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
-        console.log("Statistiques côté récupérées:", sideStatsData);
         console.log("Données timeline récupérées:", timelineData);
         
         // Trier les matchs par date (plus récent en premier)
@@ -67,17 +81,6 @@ const TeamDetails = () => {
         });
         
         setTeamMatches(sortedMatches);
-        
-        // If we have timeline data, integrate it with side stats
-        if (timelineData && Object.keys(timelineData).length > 0) {
-          setSideStats({
-            ...sideStatsData,
-            timelineStats: timelineData
-          });
-        } else {
-          setSideStats(sideStatsData);
-        }
-        
         setTimelineStats(timelineData);
       } catch (err) {
         console.error("Erreur lors du chargement des données d'équipe:", err);

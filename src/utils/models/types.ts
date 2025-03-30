@@ -2,13 +2,23 @@
 export interface Team {
   id: string;
   name: string;
-  logo: string;
   region: string;
+  logo?: string;
+  players?: Player[];
   winRate: number;
   blueWinRate: number;
   redWinRate: number;
   averageGameTime: number;
-  players: Player[];
+  blueFirstBlood?: number;
+  redFirstBlood?: number;
+  blueFirstDragon?: number;
+  redFirstDragon?: number;
+  blueFirstHerald?: number;
+  redFirstHerald?: number;
+  blueFirstTower?: number;
+  redFirstTower?: number;
+  blueFirstBaron?: number;
+  redFirstBaron?: number;
 }
 
 export interface Player {
@@ -143,7 +153,7 @@ export interface SideStatistics {
   redFirstHerald: number;
   blueFirstTower: number;
   redFirstTower: number;
-  blueFirstBaron?: number;
+  blueFirstBaron?: number;  
   redFirstBaron?: number;
-  timelineStats: TimelineStats;
+  timelineStats?: TimelineStats;
 }

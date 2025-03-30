@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Trophy, Percent, Clock, Shield, Target } from "lucide-react";
+import { Trophy, Percent, Clock, Shield, Target, Flame, Mountain, Award } from "lucide-react";
 
 interface TeamStatisticsProps {
   team: Team;
@@ -127,94 +127,205 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
       </CardHeader>
       
       <CardContent className="p-4">
-        <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
-          <Shield size={16} className="mr-2 text-lol-blue" />
-          Team Performance Metrics
-        </h4>
-        
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <motion.div 
-              key={stat.name}
-              className={`${stat.color} rounded-lg p-3 border border-gray-50 shadow-sm`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                {stat.icon}
-                <span className="text-xs text-gray-500">{stat.name}</span>
-              </div>
-              <span className="text-lg font-semibold">{stat.value}</span>
-            </motion.div>
-          ))}
-        </div>
-        
-        {hasTimeline && (
-          <div className="mt-4">
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="general">Général</TabsTrigger>
+            <TabsTrigger value="objectives">Objectifs</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="general">
             <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
-              <Target size={16} className="mr-2 text-lol-blue" />
-              Timeline Performance
+              <Shield size={16} className="mr-2 text-lol-blue" />
+              Team Performance Metrics
             </h4>
-            <Tabs defaultValue="gold" className="bg-white border border-gray-100 rounded-lg p-3">
-              <TabsList className="w-full mb-4 grid grid-cols-3">
-                <TabsTrigger value="gold">Gold</TabsTrigger>
-                <TabsTrigger value="cs">CS</TabsTrigger>
-                <TabsTrigger value="kda">K/D</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="gold">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
-                        <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                          {stats.avgGoldDiff > 0 ? '+' : ''}{stats.avgGoldDiff.toLocaleString()}
-                        </div>
-                      </div>
-                    ))}
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {stats.map((stat, index) => (
+                <motion.div 
+                  key={stat.name}
+                  className={`${stat.color} rounded-lg p-3 border border-gray-50 shadow-sm`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {stat.icon}
+                    <span className="text-xs text-gray-500">{stat.name}</span>
                   </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="cs">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">{stats.avgCs}</div>
-                        <div className="text-xs mt-1 text-gray-600">
-                          {(stats.avgCs / parseInt(time)).toFixed(1)} CS/min
-                        </div>
+                  <span className="text-lg font-semibold">{stat.value}</span>
+                </motion.div>
+              ))}
+            </div>
+            
+            {hasTimeline && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+                  <Target size={16} className="mr-2 text-lol-blue" />
+                  Timeline Performance
+                </h4>
+                <Tabs defaultValue="gold" className="bg-white border border-gray-100 rounded-lg p-3">
+                  <TabsList className="w-full mb-4 grid grid-cols-3">
+                    <TabsTrigger value="gold">Gold</TabsTrigger>
+                    <TabsTrigger value="cs">CS</TabsTrigger>
+                    <TabsTrigger value="kda">K/D</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="gold">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                          <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
+                            <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                            <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
+                            <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {stats.avgGoldDiff > 0 ? '+' : ''}{stats.avgGoldDiff.toLocaleString()}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="kda">
-                <div className="space-y-2">
-                  <div className="grid grid-cols-4 gap-2">
-                    {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
-                      <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
-                        <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                        <div className="font-semibold">
-                          {stats.avgKills} / {stats.avgDeaths}
-                        </div>
-                        <div className="text-xs mt-1 text-gray-600">
-                          {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA
-                        </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="cs">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                          <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
+                            <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                            <div className="font-semibold">{stats.avgCs}</div>
+                            <div className="text-xs mt-1 text-gray-600">
+                              {(stats.avgCs / parseInt(time)).toFixed(1)} CS/min
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="kda">
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-4 gap-2">
+                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                          <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
+                            <div className="text-sm text-gray-500 mb-1">{time} min</div>
+                            <div className="font-semibold">
+                              {stats.avgKills} / {stats.avgDeaths}
+                            </div>
+                            <div className="text-xs mt-1 text-gray-600">
+                              {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="objectives">
+            <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+              <Flame size={16} className="mr-2 text-orange-500" />
+              Premier Sang
+            </h4>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Bleu</span>
                 </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+                <span className="text-lg font-semibold">
+                  {team.blueFirstBlood || 50}%
+                </span>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Rouge</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.redFirstBlood || 50}%
+                </span>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+              <Mountain size={16} className="mr-2 text-teal-500" />
+              Premier Dragon
+            </h4>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Bleu</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.blueFirstDragon || 50}%
+                </span>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Rouge</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.redFirstDragon || 50}%
+                </span>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+              <Award size={16} className="mr-2 text-purple-500" />
+              Premier Héraut
+            </h4>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-blue-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Bleu</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.blueFirstHerald || 50}%
+                </span>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Rouge</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.redFirstHerald || 50}%
+                </span>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-medium text-gray-500 mb-3 flex items-center">
+              <Target size={16} className="mr-2 text-amber-500" />
+              Première Tour
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Bleu</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.blueFirstTower || 50}%
+                </span>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-gray-50 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Côté Rouge</span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {team.redFirstTower || 50}%
+                </span>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
