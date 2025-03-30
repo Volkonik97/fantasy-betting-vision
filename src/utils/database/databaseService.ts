@@ -95,13 +95,33 @@ export async function clearDatabase(): Promise<boolean> {
     ];
     
     for (const table of tables) {
-      // Fix: Use type assertion to specify that table is a valid table name
-      const { error } = await supabase.from(table as "player_match_stats" | "players" | "matches" | "teams" | "data_updates").delete().neq('id', 'sentinel_value');
+      // Fixed: For UUID columns, we need to use a proper condition
+      let deleteQuery;
       
-      if (error) {
-        console.error(`Error clearing ${table}:`, error);
-        toast.error(`Erreur lors de la suppression des données de ${table}: ${error.message}`);
-        return false;
+      if (table === 'player_match_stats') {
+        // For player_match_stats, use a different condition since it has UUID id
+        const { error } = await supabase
+          .from(table as "player_match_stats")
+          .delete()
+          .not('id', 'is', null); // Delete all rows where id is not null
+        
+        if (error) {
+          console.error(`Error clearing ${table}:`, error);
+          toast.error(`Erreur lors de la suppression des données de ${table}: ${error.message}`);
+          return false;
+        }
+      } else {
+        // For other tables, delete all rows
+        const { error } = await supabase
+          .from(table as any)
+          .delete()
+          .not('id', 'is', null);
+        
+        if (error) {
+          console.error(`Error clearing ${table}:`, error);
+          toast.error(`Erreur lors de la suppression des données de ${table}: ${error.message}`);
+          return false;
+        }
       }
     }
     
