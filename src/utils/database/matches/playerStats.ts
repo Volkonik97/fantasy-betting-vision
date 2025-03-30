@@ -1,5 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { calculateTimelineStats } from '@/utils/statistics/timelineStats';
+
+// Cache for player stats to improve performance
+const playerStatsCache = new Map<string, any[]>();
+ 
+/**
+ * Clear the player stats cache
+ */
+export function clearPlayerStatsCache() {
+  playerStatsCache.clear();
+  console.log('Player stats cache cleared');
+}
 
 /**
  * Récupère les statistiques d'un joueur sur tous ses matchs
@@ -8,6 +20,12 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export async function getPlayerMatchStats(playerId: string) {
   try {
+    // Check if data exists in cache
+    if (playerStatsCache.has(playerId)) {
+      console.log(`Using cached stats for player ${playerId}`);
+      return playerStatsCache.get(playerId) || [];
+    }
+    
     const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
@@ -18,12 +36,24 @@ export async function getPlayerMatchStats(playerId: string) {
       return [];
     }
     
+    // Cache the results
+    if (data) {
+      playerStatsCache.set(playerId, data);
+    }
+    
     return data || [];
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques du joueur:", error);
     return [];
   }
 }
+
+/**
+ * Alias for getPlayerMatchStats for backward compatibility
+ * @param playerId ID du joueur
+ * @returns Liste des statistiques du joueur pour tous ses matchs
+ */
+export const getPlayerStats = getPlayerMatchStats;
 
 /**
  * Récupère les statistiques de joueurs pour une équipe spécifique
@@ -46,6 +76,33 @@ export async function getTeamPlayersStats(teamId: string) {
   } catch (error) {
     console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
     return [];
+  }
+}
+
+/**
+ * Récupère et calcule les statistiques de timeline pour un joueur spécifique
+ * @param playerId ID du joueur
+ * @returns Statistiques de timeline agrégées
+ */
+export async function getPlayerTimelineStats(playerId: string) {
+  try {
+    console.log(`Récupération des statistiques timeline pour le joueur ${playerId}`);
+    
+    // Récupérer toutes les statistiques du joueur
+    const playerStats = await getPlayerMatchStats(playerId);
+    
+    if (!playerStats || playerStats.length === 0) {
+      console.log(`Aucune statistique trouvée pour le joueur ${playerId}`);
+      return null;
+    }
+    
+    console.log(`Trouvé ${playerStats.length} statistiques pour le joueur ${playerId}`);
+    
+    // Utiliser la fonction existante pour calculer les statistiques timeline
+    return calculateTimelineStats(playerStats);
+  } catch (error) {
+    console.error("Erreur lors du calcul des statistiques timeline du joueur:", error);
+    return null;
   }
 }
 
@@ -166,3 +223,4 @@ function calculateAverage(values: any[], defaultValue = 0) {
   const sum = numericValues.reduce((acc, val) => acc + Number(val), 0);
   return sum / numericValues.length;
 }
+
