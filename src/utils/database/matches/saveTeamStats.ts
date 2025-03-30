@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -102,8 +103,8 @@ export async function saveTeamMatchStats(
     // Fix stats with incorrect values
     validTeamStats.forEach(stat => {
       // Force numeric stats to be integers
-      stat.kills = convertToInteger(stat.kills);
-      stat.deaths = convertToInteger(stat.deaths);
+      stat.kills = convertToInteger(stat.team_kills || stat.kills);
+      stat.deaths = convertToInteger(stat.team_deaths || stat.deaths);
       stat.towers = convertToInteger(stat.towers);
       stat.inhibitors = convertToInteger(stat.inhibitors);
       stat.heralds = convertToInteger(stat.heralds);
@@ -127,9 +128,10 @@ export async function saveTeamMatchStats(
       if ((stat.dragons > 0 || stat.elemental_drakes > 0 || stat.infernals > 0 || 
            stat.mountains > 0 || stat.clouds > 0 || stat.oceans > 0 || 
            stat.chemtechs > 0 || stat.hextechs > 0 || stat.drakes_unknown > 0 || 
-           stat.elders > 0) && Math.random() < 0.05) { // Log seulement 5% des matchs pour éviter de spammer
-        console.log(`Stats dragons pour team ${stat.team_id} match ${stat.match_id}: ` +
-                    `Total=${stat.dragons}, Elemental=${stat.elemental_drakes}, ` +
+           stat.elders > 0)) {
+        // Log tous les stats qui ont des dragons pour le débogage (même si ça génère beaucoup de logs)
+        console.log(`[saveTeamStats] Match ${stat.match_id}, Team ${stat.team_id}: ` +
+                    `Dragons=${stat.dragons}, Elemental=${stat.elemental_drakes}, ` +
                     `Infernal=${stat.infernals}, Mountain=${stat.mountains}, ` +
                     `Cloud=${stat.clouds}, Ocean=${stat.oceans}, ` +
                     `Chemtech=${stat.chemtechs}, Hextech=${stat.hextechs}, ` +
@@ -157,12 +159,12 @@ export async function saveTeamMatchStats(
       return {
         match_id: stat.match_id,
         team_id: stat.team_id,
-        is_blue_side: ensureBoolean(stat.is_blue_side),
-        kills: convertToInteger(stat.kills),
-        deaths: convertToInteger(stat.deaths),
-        kpm: ensureNumber(stat.kpm),
+        is_blue_side: stat.side?.toLowerCase() === 'blue',
+        kills: convertToInteger(stat.team_kills || stat.kills),
+        deaths: convertToInteger(stat.team_deaths || stat.deaths),
+        kpm: ensureNumber(stat.team_kpm || stat.kpm),
         
-        // Dragon statistics
+        // Dragon statistics - utiliser des valeurs sécurisées
         dragons: convertToInteger(stat.dragons),
         elemental_drakes: convertToInteger(stat.elemental_drakes),
         infernals: convertToInteger(stat.infernals),
@@ -209,6 +211,10 @@ export async function saveTeamMatchStats(
     // Convert back to array with unique combinations
     const uniqueStats = Array.from(uniqueStatsMap.values());
     console.log(`Après déduplication: ${uniqueStats.length} statistiques d'équipe uniques (éliminé ${statsToInsert.length - uniqueStats.length} doublons)`);
+    
+    // Log détaillé pour les 5 premières statistiques à insérer
+    const sampleStats = uniqueStats.slice(0, 5);
+    console.log(`Échantillon de données à insérer:`, sampleStats);
     
     // Recalculate chunks with deduplicated data
     const chunkSize = 100;

@@ -67,6 +67,8 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     }
   });
   
+  console.log(`[dataAssembler] Traitement de ${matchesArray.length} matchs avec ${uniqueTeams.size} équipes`);
+  
   // Convert the matchesArray to Match objects
   const matches: Match[] = matchesArray.map(match => {
     const blueTeam = teams.find(t => t.id === match.teamBlueId);
@@ -172,6 +174,18 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     // Process blue team stats
     const blueTeamStats = processTeamRows(blueTeamRows, match.id, blueTeam.id, true);
     if (blueTeamStats) {
+      console.log(`[dataAssembler] Match ${match.id} - Blue team stats extracted:`, {
+        dragons: blueTeamStats.dragons,
+        elemental_drakes: blueTeamStats.elemental_drakes,
+        infernals: blueTeamStats.infernals,
+        mountains: blueTeamStats.mountains,
+        clouds: blueTeamStats.clouds,
+        oceans: blueTeamStats.oceans,
+        chemtechs: blueTeamStats.chemtechs,
+        hextechs: blueTeamStats.hextechs,
+        drakes_unknown: blueTeamStats.drakes_unknown
+      });
+      
       matchObject.extraStats.blueTeamStats = blueTeamStats;
       // Add to team match stats array
       teamMatchStatsArray.push({
@@ -185,6 +199,18 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     // Process red team stats
     const redTeamStats = processTeamRows(redTeamRows, match.id, redTeam.id, false);
     if (redTeamStats) {
+      console.log(`[dataAssembler] Match ${match.id} - Red team stats extracted:`, {
+        dragons: redTeamStats.dragons,
+        elemental_drakes: redTeamStats.elemental_drakes,
+        infernals: redTeamStats.infernals,
+        mountains: redTeamStats.mountains,
+        clouds: redTeamStats.clouds,
+        oceans: redTeamStats.oceans,
+        chemtechs: redTeamStats.chemtechs,
+        hextechs: redTeamStats.hextechs,
+        drakes_unknown: redTeamStats.drakes_unknown
+      });
+      
       matchObject.extraStats.redTeamStats = redTeamStats;
       // Add to team match stats array
       teamMatchStatsArray.push({
@@ -248,17 +274,87 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     
     return matchObject;
   }).filter(Boolean) as Match[];
-  
+
   // Helper function to process team rows
   function processTeamRows(rows: LeagueGameDataRow[], matchId: string, teamId: string, isBlue: boolean): any {
     if (rows.length === 0) {
       return null;
     }
     
+    // Combiner toutes les données en une seule structure
+    const allTeamData: Record<string, any> = {};
+    rows.forEach(row => {
+      Object.entries(row).forEach(([key, value]) => {
+        const lowerKey = key.toLowerCase();
+        if (value !== undefined && value !== null && value !== '') {
+          allTeamData[key] = allTeamData[key] || value;
+          if (lowerKey !== key) {
+            allTeamData[lowerKey] = allTeamData[lowerKey] || value;
+          }
+        }
+      });
+    });
+    
+    // Log les données brutes pour le débogage (NOUVELLE LIGNE)
+    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, raw dragon data:`, {
+      dragons: allTeamData.dragons,
+      elementaldrakes: allTeamData.elementaldrakes,
+      infernals: allTeamData.infernals,
+      mountains: allTeamData.mountains,
+      clouds: allTeamData.clouds,
+      oceans: allTeamData.oceans,
+      chemtechs: allTeamData.chemtechs,
+      hextechs: allTeamData.hextechs,
+      dragons_type_unknown: allTeamData.dragons_type_unknown
+    });
+    
     // Use the first row for team stats
     const row = rows[0];
     
-    // Create team stats object
+    // Extraire les valeurs avec recherche de noms alternatifs
+    const getStatWithAlternatives = (alternatives: string[]): number => {
+      for (const alt of alternatives) {
+        const value = allTeamData[alt] || allTeamData[alt.toLowerCase()];
+        if (value !== undefined && value !== null && value !== '') {
+          const num = parseInt(String(value).trim());
+          if (!isNaN(num)) return num;
+          // Si c'est "true" ou "1", retourner 1
+          if (value === "true" || value === "1" || value === true) return 1;
+        }
+      }
+      return 0;
+    };
+    
+    // Liste d'alternatives pour chaque type de statistique
+    const dragonAlts = ['dragons', 'dragon', 'drakes', 'drake'];
+    const elementalDrakeAlts = ['elementaldrakes', 'elemental_drakes', 'elemental', 'elementals'];
+    const infernalAlts = ['infernals', 'infernal', 'infernal_drake', 'infernal_drakes'];
+    const mountainAlts = ['mountains', 'mountain', 'mountain_drake', 'mountain_drakes'];
+    const cloudAlts = ['clouds', 'cloud', 'cloud_drake', 'cloud_drakes'];
+    const oceanAlts = ['oceans', 'ocean', 'ocean_drake', 'ocean_drakes'];
+    const chemtechAlts = ['chemtechs', 'chemtech', 'chemtech_drake', 'chemtech_drakes'];
+    const hextechAlts = ['hextechs', 'hextech', 'hextech_drake', 'hextech_drakes'];
+    const unknownDrakeAlts = ['dragons (type unknown)', 'dragons_type_unknown', 'drakes_unknown'];
+    const elderAlts = ['elders', 'elder', 'elderdragon', 'elder_dragon'];
+    
+    // Extraire les valeurs
+    const dragons = getStatWithAlternatives(dragonAlts);
+    const elementalDrakes = getStatWithAlternatives(elementalDrakeAlts);
+    const infernals = getStatWithAlternatives(infernalAlts);
+    const mountains = getStatWithAlternatives(mountainAlts);
+    const clouds = getStatWithAlternatives(cloudAlts);
+    const oceans = getStatWithAlternatives(oceanAlts);
+    const chemtechs = getStatWithAlternatives(chemtechAlts);
+    const hextechs = getStatWithAlternatives(hextechAlts);
+    const drakesUnknown = getStatWithAlternatives(unknownDrakeAlts);
+    const elders = getStatWithAlternatives(elderAlts);
+    
+    // Log les valeurs extraites
+    console.log(`[processTeamRows] Match ${matchId}, Team ${teamId}, extracted dragon values:`, {
+      dragons, elementalDrakes, infernals, mountains, clouds, oceans, chemtechs, hextechs, drakesUnknown, elders
+    });
+    
+    // Create team stats object with all dragon statistics
     const stats = {
       team_id: teamId,
       match_id: matchId,
@@ -269,18 +365,18 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       deaths: parseInt(row.teamdeaths || '0') || 0,
       
       // Dragons - assurons-nous que toutes les stats sont là
-      dragons: parseInt(row.dragons || '0') || 0,
-      elemental_drakes: parseInt(row.elementaldrakes || '0') || 0,
-      infernals: parseInt(row.infernals || '0') || 0,
-      mountains: parseInt(row.mountains || '0') || 0,
-      clouds: parseInt(row.clouds || '0') || 0,
-      oceans: parseInt(row.oceans || '0') || 0,
-      chemtechs: parseInt(row.chemtechs || '0') || 0,
-      hextechs: parseInt(row.hextechs || '0') || 0,
-      drakes_unknown: parseInt(row.dragons_type_unknown || '0') || 0,
+      dragons,
+      elemental_drakes: elementalDrakes,
+      infernals,
+      mountains,
+      clouds,
+      oceans,
+      chemtechs,
+      hextechs,
+      drakes_unknown: drakesUnknown,
       
       // Other objectives
-      elders: parseInt(row.elders || '0') || 0,
+      elders,
       heralds: parseInt(row.heralds || '0') || 0,
       barons: parseInt(row.barons || '0') || 0,
       towers: parseInt(row.towers || '0') || 0,
@@ -298,19 +394,6 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       first_three_towers: row.firsttothreetowers === 'True' || row.firsttothreetowers === '1'
     };
     
-    // Debug logging pour les statistiques des dragons
-    if ((stats.dragons > 0 || stats.elemental_drakes > 0 || stats.infernals > 0 || 
-         stats.mountains > 0 || stats.clouds > 0 || stats.oceans > 0 || 
-         stats.chemtechs > 0 || stats.hextechs > 0 || stats.drakes_unknown > 0 || 
-         stats.elders > 0) && Math.random() < 0.1) { // Log only 10% of matches to avoid spam
-      console.log(`[dataAssembler] Dragon stats for team ${teamId}, match ${matchId}: ` +
-                  `Total=${stats.dragons}, Elemental=${stats.elemental_drakes}, ` +
-                  `Infernal=${stats.infernals}, Mountain=${stats.mountains}, ` +
-                  `Cloud=${stats.clouds}, Ocean=${stats.oceans}, ` +
-                  `Chemtech=${stats.chemtechs}, Hextech=${stats.hextechs}, ` +
-                  `Unknown=${stats.drakes_unknown}, Elder=${stats.elders}`);
-    }
-    
     return stats;
   }
   
@@ -327,7 +410,14 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     });
   });
   
-  console.log(`Generated ${teamMatchStatsArray.length} team match statistics records`);
+  // Afficher des statistiques sur les données extraites
+  const dragonStats = teamMatchStatsArray.filter(stat => 
+    stat.dragons > 0 || stat.elemental_drakes > 0 || stat.infernals > 0 || 
+    stat.mountains > 0 || stat.clouds > 0 || stat.oceans > 0 ||
+    stat.chemtechs > 0 || stat.hextechs > 0 || stat.drakes_unknown > 0 || stat.elders > 0
+  );
+  
+  console.log(`[dataAssembler] Génération de ${teamMatchStatsArray.length} statistiques d'équipe, dont ${dragonStats.length} avec des dragons`);
   
   // Return the assembled data
   return {

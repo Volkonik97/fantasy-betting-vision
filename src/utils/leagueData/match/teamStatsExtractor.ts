@@ -54,6 +54,8 @@ function processTeamRows(
   // Combine les données de toutes les lignes pour cette équipe
   const allTeamData = combineTeamRowData(teamRows);
   
+  console.log(`[teamStatsExtractor] Processing team ${teamId} for match ${gameId}, found ${teamRows.length} rows`);
+  
   // Détermine si cette équipe a obtenu les premiers objectifs
   const hasFirstBlood = getFirstObjectiveValue(allTeamData, 'firstblood', teamId);
   const hasFirstDragon = getFirstObjectiveValue(allTeamData, 'firstdragon', teamId);
@@ -69,38 +71,91 @@ function processTeamRows(
   const teamKpm = getStatValue(allTeamData, 'team kpm');
   const ckpm = getStatValue(allTeamData, 'ckpm');
   
+  // Liste complète des noms alternatifs possibles pour les colonnes de dragons
+  const dragonAlternatives = [
+    'dragons', 'dragon', 'drakes', 'drake', 'dragons_taken', 'drakes_taken', 'total_dragons', 'total_drakes'
+  ];
+  
+  const elementalDrakeAlternatives = [
+    'elementaldrakes', 'elemental_drakes', 'elemental', 'elementals', 'elementaldrake', 'elemental_drake'
+  ];
+  
+  const infernalAlternatives = [
+    'infernals', 'infernal', 'infernal_drake', 'infernal_drakes', 'infernaldrake', 'infernaldrakes'
+  ];
+  
+  const mountainAlternatives = [
+    'mountains', 'mountain', 'mountain_drake', 'mountain_drakes', 'mountaindrake', 'mountaindrakes'
+  ];
+  
+  const cloudAlternatives = [
+    'clouds', 'cloud', 'cloud_drake', 'cloud_drakes', 'clouddrake', 'clouddrakes'
+  ];
+  
+  const oceanAlternatives = [
+    'oceans', 'ocean', 'ocean_drake', 'ocean_drakes', 'oceandrake', 'oceandrakes'
+  ];
+  
+  const chemtechAlternatives = [
+    'chemtechs', 'chemtech', 'chemtech_drake', 'chemtech_drakes', 'chemtechdrake', 'chemtechdrakes'
+  ];
+  
+  const hextechAlternatives = [
+    'hextechs', 'hextech', 'hextech_drake', 'hextech_drakes', 'hextechdrake', 'hextechdrakes'
+  ];
+  
+  const unknownDrakeAlternatives = [
+    'dragons (type unknown)', 'dragons_type_unknown', 'drakes_unknown', 'unknown_drakes', 'unknown_dragons'
+  ];
+  
+  const elderAlternatives = [
+    'elders', 'elder', 'elderdragon', 'elder_dragon', 'elder_dragons', 'elderdragons'
+  ];
+  
   // Extraire les statistiques de dragons avec recherche de noms alternatifs
-  const dragons = getStatValue(allTeamData, 'dragons');
-  const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
-  const infernals = getStatValue(allTeamData, 'infernals');
-  const mountains = getStatValue(allTeamData, 'mountains');
-  const clouds = getStatValue(allTeamData, 'clouds');
-  const oceans = getStatValue(allTeamData, 'oceans');
-  const chemtechs = getStatValue(allTeamData, 'chemtechs');
-  const hextechs = getStatValue(allTeamData, 'hextechs');
+  const dragons = findStatValueWithAlternatives(allTeamData, dragonAlternatives);
+  const elementalDrakes = findStatValueWithAlternatives(allTeamData, elementalDrakeAlternatives);
+  const infernals = findStatValueWithAlternatives(allTeamData, infernalAlternatives);
+  const mountains = findStatValueWithAlternatives(allTeamData, mountainAlternatives);
+  const clouds = findStatValueWithAlternatives(allTeamData, cloudAlternatives);
+  const oceans = findStatValueWithAlternatives(allTeamData, oceanAlternatives);
+  const chemtechs = findStatValueWithAlternatives(allTeamData, chemtechAlternatives);
+  const hextechs = findStatValueWithAlternatives(allTeamData, hextechAlternatives);
+  const drakesUnknown = findStatValueWithAlternatives(allTeamData, unknownDrakeAlternatives);
+  const elders = findStatValueWithAlternatives(allTeamData, elderAlternatives);
   
-  // Handle differently named columns as well
-  const drakesUnknown = getStatValue(allTeamData, 'dragons (type unknown)') || 
-                        getStatValue(allTeamData, 'dragons_type_unknown') ||
-                        getStatValue(allTeamData, 'drakes_unknown');
+  // Extraire les autres statistiques d'objectifs avec les alternatives
+  const heraldAlternatives = ['heralds', 'herald', 'riftherald', 'rift_herald', 'rift_heralds'];
+  const baronAlternatives = ['barons', 'baron', 'baron_nashor', 'baronnashor'];
+  const towerAlternatives = ['towers', 'tower', 'turrets', 'turret'];
+  const turretPlateAlternatives = ['turretplates', 'turret_plates', 'plates'];
+  const inhibitorAlternatives = ['inhibitors', 'inhibitor', 'inhibs', 'inhib'];
+  const voidGrubAlternatives = ['void_grubs', 'voidgrubs', 'void_grub', 'voidgrub'];
   
-  const elders = getStatValue(allTeamData, 'elders');
+  const heralds = findStatValueWithAlternatives(allTeamData, heraldAlternatives);
+  const barons = findStatValueWithAlternatives(allTeamData, baronAlternatives);
+  const towers = findStatValueWithAlternatives(allTeamData, towerAlternatives);
+  const turretPlates = findStatValueWithAlternatives(allTeamData, turretPlateAlternatives);
+  const inhibitors = findStatValueWithAlternatives(allTeamData, inhibitorAlternatives);
+  const voidGrubs = findStatValueWithAlternatives(allTeamData, voidGrubAlternatives);
   
-  // Extraire les autres statistiques d'objectifs
-  const heralds = getStatValue(allTeamData, 'heralds');
-  const barons = getStatValue(allTeamData, 'barons');
-  const towers = getStatValue(allTeamData, 'towers');
-  const turretPlates = getStatValue(allTeamData, 'turretplates');
-  const inhibitors = getStatValue(allTeamData, 'inhibitors');
-  const voidGrubs = getStatValue(allTeamData, 'void_grubs');
+  // Log détaillé pour le débogage
+  console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Raw dragon values:`, { 
+    dragons: findRawValue(allTeamData, dragonAlternatives),
+    elementalDrakes: findRawValue(allTeamData, elementalDrakeAlternatives),
+    infernals: findRawValue(allTeamData, infernalAlternatives),
+    mountains: findRawValue(allTeamData, mountainAlternatives),
+    clouds: findRawValue(allTeamData, cloudAlternatives),
+    oceans: findRawValue(allTeamData, oceanAlternatives),
+    chemtechs: findRawValue(allTeamData, chemtechAlternatives),
+    hextechs: findRawValue(allTeamData, hextechAlternatives),
+    unknown: findRawValue(allTeamData, unknownDrakeAlternatives),
+    elders: findRawValue(allTeamData, elderAlternatives)
+  });
   
-  // Log dragon stats for debugging
-  if (dragons > 0 || elementalDrakes > 0 || infernals > 0 || mountains > 0 || 
-      clouds > 0 || oceans > 0 || chemtechs > 0 || hextechs > 0 || drakesUnknown > 0 || elders > 0) {
-    console.log(`Match ${gameId}, Team ${teamId}: Dragons=${dragons}, Elemental=${elementalDrakes}, ` +
-                `Infernal=${infernals}, Mountain=${mountains}, Cloud=${clouds}, Ocean=${oceans}, ` +
-                `Chemtech=${chemtechs}, Hextech=${hextechs}, Unknown=${drakesUnknown}, Elder=${elders}`);
-  }
+  console.log(`[teamStatsExtractor] Match ${gameId}, Team ${teamId} - Parsed dragon values:`, { 
+    dragons, elementalDrakes, infernals, mountains, clouds, oceans, chemtechs, hextechs, drakesUnknown, elders
+  });
   
   // Créer l'objet de statistiques pour cette équipe
   teamStatsMap.set(teamId, {
@@ -136,6 +191,36 @@ function processTeamRows(
     turret_plates: turretPlates,
     inhibitors: inhibitors
   });
+}
+
+/**
+ * Recherche une valeur statistique en essayant plusieurs noms de colonnes alternatifs
+ */
+function findStatValueWithAlternatives(data: Record<string, any>, alternatives: string[]): number {
+  for (const alt of alternatives) {
+    const value = getStatValue(data, alt);
+    if (value > 0) {
+      return value;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Récupère la valeur brute (non parsée) pour le débogage
+ */
+function findRawValue(data: Record<string, any>, alternatives: string[]): any {
+  for (const alt of alternatives) {
+    if (data[alt] !== undefined) {
+      return data[alt];
+    }
+    
+    // Essayer aussi la version en minuscules
+    if (data[alt.toLowerCase()] !== undefined) {
+      return data[alt.toLowerCase()];
+    }
+  }
+  return 'not found';
 }
 
 /**
