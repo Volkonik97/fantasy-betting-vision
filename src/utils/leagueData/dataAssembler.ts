@@ -1,3 +1,4 @@
+
 import { LeagueGameDataRow } from '../csv/types';
 import { Match, Player, Team } from '../models/types';
 import { processMatchData } from './match/matchProcessor';
@@ -56,9 +57,6 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
   
   // Préparation des tableaux pour les statistiques d'équipe par match
   const teamMatchStatsArray: any[] = [];
-  
-  // Create temporary array to collect all match objects that will be built
-  const matchesOutput: Match[] = [];
   
   // Convert the matchesArray to Match objects
   const matches: Match[] = matchesArray.map(match => {
@@ -140,8 +138,41 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       }
     };
     
-    // Add the match to our temporary array
-    matchesOutput.push(matchObject);
+    // Extraire statistiques spécifiques à chaque équipe
+    const { blueTeamStats, redTeamStats } = extractTeamSpecificStats(matchObject);
+    
+    // Ajouter aux statistiques d'équipe par match pour les deux équipes
+    if (blueTeam && blueTeamStats) {
+      teamMatchStatsArray.push({
+        ...blueTeamStats,
+        team_id: blueTeam.id,
+        match_id: match.id,
+        side: 'blue'
+      });
+    }
+    
+    if (redTeam && redTeamStats) {
+      teamMatchStatsArray.push({
+        ...redTeamStats,
+        team_id: redTeam.id,
+        match_id: match.id,
+        side: 'red'
+      });
+    }
+    
+    // Ajouter les stats d'équipe à l'objet match pour la rétrocompatibilité
+    if (teamStatsMap) {
+      const blueTeamStats = teamStatsMap.get(blueTeam.id);
+      const redTeamStats = teamStatsMap.get(redTeam.id);
+      
+      if (blueTeamStats) {
+        matchObject.extraStats.blueTeamStats = blueTeamStats;
+      }
+      
+      if (redTeamStats) {
+        matchObject.extraStats.redTeamStats = redTeamStats;
+      }
+    }
     
     // Add result if the match is completed
     if (match.status === 'Completed' && match.winnerTeamId) {
@@ -160,46 +191,6 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     
     return matchObject;
   }).filter(Boolean) as Match[];
-  
-  // Now that all matches are built, extract team stats with the full match array
-  matches.forEach(match => {
-    // Extraire statistiques spécifiques à chaque équipe
-    const { blueTeamStats, redTeamStats } = extractTeamSpecificStats(match, matchesOutput);
-    
-    // Ajouter aux statistiques d'équipe par match pour les deux équipes
-    if (blueTeamStats) {
-      teamMatchStatsArray.push({
-        ...blueTeamStats,
-        team_id: match.teamBlue.id,
-        match_id: match.id,
-        side: 'blue'
-      });
-    }
-    
-    if (redTeamStats) {
-      teamMatchStatsArray.push({
-        ...redTeamStats,
-        team_id: match.teamRed.id,
-        match_id: match.id,
-        side: 'red'
-      });
-    }
-    
-    // Ajouter les stats d'équipe à l'objet match pour la rétrocompatibilité
-    const teamStatsMap = matchStats.get(match.id);
-    if (teamStatsMap) {
-      const blueTeamDbStats = teamStatsMap.get(match.teamBlue.id);
-      const redTeamDbStats = teamStatsMap.get(match.teamRed.id);
-      
-      if (blueTeamDbStats) {
-        match.extraStats.blueTeamStats = blueTeamDbStats;
-      }
-      
-      if (redTeamDbStats) {
-        match.extraStats.redTeamStats = redTeamDbStats;
-      }
-    }
-  });
   
   // Collect player match statistics as array
   const playerMatchStatsArray: any[] = [];
