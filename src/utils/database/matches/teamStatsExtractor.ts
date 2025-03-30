@@ -3,8 +3,8 @@ import { Match } from '@/utils/models/types';
 
 /**
  * Extract team-specific stats from a match object
- * Cette fonction suppose maintenant que chaque équipe a ses propres statistiques complètes et indépendantes,
- * sans colonnes "opp_" croisées entre les équipes
+ * Cette fonction part du principe que chaque équipe a ses propres statistiques complètes et indépendantes,
+ * sans référence croisée à l'équipe adverse.
  */
 export function extractTeamSpecificStats(match: Match): { 
   blueTeamStats: any, 
@@ -85,38 +85,40 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
   };
 
-  // Pour l'équipe rouge - utiliser les mêmes propriétés mais pour l'équipe rouge
-  // Note: Dans ce nouveau modèle, nous supposons que les statistiques complètes pour l'équipe rouge
-  // doivent être fournies indépendamment, sans préfixes "opp_"
+  // Pour l'équipe rouge, nous n'utilisons plus les préfixes "opp_"
+  // Dans une structure à deux lignes indépendantes, nous n'avons pas cette information ici
+  // Ces valeurs devront être fournies indépendamment lors du traitement des données
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
     is_blue_side: false,
-    // Note: Dans un modèle à deux lignes indépendantes, ces valeurs devraient être fournies directement
-    // pour l'équipe rouge au lieu d'être dérivées des statistiques de l'équipe bleue
-    kills: safeParseInt(match.extraStats.opp_team_kills || 0),
-    deaths: safeParseInt(match.extraStats.opp_team_deaths || 0),
-    kpm: safeParseInt(match.extraStats.opp_team_kpm || 0),
     
-    // Dragons pour l'équipe rouge (maintenant indépendants)
-    dragons: safeParseInt(match.extraStats.opp_dragons || 0),
-    infernals: safeParseInt(match.extraStats.opp_infernals || 0),
-    mountains: safeParseInt(match.extraStats.opp_mountains || 0),
-    clouds: safeParseInt(match.extraStats.opp_clouds || 0), 
-    oceans: safeParseInt(match.extraStats.opp_oceans || 0),
-    chemtechs: safeParseInt(match.extraStats.opp_chemtechs || 0),
-    hextechs: safeParseInt(match.extraStats.opp_hextechs || 0),
-    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown || 0),
-    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || 0),
+    // Note: Nous n'avons pas accès aux statistiques spécifiques de l'équipe rouge
+    // dans ce contexte avec la structure de données actuelle.
+    // Ces valeurs sont donc provisoires et devront être remplacées par les vraies données
+    kills: 0,   // À remplacer par les données réelles de l'équipe rouge
+    deaths: 0,  // À remplacer par les données réelles de l'équipe rouge
+    kpm: 0,     // À remplacer par les données réelles de l'équipe rouge
     
-    // Autres objectifs pour l'équipe rouge
-    elders: safeParseInt(match.extraStats.opp_elders || 0),
-    heralds: safeParseInt(match.extraStats.opp_heralds || 0),
-    barons: safeParseInt(match.extraStats.opp_barons || 0),
-    towers: safeParseInt(match.extraStats.opp_towers || 0),
-    turret_plates: safeParseInt(match.extraStats.opp_turret_plates || 0),
-    inhibitors: safeParseInt(match.extraStats.opp_inhibitors || 0),
-    void_grubs: safeParseInt(match.extraStats.opp_void_grubs || 0),
+    // Dragons pour l'équipe rouge (à compléter avec les vraies données)
+    dragons: 0,
+    infernals: 0,
+    mountains: 0,
+    clouds: 0,
+    oceans: 0,
+    chemtechs: 0,
+    hextechs: 0,
+    drakes_unknown: 0,
+    elemental_drakes: 0,
+    
+    // Autres objectifs pour l'équipe rouge (à compléter)
+    elders: 0,
+    heralds: 0,
+    barons: 0,
+    towers: 0,
+    turret_plates: 0,
+    inhibitors: 0,
+    void_grubs: 0,
     
     // First objectives pour l'équipe rouge
     first_blood: match.extraStats.first_blood === match.teamRed.id,
@@ -147,6 +149,7 @@ export function extractTeamSpecificStats(match: Match): {
       },
       teamRed: {
         id: match.teamRed.id,
+        // Note: Ces données sont provisoires et ne reflètent pas les vraies stats de l'équipe rouge
         totalDragons: redTeamStats.dragons,
         detailDragons: {
           infernals: redTeamStats.infernals,
