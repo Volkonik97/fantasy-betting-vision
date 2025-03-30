@@ -1,9 +1,10 @@
 
 import { LeagueGameDataRow } from '../csvTypes';
 import { Match, Player, Team } from '../models/types';
-import { processMatchData } from './matchProcessor';
+import { processMatchData } from './match/matchProcessor';
 import { processTeamData } from './teamProcessor';
 import { processPlayerData } from './playerProcessor';
+import { extractPicksAndBans } from './match/picksAndBansExtractor';
 
 export function assembleLeagueData(data: LeagueGameDataRow[]): {
   teams: Team[];
@@ -66,14 +67,9 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     // Find team stats for this match
     const teamStatsMap = matchStats.get(match.id);
     
-    // Extract picks and bans data if present
-    const picksData = data.find(row => 
-      row.gameid === match.id && row.picks && row.picks.length > 0
-    )?.picks;
-    
-    const bansData = data.find(row => 
-      row.gameid === match.id && row.bans && row.bans.length > 0
-    )?.bans;
+    // Extract picks and bans data from group data for this match
+    const gameRows = data.filter(row => row.gameid === match.id);
+    const { picks: picksData, bans: bansData } = extractPicksAndBans(gameRows);
     
     // Create match object
     const matchObject: Match = {
@@ -106,9 +102,9 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
         heralds: 0,
         team_kills: 0,
         team_deaths: 0,
-        // Ajout des picks et bans
-        picks: picksData ? picksData : undefined,
-        bans: bansData ? bansData : undefined
+        // Include picks and bans
+        picks: picksData,
+        bans: bansData
       } : undefined
     };
     
