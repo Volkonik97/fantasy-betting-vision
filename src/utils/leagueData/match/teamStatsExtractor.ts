@@ -34,27 +34,30 @@ export function extractTeamStats(
     const baseRow = rows[0];
     if (!baseRow) return;
     
-    console.log(`Extracting team stats for team ${teamId} in game ${gameId}`);
+    console.log(`Extraction des statistiques d'équipe pour ${teamId} dans le match ${gameId}`);
     
     // Log sample data to verify values
     if (rows.length > 0) {
-      console.log(`Sample row data for team ${teamId}:`, {
+      console.log(`Données d'échantillon pour l'équipe ${teamId}:`, {
         dragons: baseRow.dragons,
         barons: baseRow.barons,
         firstblood: baseRow.firstblood,
         firstdragon: baseRow.firstdragon,
-        firstbaron: baseRow.firstbaron
+        firstbaron: baseRow.firstbaron,
+        gameLength: baseRow.gamelength,
+        teamKpm: baseRow['team kpm'],
+        ckpm: baseRow.ckpm
       });
     }
     
     // Determine if this team got first objectives
-    const hasFirstBlood = checkBooleanValue(baseRow.firstblood);
-    const hasFirstDragon = checkBooleanValue(baseRow.firstdragon);
-    const hasFirstHerald = checkBooleanValue(baseRow.firstherald);
-    const hasFirstBaron = checkBooleanValue(baseRow.firstbaron);
-    const hasFirstTower = checkBooleanValue(baseRow.firsttower);
-    const hasFirstMidTower = checkBooleanValue(baseRow.firstmidtower);
-    const hasFirstThreeTowers = checkBooleanValue(baseRow.firsttothreetowers);
+    const hasFirstBlood = checkTeamObjectiveValue(baseRow.firstblood, teamId);
+    const hasFirstDragon = checkTeamObjectiveValue(baseRow.firstdragon, teamId);
+    const hasFirstHerald = checkTeamObjectiveValue(baseRow.firstherald, teamId);
+    const hasFirstBaron = checkTeamObjectiveValue(baseRow.firstbaron, teamId);
+    const hasFirstTower = checkTeamObjectiveValue(baseRow.firsttower, teamId);
+    const hasFirstMidTower = checkTeamObjectiveValue(baseRow.firstmidtower, teamId);
+    const hasFirstThreeTowers = checkTeamObjectiveValue(baseRow.firsttothreetowers, teamId);
     
     // Parse numeric values with safeParse helpers
     const dragons = safeParseInt(baseRow.dragons);
@@ -94,10 +97,10 @@ export function extractTeamStats(
       is_winner: baseRow.result === '1',
       team_kpm: teamKpm,
       ckpm: ckpm,
-      first_blood: hasFirstBlood ? teamId : null,
+      first_blood: hasFirstBlood,
       team_kills: teamKills,
       team_deaths: teamDeaths,
-      first_dragon: hasFirstDragon ? teamId : null,
+      first_dragon: hasFirstDragon,
       dragons: dragons,
       opp_dragons: oppDragons,
       elemental_drakes: elementalDrakes,
@@ -111,17 +114,17 @@ export function extractTeamStats(
       drakes_unknown: drakesUnknown,
       elders: elders,
       opp_elders: oppElders,
-      first_herald: hasFirstHerald ? teamId : null,
+      first_herald: hasFirstHerald,
       heralds: heralds,
       opp_heralds: oppHeralds,
-      first_baron: hasFirstBaron ? teamId : null,
+      first_baron: hasFirstBaron,
       barons: barons,
       opp_barons: oppBarons,
       void_grubs: voidGrubs,
       opp_void_grubs: oppVoidGrubs,
-      first_tower: hasFirstTower ? teamId : null,
-      first_mid_tower: hasFirstMidTower ? teamId : null,
-      first_three_towers: hasFirstThreeTowers ? teamId : null,
+      first_tower: hasFirstTower,
+      first_mid_tower: hasFirstMidTower,
+      first_three_towers: hasFirstThreeTowers,
       towers: towers,
       opp_towers: oppTowers,
       turret_plates: turretPlates,
@@ -130,11 +133,11 @@ export function extractTeamStats(
       opp_inhibitors: oppInhibitors
     });
     
-    console.log(`Team ${teamId} stats extracted:`, {
+    console.log(`Statistiques extraites pour l'équipe ${teamId}:`, {
       dragons: dragons,
       barons: barons,
-      firstBlood: hasFirstBlood ? teamId : null,
-      firstDragon: hasFirstDragon ? teamId : null
+      firstBlood: hasFirstBlood,
+      firstDragon: hasFirstDragon
     });
   });
   
@@ -142,9 +145,21 @@ export function extractTeamStats(
 }
 
 /**
- * Helper function to check if a value represents a boolean true
+ * Helper function to check if a team got an objective
+ * This handles various formats in the data: team ID, boolean, or team name
  */
-function checkBooleanValue(value: string | undefined): boolean {
-  if (!value) return false;
-  return value === '1' || value.toLowerCase() === 'true';
+function checkTeamObjectiveValue(value: string | undefined, teamId: string): string | null {
+  if (!value) return null;
+  
+  // Si la valeur est exactement le teamId, c'est cette équipe qui a eu l'objectif
+  if (value === teamId) return teamId;
+  
+  // Si c'est "1" ou "true", on considère que c'est cette équipe
+  if (value === '1' || value.toLowerCase() === 'true') return teamId;
+  
+  // Si c'est "0" ou "false", ce n'est pas cette équipe
+  if (value === '0' || value.toLowerCase() === 'false') return null;
+  
+  // Sinon, on retourne la valeur telle quelle (pourrait être un nom d'équipe)
+  return value;
 }

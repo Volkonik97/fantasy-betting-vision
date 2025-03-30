@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -12,7 +11,7 @@ import { clearMatchCache } from './getMatches';
  */
 export const saveMatches = async (matches: Match[]): Promise<boolean> => {
   try {
-    console.log(`Saving ${matches.length} matches to Supabase`);
+    console.log(`Enregistrement de ${matches.length} matchs dans Supabase`);
     
     // Clear cache
     clearMatchCache();
@@ -22,7 +21,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     const uniqueMatchIds = new Set(matchIds);
     
     if (uniqueMatchIds.size !== matches.length) {
-      console.warn(`Found ${matches.length - uniqueMatchIds.size} duplicate match IDs`);
+      console.warn(`Trouvé ${matches.length - uniqueMatchIds.size} IDs de match en double`);
       
       // Filter out duplicates, keeping only the first occurrence of each ID
       const seenIds = new Set<string>();
@@ -34,7 +33,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
         return true;
       });
       
-      console.log(`Filtered down to ${uniqueMatches.length} unique matches`);
+      console.log(`Filtré à ${uniqueMatches.length} matchs uniques`);
       
       // Use the filtered list
       matches = uniqueMatches;
@@ -47,23 +46,23 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
     for (const matchChunk of matchChunks) {
       try {
         // Debug match data for better debugging
-        console.log(`Processing match batch (${matchChunk.length} matches) with objectives data`);
+        console.log(`Traitement d'un lot de ${matchChunk.length} matchs avec données d'objectifs`);
         
         // Log a sample match to verify data
         if (matchChunk.length > 0) {
           const sampleMatch = matchChunk[0];
-          console.log('Sample match data:', {
+          console.log('Exemple de données de match:', {
             id: sampleMatch.id,
             extraStats: sampleMatch.extraStats ? {
               dragons: sampleMatch.extraStats.dragons,
               barons: sampleMatch.extraStats.barons,
               first_blood: sampleMatch.extraStats.first_blood
-            } : 'No extraStats',
+            } : 'Pas de extraStats',
             result: sampleMatch.result ? {
               winner: sampleMatch.result.winner,
               firstBlood: sampleMatch.result.firstBlood,
               firstDragon: sampleMatch.result.firstDragon
-            } : 'No result'
+            } : 'Pas de résultat'
           });
         }
         
@@ -76,7 +75,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               const result = match.result || {};
               
               // Log objective data for this match
-              console.log(`Match ${match.id} objective data for DB:`, {
+              console.log(`Match ${match.id} données d'objectifs pour la BD:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
                 first_blood: extraStats.first_blood || result.firstBlood || null
@@ -114,15 +113,15 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
-                first_herald: extraStats.first_herald || (result && 'firstHerald' in result ? result.firstHerald : null),
+                first_herald: extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
-                first_baron: extraStats.first_baron || (result && 'firstBaron' in result ? result.firstBaron : null),
+                first_baron: extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null),
                 barons: extraStats.barons || 0,
                 opp_barons: extraStats.opp_barons || 0,
                 void_grubs: extraStats.void_grubs || 0,
                 opp_void_grubs: extraStats.opp_void_grubs || 0,
-                first_tower: extraStats.first_tower || (result && 'firstTower' in result ? result.firstTower : null),
+                first_tower: extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null),
                 first_mid_tower: extraStats.first_mid_tower || null,
                 first_three_towers: extraStats.first_three_towers || null,
                 towers: extraStats.towers || 0,
@@ -136,32 +135,33 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 score_red: result && 'score' in result && Array.isArray(result.score) && result.score.length > 1 ? result.score[1] : 0,
                 duration: result && 'duration' in result ? result.duration : '',
                 mvp: result && 'mvp' in result ? result.mvp : '',
-                first_blood: result && 'firstBlood' in result ? result.firstBlood : extraStats.first_blood || null,
-                first_dragon: result && 'firstDragon' in result ? result.firstDragon : extraStats.first_dragon || null,
+                first_blood: extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null),
+                first_dragon: extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null),
                 picks: extraStats.picks || null,
-                bans: extraStats.bans || null
+                bans: extraStats.bans || null,
+                game_number: match.id.includes('_') ? match.id.split('_').pop() || null : null
               };
             }),
             { onConflict: 'id' }
           );
         
         if (matchesError) {
-          console.error("Error upserting matches:", matchesError);
+          console.error("Erreur lors de la mise à jour des matchs:", matchesError);
           toast.error(`Erreur lors de la mise à jour des matchs: ${matchesError.message}`);
           continue; // Continue with the next batch
         }
         
         successCount += matchChunk.length;
       } catch (error) {
-        console.error("Error processing match batch:", error);
+        console.error("Erreur lors du traitement du lot de matchs:", error);
         continue; // Continue with next batch
       }
     }
     
-    console.log(`Successfully upserted ${successCount}/${matches.length} matches`);
+    console.log(`Mise à jour réussie pour ${successCount}/${matches.length} matchs`);
     return successCount > 0;
   } catch (error) {
-    console.error("Error saving matches:", error);
+    console.error("Erreur lors de l'enregistrement des matchs:", error);
     toast.error("Une erreur s'est produite lors de l'enregistrement des matchs");
     return false;
   }
