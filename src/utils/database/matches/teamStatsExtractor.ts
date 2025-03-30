@@ -22,8 +22,8 @@ export function extractTeamSpecificStats(match: Match, teamId: string): any {
   let isWinner = false;
   if (match.result && match.result.winner) {
     isWinner = match.result.winner === teamId;
-  } else if (match.winner_team_id) {
-    isWinner = match.winner_team_id === teamId;
+  } else if (match.extraStats.winner_team_id) {
+    isWinner = match.extraStats.winner_team_id === teamId;
   }
   
   console.log(`Extracting ${side} side stats for team ${teamId} from match ${match.id}, isWinner: ${isWinner}`);
