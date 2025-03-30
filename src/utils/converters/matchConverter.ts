@@ -24,6 +24,26 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
 
     // Add extraStats for objective data
     if (match.teamStats) {
+      // Log dragon data for debugging
+      if (match.id === 'LOLTMNT02_215152') {
+        console.log(`Dragon data for match ${match.id}:`, { 
+          dragons: match.dragons,
+          oppDragons: match.oppDragons,
+          infernals: match.infernals,
+          mountains: match.mountains, 
+          clouds: match.clouds,
+          oceans: match.oceans,
+          chemtechs: match.chemtechs,
+          hextechs: match.hextechs,
+          oppInfernals: match.oppInfernals,
+          oppMountains: match.oppMountains,
+          oppClouds: match.oppClouds,
+          oppOceans: match.oppOceans,
+          oppChemtechs: match.oppChemtechs,
+          oppHextechs: match.oppHextechs
+        });
+      }
+
       matchObject.extraStats = {
         patch: match.patch || '',
         year: match.year || '',
@@ -78,6 +98,46 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         picks: match.picks,
         bans: match.bans
       };
+
+      // Validation and logging for important matches
+      if (match.id === 'LOLTMNT02_215152') {
+        const drakeSum = matchObject.extraStats.infernals + 
+                         matchObject.extraStats.mountains + 
+                         matchObject.extraStats.clouds + 
+                         matchObject.extraStats.oceans + 
+                         matchObject.extraStats.chemtechs + 
+                         matchObject.extraStats.hextechs;
+                         
+        const oppDrakeSum = matchObject.extraStats.opp_infernals + 
+                           matchObject.extraStats.opp_mountains + 
+                           matchObject.extraStats.opp_clouds + 
+                           matchObject.extraStats.opp_oceans + 
+                           matchObject.extraStats.opp_chemtechs + 
+                           matchObject.extraStats.opp_hextechs;
+                           
+        console.log(`Match ${match.id} - Converted dragon counts:`, {
+          totalDragons: matchObject.extraStats.dragons,
+          drakeSum: drakeSum,
+          specificDragons: {
+            infernals: matchObject.extraStats.infernals,
+            mountains: matchObject.extraStats.mountains,
+            clouds: matchObject.extraStats.clouds,
+            oceans: matchObject.extraStats.oceans,
+            chemtechs: matchObject.extraStats.chemtechs,
+            hextechs: matchObject.extraStats.hextechs
+          },
+          oppTotalDragons: matchObject.extraStats.opp_dragons,
+          oppDrakeSum: oppDrakeSum,
+          oppSpecificDragons: {
+            oppInfernals: matchObject.extraStats.opp_infernals,
+            oppMountains: matchObject.extraStats.opp_mountains,
+            oppClouds: matchObject.extraStats.opp_clouds,
+            oppOceans: matchObject.extraStats.opp_oceans,
+            oppChemtechs: matchObject.extraStats.opp_chemtechs,
+            oppHextechs: matchObject.extraStats.opp_hextechs
+          }
+        });
+      }
     }
 
     if (match.status === 'Completed' && match.winnerTeamId) {

@@ -111,6 +111,8 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     oppDragons = typeof teamBlueStats.opp_dragons !== 'undefined' ? String(teamBlueStats.opp_dragons) : '';
     elementalDrakes = typeof teamBlueStats.elemental_drakes !== 'undefined' ? String(teamBlueStats.elemental_drakes) : '';
     oppElementalDrakes = typeof teamBlueStats.opp_elemental_drakes !== 'undefined' ? String(teamBlueStats.opp_elemental_drakes) : '';
+    
+    // Specific dragon stats - make sure we capture each type correctly
     infernals = typeof teamBlueStats.infernals !== 'undefined' ? String(teamBlueStats.infernals) : '';
     mountains = typeof teamBlueStats.mountains !== 'undefined' ? String(teamBlueStats.mountains) : '';
     clouds = typeof teamBlueStats.clouds !== 'undefined' ? String(teamBlueStats.clouds) : '';
@@ -164,17 +166,21 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
       oppChemtechs = typeof teamRedStats.chemtechs !== 'undefined' ? String(teamRedStats.chemtechs) : '';
       oppHextechs = typeof teamRedStats.hextechs !== 'undefined' ? String(teamRedStats.hextechs) : '';
       oppDrakesUnknown = typeof teamRedStats.drakes_unknown !== 'undefined' ? String(teamRedStats.drakes_unknown) : '';
-    } else {
-      // Sinon, utiliser les données opp_* de l'équipe bleue si disponibles
-      oppInfernals = typeof teamBlueStats.opp_infernals !== 'undefined' ? String(teamBlueStats.opp_infernals) : '';
-      oppMountains = typeof teamBlueStats.opp_mountains !== 'undefined' ? String(teamBlueStats.opp_mountains) : '';
-      oppClouds = typeof teamBlueStats.opp_clouds !== 'undefined' ? String(teamBlueStats.opp_clouds) : '';
-      oppOceans = typeof teamBlueStats.opp_oceans !== 'undefined' ? String(teamBlueStats.opp_oceans) : '';
-      oppChemtechs = typeof teamBlueStats.opp_chemtechs !== 'undefined' ? String(teamBlueStats.opp_chemtechs) : '';
-      oppHextechs = typeof teamBlueStats.opp_hextechs !== 'undefined' ? String(teamBlueStats.opp_hextechs) : '';
-      oppDrakesUnknown = typeof teamBlueStats.opp_drakes_unknown !== 'undefined' ? String(teamBlueStats.opp_drakes_unknown) : '';
+      
+      // Ajouter un log pour le match spécifique
+      if (game.id === 'LOLTMNT02_215152') {
+        console.log(`Match ${game.id} - Dragons spécifiques de l'équipe rouge:`, {
+          clouds: teamRedStats.clouds,
+          oppClouds: oppClouds,
+          oceans: teamRedStats.oceans,
+          oppOceans: oppOceans,
+          hextechs: teamRedStats.hextechs,
+          oppHextechs: oppHextechs
+        });
+      }
     }
-  } else if (teamRedStats) {
+  } 
+  else if (teamRedStats) {
     // Si nous n'avons pas de stats pour l'équipe bleue mais qu'on les a pour l'équipe rouge,
     // on prend les stats de l'équipe rouge (inversion des stats opposants)
     teamKpm = typeof teamRedStats.team_kpm !== 'undefined' ? String(teamRedStats.team_kpm) : '';
@@ -186,9 +192,6 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     dragons = typeof teamRedStats.opp_dragons !== 'undefined' ? String(teamRedStats.opp_dragons) : '';
     oppDragons = typeof teamRedStats.dragons !== 'undefined' ? String(teamRedStats.dragons) : '';
     
-    // Pour les autres stats, on fait la même inversion si nécessaire
-    // (omis pour la clarté, mais le principe serait le même)
-    
     // On garde les infos "first" tels quels car ils indiquent quelle équipe a réalisé l'objectif
     firstBlood = teamRedStats.first_blood || '';
     firstDragon = teamRedStats.first_dragon || '';
@@ -199,7 +202,7 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     firstThreeTowers = teamRedStats.first_three_towers || '';
     
     // NOUVEAU: Extraction des stats de drakes spécifiques pour l'équipe rouge
-    if (game.id === 'LOLTMNT02_222859') {
+    if (game.id === 'LOLTMNT02_215152') {
       console.log(`Extraction des données de drakes pour RED team dans le match ${game.id}:`, {
         infernals: teamRedStats.infernals,
         mountains: teamRedStats.mountains,
@@ -232,6 +235,20 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     chemtechs = typeof teamRedStats.opp_chemtechs !== 'undefined' ? String(teamRedStats.opp_chemtechs) : '';
     hextechs = typeof teamRedStats.opp_hextechs !== 'undefined' ? String(teamRedStats.opp_hextechs) : '';
     drakesUnknown = typeof teamRedStats.opp_drakes_unknown !== 'undefined' ? String(teamRedStats.opp_drakes_unknown) : '';
+  }
+
+  // Debug pour le match problématique
+  if (game.id === 'LOLTMNT02_215152') {
+    console.log(`Match ${game.id} - Données de dragons extraites:`, {
+      blueTeamDragons: dragons,
+      blueTeamSpecificDragons: {
+        infernals, mountains, clouds, oceans, chemtechs, hextechs, drakesUnknown
+      },
+      redTeamDragons: oppDragons,
+      redTeamSpecificDragons: {
+        oppInfernals, oppMountains, oppClouds, oppOceans, oppChemtechs, oppHextechs, oppDrakesUnknown
+      }
+    });
   }
   
   // Create the match CSV object
@@ -305,10 +322,14 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   };
   
   // Debug du match problématique
-  if (game.id === 'LOLTMNT02_222859') {
-    console.log(`Convertisseur MatchCSV pour le match ${game.id}:`, {
+  if (game.id === 'LOLTMNT02_215152') {
+    console.log(`Convertisseur MatchCSV pour le match ${game.id} - Résultat final:`, {
       clouds: matchCsv.clouds,
       oppClouds: matchCsv.oppClouds,
+      oceans: matchCsv.oceans,
+      oppOceans: matchCsv.oppOceans,
+      hextechs: matchCsv.hextechs,
+      oppHextechs: matchCsv.oppHextechs,
     });
   }
   
