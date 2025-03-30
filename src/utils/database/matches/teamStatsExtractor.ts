@@ -70,17 +70,68 @@ export function extractTeamSpecificStats(match: Match): {
   redTeamStats.inhibitors = stats.opp_inhibitors || 0;
   redTeamStats.turret_plates = stats.opp_turret_plates || 0;
   redTeamStats.void_grubs = stats.opp_void_grubs || 0;
+  
+  // CORRECTION: Ajouter les détails des dragons élémentaires pour l'équipe rouge
+  // Au lieu d'initialiser à 0, on utilise les données disponibles ou une estimation basée sur opp_elemental_drakes
   redTeamStats.elemental_drakes = stats.opp_elemental_drakes || 0;
   
-  // Les statistiques détaillées des dragons ne sont généralement pas disponibles pour l'équipe rouge
-  // via l'API Oracle's Elixir, donc nous les initialisons à 0
-  redTeamStats.infernals = 0;
-  redTeamStats.mountains = 0;
-  redTeamStats.clouds = 0;
-  redTeamStats.oceans = 0;
-  redTeamStats.chemtechs = 0;
-  redTeamStats.hextechs = 0;
-  redTeamStats.drakes_unknown = 0;
+  // Si nous avons le nombre total de dragons élémentaires pour l'équipe rouge
+  // mais pas le détail par type, on fait une estimation proportionnelle
+  const hasRedDrakeTotal = redTeamStats.elemental_drakes > 0;
+  const hasRedDrakeDetails = Object.keys(stats).some(key => key.startsWith('opp_') && 
+    ['infernals', 'mountains', 'clouds', 'oceans', 'chemtechs', 'hextechs'].includes(key.replace('opp_', '')));
+  
+  if (hasRedDrakeTotal && !hasRedDrakeDetails) {
+    // Distribution proportionnelle basée sur les données de l'équipe bleue
+    const blueTotalDrakes = blueTeamStats.elemental_drakes || 0;
+    const redTotalDrakes = redTeamStats.elemental_drakes || 0;
+    
+    // Chercher les données spécifiques aux drakes pour le côté rouge
+    // On utilise directement les valeurs opposées aux statistiques de l'équipe bleue
+    redTeamStats.infernals = stats.opp_infernals || 0;
+    redTeamStats.mountains = stats.opp_mountains || 0;
+    redTeamStats.clouds = stats.opp_clouds || 0;
+    redTeamStats.oceans = stats.opp_oceans || 0;
+    redTeamStats.chemtechs = stats.opp_chemtechs || 0;
+    redTeamStats.hextechs = stats.opp_hextechs || 0;
+    redTeamStats.drakes_unknown = stats.opp_drakes_unknown || 0;
+    
+    // Si nous n'avons toujours pas de données spécifiques mais que nous connaissons le total
+    // nous répartissons proportionnellement en fonction des types des drakes de l'équipe bleue
+    const infernalsPct = blueTotalDrakes > 0 ? (blueTeamStats.infernals || 0) / blueTotalDrakes : 0;
+    const mountainsPct = blueTotalDrakes > 0 ? (blueTeamStats.mountains || 0) / blueTotalDrakes : 0;
+    const cloudsPct = blueTotalDrakes > 0 ? (blueTeamStats.clouds || 0) / blueTotalDrakes : 0;
+    const oceansPct = blueTotalDrakes > 0 ? (blueTeamStats.oceans || 0) / blueTotalDrakes : 0;
+    const chemtechsPct = blueTotalDrakes > 0 ? (blueTeamStats.chemtechs || 0) / blueTotalDrakes : 0;
+    const hextechsPct = blueTotalDrakes > 0 ? (blueTeamStats.hextechs || 0) / blueTotalDrakes : 0;
+    
+    // Si les données spécifiques ne sont pas disponibles, on utilise les pourcentages
+    if (redTeamStats.infernals === 0 && redTotalDrakes > 0) redTeamStats.infernals = Math.round(infernalsPct * redTotalDrakes);
+    if (redTeamStats.mountains === 0 && redTotalDrakes > 0) redTeamStats.mountains = Math.round(mountainsPct * redTotalDrakes);
+    if (redTeamStats.clouds === 0 && redTotalDrakes > 0) redTeamStats.clouds = Math.round(cloudsPct * redTotalDrakes);
+    if (redTeamStats.oceans === 0 && redTotalDrakes > 0) redTeamStats.oceans = Math.round(oceansPct * redTotalDrakes);
+    if (redTeamStats.chemtechs === 0 && redTotalDrakes > 0) redTeamStats.chemtechs = Math.round(chemtechsPct * redTotalDrakes);
+    if (redTeamStats.hextechs === 0 && redTotalDrakes > 0) redTeamStats.hextechs = Math.round(hextechsPct * redTotalDrakes);
+    
+    // Ajuster les drakes inconnus pour que le total corresponde
+    const redKnownDrakes = redTeamStats.infernals + redTeamStats.mountains + 
+                          redTeamStats.clouds + redTeamStats.oceans + 
+                          redTeamStats.chemtechs + redTeamStats.hextechs;
+                          
+    if (redKnownDrakes < redTotalDrakes) {
+      redTeamStats.drakes_unknown = redTotalDrakes - redKnownDrakes;
+    }
+  } else {
+    // S'il n'y a pas de données sur le total de dragons, on initialise les champs à 0
+    // ou on utilise les valeurs opposées s'il y en a
+    redTeamStats.infernals = stats.opp_infernals || 0;
+    redTeamStats.mountains = stats.opp_mountains || 0;
+    redTeamStats.clouds = stats.opp_clouds || 0;
+    redTeamStats.oceans = stats.opp_oceans || 0;
+    redTeamStats.chemtechs = stats.opp_chemtechs || 0;
+    redTeamStats.hextechs = stats.opp_hextechs || 0;
+    redTeamStats.drakes_unknown = stats.opp_drakes_unknown || 0;
+  }
   
   // Premiers objectifs pour équipe rouge
   // On vérifie si l'équipe rouge a obtenu l'objectif
@@ -123,6 +174,52 @@ export function extractTeamSpecificStats(match: Match): {
         obj[key] = val;
         return obj;
       }, {});
+  }
+  
+  // Log pour le débogage de ce match problématique
+  if (match.id === 'LOLTMNT02_222859') {
+    console.log(`Statistiques extraites pour le match ${match.id}:`);
+    console.log('Blue side drake details:', {
+      infernals: blueTeamStats.infernals,
+      mountains: blueTeamStats.mountains,
+      clouds: blueTeamStats.clouds,
+      oceans: blueTeamStats.oceans,
+      chemtechs: blueTeamStats.chemtechs,
+      hextechs: blueTeamStats.hextechs,
+      drakes_unknown: blueTeamStats.drakes_unknown,
+      total: blueTeamStats.dragons
+    });
+    
+    console.log('Red side drake details:', {
+      infernals: redTeamStats.infernals,
+      mountains: redTeamStats.mountains,
+      clouds: redTeamStats.clouds,
+      oceans: redTeamStats.oceans,
+      chemtechs: redTeamStats.chemtechs,
+      hextechs: redTeamStats.hextechs,
+      drakes_unknown: redTeamStats.drakes_unknown,
+      total: redTeamStats.dragons
+    });
+    
+    // Log des valeurs brutes de l'extraStats pour le débogage
+    console.log('Raw extraStats dragon values:', {
+      dragons: stats.dragons,
+      opp_dragons: stats.opp_dragons,
+      elemental_drakes: stats.elemental_drakes,
+      opp_elemental_drakes: stats.opp_elemental_drakes,
+      infernals: stats.infernals,
+      mountains: stats.mountains,
+      clouds: stats.clouds,
+      oceans: stats.oceans,
+      chemtechs: stats.chemtechs,
+      hextechs: stats.hextechs,
+      opp_infernals: stats.opp_infernals,
+      opp_mountains: stats.opp_mountains,
+      opp_clouds: stats.opp_clouds,
+      opp_oceans: stats.opp_oceans,
+      opp_chemtechs: stats.opp_chemtechs,
+      opp_hextechs: stats.opp_hextechs
+    });
   }
   
   return { blueTeamStats, redTeamStats };

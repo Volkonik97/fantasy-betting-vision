@@ -1,4 +1,3 @@
-
 import { GameTracker } from '../types';
 import { MatchCSV } from '../../csv/types';
 
@@ -70,6 +69,13 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   let chemtechs = '';
   let hextechs = '';
   let drakesUnknown = '';
+  let oppInfernals = '';
+  let oppMountains = '';
+  let oppClouds = '';
+  let oppOceans = '';
+  let oppChemtechs = '';
+  let oppHextechs = '';
+  let oppDrakesUnknown = '';
   let elders = '';
   let oppElders = '';
   let firstHerald = '';
@@ -147,6 +153,27 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     firstTower = teamBlueStats.first_tower || '';
     firstMidTower = teamBlueStats.first_mid_tower || '';
     firstThreeTowers = teamBlueStats.first_three_towers || '';
+    
+    // Extract from red team stats if available
+    if (teamRedStats) {
+      // Si nous avons les stats de l'équipe rouge, utilisons-les directement pour les stats opposées
+      oppInfernals = typeof teamRedStats.infernals !== 'undefined' ? String(teamRedStats.infernals) : '';
+      oppMountains = typeof teamRedStats.mountains !== 'undefined' ? String(teamRedStats.mountains) : '';
+      oppClouds = typeof teamRedStats.clouds !== 'undefined' ? String(teamRedStats.clouds) : '';
+      oppOceans = typeof teamRedStats.oceans !== 'undefined' ? String(teamRedStats.oceans) : '';
+      oppChemtechs = typeof teamRedStats.chemtechs !== 'undefined' ? String(teamRedStats.chemtechs) : '';
+      oppHextechs = typeof teamRedStats.hextechs !== 'undefined' ? String(teamRedStats.hextechs) : '';
+      oppDrakesUnknown = typeof teamRedStats.drakes_unknown !== 'undefined' ? String(teamRedStats.drakes_unknown) : '';
+    } else {
+      // Sinon, utiliser les données opp_* de l'équipe bleue si disponibles
+      oppInfernals = typeof teamBlueStats.opp_infernals !== 'undefined' ? String(teamBlueStats.opp_infernals) : '';
+      oppMountains = typeof teamBlueStats.opp_mountains !== 'undefined' ? String(teamBlueStats.opp_mountains) : '';
+      oppClouds = typeof teamBlueStats.opp_clouds !== 'undefined' ? String(teamBlueStats.opp_clouds) : '';
+      oppOceans = typeof teamBlueStats.opp_oceans !== 'undefined' ? String(teamBlueStats.opp_oceans) : '';
+      oppChemtechs = typeof teamBlueStats.opp_chemtechs !== 'undefined' ? String(teamBlueStats.opp_chemtechs) : '';
+      oppHextechs = typeof teamBlueStats.opp_hextechs !== 'undefined' ? String(teamBlueStats.opp_hextechs) : '';
+      oppDrakesUnknown = typeof teamBlueStats.opp_drakes_unknown !== 'undefined' ? String(teamBlueStats.opp_drakes_unknown) : '';
+    }
   } else if (teamRedStats) {
     // Si nous n'avons pas de stats pour l'équipe bleue mais qu'on les a pour l'équipe rouge,
     // on prend les stats de l'équipe rouge (inversion des stats opposants)
@@ -170,6 +197,41 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     firstTower = teamRedStats.first_tower || '';
     firstMidTower = teamRedStats.first_mid_tower || '';
     firstThreeTowers = teamRedStats.first_three_towers || '';
+    
+    // NOUVEAU: Extraction des stats de drakes spécifiques pour l'équipe rouge
+    if (game.id === 'LOLTMNT02_222859') {
+      console.log(`Extraction des données de drakes pour RED team dans le match ${game.id}:`, {
+        infernals: teamRedStats.infernals,
+        mountains: teamRedStats.mountains,
+        clouds: teamRedStats.clouds,
+        oceans: teamRedStats.oceans,
+        chemtechs: teamRedStats.chemtechs,
+        hextechs: teamRedStats.hextechs
+      });
+    }
+    
+    dragons = typeof teamRedStats.dragons !== 'undefined' ? String(teamRedStats.dragons) : '';
+    oppDragons = typeof teamRedStats.opp_dragons !== 'undefined' ? String(teamRedStats.opp_dragons) : '';
+    elementalDrakes = typeof teamRedStats.elemental_drakes !== 'undefined' ? String(teamRedStats.elemental_drakes) : '';
+    oppElementalDrakes = typeof teamRedStats.opp_elemental_drakes !== 'undefined' ? String(teamRedStats.opp_elemental_drakes) : '';
+    
+    // Inverser les données - les stats de l'équipe rouge deviennent les stats d'opposition pour l'équipe bleue
+    oppInfernals = typeof teamRedStats.infernals !== 'undefined' ? String(teamRedStats.infernals) : '';
+    oppMountains = typeof teamRedStats.mountains !== 'undefined' ? String(teamRedStats.mountains) : '';
+    oppClouds = typeof teamRedStats.clouds !== 'undefined' ? String(teamRedStats.clouds) : '';
+    oppOceans = typeof teamRedStats.oceans !== 'undefined' ? String(teamRedStats.oceans) : '';
+    oppChemtechs = typeof teamRedStats.chemtechs !== 'undefined' ? String(teamRedStats.chemtechs) : '';
+    oppHextechs = typeof teamRedStats.hextechs !== 'undefined' ? String(teamRedStats.hextechs) : '';
+    oppDrakesUnknown = typeof teamRedStats.drakes_unknown !== 'undefined' ? String(teamRedStats.drakes_unknown) : '';
+    
+    // Et les données d'opposition de l'équipe rouge deviennent les stats de l'équipe bleue
+    infernals = typeof teamRedStats.opp_infernals !== 'undefined' ? String(teamRedStats.opp_infernals) : '';
+    mountains = typeof teamRedStats.opp_mountains !== 'undefined' ? String(teamRedStats.opp_mountains) : '';
+    clouds = typeof teamRedStats.opp_clouds !== 'undefined' ? String(teamRedStats.opp_clouds) : '';
+    oceans = typeof teamRedStats.opp_oceans !== 'undefined' ? String(teamRedStats.opp_oceans) : '';
+    chemtechs = typeof teamRedStats.opp_chemtechs !== 'undefined' ? String(teamRedStats.opp_chemtechs) : '';
+    hextechs = typeof teamRedStats.opp_hextechs !== 'undefined' ? String(teamRedStats.opp_hextechs) : '';
+    drakesUnknown = typeof teamRedStats.opp_drakes_unknown !== 'undefined' ? String(teamRedStats.opp_drakes_unknown) : '';
   }
   
   // Create the match CSV object
@@ -216,6 +278,13 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     chemtechs: chemtechs,
     hextechs: hextechs,
     drakesUnknown: drakesUnknown,
+    oppInfernals: oppInfernals,
+    oppMountains: oppMountains,
+    oppClouds: oppClouds,
+    oppOceans: oppOceans,
+    oppChemtechs: oppChemtechs,
+    oppHextechs: oppHextechs,
+    oppDrakesUnknown: oppDrakesUnknown,
     elders: elders,
     oppElders: oppElders,
     heralds: heralds,
@@ -234,6 +303,14 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
     // Flag to indicate that this match has team stats
     teamStats: !!teamBlueStats || !!teamRedStats,
   };
+  
+  // Debug du match problématique
+  if (game.id === 'LOLTMNT02_222859') {
+    console.log(`Convertisseur MatchCSV pour le match ${game.id}:`, {
+      clouds: matchCsv.clouds,
+      oppClouds: matchCsv.oppClouds,
+    });
+  }
   
   return matchCsv;
 }

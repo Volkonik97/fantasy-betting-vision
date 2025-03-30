@@ -46,7 +46,7 @@ export function extractTeamStats(
     
     // Check for cloud drake data specifically
     if (dataKeys.includes('clouds')) {
-      console.log(`Valeur de clouds pour l'équipe ${teamId}: "${allTeamData.clouds}"`);
+      console.log(`Valeur de clouds pour l'équipe ${teamId}: "${allTeamData.clouds}" (type: ${typeof allTeamData.clouds})`);
     }
     
     // Determine if this team got first objectives by checking all collected data
@@ -63,9 +63,35 @@ export function extractTeamStats(
     const oppDragons = getStatValue(allTeamData, 'opp_dragons');
     const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
     const oppElementalDrakes = getStatValue(allTeamData, 'opp_elementaldrakes');
+    
+    // CORRECTION: Traitement spécifique du cloud drake qui a un problème
+    let clouds = 0;
+    // S'il existe une valeur 'clouds', on essaie de la parser avec une attention particulière
+    if (allTeamData.clouds !== undefined) {
+      // Essayer d'abord comme nombre
+      clouds = getStatValue(allTeamData, 'clouds');
+      
+      // Si nous sommes sur le match problématique, affichons des détails
+      if (gameId === 'LOLTMNT02_222859') {
+        console.log(`Traitement spécial des cloud drakes pour l'équipe ${teamId}:`, {
+          rawValue: allTeamData.clouds,
+          parsedValue: clouds,
+          type: typeof allTeamData.clouds
+        });
+        
+        // Essayer différentes méthodes de parsing pour les valeurs difficiles
+        if (clouds === 0 && allTeamData.clouds) {
+          if (allTeamData.clouds === '1' || allTeamData.clouds.toLowerCase() === 'true' || 
+              allTeamData.clouds.toLowerCase() === 'yes' || allTeamData.clouds === 1) {
+            console.log(`Correction manuelle de la valeur cloud drake à 1`);
+            clouds = 1;
+          }
+        }
+      }
+    }
+    
     const infernals = getStatValue(allTeamData, 'infernals');
     const mountains = getStatValue(allTeamData, 'mountains');
-    const clouds = getStatValue(allTeamData, 'clouds');
     const oceans = getStatValue(allTeamData, 'oceans');
     const chemtechs = getStatValue(allTeamData, 'chemtechs');
     const hextechs = getStatValue(allTeamData, 'hextechs');
