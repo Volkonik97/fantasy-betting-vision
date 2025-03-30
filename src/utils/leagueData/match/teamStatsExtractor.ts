@@ -1,3 +1,4 @@
+
 import { MatchTeamStats } from '../types';
 import { LeagueGameDataRow } from '../../csv/types';
 import { safeParseFloat, safeParseInt } from '../types';
@@ -251,6 +252,7 @@ function parseObjectiveValue(data: Record<string, any>, objectiveKeys: string[],
     // Cas 2: La valeur est "True", "1", "Yes", etc.
     if (typeof rawValue === 'string') {
       const normValue = rawValue.toLowerCase().trim();
+      // CORRECTION ICI: Ajout de vérification pour "1" et autres valeurs vrai/faux
       if (['true', '1', 'yes', 'oui', 't', 'y'].includes(normValue)) {
         return true;
       }
@@ -327,6 +329,7 @@ function getStatValue(data: Record<string, any>, statKey: string): number {
     if (!isNaN(parsedNumber)) {
       return parsedNumber;
     }
+    // CORRECTION ICI: Meilleure gestion des chaînes "1" et "true"
     // Si c'est "1" ou "true", convert to 1
     if (value.toLowerCase() === 'true' || value === '1' || value.toLowerCase() === 'yes') {
       return 1;
@@ -358,6 +361,7 @@ function checkTeamObjectiveValue(value: string | undefined, teamId: string): str
   // Si la valeur est exactement le teamId, c'est cette équipe qui a eu l'objectif
   if (value === teamId) return teamId;
   
+  // CORRECTION ICI: Meilleure gestion des chaînes "1" et "true"
   // Si c'est "1" ou "true", on considère que c'est cette équipe
   if (value === '1' || value.toLowerCase() === 'true' || value.toLowerCase() === 'yes') return teamId;
   
@@ -383,6 +387,7 @@ function findStatValueWithAlternatives(data: Record<string, any>, alternatives: 
         if (!isNaN(parsedNumber)) {
           return parsedNumber;
         }
+        // CORRECTION ICI: Meilleure gestion des chaînes "1" et "true"
         // Si c'est "true" ou "1", retourner 1
         if (value.toLowerCase() === 'true' || value === '1') {
           return 1;

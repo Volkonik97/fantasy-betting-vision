@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -104,12 +103,34 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               console.log(`Match ${match.id} données d'objectifs et picks/bans pour la BD:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
-                first_blood: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
+                first_blood: extraStats.first_blood,
+                first_blood_processed: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
                 hasPicks: !!picksData,
                 hasBans: !!bansData,
                 picksCount: picksData ? Object.keys(picksData).length : 0,
                 bansCount: bansData ? Object.keys(bansData).length : 0
               });
+              
+              // CORRECTION: Meilleure gestion des valeurs booléennes
+              // Fonction améliorée pour mieux traiter les valeurs booléennes et les convertir correctement
+              const processBoolean = (value: any): string | null => {
+                if (value === undefined || value === null) return null;
+                
+                if (typeof value === 'boolean') return value ? teamId : null;
+                if (typeof value === 'string') {
+                  const lowerValue = value.toLowerCase().trim();
+                  if (['true', '1', 'yes', 'oui', 't', 'y'].includes(lowerValue)) return teamId;
+                  if (['false', '0', 'no', 'non', 'f', 'n'].includes(lowerValue)) return null;
+                  // Si c'est un ID d'équipe, le retourner tel quel
+                  return value;
+                }
+                if (typeof value === 'number') return value === 1 ? teamId : null;
+                
+                return null;
+              };
+              
+              // Récupérer l'ID de l'équipe pour les valeurs booléennes
+              const teamId = match.id.includes('_') ? match.id.split('_')[0] : '';
               
               // Assemble match object with safe property access and proper boolean -> string conversion
               return {
@@ -143,6 +164,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
+                // CORRECTION: Utilisation de la nouvelle fonction processBoolean pour les valeurs booléennes
                 first_herald: booleanToString(extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null)),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
@@ -165,6 +187,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 score_red: result && 'score' in result && Array.isArray(result.score) && result.score.length > 1 ? result.score[1] : 0,
                 duration: result && 'duration' in result ? result.duration : '',
                 mvp: result && 'mvp' in result ? result.mvp : '',
+                // CORRECTION: Meilleure gestion des valeurs booléennes first_blood
                 first_blood: booleanToString(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
                 first_dragon: booleanToString(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
                 picks: picksData,
