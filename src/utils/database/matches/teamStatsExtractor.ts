@@ -15,7 +15,7 @@ export function extractTeamSpecificStats(match: Match): {
   // Debug the raw dragons data directly from the match object
   if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
     console.log(`[Raw Dragon Data for ${match.id}]`, {
-      // Blue team dragon data
+      // Available dragon data in extraStats
       dragons: match.extraStats.dragons,
       infernals: match.extraStats.infernals,
       mountains: match.extraStats.mountains,
@@ -24,14 +24,8 @@ export function extractTeamSpecificStats(match: Match): {
       chemtechs: match.extraStats.chemtechs,
       hextechs: match.extraStats.hextechs,
       elemental_drakes: match.extraStats.elemental_drakes,
-      // Red team dragon data
+      // Total opponent dragon count (without type breakdown)
       opp_dragons: match.extraStats.opp_dragons,
-      opp_infernals: match.extraStats.opp_infernals,
-      opp_mountains: match.extraStats.opp_mountains,
-      opp_clouds: match.extraStats.opp_clouds,
-      opp_oceans: match.extraStats.opp_oceans,
-      opp_chemtechs: match.extraStats.opp_chemtechs,
-      opp_hextechs: match.extraStats.opp_hextechs,
       opp_elemental_drakes: match.extraStats.opp_elemental_drakes
     });
   }
@@ -98,7 +92,8 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
   };
 
-  // Pour l'équipe rouge - utiliser les données avec préfixe "opp_" pour les types de dragons
+  // Pour l'équipe rouge - nous n'avons que le total des dragons via opp_dragons
+  // Les détails par type de dragon ne sont pas disponibles pour l'équipe adverse
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
@@ -107,15 +102,17 @@ export function extractTeamSpecificStats(match: Match): {
     deaths: safeParseInt(match.extraStats.team_kills), // inversé pour l'équipe rouge
     kpm: 0, // Non disponible directement
     
-    // Dragons pour l'équipe rouge avec les préfixes opp_
+    // Dragons pour l'équipe rouge - nous n'avons que le total
     dragons: totalDragonsByTeam.red,
-    infernals: safeParseInt(match.extraStats.opp_infernals || '0'),
-    mountains: safeParseInt(match.extraStats.opp_mountains || '0'),
-    clouds: safeParseInt(match.extraStats.opp_clouds || '0'),
-    oceans: safeParseInt(match.extraStats.opp_oceans || '0'),
-    chemtechs: safeParseInt(match.extraStats.opp_chemtechs || '0'),
-    hextechs: safeParseInt(match.extraStats.opp_hextechs || '0'),
-    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown || '0'),
+    // Pour les types spécifiques de dragons, nous n'avons pas de données détaillées pour l'équipe rouge
+    // Ces données existent uniquement dans leur propre ligne de données, pas dans l'objet match actuel
+    infernals: 0,
+    mountains: 0,
+    clouds: 0, 
+    oceans: 0,
+    chemtechs: 0,
+    hextechs: 0,
+    drakes_unknown: 0,
     elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || '0'),
     
     // Autres objectifs pour l'équipe rouge
