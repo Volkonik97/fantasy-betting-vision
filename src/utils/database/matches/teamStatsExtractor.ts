@@ -3,6 +3,8 @@ import { Match } from '@/utils/models/types';
 
 /**
  * Extract team-specific stats from a match object
+ * Cette fonction suppose maintenant que chaque équipe a ses propres statistiques complètes et indépendantes,
+ * sans colonnes "opp_" croisées entre les équipes
  */
 export function extractTeamSpecificStats(match: Match): { 
   blueTeamStats: any, 
@@ -12,10 +14,10 @@ export function extractTeamSpecificStats(match: Match): {
     return { blueTeamStats: null, redTeamStats: null };
   }
 
-  // Debug the raw dragons data directly from the match object
+  // Debug pour les matchs spécifiques
   if (['LOLTMNT02_215152', 'LOLTMNT02_222859'].includes(match.id)) {
-    console.log(`[Raw Dragon Data for ${match.id}]`, {
-      // Available dragon data in extraStats
+    console.log(`[Raw Data for ${match.id}]`, {
+      // Statistiques disponibles dans extraStats
       dragons: match.extraStats.dragons,
       infernals: match.extraStats.infernals,
       mountains: match.extraStats.mountains,
@@ -23,10 +25,7 @@ export function extractTeamSpecificStats(match: Match): {
       oceans: match.extraStats.oceans,
       chemtechs: match.extraStats.chemtechs,
       hextechs: match.extraStats.hextechs,
-      elemental_drakes: match.extraStats.elemental_drakes,
-      // Total opponent dragon count (without type breakdown)
-      opp_dragons: match.extraStats.opp_dragons,
-      opp_elemental_drakes: match.extraStats.opp_elemental_drakes
+      elemental_drakes: match.extraStats.elemental_drakes
     });
   }
 
@@ -42,18 +41,12 @@ export function extractTeamSpecificStats(match: Match): {
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // Extract total dragons for each team
-  const totalDragonsByTeam = {
-    blue: safeParseInt(match.extraStats.dragons),
-    red: safeParseInt(match.extraStats.opp_dragons)
-  };
-
   // First dragon is a dependency - if blue team has first dragon, red team doesn't
   const firstDragon = match.extraStats.first_dragon;
   const blueHasFirstDragon = firstDragon === match.teamBlue.id;
   const redHasFirstDragon = firstDragon === match.teamRed.id;
 
-  // Préparer les statistiques pour l'équipe bleue
+  // Créer les statistiques pour l'équipe bleue
   const blueTeamStats = {
     team_id: match.teamBlue.id,
     match_id: match.id,
@@ -62,8 +55,8 @@ export function extractTeamSpecificStats(match: Match): {
     deaths: safeParseInt(match.extraStats.team_deaths),
     kpm: match.extraStats.team_kpm || 0,
     
-    // Dragons pour l'équipe bleue - ces colonnes sont toujours pour l'équipe actuelle
-    dragons: totalDragonsByTeam.blue,
+    // Dragons pour l'équipe bleue
+    dragons: safeParseInt(match.extraStats.dragons),
     infernals: safeParseInt(match.extraStats.infernals),
     mountains: safeParseInt(match.extraStats.mountains), 
     clouds: safeParseInt(match.extraStats.clouds),
@@ -92,37 +85,38 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
   };
 
-  // Pour l'équipe rouge - nous n'avons que le total des dragons via opp_dragons
-  // Les détails par type de dragon ne sont pas disponibles pour l'équipe adverse
+  // Pour l'équipe rouge - utiliser les mêmes propriétés mais pour l'équipe rouge
+  // Note: Dans ce nouveau modèle, nous supposons que les statistiques complètes pour l'équipe rouge
+  // doivent être fournies indépendamment, sans préfixes "opp_"
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
     is_blue_side: false,
-    kills: safeParseInt(match.extraStats.team_deaths), // inversé pour l'équipe rouge
-    deaths: safeParseInt(match.extraStats.team_kills), // inversé pour l'équipe rouge
-    kpm: 0, // Non disponible directement
+    // Note: Dans un modèle à deux lignes indépendantes, ces valeurs devraient être fournies directement
+    // pour l'équipe rouge au lieu d'être dérivées des statistiques de l'équipe bleue
+    kills: safeParseInt(match.extraStats.opp_team_kills || 0),
+    deaths: safeParseInt(match.extraStats.opp_team_deaths || 0),
+    kpm: safeParseInt(match.extraStats.opp_team_kpm || 0),
     
-    // Dragons pour l'équipe rouge - nous n'avons que le total
-    dragons: totalDragonsByTeam.red,
-    // Pour les types spécifiques de dragons, nous n'avons pas de données détaillées pour l'équipe rouge
-    // Ces données existent uniquement dans leur propre ligne de données, pas dans l'objet match actuel
-    infernals: 0,
-    mountains: 0,
-    clouds: 0, 
-    oceans: 0,
-    chemtechs: 0,
-    hextechs: 0,
-    drakes_unknown: 0,
-    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || '0'),
+    // Dragons pour l'équipe rouge (maintenant indépendants)
+    dragons: safeParseInt(match.extraStats.opp_dragons || 0),
+    infernals: safeParseInt(match.extraStats.opp_infernals || 0),
+    mountains: safeParseInt(match.extraStats.opp_mountains || 0),
+    clouds: safeParseInt(match.extraStats.opp_clouds || 0), 
+    oceans: safeParseInt(match.extraStats.opp_oceans || 0),
+    chemtechs: safeParseInt(match.extraStats.opp_chemtechs || 0),
+    hextechs: safeParseInt(match.extraStats.opp_hextechs || 0),
+    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown || 0),
+    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || 0),
     
     // Autres objectifs pour l'équipe rouge
-    elders: safeParseInt(match.extraStats.opp_elders),
-    heralds: safeParseInt(match.extraStats.opp_heralds),
-    barons: safeParseInt(match.extraStats.opp_barons),
-    towers: safeParseInt(match.extraStats.opp_towers),
-    turret_plates: safeParseInt(match.extraStats.opp_turret_plates),
-    inhibitors: safeParseInt(match.extraStats.opp_inhibitors),
-    void_grubs: safeParseInt(match.extraStats.opp_void_grubs),
+    elders: safeParseInt(match.extraStats.opp_elders || 0),
+    heralds: safeParseInt(match.extraStats.opp_heralds || 0),
+    barons: safeParseInt(match.extraStats.opp_barons || 0),
+    towers: safeParseInt(match.extraStats.opp_towers || 0),
+    turret_plates: safeParseInt(match.extraStats.opp_turret_plates || 0),
+    inhibitors: safeParseInt(match.extraStats.opp_inhibitors || 0),
+    void_grubs: safeParseInt(match.extraStats.opp_void_grubs || 0),
     
     // First objectives pour l'équipe rouge
     first_blood: match.extraStats.first_blood === match.teamRed.id,
@@ -137,7 +131,7 @@ export function extractTeamSpecificStats(match: Match): {
   // Debugging pour les matchs spécifiques qui posent problème
   const debugMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
   if (debugMatchIds.includes(match.id)) {
-    console.log(`[Debug] Match ${match.id} - statistiques d'équipe extraites:`, {
+    console.log(`[Debug] Match ${match.id} - statistiques extraites (nouveau modèle indépendant):`, {
       teamBlue: {
         id: match.teamBlue.id,
         totalDragons: blueTeamStats.dragons,
