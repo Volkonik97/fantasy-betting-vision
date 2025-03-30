@@ -22,7 +22,8 @@ export function extractTeamSpecificStats(match: Match, teamId: string): any {
   let isWinner = false;
   if (match.result && match.result.winner) {
     isWinner = match.result.winner === teamId;
-  } else if (match.extraStats.winner_team_id) {
+  } else if (match.extraStats && 'winner_team_id' in match.extraStats) {
+    // Use 'in' operator to check if the property exists
     isWinner = match.extraStats.winner_team_id === teamId;
   }
   
