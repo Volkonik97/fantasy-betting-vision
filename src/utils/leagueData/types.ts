@@ -30,6 +30,7 @@ export interface MatchTeamStats {
   
   // Dragon statistics
   dragons: number;
+  elemental_drakes: number;
   infernals: number;
   mountains: number;
   clouds: number;

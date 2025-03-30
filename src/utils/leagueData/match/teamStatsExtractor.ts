@@ -71,6 +71,7 @@ function processTeamRows(
   
   // Extraire les statistiques de dragons
   const dragons = getStatValue(allTeamData, 'dragons');
+  const elementalDrakes = getStatValue(allTeamData, 'elementaldrakes');
   const infernals = getStatValue(allTeamData, 'infernals');
   const mountains = getStatValue(allTeamData, 'mountains');
   const clouds = getStatValue(allTeamData, 'clouds');
@@ -101,6 +102,7 @@ function processTeamRows(
     team_deaths: teamDeaths,
     first_dragon: hasFirstDragon,
     dragons: dragons,
+    elemental_drakes: elementalDrakes,
     infernals: infernals,
     mountains: mountains,
     clouds: clouds,
