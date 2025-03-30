@@ -142,17 +142,23 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
     const { blueTeamStats, redTeamStats } = extractTeamSpecificStats(matchObject);
     
     // Ajouter aux statistiques d'équipe par match pour les deux équipes
-    teamMatchStatsArray.push({
-      ...blueTeamStats,
-      match_id: match.id,
-      side: 'blue'
-    });
+    if (blueTeam && blueTeamStats) {
+      teamMatchStatsArray.push({
+        ...blueTeamStats,
+        team_id: blueTeam.id,
+        match_id: match.id,
+        side: 'blue'
+      });
+    }
     
-    teamMatchStatsArray.push({
-      ...redTeamStats,
-      match_id: match.id,
-      side: 'red'
-    });
+    if (redTeam && redTeamStats) {
+      teamMatchStatsArray.push({
+        ...redTeamStats,
+        team_id: redTeam.id,
+        match_id: match.id,
+        side: 'red'
+      });
+    }
     
     // Ajouter les stats d'équipe à l'objet match pour la rétrocompatibilité
     if (teamStatsMap) {
@@ -198,6 +204,8 @@ export function assembleLeagueData(data: LeagueGameDataRow[]): {
       });
     });
   });
+  
+  console.log(`Generated ${teamMatchStatsArray.length} team match statistics records`);
   
   // Return the assembled data
   return {

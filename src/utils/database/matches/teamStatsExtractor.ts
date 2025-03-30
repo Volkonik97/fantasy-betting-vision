@@ -15,6 +15,7 @@ export function extractTeamSpecificStats(match: Match): {
   
   // Statistiques de base de l'équipe bleue
   blueTeamStats.team_id = match.teamBlue?.id;
+  blueTeamStats.match_id = match.id;
   blueTeamStats.team_kpm = stats.team_kpm || 0;
   blueTeamStats.ckpm = stats.ckpm || 0;
   blueTeamStats.team_kills = stats.team_kills || 0;
@@ -52,6 +53,7 @@ export function extractTeamSpecificStats(match: Match): {
   
   // Statistiques de base de l'équipe rouge
   redTeamStats.team_id = match.teamRed?.id;
+  redTeamStats.match_id = match.id;
   redTeamStats.team_kpm = stats.team_kpm || 0; // Même KPM car c'est une stat globale
   redTeamStats.ckpm = stats.ckpm || 0; // Même CKPM car c'est une stat globale
   
@@ -71,7 +73,14 @@ export function extractTeamSpecificStats(match: Match): {
   redTeamStats.elemental_drakes = stats.opp_elemental_drakes || 0;
   
   // Les statistiques détaillées des dragons ne sont généralement pas disponibles pour l'équipe rouge
-  // via l'API Oracle's Elixir, donc nous devons les estimer ou les laisser à 0
+  // via l'API Oracle's Elixir, donc nous les initialisons à 0
+  redTeamStats.infernals = 0;
+  redTeamStats.mountains = 0;
+  redTeamStats.clouds = 0;
+  redTeamStats.oceans = 0;
+  redTeamStats.chemtechs = 0;
+  redTeamStats.hextechs = 0;
+  redTeamStats.drakes_unknown = 0;
   
   // Premiers objectifs pour équipe rouge
   // On vérifie si l'équipe rouge a obtenu l'objectif
