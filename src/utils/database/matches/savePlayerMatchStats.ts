@@ -22,21 +22,48 @@ export const savePlayerMatchStats = async (
     const matchIds = [...new Set(playerStats.map(stat => stat.match_id))];
     console.log(`Found ${matchIds.length} unique matches referenced in player stats`);
     
-    // Get all existing match IDs from the matches table
-    const { data: existingMatches, error: matchesError } = await supabase
-      .from('matches')
-      .select('id')
-      .in('id', matchIds);
+    // Process match IDs in batches to avoid "URI too large" errors
+    const BATCH_SIZE_IDS = 500;
+    let existingMatchIds = new Set<string>();
+    let missingMatchIds = new Set<string>();
     
-    if (matchesError) {
-      console.error("Error fetching existing matches:", matchesError);
-      toast.error("Erreur lors de la vérification des matchs existants");
-      return false;
+    // Split matchIds into chunks for safer batch processing
+    const matchIdBatches = chunk(matchIds, BATCH_SIZE_IDS);
+    console.log(`Processing ${matchIdBatches.length} batches of match IDs`);
+    
+    // Process each batch of match IDs
+    for (const matchIdBatch of matchIdBatches) {
+      try {
+        const { data: existingMatches, error: matchesError } = await supabase
+          .from('matches')
+          .select('id')
+          .in('id', matchIdBatch);
+        
+        if (matchesError) {
+          console.error(`Error in batch check for ${matchIdBatch.length} match IDs:`, matchesError);
+          continue; // Continue with next batch instead of failing completely
+        }
+        
+        // Add found matches to our set
+        (existingMatches || []).forEach(match => existingMatchIds.add(match.id));
+        
+        // Identify missing matches in this batch
+        matchIdBatch.forEach(id => {
+          if (!existingMatchIds.has(id)) {
+            missingMatchIds.add(id);
+          }
+        });
+      } catch (batchError) {
+        console.error(`Unexpected error in match batch check:`, batchError);
+      }
     }
     
-    // Create a Set of existing match IDs for quick lookup
-    const existingMatchIds = new Set(existingMatches?.map(match => match.id) || []);
     console.log(`Found ${existingMatchIds.size} matches in database out of ${matchIds.length} referenced`);
+    
+    if (missingMatchIds.size > 0) {
+      console.log(`Warning: ${missingMatchIds.size} referenced match IDs don't exist in database`);
+      console.log("First few missing match IDs:", [...missingMatchIds].slice(0, 5));
+    }
     
     // Filter stats to only include those with valid match references
     const validStats = playerStats.filter(stat => {
@@ -46,7 +73,12 @@ export const savePlayerMatchStats = async (
                       existingMatchIds.has(stat.match_id);
       
       if (!isValid && stat && stat.match_id) {
-        console.log(`Skipping player stat for match ${stat.match_id} - match does not exist in database`);
+        if (missingMatchIds.has(stat.match_id)) {
+          // This is an expected issue - match doesn't exist in our database
+          // Don't log every one of these as it floods the console
+        } else {
+          console.log(`Skipping player stat for match ${stat.match_id} - invalid data or match does not exist`);
+        }
       }
       
       return isValid;
@@ -91,10 +123,15 @@ export const savePlayerMatchStats = async (
       return stat;
     });
     
-    console.log(`Found ${validStats.length} valid player match statistics records (${playerStats.length - validStats.length} skipped)`);
+    const skippedCount = playerStats.length - validStats.length;
+    console.log(`Found ${validStats.length} valid player match statistics records (${skippedCount} skipped)`);
     
     if (validStats.length === 0) {
-      toast.warning("Aucune statistique valide de joueur n'a été trouvée pour les matchs existants");
+      if (skippedCount > 0) {
+        toast.warning(`${skippedCount} statistiques de joueurs n'ont pas été importées car les matchs associés n'existent pas dans la base de données.`);
+      } else {
+        toast.warning("Aucune statistique valide de joueur n'a été trouvée pour les matchs existants");
+      }
       return true;
     }
     
@@ -103,7 +140,6 @@ export const savePlayerMatchStats = async (
     
     // Split records into manageable chunks for faster processing
     const BATCH_SIZE = 50;
-    const MAX_CONCURRENT = 3; // Reduce concurrency to avoid overwhelming DB
     const totalStats = validStats.length;
     
     let successCount = 0;
@@ -184,7 +220,6 @@ export const savePlayerMatchStats = async (
     // Customize the messages based on the results
     if (errorCount > 0) {
       const successRate = successCount / totalStats;
-      const skippedCount = playerStats.length - validStats.length;
       
       if (skippedCount > 0) {
         toast.warning(`${skippedCount} statistiques de joueurs ont été ignorées car les matchs associés n'existent pas dans la base de données.`);
