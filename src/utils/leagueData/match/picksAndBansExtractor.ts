@@ -1,3 +1,4 @@
+
 import { LeagueGameDataRow } from '../../csv/types';
 import { PicksAndBans, prepareJsonData } from '../types';
 
@@ -55,10 +56,11 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[] | Set<LeagueGameDa
     processTeamPlayerPicks(blueTeamRows, picks, 'blue');
     processTeamPlayerPicks(redTeamRows, picks, 'red');
     
-    // Si certains picks ne sont pas trouvés via les joueurs,
-    // essayer de les extraire via les colonnes dynamiques
-    processTeamDynamicPicks(blueTeamRows, picks, 'blue');
-    processTeamDynamicPicks(redTeamRows, picks, 'red');
+    // SPECIFIC PICK COLUMNS: Extract pick1, pick2, etc. columns directly
+    // For Blue Team
+    processDirectPickColumns(getFirstValidRow(blueTeamRows), picks, 'blue', positions);
+    // For Red Team  
+    processDirectPickColumns(getFirstValidRow(redTeamRows), picks, 'red', positions);
     
     // Extraire les bans
     const bans: { [key: string]: { championId: string; championName?: string } } = {};
@@ -80,8 +82,11 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[] | Set<LeagueGameDa
       }
     }
     
-    processBans(blueTeamRows, bans, 'blue');
-    processBans(redTeamRows, bans, 'red');
+    // SPECIFIC BAN COLUMNS: Extract ban1, ban2, etc. columns directly
+    // For Blue Team
+    processDirectBanColumns(getFirstValidRow(blueTeamRows), bans, 'blue');
+    // For Red Team
+    processDirectBanColumns(getFirstValidRow(redTeamRows), bans, 'red');
     
     // Vérifier si nous avons des données pour retourner
     const hasPicksData = Object.keys(picks).length > 0;
@@ -104,6 +109,14 @@ export function extractPicksAndBans(rows: LeagueGameDataRow[] | Set<LeagueGameDa
     console.error("Erreur lors de l'extraction des picks et bans:", error);
     return { picks: undefined, bans: undefined };
   }
+}
+
+/**
+ * Get first valid row from a team's rows
+ */
+function getFirstValidRow(teamRows: LeagueGameDataRow[]): LeagueGameDataRow | undefined {
+  if (!teamRows || teamRows.length === 0) return undefined;
+  return teamRows[0];
 }
 
 /**
@@ -131,6 +144,68 @@ function processTeamPlayerPicks(
       };
     }
   });
+}
+
+/**
+ * Process direct pick columns from a row (pick1, pick2, etc.)
+ */
+function processDirectPickColumns(
+  row: LeagueGameDataRow | undefined,
+  picks: { [key: string]: { championId: string; championName?: string; role?: string; playerName?: string } },
+  teamPrefix: 'blue' | 'red',
+  positions: string[]
+) {
+  if (!row) return;
+  
+  // Process direct pick columns (pick1, pick2, pick3, pick4, pick5)
+  for (let i = 1; i <= 5; i++) {
+    const pickKey = `pick${i}`;
+    const champName = row[pickKey];
+    
+    if (champName && typeof champName === 'string' && champName.trim() !== '') {
+      const role = positions[i-1] || `Position${i}`;
+      const fullPickKey = `${teamPrefix}_${role.toLowerCase()}`;
+      
+      // Only add if this pick hasn't been added yet
+      if (!picks[fullPickKey]) {
+        picks[fullPickKey] = {
+          championId: champName.trim(),
+          championName: champName.trim(),
+          role: role
+        };
+        
+        console.log(`Extracted direct pick: ${fullPickKey} = ${champName}`);
+      }
+    }
+  }
+}
+
+/**
+ * Process direct ban columns from a row (ban1, ban2, etc.)
+ */
+function processDirectBanColumns(
+  row: LeagueGameDataRow | undefined,
+  bans: { [key: string]: { championId: string; championName?: string } },
+  teamPrefix: 'blue' | 'red'
+) {
+  if (!row) return;
+  
+  // Process ban1, ban2, ban3, ban4, ban5 columns
+  for (let i = 1; i <= 5; i++) {
+    const banKey = `ban${i}`;
+    const champName = row[banKey];
+    
+    if (champName && typeof champName === 'string' && champName.trim() !== '') {
+      const fullBanKey = `${teamPrefix}_ban${i}`;
+      
+      bans[fullBanKey] = {
+        championId: champName.trim(),
+        championName: champName.trim()
+      };
+      
+      console.log(`Extracted direct ban: ${fullBanKey} = ${champName}`);
+    }
+  }
 }
 
 /**

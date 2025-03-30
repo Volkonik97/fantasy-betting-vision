@@ -19,11 +19,18 @@ export interface LeagueGameDataRow {
   teamname?: string;
   teamid?: string;
   champion?: string;
+  // Direct ban columns
   ban1?: string;
   ban2?: string;
   ban3?: string;
   ban4?: string;
   ban5?: string;
+  // Direct pick columns
+  pick1?: string;
+  pick2?: string;
+  pick3?: string;
+  pick4?: string;
+  pick5?: string;
   gamelength?: string;
   result?: string;
   kills?: string;
