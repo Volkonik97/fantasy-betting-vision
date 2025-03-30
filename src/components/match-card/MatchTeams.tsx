@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import TeamLogo from "./TeamLogo";
 import { Team } from "@/utils/models/types";
-import { getSeriesScore, isSeriesMatch, getBaseMatchId, isStandardSeries } from "@/utils/database/matchesService";
 
 interface MatchTeamsProps {
   teamBlue: Team;
@@ -40,33 +39,6 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   matchId,
   seriesAggregation = false
 }) => {
-  // State to hold scores
-  const [isValidSeries, setIsValidSeries] = useState<boolean>(false);
-  
-  useEffect(() => {
-    // Check if this is part of a valid series
-    const checkSeriesValidity = async () => {
-      if (seriesAggregation && status === "Completed") {
-        try {
-          // Check if this is a standard series (Bo3, Bo5, Bo7)
-          const validSeries = await isStandardSeries(matchId);
-          setIsValidSeries(validSeries);
-          
-          if (!validSeries) {
-            console.log(`Match ${matchId} is not part of a standard series`);
-          }
-        } catch (error) {
-          console.error("Error checking series validity:", error);
-          setIsValidSeries(false);
-        }
-      } else {
-        setIsValidSeries(false);
-      }
-    };
-    
-    checkSeriesValidity();
-  }, [matchId, seriesAggregation, status]);
-
   // Log scores for debugging
   console.log(`Match ${matchId} - Individual match scores - Blue: ${blueScore}, Red: ${redScore}`);
   console.log(`Match ${matchId} - Result:`, result);
