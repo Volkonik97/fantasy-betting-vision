@@ -1,3 +1,4 @@
+
 import { Team, Player, Match, Tournament } from './models/types';
 
 // Types for CSV data
@@ -209,7 +210,6 @@ export interface LeagueGameDataRow {
   opp_deathsat25?: string;
   picks?: any;
   bans?: any;
-  opp_deathsat25?: string;
 }
 
 // Create a module-level cache with getter and setter functions
