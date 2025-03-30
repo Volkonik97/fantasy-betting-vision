@@ -24,9 +24,6 @@ export function extractTeamSpecificStats(match: Match): {
       chemtechs: match.extraStats.chemtechs,
       hextechs: match.extraStats.hextechs,
       elemental_drakes: match.extraStats.elemental_drakes,
-      
-      // Additional dragons data
-      total_dragons: match.extraStats.dragons + match.extraStats.opp_dragons
     });
   }
 
@@ -42,8 +39,13 @@ export function extractTeamSpecificStats(match: Match): {
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // Extraire les statistiques spécifiques à chaque équipe
-  // En fonction de l'ID de l'équipe et du côté (blue/red)
+  // Extraire les statistiques de dragons totales
+  const totalDragonsByTeam = {
+    blue: safeParseInt(match.extraStats.dragons),
+    red: safeParseInt(match.extraStats.opp_dragons)
+  };
+
+  // Préparer les statistiques pour les deux équipes
   const blueTeamStats = {
     team_id: match.teamBlue.id,
     match_id: match.id,
@@ -52,8 +54,8 @@ export function extractTeamSpecificStats(match: Match): {
     deaths: safeParseInt(match.extraStats.team_deaths),
     kpm: match.extraStats.team_kpm || 0,
     
-    // Dragons - Attribution basée sur le côté blue
-    dragons: safeParseInt(match.extraStats.dragons),
+    // Dragons pour l'équipe bleue
+    dragons: totalDragonsByTeam.blue,
     infernals: safeParseInt(match.extraStats.infernals),
     mountains: safeParseInt(match.extraStats.mountains), 
     clouds: safeParseInt(match.extraStats.clouds),
@@ -82,8 +84,8 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamBlue.id
   };
 
-  // Pour l'équipe rouge, nous utilisons les mêmes valeurs de type de drake 
-  // que celles présentes dans les données brutes du match
+  // Pour l'équipe rouge, nous attribuons également les mêmes types de drakes que l'équipe bleue
+  // car les données sont stockées une seule fois par match
   const redTeamStats = {
     team_id: match.teamRed.id,
     match_id: match.id,
@@ -92,16 +94,17 @@ export function extractTeamSpecificStats(match: Match): {
     deaths: safeParseInt(match.extraStats.team_kills), // inversé pour l'équipe rouge
     kpm: 0, // Non disponible directement
     
-    // Dragons - Attribution basée sur le côté red
-    dragons: safeParseInt(match.extraStats.opp_dragons),
-    infernals: safeParseInt(match.extraStats.opp_infernals || match.extraStats.infernals),
-    mountains: safeParseInt(match.extraStats.opp_mountains || match.extraStats.mountains),
-    clouds: safeParseInt(match.extraStats.opp_clouds || match.extraStats.clouds),
-    oceans: safeParseInt(match.extraStats.opp_oceans || match.extraStats.oceans),
-    chemtechs: safeParseInt(match.extraStats.opp_chemtechs || match.extraStats.chemtechs),
-    hextechs: safeParseInt(match.extraStats.opp_hextechs || match.extraStats.hextechs),
-    drakes_unknown: safeParseInt(match.extraStats.opp_drakes_unknown || match.extraStats.drakes_unknown),
-    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes),
+    // Dragons pour l'équipe rouge (même format que l'équipe bleue)
+    dragons: totalDragonsByTeam.red,
+    // Utiliser les mêmes valeurs que pour l'équipe bleue, pour garder le même format de données
+    infernals: safeParseInt(match.extraStats.infernals),
+    mountains: safeParseInt(match.extraStats.mountains),
+    clouds: safeParseInt(match.extraStats.clouds),
+    oceans: safeParseInt(match.extraStats.oceans),
+    chemtechs: safeParseInt(match.extraStats.chemtechs),
+    hextechs: safeParseInt(match.extraStats.hextechs),
+    drakes_unknown: safeParseInt(match.extraStats.drakes_unknown),
+    elemental_drakes: safeParseInt(match.extraStats.opp_elemental_drakes || match.extraStats.elemental_drakes),
     
     // Autres objectifs pour l'équipe rouge
     elders: safeParseInt(match.extraStats.opp_elders),
