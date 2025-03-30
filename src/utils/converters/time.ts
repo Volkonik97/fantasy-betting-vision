@@ -7,27 +7,29 @@
 export const formatSecondsToMinutesSeconds = (seconds: number): string => {
   if (!seconds || isNaN(seconds)) return "00:00";
   
-  // Convert any seconds input to a proper seconds value (in case it's provided in minutes)
-  if (seconds > 3600) {
-    // If value is suspiciously large (over 1 hour), assume it's in milliseconds
-    seconds = seconds / 1000;
-  } else if (seconds > 300) {
-    // If value is over 5 minutes in seconds but not huge, it's probably good as is
-    seconds = seconds;
-  } else if (seconds < 10) {
-    // If value is tiny, assume it's in minutes and convert to seconds
-    seconds = seconds * 60;
+  // Convert any seconds input to a proper seconds value
+  let normalizedSeconds = seconds;
+  
+  // If value is very small (like 0.55), assume it's in minutes and convert to seconds
+  if (seconds < 5) {
+    normalizedSeconds = seconds * 60;
+  } 
+  // If value is reasonable for minutes (5-60), convert to seconds
+  else if (seconds >= 5 && seconds < 100) {
+    normalizedSeconds = seconds * 60;
+  }
+  // If value is very large (like 1705524.72), assume it's in milliseconds
+  else if (seconds > 3600) {
+    normalizedSeconds = seconds / 1000;
   }
   
-  // Additional fix: if the value is still very large (>3600) after our first correction,
-  // it might be a mistake in the data format. Force it to be a reasonable game length.
-  if (seconds > 3600) {
-    seconds = seconds % 3600; // Take just the seconds part, ignore hours
-    if (seconds < 60) seconds = 1800; // If too small, default to 30 minutes
+  // Safety check: if still too large, cap at reasonable game length
+  if (normalizedSeconds > 3600) {
+    normalizedSeconds = 3599; // Max at 59:59
   }
   
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
+  const minutes = Math.floor(normalizedSeconds / 60);
+  const remainingSeconds = Math.floor(normalizedSeconds % 60);
   
   return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
 };
@@ -37,18 +39,26 @@ export const secondsToMinutes = (seconds: number): number => {
   if (!seconds || isNaN(seconds)) return 0;
   
   // Apply similar logic as formatSecondsToMinutesSeconds to normalize time values
-  if (seconds > 3600) {
-    seconds = seconds / 1000;
-  } else if (seconds < 10) {
-    seconds = seconds * 60;
+  let normalizedSeconds = seconds;
+  
+  // If value is very small (like 0.55), assume it's in minutes and convert to seconds
+  if (seconds < 5) {
+    normalizedSeconds = seconds * 60;
+  } 
+  // If value is reasonable for minutes (5-60), convert to seconds
+  else if (seconds >= 5 && seconds < 100) {
+    normalizedSeconds = seconds * 60;
+  }
+  // If value is very large (like 1705524.72), assume it's in milliseconds
+  else if (seconds > 3600) {
+    normalizedSeconds = seconds / 1000;
   }
   
-  // If still very large, normalize
-  if (seconds > 3600) {
-    seconds = seconds % 3600;
-    if (seconds < 60) seconds = 1800;
+  // Safety check: if still too large, cap at reasonable game length
+  if (normalizedSeconds > 3600) {
+    normalizedSeconds = 3599;
   }
   
-  // Return normalized seconds
-  return seconds;
+  // Return normalized seconds (not minutes, despite the function name)
+  return normalizedSeconds;
 };

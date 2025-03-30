@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Team } from "@/utils/models/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 
@@ -103,7 +103,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Avg. Game Time</p>
-              <p className="text-lg font-semibold">{formatSecondsToMinutesSeconds(team.averageGameTime)}</p>
+              <p className="text-lg font-semibold">{formatTime(team.averageGameTime)}</p>
             </div>
           </div>
           

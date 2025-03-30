@@ -2,7 +2,7 @@
 import React from "react";
 import { Trophy, Clock, Users } from "lucide-react";
 import { Match } from "@/utils/models/types";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface MatchResultsProps {
@@ -46,7 +46,7 @@ const MatchResults = ({ match }: MatchResultsProps) => {
             <div>
               <div className="text-sm text-gray-500">Match Duration</div>
               <div className="font-medium">
-                {match.result?.duration ? formatSecondsToMinutesSeconds(Number(match.result.duration)) : "??:??"}
+                {match.result?.duration ? formatTime(match.result.duration) : "??:??"}
               </div>
             </div>
           </div>

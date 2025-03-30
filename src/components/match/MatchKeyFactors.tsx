@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Match } from "@/utils/models/types";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface MatchKeyFactorsProps {
@@ -82,7 +83,7 @@ const MatchKeyFactors = ({ match }: MatchKeyFactorsProps) => {
             </span>
           </div>
           <div className="text-sm text-gray-600">
-            Avg: {Math.min(match.teamBlue.averageGameTime, match.teamRed.averageGameTime).toFixed(1)} min
+            Avg: {formatTime(Math.min(match.teamBlue.averageGameTime, match.teamRed.averageGameTime))}
           </div>
         </div>
       </div>

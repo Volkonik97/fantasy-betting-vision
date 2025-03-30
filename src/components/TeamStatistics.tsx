@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
 import { motion } from "framer-motion";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
@@ -56,7 +55,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
     { name: "Win Rate", value: `${(team.winRate * 100).toFixed(0)}%` },
     { name: "Blue Side Win", value: `${(team.blueWinRate * 100).toFixed(0)}%` },
     { name: "Red Side Win", value: `${(team.redWinRate * 100).toFixed(0)}%` },
-    { name: "Avg Game Time", value: formatSecondsToMinutesSeconds(team.averageGameTime) },
+    { name: "Avg Game Time", value: formatTime(team.averageGameTime) },
   ];
 
   const hasTimeline = timelineStats && Object.keys(timelineStats).length > 0;

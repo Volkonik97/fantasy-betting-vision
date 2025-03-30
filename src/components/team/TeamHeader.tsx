@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 
@@ -98,7 +98,7 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
             <div className="flex justify-center mb-1">
               <Clock size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{formatSecondsToMinutesSeconds(team.averageGameTime)}</p>
+            <p className="text-2xl font-bold">{formatTime(team.averageGameTime)}</p>
             <p className="text-xs text-gray-500">Avg. Game Time</p>
           </div>
           

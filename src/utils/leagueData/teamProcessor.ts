@@ -2,6 +2,7 @@
 import { LeagueGameDataRow } from '../csv/types';
 import { TeamCSV } from '../csv/types';
 import { TeamStatsTracker } from './types';
+import { normalizeTimeValue } from '../formatters/timeFormatter';
 
 // Process team statistics from League data rows
 export function processTeamData(data: LeagueGameDataRow[]): {
@@ -93,17 +94,14 @@ export function processTeamData(data: LeagueGameDataRow[]): {
     if (row.gamelength) {
       // Check if gamelength is in seconds or in MM:SS format
       let gameTimeSeconds = 0;
+      
       if (row.gamelength.includes(':')) {
         // Format MM:SS
         const [minutes, seconds] = row.gamelength.split(':').map(Number);
         gameTimeSeconds = (minutes * 60) + seconds;
       } else {
-        // Assume it's already in seconds
-        gameTimeSeconds = parseInt(row.gamelength, 10);
-        // If it seems too small, assume it's in minutes and convert
-        if (gameTimeSeconds < 100) {
-          gameTimeSeconds *= 60;
-        }
+        // Use normalizeTimeValue to handle various formats consistently
+        gameTimeSeconds = normalizeTimeValue(row.gamelength);
       }
       
       // If we have a valid game time, add to the array
@@ -137,7 +135,8 @@ export function processTeamData(data: LeagueGameDataRow[]): {
     // Calculate average game time in minutes
     if (stats.gameTimes.length > 0) {
       const avgGameTimeSeconds = stats.gameTimes.reduce((sum, time) => sum + time, 0) / stats.gameTimes.length;
-      team.averageGameTime = (avgGameTimeSeconds / 60).toFixed(2);
+      // Store as seconds, not minutes (we'll format as MM:SS when displaying)
+      team.averageGameTime = avgGameTimeSeconds.toFixed(0);
     }
   });
   

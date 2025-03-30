@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { Users } from "lucide-react";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { formatTime } from "@/utils/formatters/timeFormatter";
 import { 
   getSeriesScore, 
   getGameNumberFromId, 
@@ -91,7 +90,7 @@ const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({
     getSeriesInfo();
   }, [matchId, seriesAggregation, teamBlueId, teamRedId]);
   
-  const formattedDuration = result.duration ? formatSecondsToMinutesSeconds(parseInt(result.duration)) : "??:??";
+  const formattedDuration = result.duration ? formatTime(result.duration) : "??:??";
   
   // Determine the team colors based on which team is the winner
   const isBlueWinner = teamBlueId === result.winner;

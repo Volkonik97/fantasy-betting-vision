@@ -16,18 +16,22 @@ export const formatTime = (seconds: number | string): string => {
   if (isNaN(secondsNum)) return "00:00";
   
   // Normalize time values based on common patterns
-  if (secondsNum > 3600) {
-    // If value is suspiciously large (over 1 hour), assume it's in milliseconds
-    secondsNum = secondsNum / 1000;
-  } else if (secondsNum < 10) {
-    // If value is tiny, assume it's in minutes and convert to seconds
+  // If value is very small (like 0.55), assume it's in minutes and convert to seconds
+  if (secondsNum < 5) {
+    secondsNum = secondsNum * 60;
+  } 
+  // If value is reasonable for minutes (5-60), convert to seconds
+  else if (secondsNum >= 5 && secondsNum < 100) {
     secondsNum = secondsNum * 60;
   }
+  // If value is very large (like 1705524.72), assume it's in milliseconds
+  else if (secondsNum > 3600) {
+    secondsNum = secondsNum / 1000;
+  }
   
-  // If still very large, normalize to a reasonable game length
+  // Safety check: if still too large, cap at reasonable game length
   if (secondsNum > 3600) {
-    secondsNum = secondsNum % 3600; // Take just the seconds part
-    if (secondsNum < 60) secondsNum = 1800; // Default to 30 minutes if too small
+    secondsNum = 3599; // Max at 59:59
   }
   
   const minutes = Math.floor(secondsNum / 60);
@@ -49,16 +53,22 @@ export const normalizeTimeValue = (seconds: number | string): number => {
   if (isNaN(secondsNum)) return 0;
   
   // Apply normalization logic similar to formatTime
-  if (secondsNum > 3600) {
-    secondsNum = secondsNum / 1000;
-  } else if (secondsNum < 10) {
+  // If value is very small (like 0.55), assume it's in minutes and convert to seconds
+  if (secondsNum < 5) {
+    secondsNum = secondsNum * 60;
+  } 
+  // If value is reasonable for minutes (5-60), convert to seconds
+  else if (secondsNum >= 5 && secondsNum < 100) {
     secondsNum = secondsNum * 60;
   }
+  // If value is very large (like 1705524.72), assume it's in milliseconds
+  else if (secondsNum > 3600) {
+    secondsNum = secondsNum / 1000;
+  }
   
-  // If still very large, normalize
+  // Safety check: if still too large, cap at reasonable game length
   if (secondsNum > 3600) {
-    secondsNum = secondsNum % 3600;
-    if (secondsNum < 60) secondsNum = 1800;
+    secondsNum = 3599; // Max at 59:59
   }
   
   return secondsNum;
