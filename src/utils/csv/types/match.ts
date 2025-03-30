@@ -46,6 +46,14 @@ export interface MatchCSV {
   chemtechs?: string;
   hextechs?: string;
   drakesUnknown?: string;
+  // Opponent drake types
+  oppInfernals?: string;
+  oppMountains?: string;
+  oppClouds?: string;
+  oppOceans?: string;
+  oppChemtechs?: string;
+  oppHextechs?: string;
+  oppDrakesUnknown?: string;
   elders?: string;
   oppElders?: string;
   heralds?: string;

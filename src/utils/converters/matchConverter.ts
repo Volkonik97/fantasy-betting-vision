@@ -53,7 +53,7 @@ export const convertMatchData = (matchesCSV: MatchCSV[], teams: Team[]): Match[]
         chemtechs: parseInt(match.chemtechs || '0'),
         hextechs: parseInt(match.hextechs || '0'),
         drakes_unknown: parseInt(match.drakesUnknown || '0'),
-        // AJOUT: Inclure les détails des dragons pour le côté adverse
+        // Include opponent drake-specific properties
         opp_infernals: parseInt(match.oppInfernals || '0'),
         opp_mountains: parseInt(match.oppMountains || '0'),
         opp_clouds: parseInt(match.oppClouds || '0'),
