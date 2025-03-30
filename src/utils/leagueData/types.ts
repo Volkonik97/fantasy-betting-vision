@@ -210,6 +210,16 @@ export interface TeamGameDamageMap extends Map<string, Map<string, number>> {}
 // Type pour une map des pourcentages de dégâts par joueur
 export interface PlayerDamageSharesMap extends Map<string, number[]> {}
 
+// Define PicksAndBans interface which was missing
+export interface PicksAndBans {
+  [key: string]: {
+    championId: string;
+    championName?: string;
+    role?: string;
+    playerName?: string;
+  }[];
+}
+
 // Helper function to parse boolean values from strings
 export function parseBoolean(value?: string | null): boolean {
   if (!value) return false;

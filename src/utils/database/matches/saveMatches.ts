@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -66,11 +67,11 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
           .from('matches')
           .upsert(
             matchChunk.map(match => {
-              // Extraire les statistiques et données objectives
+              // Extract stats and result data, ensuring they exist
               const extraStats = match.extraStats || {};
               const result = match.result || {};
               
-              // Log les données objectives pour ce match
+              // Log objective data for this match
               console.log(`Match ${match.id} objective data for DB:`, {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
@@ -126,8 +127,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 inhibitors: extraStats.inhibitors || 0,
                 opp_inhibitors: extraStats.opp_inhibitors || 0,
                 winner_team_id: result.winner || null,
-                score_blue: result.score ? result.score[0] || 0 : 0,
-                score_red: result.score ? result.score[1] || 0 : 0,
+                score_blue: result.score ? result.score[0] : 0,
+                score_red: result.score ? result.score[1] : 0,
                 duration: result.duration || '',
                 mvp: result.mvp || '',
                 first_blood: result.firstBlood || extraStats.first_blood || null,
