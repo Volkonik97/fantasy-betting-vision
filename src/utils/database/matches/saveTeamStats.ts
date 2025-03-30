@@ -88,30 +88,38 @@ export async function saveTeamMatchStats(
       return true;
     }
     
-    // Debug a specific match if needed (LOLTMNT02_222859)
-    const specificMatch = validTeamStats.filter(stat => stat.match_id === 'LOLTMNT02_222859');
-    if (specificMatch.length > 0) {
-      console.log(`Statistiques pour le match LOLTMNT02_222859:`, specificMatch);
+    // Ajouter un debug pour les matchs spécifiques
+    const specificMatchIds = ['LOLTMNT02_215152', 'LOLTMNT02_222859'];
+    const debugMatches = validTeamStats.filter(stat => specificMatchIds.includes(stat.match_id));
+    if (debugMatches.length > 0) {
+      console.log(`Debugging ${debugMatches.length} matchs spécifiques:`, debugMatches);
     }
     
-    // Préparation des données pour l'insertion
+    // Préparation des données pour l'insertion avec une vérification plus approfondie
     const statsToInsert = validTeamStats.map(stat => {
-      // Log des dragons clouds pour ce match spécifique
-      if (stat.match_id === 'LOLTMNT02_222859') {
+      // Debug pour les matchs spécifiques
+      if (specificMatchIds.includes(stat.match_id)) {
         console.log(`Préparation insertion pour match ${stat.match_id}, équipe ${stat.team_id}:`, {
-          clouds: stat.clouds,
-          side: stat.side,
-          dragons: stat.dragons
+          is_blue_side: stat.is_blue_side,
+          totalDragons: stat.dragons,
+          specificDragons: {
+            infernals: stat.infernals,
+            mountains: stat.mountains,
+            clouds: stat.clouds, 
+            oceans: stat.oceans,
+            chemtechs: stat.chemtechs,
+            hextechs: stat.hextechs
+          }
         });
       }
       
       return {
         match_id: stat.match_id,
         team_id: stat.team_id,
-        is_blue_side: stat.side === 'blue',
-        kills: stat.team_kills || 0,
-        deaths: stat.team_deaths || 0,
-        kpm: stat.team_kpm || 0,
+        is_blue_side: typeof stat.is_blue_side === 'boolean' ? stat.is_blue_side : stat.side === 'blue',
+        kills: stat.kills || 0,
+        deaths: stat.deaths || 0,
+        kpm: stat.kpm || 0,
         dragons: stat.dragons || 0,
         elemental_drakes: stat.elemental_drakes || 0,
         infernals: stat.infernals || 0,

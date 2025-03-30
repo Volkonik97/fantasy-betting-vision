@@ -1,3 +1,4 @@
+
 import { Match } from '@/utils/models/types';
 
 /**
@@ -9,11 +10,6 @@ export function extractTeamSpecificStats(match: Match): {
 } {
   if (!match.extraStats) {
     return { blueTeamStats: null, redTeamStats: null };
-  }
-
-  // Log pour déboguer le match problématique
-  if (match.id === 'LOLTMNT02_215152') {
-    console.log(`Extractions des stats d'équipe pour le match ${match.id}`, match.extraStats);
   }
 
   // Pour l'équipe bleue, utiliser directement les stats extraStats
@@ -80,43 +76,44 @@ export function extractTeamSpecificStats(match: Match): {
     first_three_towers: match.extraStats.first_three_towers === match.teamRed.id
   };
 
-  // Vérifier la cohérence des données de dragons pour le match problématique
-  if (match.id === 'LOLTMNT02_215152') {
-    // Vérifier si le total des dragons correspond à la somme des types spécifiques pour l'équipe bleue
-    const blueDragonSum = blueTeamStats.infernals + blueTeamStats.mountains + 
-                          blueTeamStats.clouds + blueTeamStats.oceans + 
-                          blueTeamStats.chemtechs + blueTeamStats.hextechs +
-                          blueTeamStats.drakes_unknown;
-    
-    const redDragonSum = redTeamStats.infernals + redTeamStats.mountains + 
-                         redTeamStats.clouds + redTeamStats.oceans + 
-                         redTeamStats.chemtechs + redTeamStats.hextechs +
-                         redTeamStats.drakes_unknown;
-    
-    console.log(`Match ${match.id} - Vérification des dragons:`, {
+  // Ajouter un debug pour afficher les statistiques
+  if (match.id && (match.id.includes('LOLTMNT02_215152') || match.id.includes('LOLTMNT02_222859'))) {
+    console.log(`[Debug] Match ${match.id} - Dragons statistiques:`, {
       blueTeam: {
+        id: match.teamBlue.id,
         totalDragons: blueTeamStats.dragons,
-        sumSpecificDragons: blueDragonSum,
         specificDragons: {
           infernals: blueTeamStats.infernals,
           mountains: blueTeamStats.mountains,
           clouds: blueTeamStats.clouds,
           oceans: blueTeamStats.oceans,
           chemtechs: blueTeamStats.chemtechs,
-          hextechs: blueTeamStats.hextechs
+          hextechs: blueTeamStats.hextechs,
+          unknown: blueTeamStats.drakes_unknown
         }
       },
       redTeam: {
+        id: match.teamRed.id,
         totalDragons: redTeamStats.dragons,
-        sumSpecificDragons: redDragonSum,
         specificDragons: {
           infernals: redTeamStats.infernals,
           mountains: redTeamStats.mountains,
           clouds: redTeamStats.clouds,
           oceans: redTeamStats.oceans,
           chemtechs: redTeamStats.chemtechs,
-          hextechs: redTeamStats.hextechs
+          hextechs: redTeamStats.hextechs,
+          unknown: redTeamStats.drakes_unknown
         }
+      },
+      extraStats: {
+        dragons: match.extraStats.dragons,
+        opp_dragons: match.extraStats.opp_dragons,
+        clouds: match.extraStats.clouds,
+        opp_clouds: match.extraStats.opp_clouds,
+        oceans: match.extraStats.oceans,
+        opp_oceans: match.extraStats.opp_oceans,
+        infernals: match.extraStats.infernals,
+        opp_infernals: match.extraStats.opp_infernals
       }
     });
   }
