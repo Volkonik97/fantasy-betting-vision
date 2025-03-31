@@ -3,14 +3,13 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
-import BucketCreator from "@/components/player/BucketCreator";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const PlayerImages = () => {
-  const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "not-exists" | "error">("loading");
+  const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   
   const checkBucket = async () => {
@@ -22,12 +21,8 @@ const PlayerImages = () => {
       
       if (error) {
         console.error("Error accessing player-images bucket:", error);
-        if (error.message === "Bucket not found") {
-          setBucketStatus("not-exists");
-        } else {
-          setBucketStatus("error");
-          setErrorMessage(error.message);
-        }
+        setBucketStatus("error");
+        setErrorMessage(error.message);
       } else {
         console.log("Bucket player-images accessible:", data);
         setBucketStatus("exists");
@@ -42,10 +37,6 @@ const PlayerImages = () => {
   useEffect(() => {
     checkBucket();
   }, []);
-  
-  const handleBucketCreated = () => {
-    checkBucket();
-  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -94,14 +85,18 @@ const PlayerImages = () => {
               <AlertTitle>Erreur d'accès au stockage</AlertTitle>
               <AlertDescription>
                 Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}
+                <div className="mt-2">
+                  <p className="text-sm">
+                    Si l'erreur persiste, contactez votre administrateur Supabase pour vérifier que:
+                  </p>
+                  <ul className="list-disc ml-5 mt-1 text-sm space-y-1">
+                    <li>Le bucket "player-images" existe</li>
+                    <li>Les politiques d'accès sont correctement configurées</li>
+                    <li>Votre clé API a les permissions nécessaires</li>
+                  </ul>
+                </div>
               </AlertDescription>
             </Alert>
-          )}
-          
-          {bucketStatus === "not-exists" && (
-            <div className="mb-6">
-              <BucketCreator bucketId="player-images" onBucketCreated={handleBucketCreated} />
-            </div>
           )}
         </div>
         
