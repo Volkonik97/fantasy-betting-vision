@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 
 interface PlayerWithImage {
   player: Player;
@@ -24,6 +26,7 @@ const PlayerImagesImport = () => {
   const [playerImages, setPlayerImages] = useState<PlayerWithImage[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [unmatched, setUnmatched] = useState<File[]>([]);
 
   // Load players when component mounts
   React.useEffect(() => {
@@ -51,6 +54,56 @@ const PlayerImagesImport = () => {
     }
   };
 
+  const normalizeString = (str: string): string => {
+    return str
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
+      .replace(/[^a-z0-9]/g, ""); // Remove special characters and spaces
+  };
+
+  const findMatchingPlayer = (fileName: string, playerImages: PlayerWithImage[]): number => {
+    const normalizedFileName = normalizeString(fileName);
+    
+    // First try: exact match on normalized name
+    const exactMatch = playerImages.findIndex(item => 
+      normalizeString(item.player.name) === normalizedFileName
+    );
+    
+    if (exactMatch !== -1) return exactMatch;
+    
+    // Second try: filename contains full player name
+    const containsFullName = playerImages.findIndex(item => 
+      normalizedFileName.includes(normalizeString(item.player.name))
+    );
+    
+    if (containsFullName !== -1) return containsFullName;
+    
+    // Third try: player name contains filename
+    const nameContainsFileName = playerImages.findIndex(item => 
+      normalizeString(item.player.name).includes(normalizedFileName)
+    );
+    
+    if (nameContainsFileName !== -1) return nameContainsFileName;
+    
+    // Fourth try: check each word in player name against filename
+    for (let i = 0; i < playerImages.length; i++) {
+      const playerName = playerImages[i].player.name;
+      const playerWords = playerName.split(/\s+/);
+      
+      for (const word of playerWords) {
+        if (word.length > 2) { // Only consider words longer than 2 characters
+          const normalizedWord = normalizeString(word);
+          if (normalizedFileName.includes(normalizedWord) || 
+              normalizedWord.includes(normalizedFileName)) {
+            return i;
+          }
+        }
+      }
+    }
+    
+    return -1; // No match found
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) return;
     
@@ -61,20 +114,14 @@ const PlayerImagesImport = () => {
   const processFiles = (files: File[]) => {
     // Create a copy of the current state
     const updatedPlayerImages = [...playerImages];
+    const unmatchedFiles: File[] = [];
     
     files.forEach(file => {
-      // Try to match player name from filename
-      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // Remove extension
+      // Extract name from filename (remove extension)
+      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
       
-      // Find matching player
-      const playerIndex = updatedPlayerImages.findIndex(item => {
-        const playerName = item.player.name.toLowerCase();
-        return fileName.includes(playerName) || 
-               playerName.includes(fileName) ||
-               // Try with no spaces in player name
-               fileName.includes(playerName.replace(/\s/g, "")) ||
-               playerName.replace(/\s/g, "").includes(fileName);
-      });
+      // Find matching player using improved algorithm
+      const playerIndex = findMatchingPlayer(fileName, updatedPlayerImages);
       
       if (playerIndex !== -1) {
         // Create object URL for preview
@@ -85,10 +132,34 @@ const PlayerImagesImport = () => {
           imageFile: file,
           newImageUrl: objectUrl
         };
+      } else {
+        // Add to unmatched files
+        unmatchedFiles.push(file);
       }
     });
     
     setPlayerImages(updatedPlayerImages);
+    setUnmatched(unmatchedFiles);
+    
+    if (unmatchedFiles.length > 0) {
+      toast.warning(`${unmatchedFiles.length} images n'ont pas pu être associées à des joueurs`);
+    }
+  };
+
+  const manuallyAssignFile = (file: File, playerIndex: number) => {
+    const updatedPlayerImages = [...playerImages];
+    const objectUrl = URL.createObjectURL(file);
+    
+    updatedPlayerImages[playerIndex] = {
+      ...updatedPlayerImages[playerIndex],
+      imageFile: file,
+      newImageUrl: objectUrl
+    };
+    
+    setPlayerImages(updatedPlayerImages);
+    
+    // Remove from unmatched list
+    setUnmatched(prev => prev.filter(f => f !== file));
   };
 
   const uploadImages = async () => {
@@ -106,6 +177,7 @@ const PlayerImagesImport = () => {
     }
     
     const updatedPlayerImages = [...playerImages];
+    let successCount = 0;
     
     for (const playerData of playersToUpdate) {
       try {
@@ -116,15 +188,6 @@ const PlayerImagesImport = () => {
         
         // Upload file to Supabase Storage
         const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
-        
-        // First check if storage bucket exists, create if not
-        const { data: buckets } = await supabase.storage.listBuckets();
-        if (!buckets?.find(bucket => bucket.name === 'player-images')) {
-          await supabase.storage.createBucket('player-images', { 
-            public: true,
-            fileSizeLimit: 5242880 // 5MB
-          });
-        }
         
         // Upload file
         const { data: uploadData, error: uploadError } = await supabase
@@ -137,6 +200,7 @@ const PlayerImagesImport = () => {
         
         if (uploadError) {
           console.error("Error uploading image:", uploadError);
+          toast.error(`Erreur lors du téléchargement de l'image pour ${playerData.player.name}`);
           continue;
         }
         
@@ -154,6 +218,7 @@ const PlayerImagesImport = () => {
         
         if (updateError) {
           console.error("Error updating player:", updateError);
+          toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
           continue;
         }
         
@@ -169,6 +234,8 @@ const PlayerImagesImport = () => {
             }
           };
         }
+
+        successCount++;
         
       } catch (error) {
         console.error("Error processing player image:", error);
@@ -181,8 +248,8 @@ const PlayerImagesImport = () => {
     setPlayerImages(updatedPlayerImages);
     setIsUploading(false);
     
-    if (processed > 0) {
-      toast.success(`${processed} images de joueurs téléchargées avec succès`);
+    if (successCount > 0) {
+      toast.success(`${successCount} images de joueurs téléchargées avec succès`);
     }
   };
 
@@ -238,28 +305,86 @@ const PlayerImagesImport = () => {
           </div>
         </div>
 
-        {/* Upload button */}
-        <Button 
-          onClick={uploadImages} 
-          className="w-full" 
-          disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0}
-        >
-          {isUploading ? `Téléchargement en cours (${uploadProgress}%)` : 'Télécharger les images'}
-        </Button>
+        {/* Upload button with progress */}
+        <div className="space-y-2">
+          <Button 
+            onClick={uploadImages} 
+            className="w-full" 
+            disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0}
+          >
+            {isUploading ? 'Téléchargement en cours' : 'Télécharger les images'}
+          </Button>
+          
+          {isUploading && (
+            <Progress value={uploadProgress} className="h-2" />
+          )}
+        </div>
+
+        {/* Unmatched files section */}
+        {unmatched.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-2">Images non associées ({unmatched.length})</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {unmatched.map((file, index) => (
+                <div key={`unmatched-${index}`} className="border rounded-lg p-3">
+                  <div className="mb-2 h-24 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                    <img 
+                      src={URL.createObjectURL(file)} 
+                      alt={file.name}
+                      className="max-h-full max-w-full"
+                    />
+                  </div>
+                  <p className="text-xs font-medium truncate mb-1">{file.name}</p>
+                  <select 
+                    className="w-full text-xs p-1 border rounded"
+                    onChange={(e) => {
+                      const selectedIndex = parseInt(e.target.value);
+                      if (selectedIndex >= 0) {
+                        manuallyAssignFile(file, selectedIndex);
+                      }
+                    }}
+                    defaultValue="-1"
+                  >
+                    <option value="-1">Associer à un joueur...</option>
+                    {playerImages.map((playerData, idx) => (
+                      <option key={idx} value={idx}>
+                        {playerData.player.name} ({playerData.player.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Separator className="my-4" />
 
         {/* Players preview */}
         {isLoading ? (
-          <div className="text-center py-4">
-            <p className="text-gray-500">Chargement des joueurs...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-3 flex items-center space-x-3">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {playerImages.map((playerData) => (
               <div 
                 key={playerData.player.id} 
-                className={`border rounded-lg p-3 flex items-center space-x-3 ${playerData.processed ? 'border-green-300 bg-green-50' : playerData.imageFile ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}
+                className={`border rounded-lg p-3 flex items-center space-x-3 ${
+                  playerData.processed 
+                    ? 'border-green-300 bg-green-50' 
+                    : playerData.imageFile 
+                      ? 'border-blue-300 bg-blue-50' 
+                      : 'border-gray-200'
+                }`}
               >
                 <Avatar className="h-12 w-12 rounded-full overflow-hidden">
                   <AvatarImage 
@@ -271,11 +396,11 @@ const PlayerImagesImport = () => {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{playerData.player.name}</p>
                   <p className="text-xs text-gray-500 truncate">{playerData.player.role}</p>
-                  {playerData.imageFile && (
-                    <p className="text-xs text-blue-600">Nouvel image sélectionné</p>
+                  {playerData.imageFile && !playerData.processed && (
+                    <p className="text-xs text-blue-600">Nouvelle image sélectionnée</p>
                   )}
                   {playerData.processed && (
-                    <p className="text-xs text-green-600">Téléchargé avec succès</p>
+                    <p className="text-xs text-green-600">Téléchargée avec succès</p>
                   )}
                 </div>
               </div>

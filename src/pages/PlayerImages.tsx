@@ -18,7 +18,7 @@ const PlayerImages = () => {
         >
           <h1 className="text-3xl font-bold mb-2">Gestion des images des joueurs</h1>
           <p className="text-gray-600">
-            Importez et gérez les photos des joueurs
+            Importez et gérez les photos des joueurs. Les images seront automatiquement associées aux joueurs selon leur nom de fichier.
           </p>
         </motion.div>
         
