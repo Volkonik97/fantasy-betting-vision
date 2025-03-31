@@ -5,12 +5,15 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isRetrying, setIsRetrying] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -26,12 +29,19 @@ const PlayerImages = () => {
       } else {
         console.log("Bucket player-images accessible:", data);
         setBucketStatus("exists");
+        toast.success("Connexion au bucket réussie");
       }
     } catch (error) {
       console.error("Exception checking bucket:", error);
       setBucketStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
+  };
+  
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    await checkBucket();
+    setIsRetrying(false);
   };
   
   useEffect(() => {
@@ -84,8 +94,8 @@ const PlayerImages = () => {
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <AlertTitle>Erreur d'accès au stockage</AlertTitle>
               <AlertDescription>
-                Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}
-                <div className="mt-2">
+                <p>Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}</p>
+                <div className="mt-4 space-y-4">
                   <p className="text-sm">
                     Si l'erreur persiste, contactez votre administrateur Supabase pour vérifier que:
                   </p>
@@ -94,6 +104,18 @@ const PlayerImages = () => {
                     <li>Les politiques d'accès sont correctement configurées</li>
                     <li>Votre clé API a les permissions nécessaires</li>
                   </ul>
+                  <div className="pt-2">
+                    <Button 
+                      onClick={handleRetry}
+                      disabled={isRetrying}
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
+                      {isRetrying ? 'Vérification en cours...' : 'Réessayer la connexion'}
+                    </Button>
+                  </div>
                 </div>
               </AlertDescription>
             </Alert>
