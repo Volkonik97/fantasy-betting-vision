@@ -29,10 +29,12 @@ const PlayerImagesImport = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [unmatched, setUnmatched] = useState<File[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [bucketExists, setBucketExists] = useState<boolean | null>(null);
 
   // Load players when component mounts
   React.useEffect(() => {
     loadPlayers();
+    checkBucket();
   }, []);
 
   const loadPlayers = async () => {
@@ -65,24 +67,23 @@ const PlayerImagesImport = () => {
     }
   };
 
-  // Debug: Check if bucket exists and is accessible
-  useEffect(() => {
-    const checkBucket = async () => {
-      try {
-        const { data, error } = await supabase.storage.getBucket('player-images');
-        if (error) {
-          console.error("Error accessing player-images bucket:", error);
-          toast.error("Erreur d'accès au bucket d'images");
-        } else {
-          console.log("Bucket player-images accessible:", data);
-        }
-      } catch (error) {
-        console.error("Exception checking bucket:", error);
+  // Check if bucket exists and is accessible
+  const checkBucket = async () => {
+    try {
+      const { data, error } = await supabase.storage.getBucket('player-images');
+      if (error) {
+        console.error("Error accessing player-images bucket:", error);
+        toast.error("Erreur d'accès au bucket d'images");
+        setBucketExists(false);
+      } else {
+        console.log("Bucket player-images accessible:", data);
+        setBucketExists(true);
       }
-    };
-    
-    checkBucket();
-  }, []);
+    } catch (error) {
+      console.error("Exception checking bucket:", error);
+      setBucketExists(false);
+    }
+  };
 
   const normalizeString = (str: string): string => {
     return str
@@ -200,6 +201,11 @@ const PlayerImagesImport = () => {
   };
 
   const uploadImages = async () => {
+    if (!bucketExists) {
+      toast.error("Le bucket de stockage n'est pas accessible. Impossible de télécharger les images.");
+      return;
+    }
+    
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -344,14 +350,23 @@ const PlayerImagesImport = () => {
         <CardDescription>
           Téléchargez des images pour les joueurs. Les fichiers seront associés aux joueurs selon leur nom.
         </CardDescription>
+        {bucketExists === false && (
+          <div className="p-3 mt-2 bg-red-50 text-red-700 rounded-md border border-red-200">
+            <p className="font-medium">Le bucket de stockage n'est pas accessible</p>
+            <p className="text-sm">Impossible de télécharger des images pour le moment.</p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* File upload area */}
         <div 
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${
+            bucketExists === false ? 'border-red-300 bg-red-50 opacity-50' : 'border-gray-300'
+          }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={triggerFileInput}
+          style={{ pointerEvents: bucketExists === false ? 'none' : 'auto' }}
         >
           <input 
             type="file" 
@@ -360,6 +375,7 @@ const PlayerImagesImport = () => {
             onChange={handleFileSelect} 
             multiple 
             accept="image/*" 
+            disabled={bucketExists === false}
           />
           <div className="flex flex-col items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -375,7 +391,7 @@ const PlayerImagesImport = () => {
           <Button 
             onClick={uploadImages} 
             className="w-full" 
-            disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0}
+            disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0 || bucketExists === false}
           >
             {isUploading ? 'Téléchargement en cours' : 'Télécharger les images'}
           </Button>

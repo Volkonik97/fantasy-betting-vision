@@ -56,8 +56,16 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
   // Display the team name directly from the player object if available
   const teamName = player.teamName || player.team;
   
-  // Debug image URL issues
-  console.log(`Player ${player.name} image URL:`, player.image);
+  // Check for complete image URL
+  const hasValidImageUrl = player.image && 
+    (player.image.startsWith('http://') || 
+     player.image.startsWith('https://') || 
+     player.image.startsWith('/'));
+     
+  // Debug image URL for troubleshooting
+  if (!hasValidImageUrl) {
+    console.log(`Player ${player.name} has invalid image URL:`, player.image);
+  }
   
   return (
     <div className="h-full">
@@ -67,7 +75,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
         transition={{ duration: 0.3 }}
       >
         <div className="h-36 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0">
-          {player.image ? (
+          {hasValidImageUrl ? (
             <img 
               src={player.image} 
               alt={player.name} 
