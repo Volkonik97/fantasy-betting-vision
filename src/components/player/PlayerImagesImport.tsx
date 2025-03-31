@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,15 @@ const PlayerImagesImport = () => {
     try {
       const playersList = await getPlayers();
       setPlayers(playersList);
+      console.log("Loaded players:", playersList.length);
+      
+      // Debug: Log players with images
+      const playersWithImages = playersList.filter(player => player.image);
+      console.log("Players with images:", playersWithImages.length);
+      if (playersWithImages.length > 0) {
+        console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
+      }
+      
       // Initialize player images array
       const initialPlayerImages = playersList.map(player => ({
         player,
@@ -55,6 +64,25 @@ const PlayerImagesImport = () => {
       setIsLoading(false);
     }
   };
+
+  // Debug: Check if bucket exists and is accessible
+  useEffect(() => {
+    const checkBucket = async () => {
+      try {
+        const { data, error } = await supabase.storage.getBucket('player-images');
+        if (error) {
+          console.error("Error accessing player-images bucket:", error);
+          toast.error("Erreur d'accès au bucket d'images");
+        } else {
+          console.log("Bucket player-images accessible:", data);
+        }
+      } catch (error) {
+        console.error("Exception checking bucket:", error);
+      }
+    };
+    
+    checkBucket();
+  }, []);
 
   const normalizeString = (str: string): string => {
     return str
@@ -198,6 +226,8 @@ const PlayerImagesImport = () => {
         // Upload file to Supabase Storage
         const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
         
+        console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
+        
         // Upload file
         const { data: uploadData, error: uploadError } = await supabase
           .storage
@@ -213,11 +243,15 @@ const PlayerImagesImport = () => {
           continue;
         }
         
+        console.log("Upload successful, data:", uploadData);
+        
         // Get public URL
         const { data: { publicUrl } } = supabase
           .storage
           .from('player-images')
           .getPublicUrl(fileName);
+        
+        console.log(`Public URL for player ${playerId}: ${publicUrl}`);
         
         // Update player record in database
         const { error: updateError } = await supabase
@@ -230,6 +264,8 @@ const PlayerImagesImport = () => {
           toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
           continue;
         }
+        
+        console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
         
         // Update local state
         const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
@@ -444,12 +480,23 @@ const PlayerImagesImport = () => {
                       <AvatarImage 
                         src={playerData.newImageUrl || playerData.player.image} 
                         alt={playerData.player.name}
+                        onError={(e) => {
+                          console.error(`Error loading image for ${playerData.player.name}:`, e);
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null; // Prevent infinite error loop
+                          target.src = "/placeholder.svg"; // Set fallback image
+                        }}
                       />
                       <AvatarFallback>{playerData.player.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{playerData.player.name}</p>
                       <p className="text-xs text-gray-500 truncate">{playerData.player.role}</p>
+                      {playerData.player.image && (
+                        <p className="text-xs text-gray-600 truncate" title={playerData.player.image}>
+                          {playerData.player.image ? "Image URL: " + playerData.player.image.substring(0, 20) + "..." : "Pas d'image"}
+                        </p>
+                      )}
                       {!playerData.player.image && !playerData.newImageUrl && (
                         <p className="text-xs text-red-600">Pas d'image</p>
                       )}

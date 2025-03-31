@@ -55,7 +55,10 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
 
   // Display the team name directly from the player object if available
   const teamName = player.teamName || player.team;
-
+  
+  // Debug image URL issues
+  console.log(`Player ${player.name} image URL:`, player.image);
+  
   return (
     <div className="h-full">
       <motion.div 
@@ -64,15 +67,23 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
         transition={{ duration: 0.3 }}
       >
         <div className="h-36 relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 flex-shrink-0">
-          <img 
-            src={player.image} 
-            alt={player.name} 
-            className="w-full h-full object-cover object-top"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = "/placeholder.svg";
-            }}
-          />
+          {player.image ? (
+            <img 
+              src={player.image} 
+              alt={player.name} 
+              className="w-full h-full object-cover object-top"
+              onError={(e) => {
+                console.error(`Error loading image for ${player.name}:`, e);
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite error loop
+                target.src = "/placeholder.svg"; // Fallback image
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <span className="text-4xl font-bold text-gray-300">{player.name.charAt(0)}</span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
         </div>
         
