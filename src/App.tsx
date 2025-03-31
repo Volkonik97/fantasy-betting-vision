@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,36 +17,39 @@ import Predictions from "./pages/Predictions";
 import TeamComparison from "./pages/TeamComparison";
 import DataImport from "./pages/DataImport";
 import NotFound from "./pages/NotFound";
+import PlayerImages from "./pages/PlayerImages";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <SonnerToaster />
-      <BrowserRouter>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/teams" element={<Teams />} />
-            <Route path="/teams/:id" element={<TeamDetails />} />
-            <Route path="/matches" element={<Matches />} />
-            <Route path="/matches/:id" element={<MatchDetails />} />
-            <Route path="/players" element={<Players />} />
-            <Route path="/players/:id" element={<PlayerDetails />} />
-            <Route path="/tournaments" element={<Tournaments />} />
-            <Route path="/analysis" element={<Analysis />} />
-            <Route path="/predictions" element={<Predictions />} />
-            <Route path="/compare-teams" element={<TeamComparison />} />
-            <Route path="/data-import" element={<DataImport />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AnimatePresence>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App: React.FC = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <SonnerToaster />
+        <BrowserRouter>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/teams" element={<Teams />} />
+              <Route path="/teams/:id" element={<TeamDetails />} />
+              <Route path="/players" element={<Players />} />
+              <Route path="/players/:id" element={<PlayerDetails />} />
+              <Route path="/matches" element={<Matches />} />
+              <Route path="/matches/:id" element={<MatchDetails />} />
+              <Route path="/predictions" element={<Predictions />} />
+              <Route path="/analysis" element={<Analysis />} />
+              <Route path="/comparison" element={<TeamComparison />} />
+              <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/import" element={<DataImport />} />
+              <Route path="/player-images" element={<PlayerImages />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AnimatePresence>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
