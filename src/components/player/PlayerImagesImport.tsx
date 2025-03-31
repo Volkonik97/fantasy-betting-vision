@@ -11,6 +11,7 @@ import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PlayerWithImage {
   player: Player;
@@ -27,6 +28,7 @@ const PlayerImagesImport = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [unmatched, setUnmatched] = useState<File[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   // Load players when component mounts
   React.useEffect(() => {
@@ -144,6 +146,13 @@ const PlayerImagesImport = () => {
     if (unmatchedFiles.length > 0) {
       toast.warning(`${unmatchedFiles.length} images n'ont pas pu être associées à des joueurs`);
     }
+  };
+
+  // Sort players alphabetically for the dropdown
+  const getSortedPlayerOptions = () => {
+    return [...playerImages].sort((a, b) => 
+      a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' })
+    );
   };
 
   const manuallyAssignFile = (file: File, playerIndex: number) => {
@@ -272,6 +281,26 @@ const PlayerImagesImport = () => {
     }
   };
 
+  // Filter players based on the active tab
+  const getFilteredPlayers = () => {
+    switch (activeTab) {
+      case "no-image":
+        return playerImages.filter(p => !p.player.image && !p.newImageUrl);
+      case "with-image":
+        return playerImages.filter(p => p.player.image || p.newImageUrl);
+      case "pending":
+        return playerImages.filter(p => p.imageFile && !p.processed);
+      case "processed":
+        return playerImages.filter(p => p.processed);
+      case "all":
+      default:
+        return playerImages;
+    }
+  };
+
+  const filteredPlayers = getFilteredPlayers();
+  const playersWithoutImages = playerImages.filter(p => !p.player.image && !p.newImageUrl).length;
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -346,8 +375,8 @@ const PlayerImagesImport = () => {
                     defaultValue="-1"
                   >
                     <option value="-1">Associer à un joueur...</option>
-                    {playerImages.map((playerData, idx) => (
-                      <option key={idx} value={idx}>
+                    {getSortedPlayerOptions().map((playerData, idx) => (
+                      <option key={playerData.player.id} value={playerImages.findIndex(p => p.player.id === playerData.player.id)}>
                         {playerData.player.name} ({playerData.player.role})
                       </option>
                     ))}
@@ -360,53 +389,83 @@ const PlayerImagesImport = () => {
 
         <Separator className="my-4" />
 
-        {/* Players preview */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(12)].map((_, i) => (
-              <div key={i} className="border rounded-lg p-3 flex items-center space-x-3">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-3 w-2/3" />
-                </div>
+        {/* Filter tabs for players */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-5 mb-4">
+            <TabsTrigger value="all">
+              Tous les joueurs ({playerImages.length})
+            </TabsTrigger>
+            <TabsTrigger value="no-image">
+              Sans image ({playersWithoutImages})
+            </TabsTrigger>
+            <TabsTrigger value="with-image">
+              Avec image ({playerImages.length - playersWithoutImages})
+            </TabsTrigger>
+            <TabsTrigger value="pending">
+              En attente ({playerImages.filter(p => p.imageFile && !p.processed).length})
+            </TabsTrigger>
+            <TabsTrigger value="processed">
+              Traités ({playerImages.filter(p => p.processed).length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab}>
+            {/* Players preview */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="border rounded-lg p-3 flex items-center space-x-3">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {playerImages.map((playerData) => (
-              <div 
-                key={playerData.player.id} 
-                className={`border rounded-lg p-3 flex items-center space-x-3 ${
-                  playerData.processed 
-                    ? 'border-green-300 bg-green-50' 
-                    : playerData.imageFile 
-                      ? 'border-blue-300 bg-blue-50' 
-                      : 'border-gray-200'
-                }`}
-              >
-                <Avatar className="h-12 w-12 rounded-full overflow-hidden">
-                  <AvatarImage 
-                    src={playerData.newImageUrl || playerData.player.image} 
-                    alt={playerData.player.name}
-                  />
-                  <AvatarFallback>{playerData.player.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{playerData.player.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{playerData.player.role}</p>
-                  {playerData.imageFile && !playerData.processed && (
-                    <p className="text-xs text-blue-600">Nouvelle image sélectionnée</p>
-                  )}
-                  {playerData.processed && (
-                    <p className="text-xs text-green-600">Téléchargée avec succès</p>
-                  )}
-                </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredPlayers.sort((a, b) => 
+                  a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' })
+                ).map((playerData) => (
+                  <div 
+                    key={playerData.player.id} 
+                    className={`border rounded-lg p-3 flex items-center space-x-3 ${
+                      playerData.processed 
+                        ? 'border-green-300 bg-green-50' 
+                        : playerData.imageFile 
+                          ? 'border-blue-300 bg-blue-50' 
+                          : !playerData.player.image
+                            ? 'border-red-100 bg-red-50'
+                            : 'border-gray-200'
+                    }`}
+                  >
+                    <Avatar className="h-12 w-12 rounded-full overflow-hidden">
+                      <AvatarImage 
+                        src={playerData.newImageUrl || playerData.player.image} 
+                        alt={playerData.player.name}
+                      />
+                      <AvatarFallback>{playerData.player.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{playerData.player.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{playerData.player.role}</p>
+                      {!playerData.player.image && !playerData.newImageUrl && (
+                        <p className="text-xs text-red-600">Pas d'image</p>
+                      )}
+                      {playerData.imageFile && !playerData.processed && (
+                        <p className="text-xs text-blue-600">Nouvelle image sélectionnée</p>
+                      )}
+                      {playerData.processed && (
+                        <p className="text-xs text-green-600">Téléchargée avec succès</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            )}
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
