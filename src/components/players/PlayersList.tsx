@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
@@ -34,8 +35,11 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}
+          className="h-full"
         >
-          <PlayerCard player={player} />
+          <Link to={`/players/${player.id}`} className="h-full block">
+            <PlayerCard player={player} />
+          </Link>
         </motion.div>
       ))}
     </div>
