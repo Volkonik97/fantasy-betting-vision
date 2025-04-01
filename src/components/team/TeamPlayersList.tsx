@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface TeamPlayersListProps {
   players: Player[];
@@ -23,16 +24,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     
     // Get the standardized role for sorting purposes
     const getRoleSortValue = (role: string): number => {
-      const normalizedRole = role.toLowerCase().trim();
-      
-      if (normalizedRole === 'top') return 0;
-      if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 1;
-      if (['mid', 'middle'].includes(normalizedRole)) return 2;
-      if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 3;
-      if (['support', 'sup', 'supp'].includes(normalizedRole)) return 4;
-      
-      // Default to Mid if unknown role (same as in converter)
-      return 2;
+      return roleOrder[normalizeRoleName(role)] || 2; // Default to Mid (2) if unknown
     };
     
     return getRoleSortValue(a.role) - getRoleSortValue(b.role);

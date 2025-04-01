@@ -1,6 +1,7 @@
 
 import React from "react";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
 
 interface PlayerRoleFilterProps {
   selectedRole: string;
@@ -18,6 +19,19 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
     "ADC": "Bot", 
     "Support": "Sup"
   };
+  
+  // Icons for each role
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "All": return null;
+      case "Top": return <Axe className="h-4 w-4 mr-1.5" />;
+      case "Jungle": return <Swords className="h-4 w-4 mr-1.5" />;
+      case "Mid": return <Target className="h-4 w-4 mr-1.5" />;
+      case "ADC": return <Axe className="h-4 w-4 mr-1.5" />;
+      case "Support": return <Heart className="h-4 w-4 mr-1.5" />;
+      default: return <ShieldCheck className="h-4 w-4 mr-1.5" />;
+    }
+  };
 
   return (
     <div className="w-full md:w-auto">
@@ -28,18 +42,21 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
           const normalizedRole = role === "All" ? "All" : normalizeRoleName(role);
           // Get the display name for the UI
           const displayName = role === "All" ? "All" : roleDisplayNames[normalizedRole] || normalizedRole;
+          // Get the icon for this role
+          const icon = getRoleIcon(normalizedRole);
           
           return (
             <button
               key={role}
               onClick={() => setSelectedRole(role)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center ${
                 selectedRole === role
                   ? "bg-lol-blue text-white"
                   : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
               }`}
               data-role-value={normalizedRole}
             >
+              {icon}
               {displayName}
             </button>
           );

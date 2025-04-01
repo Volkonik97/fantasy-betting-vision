@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
@@ -45,16 +44,16 @@ const PlayerHeader = ({
     fetchTeamLogo();
   }, [player.team]);
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "Top": return "bg-yellow-500";
-      case "Jungle": return "bg-green-500";
-      case "Mid": return "bg-blue-500";
-      case "ADC": return "bg-red-500";
-      case "Support": return "bg-purple-500";
-      default: return "bg-gray-500";
-    }
-  };
+export const getRoleColor = (role: string) => {
+  switch (role) {
+    case "Top": return "bg-gradient-to-r from-yellow-500 to-yellow-600";
+    case "Jungle": return "bg-gradient-to-r from-green-500 to-green-600";
+    case "Mid": return "bg-gradient-to-r from-blue-500 to-blue-600";
+    case "ADC": return "bg-gradient-to-r from-red-500 to-red-600";
+    case "Support": return "bg-gradient-to-r from-purple-500 to-purple-600";
+    default: return "bg-gradient-to-r from-gray-500 to-gray-600";
+  }
+};
 
   // Get the short display name for the role
   const getRoleDisplayName = (role: string): string => {
