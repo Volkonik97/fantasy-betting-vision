@@ -11,17 +11,26 @@ interface PlayerCardProps {
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [isLogoLoading, setIsLogoLoading] = useState(true);
+  const [logoError, setLogoError] = useState(false);
   
   useEffect(() => {
     const fetchTeamLogo = async () => {
       if (showTeamLogo && player.team) {
+        setIsLogoLoading(true);
+        setLogoError(false);
         try {
           const logoUrl = await getTeamLogoUrl(player.team);
           if (logoUrl) {
             setTeamLogo(logoUrl);
+          } else {
+            setLogoError(true);
           }
         } catch (error) {
           console.error("Error fetching team logo:", error);
+          setLogoError(true);
+        } finally {
+          setIsLogoLoading(false);
         }
       }
     };
@@ -78,21 +87,30 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         <div className="flex flex-col">
           <h3 className="font-bold text-lg mb-1 text-gray-900">{player.name}</h3>
           <div className="flex items-center gap-2">
-            {showTeamLogo && teamLogo && (
-              <Avatar className="w-5 h-5">
-                <AvatarImage 
-                  src={teamLogo} 
-                  alt={`${player.teamName || player.team} logo`}
-                  className="object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/placeholder.svg";
-                  }}
-                />
-                <AvatarFallback className="text-[8px]">
-                  {(player.teamName || player.team || "")?.substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
+            {showTeamLogo && (
+              isLogoLoading ? (
+                <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
+              ) : !logoError && teamLogo ? (
+                <Avatar className="w-5 h-5">
+                  <AvatarImage 
+                    src={teamLogo} 
+                    alt={`${player.teamName || player.team} logo`}
+                    className="object-contain"
+                    onError={() => {
+                      setLogoError(true);
+                    }}
+                  />
+                  <AvatarFallback className="text-[8px]">
+                    {(player.teamName || player.team || "")?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-5 h-5">
+                  <AvatarFallback className="text-[8px]">
+                    {(player.teamName || player.team || "")?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+              )
             )}
             <p className="text-sm text-gray-500">{player.teamName || player.team}</p>
           </div>
