@@ -5,22 +5,29 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw, Trash2, ImageOff, Link2Off } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw, Trash2, ImageOff, Link2Off, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { refreshImageReferences, clearAllPlayerImageReferences } from "@/utils/database/teams/imageUtils";
+import { refreshImageReferences, clearAllPlayerImageReferences, checkBucketRlsPermission } from "@/utils/database/teams/imageUtils";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [rlsStatus, setRlsStatus] = useState<{ checked: boolean, canUpload: boolean, canList: boolean, message: string | null }>({
+    checked: false,
+    canUpload: false,
+    canList: false,
+    message: null
+  });
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
   const [isProcessingClearAll, setIsProcessingClearAll] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
   const [refreshComplete, setRefreshComplete] = useState(false);
+  const [showRlsHelp, setShowRlsHelp] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -46,16 +53,36 @@ const PlayerImages = () => {
           console.log("Bucket player-images exists but might have restricted permissions:", bucketData);
           setBucketStatus("exists");
           toast.info("Le bucket existe mais pourrait avoir des restrictions d'accès");
+          
+          // Check RLS permissions
+          checkRlsPermissions();
         }
       } else {
         console.log("Bucket player-images accessible, files found:", listData);
         setBucketStatus("exists");
         toast.success("Connexion au bucket réussie");
+        
+        // Check RLS permissions
+        checkRlsPermissions();
       }
     } catch (error) {
       console.error("Exception checking bucket:", error);
       setBucketStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const checkRlsPermissions = async () => {
+    const result = await checkBucketRlsPermission();
+    setRlsStatus({
+      checked: true,
+      canUpload: result.canUpload,
+      canList: result.canList,
+      message: result.errorMessage
+    });
+    
+    if (!result.canUpload) {
+      toast.error("Problème de permissions RLS: Impossible de télécharger des images");
     }
   };
   
@@ -164,11 +191,39 @@ const PlayerImages = () => {
           
           {bucketStatus === "exists" && (
             <>
-              <Alert className="bg-green-50 border-green-100 mb-3">
-                <Check className="h-4 w-4 text-green-600" />
+              {/* RLS Warning if needed */}
+              {rlsStatus.checked && !rlsStatus.canUpload && (
+                <Alert className="bg-amber-50 border-amber-100 mb-3">
+                  <ShieldAlert className="h-4 w-4 text-amber-600" />
+                  <AlertTitle>Problème de permissions RLS</AlertTitle>
+                  <AlertDescription>
+                    <p>
+                      Le bucket existe mais les politiques de sécurité RLS empêchent le téléchargement d'images.
+                      {rlsStatus.message && <span className="block mt-1 text-sm">{rlsStatus.message}</span>}
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowRlsHelp(true)} 
+                      className="mt-2 flex items-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Comment configurer RLS
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Alert className={`${rlsStatus.checked && !rlsStatus.canUpload ? 'bg-gray-50 border-gray-100' : 'bg-green-50 border-green-100'} mb-3`}>
+                <Check className={`h-4 w-4 ${rlsStatus.checked && !rlsStatus.canUpload ? 'text-gray-600' : 'text-green-600'}`} />
                 <AlertTitle>Prêt pour le téléchargement</AlertTitle>
                 <AlertDescription>
                   Le bucket de stockage est accessible. Vous pouvez télécharger des images de joueurs.
+                  {rlsStatus.checked && !rlsStatus.canUpload && (
+                    <span className="block mt-1 text-amber-600 font-medium">
+                      Note: Le téléchargement échouera en raison des restrictions RLS.
+                    </span>
+                  )}
                 </AlertDescription>
               </Alert>
               
@@ -280,7 +335,10 @@ const PlayerImages = () => {
           transition={{ duration: 0.3, delay: 0.1 }}
           className={bucketStatus !== "exists" ? "opacity-50 pointer-events-none" : ""}
         >
-          <PlayerImagesImport bucketStatus={bucketStatus} />
+          <PlayerImagesImport 
+            bucketStatus={bucketStatus}
+            rlsEnabled={rlsStatus.checked && !rlsStatus.canUpload}
+          />
         </motion.div>
       </main>
 
@@ -320,6 +378,69 @@ const PlayerImages = () => {
               variant="outline" 
               onClick={() => {
                 window.open(`https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage`, '_blank');
+              }}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ouvrir Supabase Storage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRlsHelp} onOpenChange={setShowRlsHelp}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Configuration des politiques RLS pour Storage</DialogTitle>
+            <DialogDescription>
+              Voici comment configurer les politiques de sécurité RLS pour permettre le téléchargement d'images.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Erreur RLS détectée</AlertTitle>
+              <AlertDescription>
+                {rlsStatus.message || "Les politiques RLS empêchent le téléchargement d'images dans le bucket player-images."}
+              </AlertDescription>
+            </Alert>
+
+            <p className="text-sm">Pour corriger ce problème, vous devez créer des politiques RLS appropriées pour le bucket <code>player-images</code>:</p>
+            
+            <div className="bg-gray-50 p-3 rounded border text-xs font-mono overflow-auto">
+              <pre>{`-- Dans l'éditeur SQL de Supabase, exécutez:
+
+-- Politique permettant à tous d'insérer des fichiers (pour le téléchargement)
+CREATE POLICY "Allow public uploads to player-images"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'player-images');
+
+-- Politique permettant à tous de lire les fichiers (pour afficher les images)
+CREATE POLICY "Allow public read from player-images"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'player-images');
+
+-- Politique permettant à tous de mettre à jour des fichiers (si nécessaire)
+CREATE POLICY "Allow public updates to player-images"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'player-images');
+
+-- Politique permettant à tous de supprimer des fichiers (si nécessaire)
+CREATE POLICY "Allow public deletes from player-images"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'player-images');`}</pre>
+            </div>
+            
+            <p className="text-sm mt-4">Une fois ces politiques créées, vérifiez à nouveau l'accès au bucket en cliquant sur le bouton "Vérifier l'accès au bucket".</p>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowRlsHelp(false)}>Fermer</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                window.open(`https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage/buckets`, '_blank');
               }}
               className="flex items-center gap-2"
             >

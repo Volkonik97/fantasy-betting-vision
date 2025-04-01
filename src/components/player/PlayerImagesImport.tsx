@@ -11,6 +11,8 @@ import { getPlayers } from "@/utils/database/playersService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface PlayerWithImage {
   player: Player;
@@ -21,9 +23,10 @@ interface PlayerWithImage {
 
 interface PlayerImagesImportProps {
   bucketStatus?: "loading" | "exists" | "error";
+  rlsEnabled?: boolean;
 }
 
-const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
+const PlayerImagesImport = ({ bucketStatus, rlsEnabled = false }: PlayerImagesImportProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -33,13 +36,15 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
   const [unmatched, setUnmatched] = useState<File[]>([]);
   const [activeTab, setActiveTab] = useState<string>("all");
   const [bucketExists, setBucketExists] = useState<boolean | null>(null);
+  const [uploadErrors, setUploadErrors] = useState<{count: number, lastError: string | null}>({
+    count: 0,
+    lastError: null
+  });
 
-  // Load players when component mounts
   React.useEffect(() => {
     loadPlayers();
   }, []);
 
-  // Update bucket exists state based on prop
   React.useEffect(() => {
     if (bucketStatus === "exists") {
       setBucketExists(true);
@@ -55,14 +60,12 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
       setPlayers(playersList);
       console.log("Loaded players:", playersList.length);
       
-      // Debug: Log players with images
       const playersWithImages = playersList.filter(player => player.image);
       console.log("Players with images:", playersWithImages.length);
       if (playersWithImages.length > 0) {
         console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
       }
       
-      // Initialize player images array
       const initialPlayerImages = playersList.map(player => ({
         player,
         imageFile: null,
@@ -81,41 +84,37 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
   const normalizeString = (str: string): string => {
     return str
       .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Remove accents
-      .replace(/[^a-z0-9]/g, ""); // Remove special characters and spaces
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
   };
 
   const findMatchingPlayer = (fileName: string, playerImages: PlayerWithImage[]): number => {
     const normalizedFileName = normalizeString(fileName);
     
-    // First try: exact match on normalized name
     const exactMatch = playerImages.findIndex(item => 
       normalizeString(item.player.name) === normalizedFileName
     );
     
     if (exactMatch !== -1) return exactMatch;
     
-    // Second try: filename contains full player name
     const containsFullName = playerImages.findIndex(item => 
       normalizedFileName.includes(normalizeString(item.player.name))
     );
     
     if (containsFullName !== -1) return containsFullName;
     
-    // Third try: player name contains filename
     const nameContainsFileName = playerImages.findIndex(item => 
       normalizeString(item.player.name).includes(normalizedFileName)
     );
     
     if (nameContainsFileName !== -1) return nameContainsFileName;
     
-    // Fourth try: check each word in player name against filename
     for (let i = 0; i < playerImages.length; i++) {
       const playerName = playerImages[i].player.name;
       const playerWords = playerName.split(/\s+/);
       
       for (const word of playerWords) {
-        if (word.length > 2) { // Only consider words longer than 2 characters
+        if (word.length > 2) {
           const normalizedWord = normalizeString(word);
           if (normalizedFileName.includes(normalizedWord) || 
               normalizedWord.includes(normalizedFileName)) {
@@ -125,7 +124,7 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
       }
     }
     
-    return -1; // No match found
+    return -1;
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,19 +135,15 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
   };
 
   const processFiles = (files: File[]) => {
-    // Create a copy of the current state
     const updatedPlayerImages = [...playerImages];
     const unmatchedFiles: File[] = [];
     
     files.forEach(file => {
-      // Extract name from filename (remove extension)
       const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
       
-      // Find matching player using improved algorithm
       const playerIndex = findMatchingPlayer(fileName, updatedPlayerImages);
       
       if (playerIndex !== -1) {
-        // Create object URL for preview
         const objectUrl = URL.createObjectURL(file);
         
         updatedPlayerImages[playerIndex] = {
@@ -157,7 +152,6 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
           newImageUrl: objectUrl
         };
       } else {
-        // Add to unmatched files
         unmatchedFiles.push(file);
       }
     });
@@ -188,7 +182,6 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
     
     setPlayerImages(updatedPlayerImages);
     
-    // Remove from unmatched list
     setUnmatched(prev => prev.filter(f => f !== file));
   };
 
@@ -198,6 +191,7 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
       return;
     }
     
+    setUploadErrors({ count: 0, lastError: null });
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -214,6 +208,7 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
     const updatedPlayerImages = [...playerImages];
     let successCount = 0;
     let errorCount = 0;
+    let lastErrorMessage = null;
     
     for (const playerData of playersToUpdate) {
       try {
@@ -222,28 +217,25 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
         const playerId = playerData.player.id;
         const file = playerData.imageFile;
         
-        // Upload file to Supabase Storage with more robust error handling
         const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
         
         console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
         
-        // Check if we can access the bucket before attempting upload
         const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
         
         if (bucketError) {
           console.error("Error accessing bucket before upload:", bucketError);
           toast.error("Erreur d'accès au bucket de stockage. Vérifiez les permissions.");
           errorCount++;
+          lastErrorMessage = bucketError.message;
           continue;
         }
         
-        // Upload file with timeout handling
         const uploadPromise = supabase.storage.from('player-images').upload(fileName, file, {
           cacheControl: '3600',
           upsert: true
         });
         
-        // Set a timeout to prevent hanging uploads
         const uploadTimeout = new Promise((_, reject) => {
           setTimeout(() => reject(new Error("Upload timeout")), 30000);
         });
@@ -255,14 +247,19 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
         
         if (uploadError) {
           console.error("Error uploading image:", uploadError);
-          toast.error(`Erreur lors du téléchargement de l'image pour ${playerData.player.name}`);
+          
+          if (uploadError.message?.includes("violates row-level security policy")) {
+            lastErrorMessage = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
+          } else {
+            lastErrorMessage = uploadError.message;
+          }
+          
           errorCount++;
           continue;
         }
         
         console.log("Upload successful, data:", uploadData);
         
-        // Get public URL
         const { data: { publicUrl } } = supabase
           .storage
           .from('player-images')
@@ -270,7 +267,6 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
         
         console.log(`Public URL for player ${playerId}: ${publicUrl}`);
         
-        // Update player record in database
         const { error: updateError } = await supabase
           .from('players')
           .update({ image: publicUrl })
@@ -280,12 +276,12 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
           console.error("Error updating player:", updateError);
           toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
           errorCount++;
+          lastErrorMessage = updateError.message;
           continue;
         }
         
         console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
         
-        // Update local state
         const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
         if (playerIndex !== -1) {
           updatedPlayerImages[playerIndex] = {
@@ -303,10 +299,18 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
       } catch (error) {
         console.error("Error processing player image:", error);
         errorCount++;
+        lastErrorMessage = error instanceof Error ? error.message : String(error);
       } finally {
         processed++;
         setUploadProgress(Math.round((processed / total) * 100));
       }
+    }
+    
+    if (errorCount > 0) {
+      setUploadErrors({
+        count: errorCount,
+        lastError: lastErrorMessage
+      });
     }
     
     setPlayerImages(updatedPlayerImages);
@@ -372,16 +376,26 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
             <p className="text-sm">Impossible de télécharger des images pour le moment.</p>
           </div>
         )}
+        {rlsEnabled && (
+          <Alert className="mt-3 bg-amber-50 border-amber-100">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle>Problème de politiques RLS</AlertTitle>
+            <AlertDescription>
+              <p>Le téléchargement d'images va probablement échouer car les politiques RLS ne permettent pas le stockage de fichiers.</p>
+              <p className="text-sm mt-1">Contactez l'administrateur du projet pour configurer correctement les politiques RLS.</p>
+            </AlertDescription>
+          </Alert>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${
-            bucketExists === false ? 'border-red-300 bg-red-50 opacity-50' : 'border-gray-300'
+            bucketExists === false || rlsEnabled ? 'border-red-300 bg-red-50 opacity-50' : 'border-gray-300'
           }`}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onClick={triggerFileInput}
-          style={{ pointerEvents: bucketExists === false ? 'none' : 'auto' }}
+          style={{ pointerEvents: bucketExists === false || rlsEnabled ? 'none' : 'auto' }}
         >
           <input 
             type="file" 
@@ -390,7 +404,7 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
             onChange={handleFileSelect} 
             multiple 
             accept="image/*" 
-            disabled={bucketExists === false}
+            disabled={bucketExists === false || rlsEnabled}
           />
           <div className="flex flex-col items-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,11 +415,27 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
           </div>
         </div>
 
+        {uploadErrors.count > 0 && (
+          <Alert className="bg-red-50 border-red-100">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertTitle>Erreurs de téléchargement</AlertTitle>
+            <AlertDescription>
+              <p>{uploadErrors.count} {uploadErrors.count > 1 ? 'images ont échoué' : 'image a échou��'} lors du téléchargement.</p>
+              {uploadErrors.lastError && (
+                <p className="text-sm mt-1 font-mono text-red-700 bg-red-50 p-1 rounded">{uploadErrors.lastError}</p>
+              )}
+              <p className="text-xs mt-1">
+                Si l'erreur mentionne "violates row-level security policy", vérifiez les politiques RLS du bucket.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-2">
           <Button 
             onClick={uploadImages} 
             className="w-full" 
-            disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0 || bucketExists === false}
+            disabled={isUploading || playerImages.filter(p => p.imageFile !== null).length === 0 || bucketExists === false || rlsEnabled}
           >
             {isUploading ? 'Téléchargement en cours' : 'Télécharger les images'}
           </Button>
@@ -510,8 +540,8 @@ const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
                         onError={(e) => {
                           console.error(`Error loading image for ${playerData.player.name}:`, e);
                           const target = e.target as HTMLImageElement;
-                          target.onerror = null; // Prevent infinite error loop
-                          target.src = "/placeholder.svg"; // Set fallback image
+                          target.onerror = null;
+                          target.src = "/placeholder.svg";
                         }}
                       />
                       <AvatarFallback>{playerData.player.name.charAt(0)}</AvatarFallback>
