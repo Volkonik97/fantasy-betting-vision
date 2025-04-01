@@ -7,12 +7,12 @@ interface RoleBadgeProps {
 
 export const getRoleColor = (role: string) => {
   switch (role) {
-    case "Top": return "bg-gradient-to-r from-red-800 to-red-600";
-    case "Jungle": return "bg-gradient-to-r from-green-600 to-green-400";
-    case "Mid": return "bg-gradient-to-r from-orange-400 to-orange-300";
-    case "ADC": return "bg-gradient-to-r from-blue-600 to-blue-400";
-    case "Support": return "bg-gradient-to-r from-blue-400 to-blue-300";
-    default: return "bg-gradient-to-r from-gray-500 to-gray-600";
+    case "Top": return "bg-red-700";
+    case "Jungle": return "bg-green-600";
+    case "Mid": return "bg-gray-600";
+    case "ADC": return "bg-blue-600";
+    case "Support": return "bg-blue-400";
+    default: return "bg-gray-600";
   }
 };
 
