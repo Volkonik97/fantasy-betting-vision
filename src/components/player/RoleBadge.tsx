@@ -30,7 +30,7 @@ export const getRoleDisplayName = (role: string): string => {
 export const getRoleIconPath = (role: string): string => {
   switch (role) {
     case "Top": return "/lovable-uploads/dd586820-c7c2-4090-88d3-0e098b78e64a.png";
-    case "Jungle": return ""; // Will add these later
+    case "Jungle": return "/lovable-uploads/b4424660-1959-4f59-a957-2bb026698af9.png"; // Nouvelle icône ajoutée
     case "Mid": return ""; 
     case "ADC": return "";
     case "Support": return "";

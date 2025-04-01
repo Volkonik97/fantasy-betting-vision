@@ -5,7 +5,6 @@ import PlayerImage from "@/components/player/PlayerImage";
 import RoleBadge from "@/components/player/RoleBadge";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
-import { getRoleIconPath } from "@/components/player/RoleBadge";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
