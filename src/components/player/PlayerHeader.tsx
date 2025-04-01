@@ -5,6 +5,17 @@ import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+export const getRoleColor = (role: string) => {
+  switch (role) {
+    case "Top": return "bg-gradient-to-r from-yellow-500 to-yellow-600";
+    case "Jungle": return "bg-gradient-to-r from-green-500 to-green-600";
+    case "Mid": return "bg-gradient-to-r from-blue-500 to-blue-600";
+    case "ADC": return "bg-gradient-to-r from-red-500 to-red-600";
+    case "Support": return "bg-gradient-to-r from-purple-500 to-purple-600";
+    default: return "bg-gradient-to-r from-gray-500 to-gray-600";
+  }
+};
+
 interface PlayerHeaderProps {
   player: Player;
   teamName: string;
@@ -44,18 +55,6 @@ const PlayerHeader = ({
     fetchTeamLogo();
   }, [player.team]);
 
-export const getRoleColor = (role: string) => {
-  switch (role) {
-    case "Top": return "bg-gradient-to-r from-yellow-500 to-yellow-600";
-    case "Jungle": return "bg-gradient-to-r from-green-500 to-green-600";
-    case "Mid": return "bg-gradient-to-r from-blue-500 to-blue-600";
-    case "ADC": return "bg-gradient-to-r from-red-500 to-red-600";
-    case "Support": return "bg-gradient-to-r from-purple-500 to-purple-600";
-    default: return "bg-gradient-to-r from-gray-500 to-gray-600";
-  }
-};
-
-  // Get the short display name for the role
   const getRoleDisplayName = (role: string): string => {
     switch (role) {
       case "Top": return "Top";
@@ -67,7 +66,6 @@ export const getRoleColor = (role: string) => {
     }
   };
   
-  // Use overrides if provided, otherwise fall back to player data
   const playerKda = kdaOverride !== null ? kdaOverride : 
     (typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0'));
   
