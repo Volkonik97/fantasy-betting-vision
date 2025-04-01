@@ -62,13 +62,13 @@ const MissingImagesCsvExport = ({ players, isDisabled = false }: MissingImagesCs
   return (
     <Button
       onClick={handleExportCsv}
-      variant="outline"
-      size="sm" 
+      variant="default"
+      size="lg" 
       disabled={isDisabled}
-      className="flex items-center gap-2"
+      className="w-full flex items-center justify-center gap-2"
     >
-      <FileDown className="h-4 w-4" />
-      Exporter liste joueurs sans images
+      <FileDown className="h-5 w-5" />
+      Télécharger la liste des joueurs sans images (CSV)
     </Button>
   );
 };

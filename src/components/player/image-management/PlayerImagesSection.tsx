@@ -38,7 +38,11 @@ const PlayerImagesSection = ({ bucketStatus, rlsEnabled, showRlsHelp }: PlayerIm
       transition={{ duration: 0.3, delay: 0.1 }}
       className={bucketStatus !== "exists" ? "opacity-50 pointer-events-none" : ""}
     >
-      <div className="mb-4 flex justify-end">
+      <div className="mb-6 p-4 bg-slate-50 border rounded-lg">
+        <h3 className="text-lg font-medium mb-3">Exporter les joueurs sans images</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Cliquez sur le bouton ci-dessous pour télécharger un fichier CSV contenant la liste des joueurs qui n'ont pas d'images associées.
+        </p>
         <MissingImagesCsvExport 
           players={players} 
           isDisabled={isLoading || bucketStatus !== "exists"} 
