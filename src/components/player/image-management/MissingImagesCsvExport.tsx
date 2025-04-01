@@ -30,7 +30,7 @@ const MissingImagesCsvExport = ({ players, isDisabled = false }: MissingImagesCs
             player.id,
             `"${player.name}"`, // Wrapping with quotes to handle commas in names
             player.role,
-            player.team
+            `"${player.teamName || player.team}"` // Utiliser le nom d'équipe s'il existe, sinon l'ID
           ].join(",")
         )
       ];
