@@ -63,6 +63,18 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
     }
   };
 
+  // Get the short display name for the role
+  const getRoleDisplayName = (role: string): string => {
+    switch (role) {
+      case "Top": return "Top";
+      case "Jungle": return "Jng";
+      case "Mid": return "Mid";
+      case "ADC": return "Bot";
+      case "Support": return "Sup";
+      default: return role;
+    }
+  };
+
   // Ensure championPool is an array
   const championPoolArray = Array.isArray(player.championPool) 
     ? player.championPool 
@@ -135,7 +147,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
             </div>
             
             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRoleColor(player.role)}`}>
-              {player.role}
+              {getRoleDisplayName(player.role)}
             </span>
           </div>
           

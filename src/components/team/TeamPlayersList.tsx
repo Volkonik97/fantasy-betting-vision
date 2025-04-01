@@ -11,6 +11,19 @@ interface TeamPlayersListProps {
 }
 
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
+  // Sort players by role in the standard order: Top, Jungle, Mid, ADC, Support
+  const sortedPlayers = [...players].sort((a, b) => {
+    const roleOrder: Record<string, number> = {
+      'Top': 0,
+      'Jungle': 1,
+      'Mid': 2,
+      'ADC': 3,
+      'Support': 4
+    };
+    
+    return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99);
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -20,8 +33,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     >
       <h2 className="text-2xl font-bold mb-4">Joueurs ({players.length})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {players.length > 0 ? (
-          players.map(player => {
+        {sortedPlayers.length > 0 ? (
+          sortedPlayers.map(player => {
             // Enrichir le joueur avec le nom de l'équipe si disponible
             const enrichedPlayer = {
               ...player,

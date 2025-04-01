@@ -29,6 +29,18 @@ const PlayerHeader = ({
       default: return "bg-gray-500";
     }
   };
+
+  // Get the short display name for the role
+  const getRoleDisplayName = (role: string): string => {
+    switch (role) {
+      case "Top": return "Top";
+      case "Jungle": return "Jng";
+      case "Mid": return "Mid";
+      case "ADC": return "Bot";
+      case "Support": return "Sup";
+      default: return role;
+    }
+  };
   
   // Use overrides if provided, otherwise fall back to player data
   const playerKda = kdaOverride !== null ? kdaOverride : 
@@ -59,7 +71,7 @@ const PlayerHeader = ({
             }}
           />
           <div className={`absolute bottom-0 left-0 right-0 h-6 ${getRoleColor(player.role)} flex items-center justify-center`}>
-            <span className="text-white text-xs font-medium">{player.role}</span>
+            <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
         </div>
         

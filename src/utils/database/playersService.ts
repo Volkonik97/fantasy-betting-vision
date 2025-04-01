@@ -1,8 +1,10 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
 import { toast } from "sonner";
+import { normalizeRoleName } from "../leagueData/assembler/modelConverter";
 
 // Save players to database
 export const savePlayers = async (players: Player[]): Promise<boolean> => {
@@ -62,10 +64,13 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
                 }
               }
               
+              // Normalize the role before saving
+              const normalizedRole = normalizeRoleName(player.role);
+              
               return {
                 id: player.id,
                 name: player.name,
-                role: player.role,
+                role: normalizedRole,
                 image: player.image,
                 team_id: player.team,
                 kda: player.kda,
@@ -118,7 +123,7 @@ export const getPlayers = async (): Promise<Player[]> => {
     const players: Player[] = playersData.map(player => ({
       id: player.id as string,
       name: player.name as string,
-      role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+      role: normalizeRoleName(player.role || 'Mid'),
       image: player.image as string,
       team: player.team_id as string,
       kda: Number(player.kda) || 0,
@@ -162,7 +167,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     const player: Player = {
       id: playerData.id as string,
       name: playerData.name as string,
-      role: (playerData.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+      role: normalizeRoleName(playerData.role || 'Mid'),
       image: playerData.image as string,
       team: playerData.team_id as string,
       kda: Number(playerData.kda) || 0,
