@@ -9,9 +9,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 interface PlayerHeaderProps {
   player: Player;
   teamName: string;
-  kdaOverride?: number | null; // Optional KDA override from match stats
-  cspmOverride?: number | null; // Optional CSPM override
-  damageShareOverride?: number | null; // Optional damage share override
+  kdaOverride?: number | null;
+  cspmOverride?: number | null;
+  damageShareOverride?: number | null;
 }
 
 const PlayerHeader = ({ 
@@ -23,18 +23,19 @@ const PlayerHeader = ({
 }: PlayerHeaderProps) => {
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [isLogoLoading, setIsLogoLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     const fetchTeamLogo = async () => {
       if (player.team) {
         setIsLogoLoading(true);
+        setLogoError(false);
         try {
           const logoUrl = await getTeamLogoUrl(player.team);
-          if (logoUrl) {
-            setTeamLogo(logoUrl);
-          }
+          setTeamLogo(logoUrl);
         } catch (error) {
           console.error("Error fetching team logo:", error);
+          setLogoError(true);
         } finally {
           setIsLogoLoading(false);
         }
@@ -112,22 +113,21 @@ const PlayerHeader = ({
           <div className="flex items-center gap-2">
             {isLogoLoading ? (
               <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
-            ) : teamLogo ? (
+            ) : (
               <Avatar className="w-6 h-6">
-                <AvatarImage 
-                  src={teamLogo} 
-                  alt={`${teamName} logo`}
-                  className="object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/placeholder.svg";
-                  }}
-                />
+                {!logoError && teamLogo ? (
+                  <AvatarImage 
+                    src={teamLogo} 
+                    alt={`${teamName} logo`}
+                    className="object-contain"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : null}
                 <AvatarFallback>
-                  {teamName?.substring(0, 2) || "TM"}
+                  {teamName?.substring(0, 2).toUpperCase() || "TM"}
                 </AvatarFallback>
               </Avatar>
-            ) : null}
+            )}
             <p className="text-gray-600">{teamName}</p>
           </div>
         </div>

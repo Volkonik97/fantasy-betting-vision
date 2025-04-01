@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
@@ -21,11 +20,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         setLogoError(false);
         try {
           const logoUrl = await getTeamLogoUrl(player.team);
-          if (logoUrl) {
-            setTeamLogo(logoUrl);
-          } else {
-            setLogoError(true);
-          }
+          setTeamLogo(logoUrl);
         } catch (error) {
           console.error("Error fetching team logo:", error);
           setLogoError(true);
@@ -90,24 +85,18 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
             {showTeamLogo && (
               isLogoLoading ? (
                 <div className="w-5 h-5 bg-gray-200 rounded-full animate-pulse"></div>
-              ) : !logoError && teamLogo ? (
-                <Avatar className="w-5 h-5">
-                  <AvatarImage 
-                    src={teamLogo} 
-                    alt={`${player.teamName || player.team} logo`}
-                    className="object-contain"
-                    onError={() => {
-                      setLogoError(true);
-                    }}
-                  />
-                  <AvatarFallback className="text-[8px]">
-                    {(player.teamName || player.team || "")?.substring(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
               ) : (
                 <Avatar className="w-5 h-5">
+                  {!logoError && teamLogo ? (
+                    <AvatarImage 
+                      src={teamLogo} 
+                      alt={`${player.teamName || player.team} logo`}
+                      className="object-contain"
+                      onError={() => setLogoError(true)}
+                    />
+                  ) : null}
                   <AvatarFallback className="text-[8px]">
-                    {(player.teamName || player.team || "")?.substring(0, 2)}
+                    {(player.teamName || player.team || "")?.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               )

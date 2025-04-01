@@ -59,7 +59,7 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
     }
     
     // Find any file that starts with the teamId
-    const logoFile = files.find(file => file.name.startsWith(teamId));
+    const logoFile = files.find(file => file.name.toLowerCase().startsWith(teamId.toLowerCase()));
     
     if (logoFile) {
       console.log(`Found logo file for team ${teamId}: ${logoFile.name}`);
