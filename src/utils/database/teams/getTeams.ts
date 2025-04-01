@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../../models/types';
 import { toast } from "sonner";
-import { getTeamsFromCache, updateTeamsCache } from './teamCache';
+import { getTeamsFromCache, updateTeamsCache, updatePlayersWithTeamName } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
 
 const BUCKET_NAME = "team-logos";
@@ -92,6 +92,7 @@ export const getTeams = async (): Promise<Team[]> => {
             role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
             image: player.image as string,
             team: player.team_id as string,
+            teamName: team.name, // Always set the teamName from the team.name
             kda: Number(player.kda) || 0,
             csPerMin: Number(player.cs_per_min) || 0,
             damageShare: Number(player.damage_share) || 0,
@@ -99,6 +100,11 @@ export const getTeams = async (): Promise<Team[]> => {
           }));
       });
     }
+    
+    // Update each team's players with the team name in cache
+    teams.forEach(team => {
+      updatePlayersWithTeamName(team.id, team.name);
+    });
     
     // Cache the results
     updateTeamsCache(teams);

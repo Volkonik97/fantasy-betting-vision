@@ -1,9 +1,10 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FileDown } from "lucide-react";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
+import { getTeamNameFromCache } from "@/utils/database/teams/teamCache";
 
 interface MissingImagesCsvExportProps {
   players: Player[];
@@ -11,6 +12,19 @@ interface MissingImagesCsvExportProps {
 }
 
 const MissingImagesCsvExport = ({ players, isDisabled = false }: MissingImagesCsvExportProps) => {
+  // Ensure all players have team names assigned
+  useEffect(() => {
+    players.forEach(player => {
+      if (!player.teamName && player.team) {
+        // Try to find team name from cache
+        const teamName = getTeamNameFromCache(player.team);
+        if (teamName) {
+          player.teamName = teamName;
+        }
+      }
+    });
+  }, [players]);
+
   const handleExportCsv = () => {
     try {
       // Filter players without images
@@ -25,14 +39,20 @@ const MissingImagesCsvExport = ({ players, isDisabled = false }: MissingImagesCs
       const headers = ["ID", "Nom", "Role", "Équipe"];
       const csvRows = [
         headers.join(","), // CSV header row
-        ...playersWithoutImages.map(player => 
-          [
+        ...playersWithoutImages.map(player => {
+          // Get team name, prioritizing existing teamName, or fetching from cache as fallback
+          let teamName = player.teamName;
+          if (!teamName && player.team) {
+            teamName = getTeamNameFromCache(player.team) || player.team;
+          }
+          
+          return [
             player.id,
             `"${player.name}"`, // Wrapping with quotes to handle commas in names
             player.role,
-            `"${player.teamName || player.team}"` // Utiliser le nom d'équipe s'il existe, sinon l'ID
-          ].join(",")
-        )
+            `"${teamName || 'Équipe inconnue'}"` // Always use team name, fallback to 'Équipe inconnue'
+          ].join(",");
+        })
       ];
       
       const csvContent = csvRows.join("\n");
