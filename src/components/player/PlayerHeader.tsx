@@ -5,7 +5,7 @@ import { Activity, Trophy, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
+import { getRoleColor, getRoleDisplayName, getRoleIconPath } from "./RoleBadge";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -66,6 +66,8 @@ const PlayerHeader = ({
   const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
 
+  const roleIconPath = getRoleIconPath(player.role);
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -95,6 +97,16 @@ const PlayerHeader = ({
           <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(player.role)} flex items-center justify-center`}>
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
+          
+          {roleIconPath && (
+            <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-black/30 flex items-center justify-center p-1">
+              <img 
+                src={roleIconPath} 
+                alt={`${player.role} role`}
+                className="w-full h-full object-contain" 
+              />
+            </div>
+          )}
         </div>
         
         <div>
