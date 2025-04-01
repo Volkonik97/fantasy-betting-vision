@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { motion } from "framer-motion";
@@ -11,10 +10,19 @@ interface PlayerCardProps {
 const PlayerCard = ({ player }: PlayerCardProps) => {
   const [imageValid, setImageValid] = useState<boolean | null>(null);
   const [isCheckingImage, setIsCheckingImage] = useState(false);
+  const [verificationAttempted, setVerificationAttempted] = useState(false);
   
   useEffect(() => {
-    // Verify image if it exists and hasn't been verified yet
-    if (player.image && imageValid === null && !isCheckingImage) {
+    // Reset state when player changes
+    if (player.id) {
+      setImageValid(null);
+      setVerificationAttempted(false);
+    }
+  }, [player.id]);
+  
+  useEffect(() => {
+    // Verify image only once per player.image
+    if (player.image && imageValid === null && !isCheckingImage && !verificationAttempted) {
       setIsCheckingImage(true);
       
       const checkImage = async () => {
@@ -26,14 +34,16 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
           setImageValid(false);
         } finally {
           setIsCheckingImage(false);
+          setVerificationAttempted(true);
         }
       };
       
       checkImage();
     } else if (!player.image) {
       setImageValid(false);
+      setVerificationAttempted(true);
     }
-  }, [player.image, imageValid, isCheckingImage]);
+  }, [player.image, imageValid, isCheckingImage, verificationAttempted]);
   
   const getRoleColor = (role: string) => {
     switch (role) {

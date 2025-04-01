@@ -16,7 +16,9 @@ const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [refreshComplete, setRefreshComplete] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -62,14 +64,26 @@ const PlayerImages = () => {
     }
     
     setIsRefreshingImages(true);
+    setRefreshComplete(false);
+    setRefreshProgress(0);
     
     try {
-      const fixedCount = await refreshImageReferences();
+      const { fixedCount, completed } = await refreshImageReferences();
       
-      if (fixedCount > 0) {
-        toast.success(`${fixedCount} références d'images incorrectes ont été supprimées`);
+      if (completed) {
+        setRefreshComplete(true);
+        if (fixedCount > 0) {
+          toast.success(`${fixedCount} références d'images incorrectes ont été supprimées`);
+        } else {
+          toast.info("Aucune référence d'image incorrecte n'a été trouvée");
+        }
       } else {
-        toast.info("Aucune référence d'image incorrecte n'a été trouvée");
+        // If not complete, show partial progress
+        setRefreshProgress(50);
+        toast.info(`Traitement en cours: ${fixedCount} références corrigées jusqu'à présent`);
+        
+        // Do not automatically retry - force manual retry
+        toast.info("Pour traiter plus de références, cliquez à nouveau sur le bouton de rafraîchissement");
       }
     } catch (error) {
       console.error("Error refreshing image references:", error);
@@ -145,10 +159,19 @@ const PlayerImages = () => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRefreshingImages ? 'animate-spin' : ''}`} />
-                  {isRefreshingImages ? 'Rafraîchissement en cours...' : 'Vérifier et nettoyer les références d\'images'}
+                  {isRefreshingImages 
+                    ? 'Rafraîchissement en cours...' 
+                    : refreshComplete 
+                      ? 'Rafraîchissement terminé' 
+                      : 'Vérifier et nettoyer les références d\'images'}
                 </Button>
                 <p className="mt-2 text-xs text-gray-500">
                   Cela vérifiera toutes les images de joueurs et supprimera les références aux images qui n'existent plus dans le stockage.
+                  {refreshProgress > 0 && !refreshComplete && (
+                    <span className="block mt-1 font-medium">
+                      Traitement partiel effectué. Cliquez à nouveau pour continuer.
+                    </span>
+                  )}
                 </p>
               </div>
             </>
@@ -181,7 +204,7 @@ const PlayerImages = () => {
           transition={{ duration: 0.3, delay: 0.1 }}
           className={bucketStatus !== "exists" ? "opacity-50 pointer-events-none" : ""}
         >
-          <PlayerImagesImport />
+          <PlayerImagesImport bucketStatus={bucketStatus} />
         </motion.div>
       </main>
 

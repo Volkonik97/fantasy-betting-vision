@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,11 @@ interface PlayerWithImage {
   processed: boolean;
 }
 
-const PlayerImagesImport = () => {
+interface PlayerImagesImportProps {
+  bucketStatus?: "loading" | "exists" | "error";
+}
+
+const PlayerImagesImport = ({ bucketStatus }: PlayerImagesImportProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -34,8 +37,16 @@ const PlayerImagesImport = () => {
   // Load players when component mounts
   React.useEffect(() => {
     loadPlayers();
-    checkBucket();
   }, []);
+
+  // Update bucket exists state based on prop
+  React.useEffect(() => {
+    if (bucketStatus === "exists") {
+      setBucketExists(true);
+    } else if (bucketStatus === "error") {
+      setBucketExists(false);
+    }
+  }, [bucketStatus]);
 
   const loadPlayers = async () => {
     setIsLoading(true);
@@ -64,24 +75,6 @@ const PlayerImagesImport = () => {
       toast.error("Erreur lors du chargement des joueurs");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Check if bucket exists and is accessible
-  const checkBucket = async () => {
-    try {
-      const { data, error } = await supabase.storage.getBucket('player-images');
-      if (error) {
-        console.error("Error accessing player-images bucket:", error);
-        toast.error("Erreur d'accès au bucket d'images");
-        setBucketExists(false);
-      } else {
-        console.log("Bucket player-images accessible:", data);
-        setBucketExists(true);
-      }
-    } catch (error) {
-      console.error("Exception checking bucket:", error);
-      setBucketExists(false);
     }
   };
 
@@ -177,7 +170,6 @@ const PlayerImagesImport = () => {
     }
   };
 
-  // Sort players alphabetically for the dropdown
   const getSortedPlayerOptions = () => {
     return [...playerImages].sort((a, b) => 
       a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' })
@@ -221,6 +213,7 @@ const PlayerImagesImport = () => {
     
     const updatedPlayerImages = [...playerImages];
     let successCount = 0;
+    let errorCount = 0;
     
     for (const playerData of playersToUpdate) {
       try {
@@ -229,23 +222,41 @@ const PlayerImagesImport = () => {
         const playerId = playerData.player.id;
         const file = playerData.imageFile;
         
-        // Upload file to Supabase Storage
+        // Upload file to Supabase Storage with more robust error handling
         const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
         
         console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
         
-        // Upload file
-        const { data: uploadData, error: uploadError } = await supabase
-          .storage
-          .from('player-images')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: true
-          });
+        // Check if we can access the bucket before attempting upload
+        const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
+        
+        if (bucketError) {
+          console.error("Error accessing bucket before upload:", bucketError);
+          toast.error("Erreur d'accès au bucket de stockage. Vérifiez les permissions.");
+          errorCount++;
+          continue;
+        }
+        
+        // Upload file with timeout handling
+        const uploadPromise = supabase.storage.from('player-images').upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+        // Set a timeout to prevent hanging uploads
+        const uploadTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Upload timeout")), 30000);
+        });
+        
+        const { data: uploadData, error: uploadError } = await Promise.race([
+          uploadPromise,
+          uploadTimeout.then(() => ({ data: null, error: new Error("Upload timeout") }))
+        ]) as any;
         
         if (uploadError) {
           console.error("Error uploading image:", uploadError);
           toast.error(`Erreur lors du téléchargement de l'image pour ${playerData.player.name}`);
+          errorCount++;
           continue;
         }
         
@@ -268,6 +279,7 @@ const PlayerImagesImport = () => {
         if (updateError) {
           console.error("Error updating player:", updateError);
           toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
+          errorCount++;
           continue;
         }
         
@@ -290,6 +302,7 @@ const PlayerImagesImport = () => {
         
       } catch (error) {
         console.error("Error processing player image:", error);
+        errorCount++;
       } finally {
         processed++;
         setUploadProgress(Math.round((processed / total) * 100));
@@ -301,6 +314,10 @@ const PlayerImagesImport = () => {
     
     if (successCount > 0) {
       toast.success(`${successCount} images de joueurs téléchargées avec succès`);
+    }
+    
+    if (errorCount > 0) {
+      toast.error(`${errorCount} images n'ont pas pu être téléchargées`);
     }
   };
 
@@ -323,7 +340,6 @@ const PlayerImagesImport = () => {
     }
   };
 
-  // Filter players based on the active tab
   const getFilteredPlayers = () => {
     switch (activeTab) {
       case "no-image":
@@ -358,7 +374,6 @@ const PlayerImagesImport = () => {
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* File upload area */}
         <div 
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors ${
             bucketExists === false ? 'border-red-300 bg-red-50 opacity-50' : 'border-gray-300'
@@ -386,7 +401,6 @@ const PlayerImagesImport = () => {
           </div>
         </div>
 
-        {/* Upload button with progress */}
         <div className="space-y-2">
           <Button 
             onClick={uploadImages} 
@@ -401,7 +415,6 @@ const PlayerImagesImport = () => {
           )}
         </div>
 
-        {/* Unmatched files section */}
         {unmatched.length > 0 && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-2">Images non associées ({unmatched.length})</h3>
@@ -441,7 +454,6 @@ const PlayerImagesImport = () => {
 
         <Separator className="my-4" />
 
-        {/* Filter tabs for players */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-5 mb-4">
             <TabsTrigger value="all">
@@ -462,7 +474,6 @@ const PlayerImagesImport = () => {
           </TabsList>
 
           <TabsContent value={activeTab}>
-            {/* Players preview */}
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {[...Array(12)].map((_, i) => (
