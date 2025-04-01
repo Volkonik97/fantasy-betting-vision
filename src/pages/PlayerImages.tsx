@@ -14,6 +14,7 @@ const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isCreatingBucket, setIsCreatingBucket] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -35,6 +36,38 @@ const PlayerImages = () => {
       console.error("Exception checking bucket:", error);
       setBucketStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+  
+  const createBucket = async () => {
+    setIsCreatingBucket(true);
+    setErrorMessage("");
+    
+    try {
+      // Créer le bucket
+      const { data, error } = await supabase.storage.createBucket("player-images", {
+        public: true,
+        allowedMimeTypes: ["image/png", "image/jpeg", "image/webp", "image/gif"],
+        fileSizeLimit: 5242880 // 5MB
+      });
+      
+      if (error) {
+        console.error("Error creating player-images bucket:", error);
+        setErrorMessage(error.message);
+        toast.error("Échec de la création du bucket");
+      } else {
+        console.log("Bucket player-images created:", data);
+        toast.success("Bucket créé avec succès");
+        
+        // Vérifier que le bucket est accessible
+        await checkBucket();
+      }
+    } catch (error) {
+      console.error("Exception creating bucket:", error);
+      setErrorMessage(error instanceof Error ? error.message : String(error));
+      toast.error("Une erreur est survenue lors de la création du bucket");
+    } finally {
+      setIsCreatingBucket(false);
     }
   };
   
@@ -97,17 +130,23 @@ const PlayerImages = () => {
                 <p>Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}</p>
                 <div className="mt-4 space-y-4">
                   <p className="text-sm">
-                    Si l'erreur persiste, contactez votre administrateur Supabase pour vérifier que:
+                    Le bucket "player-images" n'existe probablement pas encore ou n'est pas accessible.
                   </p>
-                  <ul className="list-disc ml-5 mt-1 text-sm space-y-1">
-                    <li>Le bucket "player-images" existe</li>
-                    <li>Les politiques d'accès sont correctement configurées</li>
-                    <li>Votre clé API a les permissions nécessaires</li>
-                  </ul>
-                  <div className="pt-2">
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={createBucket}
+                      disabled={isCreatingBucket || isRetrying}
+                      variant="default" 
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {isCreatingBucket ? 'Création en cours...' : 'Créer le bucket de stockage'}
+                    </Button>
+                    
                     <Button 
                       onClick={handleRetry}
-                      disabled={isRetrying}
+                      disabled={isRetrying || isCreatingBucket}
                       variant="outline" 
                       size="sm"
                       className="flex items-center gap-2"
@@ -115,6 +154,15 @@ const PlayerImages = () => {
                       <RefreshCw className={`h-4 w-4 ${isRetrying ? 'animate-spin' : ''}`} />
                       {isRetrying ? 'Vérification en cours...' : 'Réessayer la connexion'}
                     </Button>
+                  </div>
+                  
+                  <div className="pt-2 text-sm text-gray-600">
+                    <p className="font-medium mb-1">Conseils de dépannage:</p>
+                    <ul className="list-disc ml-5 space-y-1 text-sm">
+                      <li>Vérifiez que votre clé API a les permissions pour accéder au stockage</li>
+                      <li>Assurez-vous que les politiques d'accès sont correctement configurées</li>
+                      <li>Si l'erreur persiste après la création du bucket, contactez votre administrateur Supabase</li>
+                    </ul>
                   </div>
                 </div>
               </AlertDescription>
