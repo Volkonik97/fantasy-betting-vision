@@ -15,7 +15,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
   const sortedPlayers = [...players].sort((a, b) => {
     const roleOrder: Record<string, number> = {
       'Top': 0,
-      'Jungle': 1,
+      'Jungle': 1, 
       'Mid': 2,
       'ADC': 3,
       'Support': 4
@@ -24,6 +24,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     // Normalize role names for consistent sorting
     const normalizeRoleForSort = (role: string): string => {
       const normalizedRole = role.toLowerCase().trim();
+      // Use the exact same normalization logic as in modelConverter.ts to ensure consistency
       if (normalizedRole === 'top') return 'Top';
       if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
       if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
