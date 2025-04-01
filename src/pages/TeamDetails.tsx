@@ -9,6 +9,10 @@ import { getMatchesByTeamId, clearMatchCache } from "@/utils/database";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
+import TeamHeader from "@/components/team/TeamHeader";
+import TeamPlayersList from "@/components/team/TeamPlayersList";
+import TeamRecentMatches from "@/components/team/TeamRecentMatches";
+import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
