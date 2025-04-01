@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
@@ -61,7 +61,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
                 key={player.id}
                 className="h-full block"
               >
-                <PlayerCard player={enrichedPlayer} />
+                <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
               </Link>
             );
           })

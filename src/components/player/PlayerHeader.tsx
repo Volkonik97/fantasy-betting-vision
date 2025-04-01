@@ -1,8 +1,10 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
 import { motion } from "framer-motion";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -19,6 +21,29 @@ const PlayerHeader = ({
   cspmOverride = null, 
   damageShareOverride = null 
 }: PlayerHeaderProps) => {
+  const [teamLogo, setTeamLogo] = useState<string | null>(null);
+  const [isLogoLoading, setIsLogoLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchTeamLogo = async () => {
+      if (player.team) {
+        setIsLogoLoading(true);
+        try {
+          const logoUrl = await getTeamLogoUrl(player.team);
+          if (logoUrl) {
+            setTeamLogo(logoUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching team logo:", error);
+        } finally {
+          setIsLogoLoading(false);
+        }
+      }
+    };
+
+    fetchTeamLogo();
+  }, [player.team]);
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case "Top": return "bg-yellow-500";
@@ -84,7 +109,27 @@ const PlayerHeader = ({
         
         <div>
           <h1 className="text-3xl font-bold mb-1">{player.name}</h1>
-          <p className="text-gray-600">{teamName}</p>
+          <div className="flex items-center gap-2">
+            {isLogoLoading ? (
+              <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
+            ) : teamLogo ? (
+              <Avatar className="w-6 h-6">
+                <AvatarImage 
+                  src={teamLogo} 
+                  alt={`${teamName} logo`}
+                  className="object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
+                />
+                <AvatarFallback>
+                  {teamName?.substring(0, 2) || "TM"}
+                </AvatarFallback>
+              </Avatar>
+            ) : null}
+            <p className="text-gray-600">{teamName}</p>
+          </div>
         </div>
         
         <div className="ml-auto grid grid-cols-2 sm:grid-cols-3 gap-6">

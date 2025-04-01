@@ -38,7 +38,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
           className="h-full"
         >
           <Link to={`/players/${player.id}`} className="h-full block">
-            <PlayerCard player={player} />
+            <PlayerCard player={player} showTeamLogo={true} />
           </Link>
         </motion.div>
       ))}
