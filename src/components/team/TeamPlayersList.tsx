@@ -11,7 +11,7 @@ interface TeamPlayersListProps {
 }
 
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
-  // Sort players by role in the standard order: Top, Jungle, Mid, ADC, Support
+  // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
   const sortedPlayers = [...players].sort((a, b) => {
     const roleOrder: Record<string, number> = {
       'Top': 0,
@@ -21,22 +21,21 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       'Support': 4
     };
     
-    // Normalize role names for consistent sorting
-    const normalizeRoleForSort = (role: string): string => {
+    // Get the standardized role for sorting purposes
+    const getRoleSortValue = (role: string): number => {
       const normalizedRole = role.toLowerCase().trim();
-      // Use the exact same normalization logic as in modelConverter.ts to ensure consistency
-      if (normalizedRole === 'top') return 'Top';
-      if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
-      if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
-      if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
-      if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
-      return 'Mid'; // Default to Mid if role is unknown
+      
+      if (normalizedRole === 'top') return 0;
+      if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 1;
+      if (['mid', 'middle'].includes(normalizedRole)) return 2;
+      if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 3;
+      if (['support', 'sup', 'supp'].includes(normalizedRole)) return 4;
+      
+      // Default to Mid if unknown role (same as in converter)
+      return 2;
     };
     
-    const roleA = normalizeRoleForSort(a.role);
-    const roleB = normalizeRoleForSort(b.role);
-    
-    return (roleOrder[roleA] || 99) - (roleOrder[roleB] || 99);
+    return getRoleSortValue(a.role) - getRoleSortValue(b.role);
   });
 
   return (
