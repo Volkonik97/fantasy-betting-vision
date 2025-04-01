@@ -10,20 +10,30 @@ interface PlayerCardProps {
 
 const PlayerCard = ({ player }: PlayerCardProps) => {
   const [imageValid, setImageValid] = useState<boolean | null>(null);
+  const [isCheckingImage, setIsCheckingImage] = useState(false);
   
   useEffect(() => {
-    // Verify image if it exists
-    if (player.image) {
+    // Verify image if it exists and hasn't been verified yet
+    if (player.image && imageValid === null && !isCheckingImage) {
+      setIsCheckingImage(true);
+      
       const checkImage = async () => {
-        const isValid = await verifyImageExists(player.image!);
-        setImageValid(isValid);
+        try {
+          const isValid = await verifyImageExists(player.image!);
+          setImageValid(isValid);
+        } catch (error) {
+          console.error(`Error verifying image for ${player.name}:`, error);
+          setImageValid(false);
+        } finally {
+          setIsCheckingImage(false);
+        }
       };
       
       checkImage();
-    } else {
+    } else if (!player.image) {
       setImageValid(false);
     }
-  }, [player.image]);
+  }, [player.image, imageValid, isCheckingImage]);
   
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -93,7 +103,6 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
                 console.error(`Error loading image for ${player.name}:`, e);
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite error loop
-                target.src = "/placeholder.svg"; // Fallback image
                 setImageValid(false); // Mark image as invalid
               }}
             />

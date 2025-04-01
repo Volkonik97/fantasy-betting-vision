@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check, RefreshCw, ExternalLink } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -23,14 +23,28 @@ const PlayerImages = () => {
     setErrorMessage("");
     
     try {
-      const { data, error } = await supabase.storage.getBucket("player-images");
+      // First try to list files in the bucket to check if it exists and is accessible
+      const { data: listData, error: listError } = await supabase.storage
+        .from('player-images')
+        .list('', { limit: 1 });
       
-      if (error) {
-        console.error("Error accessing player-images bucket:", error);
-        setBucketStatus("error");
-        setErrorMessage(error.message);
+      if (listError) {
+        console.error("Error listing files in player-images bucket:", listError);
+        
+        // Secondary check by getting bucket info
+        const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('player-images');
+        
+        if (bucketError) {
+          console.error("Error accessing player-images bucket:", bucketError);
+          setBucketStatus("error");
+          setErrorMessage(bucketError.message);
+        } else {
+          console.log("Bucket player-images exists but might have restricted permissions:", bucketData);
+          setBucketStatus("exists");
+          toast.info("Le bucket existe mais pourrait avoir des restrictions d'accès");
+        }
       } else {
-        console.log("Bucket player-images accessible:", data);
+        console.log("Bucket player-images accessible, files found:", listData);
         setBucketStatus("exists");
         toast.success("Connexion au bucket réussie");
       }
@@ -84,6 +98,18 @@ const PlayerImages = () => {
           <p className="text-gray-600">
             Importez et gérez les photos des joueurs. Les images seront automatiquement associées aux joueurs selon leur nom de fichier.
           </p>
+          
+          <div className="mt-4">
+            <Button
+              onClick={checkBucket}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Vérifier l'accès au bucket
+            </Button>
+          </div>
         </motion.div>
         
         {/* Bucket status section */}
@@ -184,7 +210,7 @@ const PlayerImages = () => {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Note importante</AlertTitle>
               <AlertDescription>
-                Vous devez avoir des droits d'administration sur le projet Supabase pour créer des buckets.
+                Vous devez avoir des droits d'administration sur le projet Supabase pour créer des buckets. Assurez-vous également que les politiques RLS adéquates sont en place pour permettre l'accès public aux images.
               </AlertDescription>
             </Alert>
           </div>

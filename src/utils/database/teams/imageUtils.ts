@@ -15,26 +15,28 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
     const urlParts = imageUrl.split('/storage/v1/object/public/');
     if (urlParts.length !== 2) return false;
     
-    const [bucketAndPath] = urlParts[1].split('/', 1);
-    const bucket = bucketAndPath;
-    const path = urlParts[1].substring(bucket.length + 1);
+    const pathParts = urlParts[1].split('/');
+    if (pathParts.length < 2) return false;
+    
+    const bucket = pathParts[0];
+    const path = pathParts.slice(1).join('/');
     
     if (!bucket || !path) return false;
+    
+    console.log(`Verifying image in bucket: ${bucket}, path: ${path}`);
     
     // Check if file exists in storage
     const { data, error } = await supabase
       .storage
       .from(bucket)
-      .list('', {
-        search: path
-      });
+      .download(path);
     
     if (error) {
       console.error("Error checking image existence:", error);
       return false;
     }
     
-    return data && data.some(file => file.name === path.split('/').pop());
+    return !!data;
   } catch (error) {
     console.error("Exception verifying image:", error);
     return false;
