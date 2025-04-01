@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { BUCKET_NAME, TEAM_VALIANT_ID, VALIANT_LOGO_PATH } from './constants';
+import { BUCKET_NAME } from './constants';
 
 /**
  * Get the public URL for a team logo by team ID
@@ -11,12 +11,6 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
   if (!teamId) return null;
   
   try {
-    // Special handling for Team Valiant - use the hardcoded logo path
-    if (teamId === TEAM_VALIANT_ID || teamId.toLowerCase().includes("valiant")) {
-      console.log("Team Valiant detected - using hardcoded logo path");
-      return VALIANT_LOGO_PATH;
-    }
-    
     // First, try to get the file directly using the team ID and common extensions
     const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
     
