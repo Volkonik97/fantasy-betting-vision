@@ -5,19 +5,21 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw, Trash2, ImageOff, Link2Off } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { refreshImageReferences } from "@/utils/database/teams/imageUtils";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { refreshImageReferences, clearAllPlayerImageReferences } from "@/utils/database/teams/imageUtils";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
+  const [isProcessingClearAll, setIsProcessingClearAll] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
   const [refreshComplete, setRefreshComplete] = useState(false);
   
   const checkBucket = async () => {
@@ -92,6 +94,26 @@ const PlayerImages = () => {
       setIsRefreshingImages(false);
     }
   };
+
+  const handleClearAllImageReferences = async () => {
+    setIsProcessingClearAll(true);
+    
+    try {
+      const { success, clearedCount } = await clearAllPlayerImageReferences();
+      
+      if (success) {
+        toast.success(`${clearedCount} références d'images ont été supprimées avec succès`);
+        setShowConfirmClearAll(false);
+      } else {
+        toast.error("Erreur lors de la suppression des références d'images");
+      }
+    } catch (error) {
+      console.error("Error clearing all image references:", error);
+      toast.error("Une erreur s'est produite lors de la suppression des références d'images");
+    } finally {
+      setIsProcessingClearAll(false);
+    }
+  };
   
   useEffect(() => {
     checkBucket();
@@ -150,7 +172,7 @@ const PlayerImages = () => {
                 </AlertDescription>
               </Alert>
               
-              <div className="mb-4">
+              <div className="flex items-center gap-2 mb-4">
                 <Button
                   onClick={handleRefreshImages}
                   disabled={isRefreshingImages}
@@ -165,15 +187,69 @@ const PlayerImages = () => {
                       ? 'Rafraîchissement terminé' 
                       : 'Vérifier et nettoyer les références d\'images'}
                 </Button>
-                <p className="mt-2 text-xs text-gray-500">
-                  Cela vérifiera toutes les images de joueurs et supprimera les références aux images qui n'existent plus dans le stockage.
-                  {refreshProgress > 0 && !refreshComplete && (
-                    <span className="block mt-1 font-medium">
-                      Traitement partiel effectué. Cliquez à nouveau pour continuer.
-                    </span>
-                  )}
-                </p>
+
+                <Dialog open={showConfirmClearAll} onOpenChange={setShowConfirmClearAll}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      disabled={isProcessingClearAll}
+                    >
+                      <Link2Off className="h-4 w-4" />
+                      Supprimer toutes les références d'images
+                    </Button>
+                  </DialogTrigger>
+                  
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirmer la suppression</DialogTitle>
+                      <DialogDescription>
+                        Cette action va supprimer toutes les références d'images dans la base de données.
+                        Les fichiers dans le bucket resteront intacts mais ne seront plus liés aux joueurs.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-4 pb-2">
+                      <p className="text-red-600">
+                        Attention: Cette action ne peut pas être annulée!
+                      </p>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowConfirmClearAll(false)}>
+                        Annuler
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={handleClearAllImageReferences}
+                        disabled={isProcessingClearAll}
+                        className="flex items-center gap-2"
+                      >
+                        {isProcessingClearAll ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            Traitement...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" />
+                            Confirmer la suppression
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
+              
+              <p className="mb-4 text-xs text-gray-500">
+                La vérification permet de détecter les références d'images invalides et les supprimer.
+                Le bouton rouge supprimera toutes les références d'images dans la base de données.
+                {refreshProgress > 0 && !refreshComplete && (
+                  <span className="block mt-1 font-medium">
+                    Traitement partiel effectué. Cliquez à nouveau pour continuer.
+                  </span>
+                )}
+              </p>
             </>
           )}
           

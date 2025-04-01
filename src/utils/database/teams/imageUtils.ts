@@ -69,6 +69,44 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 };
 
 /**
+ * Clear all player image references in the database
+ * @returns Boolean indicating if operation was successful and count of cleared references
+ */
+export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean, clearedCount: number }> => {
+  try {
+    // Get count of players with images before clearing
+    const { count: beforeCount, error: countError } = await supabase
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+      .not('image', 'is', null);
+    
+    if (countError) {
+      console.error("Error counting player images:", countError);
+      return { success: false, clearedCount: 0 };
+    }
+
+    // Update all players to set image to null
+    const { error: updateError } = await supabase
+      .from('players')
+      .update({ image: null })
+      .not('image', 'is', null);
+    
+    if (updateError) {
+      console.error("Error clearing all image references:", updateError);
+      return { success: false, clearedCount: 0 };
+    }
+    
+    return { 
+      success: true, 
+      clearedCount: beforeCount || 0
+    };
+  } catch (error) {
+    console.error("Exception clearing all image references:", error);
+    return { success: false, clearedCount: 0 };
+  }
+};
+
+/**
  * Refresh image references in the database
  * @returns Number of fixed image references and a boolean indicating if operation completed
  */
