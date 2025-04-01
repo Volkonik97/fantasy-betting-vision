@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
@@ -97,16 +96,6 @@ const PlayerHeader = ({
           <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(player.role)} flex items-center justify-center`}>
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
-          
-          {roleIconPath && (
-            <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-black/30 flex items-center justify-center p-1">
-              <img 
-                src={roleIconPath} 
-                alt={`${player.role} role`}
-                className="w-full h-full object-contain" 
-              />
-            </div>
-          )}
         </div>
         
         <div>

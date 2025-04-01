@@ -13,23 +13,11 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  const roleIconPath = getRoleIconPath(player.role);
-  
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
         <PlayerImage name={player.name} image={player.image} role={player.role} />
         <RoleBadge role={player.role} />
-        
-        {roleIconPath && (
-          <div className="absolute top-2 right-2 w-7 h-7 rounded-md bg-black/30 flex items-center justify-center p-1">
-            <img 
-              src={roleIconPath} 
-              alt={`${player.role} role`}
-              className="w-full h-full object-contain" 
-            />
-          </div>
-        )}
       </div>
       
       <div className="p-4">
