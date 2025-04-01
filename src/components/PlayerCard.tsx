@@ -12,6 +12,15 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
+  // Ensure player data exists and has required properties
+  if (!player) {
+    console.error("PlayerCard received null or undefined player");
+    return null;
+  }
+  
+  // Log player data for debugging
+  console.log("PlayerCard rendering player:", player);
+  
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">

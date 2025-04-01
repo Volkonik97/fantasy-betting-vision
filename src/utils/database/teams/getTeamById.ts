@@ -51,6 +51,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       // Continue without players
     }
     
+    // Log player data for debugging
+    console.log(`Found ${playersData?.length || 0} players for team ${teamId}:`, playersData);
+    
     // Convert database format to application format
     const team: Team = {
       id: teamData.id as string,
@@ -72,6 +75,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
         image: player.image as string,
         team: player.team_id as string,
+        teamName: team.name, // Add team name to player
         kda: Number(player.kda) || 0,
         csPerMin: Number(player.cs_per_min) || 0,
         damageShare: Number(player.damage_share) || 0,
