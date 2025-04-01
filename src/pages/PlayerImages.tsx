@@ -5,14 +5,17 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import BucketCreator from "@/components/player/BucketCreator";
+import { refreshImageReferences } from "@/utils/database/teams/imageUtils";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isRefreshingImages, setIsRefreshingImages] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -34,6 +37,30 @@ const PlayerImages = () => {
       console.error("Exception checking bucket:", error);
       setBucketStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
+    }
+  };
+  
+  const handleRefreshImages = async () => {
+    if (bucketStatus !== "exists") {
+      toast.error("Le bucket de stockage doit être accessible pour rafraîchir les images");
+      return;
+    }
+    
+    setIsRefreshingImages(true);
+    
+    try {
+      const fixedCount = await refreshImageReferences();
+      
+      if (fixedCount > 0) {
+        toast.success(`${fixedCount} références d'images incorrectes ont été supprimées`);
+      } else {
+        toast.info("Aucune référence d'image incorrecte n'a été trouvée");
+      }
+    } catch (error) {
+      console.error("Error refreshing image references:", error);
+      toast.error("Erreur lors du rafraîchissement des références d'images");
+    } finally {
+      setIsRefreshingImages(false);
     }
   };
   
@@ -73,13 +100,31 @@ const PlayerImages = () => {
           )}
           
           {bucketStatus === "exists" && (
-            <Alert className="bg-green-50 border-green-100 mb-6">
-              <Check className="h-4 w-4 text-green-600" />
-              <AlertTitle>Prêt pour le téléchargement</AlertTitle>
-              <AlertDescription>
-                Le bucket de stockage est accessible. Vous pouvez télécharger des images de joueurs.
-              </AlertDescription>
-            </Alert>
+            <>
+              <Alert className="bg-green-50 border-green-100 mb-3">
+                <Check className="h-4 w-4 text-green-600" />
+                <AlertTitle>Prêt pour le téléchargement</AlertTitle>
+                <AlertDescription>
+                  Le bucket de stockage est accessible. Vous pouvez télécharger des images de joueurs.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="mb-4">
+                <Button
+                  onClick={handleRefreshImages}
+                  disabled={isRefreshingImages}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshingImages ? 'animate-spin' : ''}`} />
+                  {isRefreshingImages ? 'Rafraîchissement en cours...' : 'Vérifier et nettoyer les références d\'images'}
+                </Button>
+                <p className="mt-2 text-xs text-gray-500">
+                  Cela vérifiera toutes les images de joueurs et supprimera les références aux images qui n'existent plus dans le stockage.
+                </p>
+              </div>
+            </>
           )}
           
           {bucketStatus === "error" && (

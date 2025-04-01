@@ -1,13 +1,30 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { motion } from "framer-motion";
+import { verifyImageExists } from "@/utils/database/teams/imageUtils";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
 }
 
 const PlayerCard = ({ player }: PlayerCardProps) => {
+  const [imageValid, setImageValid] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    // Verify image if it exists
+    if (player.image) {
+      const checkImage = async () => {
+        const isValid = await verifyImageExists(player.image!);
+        setImageValid(isValid);
+      };
+      
+      checkImage();
+    } else {
+      setImageValid(false);
+    }
+  }, [player.image]);
+  
   const getRoleColor = (role: string) => {
     switch (role) {
       case "Top":
@@ -56,16 +73,8 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
   // Display the team name directly from the player object if available
   const teamName = player.teamName || player.team;
   
-  // Check for complete image URL
-  const hasValidImageUrl = player.image && 
-    (player.image.startsWith('http://') || 
-     player.image.startsWith('https://') || 
-     player.image.startsWith('/'));
-     
-  // Debug image URL for troubleshooting
-  if (!hasValidImageUrl) {
-    console.log(`Player ${player.name} has invalid image URL:`, player.image);
-  }
+  // Check for valid image based on our state check
+  const hasValidImageUrl = player.image && imageValid !== false;
   
   return (
     <div className="h-full">
@@ -85,6 +94,7 @@ const PlayerCard = ({ player }: PlayerCardProps) => {
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite error loop
                 target.src = "/placeholder.svg"; // Fallback image
+                setImageValid(false); // Mark image as invalid
               }}
             />
           ) : (
