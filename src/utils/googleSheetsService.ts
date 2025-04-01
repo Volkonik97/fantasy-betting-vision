@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import { parseCSVFromURL, extractSheetId, getGSheetCSVUrl } from './csvParser';
 import { LeagueGameDataRow } from './csv/types';
 import { processLeagueData } from './leagueDataProcessor';
-import { hasDatabaseData, clearDatabase, saveToDatabase } from './database/databaseService';
+import { hasDatabaseData, clearDatabase, saveToDatabase } from './database';
 import { toast } from 'sonner';
 
 // Define a progress callback type
