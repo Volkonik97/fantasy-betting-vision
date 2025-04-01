@@ -1,21 +1,31 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw, Trash2, ImageOff, Link2Off, ShieldAlert } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, Check, RefreshCw, ExternalLink, RefreshCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { refreshImageReferences, clearAllPlayerImageReferences, checkBucketRlsPermission } from "@/utils/database/teams/imageUtils";
+import { 
+  Dialog, DialogContent, DialogDescription, DialogFooter, 
+  DialogHeader, DialogTitle, DialogTrigger 
+} from "@/components/ui/dialog";
+import { 
+  refreshImageReferences, 
+  clearAllPlayerImageReferences, 
+  checkBucketRlsPermission 
+} from "@/utils/database/teams/imageUtils";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [rlsStatus, setRlsStatus] = useState<{ checked: boolean, canUpload: boolean, canList: boolean, message: string | null }>({
+  const [rlsStatus, setRlsStatus] = useState<{ 
+    checked: boolean, 
+    canUpload: boolean, 
+    canList: boolean, 
+    message: string | null 
+  }>({
     checked: false,
     canUpload: false,
     canList: false,
@@ -34,7 +44,6 @@ const PlayerImages = () => {
     setErrorMessage("");
     
     try {
-      // First try to list files in the bucket to check if it exists and is accessible
       const { data: listData, error: listError } = await supabase.storage
         .from('player-images')
         .list('', { limit: 1 });
@@ -42,7 +51,6 @@ const PlayerImages = () => {
       if (listError) {
         console.error("Error listing files in player-images bucket:", listError);
         
-        // Secondary check by getting bucket info
         const { data: bucketData, error: bucketError } = await supabase.storage.getBucket('player-images');
         
         if (bucketError) {
@@ -54,7 +62,6 @@ const PlayerImages = () => {
           setBucketStatus("exists");
           toast.info("Le bucket existe mais pourrait avoir des restrictions d'accès");
           
-          // Check RLS permissions
           checkRlsPermissions();
         }
       } else {
@@ -62,7 +69,6 @@ const PlayerImages = () => {
         setBucketStatus("exists");
         toast.success("Connexion au bucket réussie");
         
-        // Check RLS permissions
         checkRlsPermissions();
       }
     } catch (error) {
@@ -107,11 +113,9 @@ const PlayerImages = () => {
           toast.info("Aucune référence d'image incorrecte n'a été trouvée");
         }
       } else {
-        // If not complete, show partial progress
         setRefreshProgress(50);
         toast.info(`Traitement en cours: ${fixedCount} références corrigées jusqu'à présent`);
         
-        // Do not automatically retry - force manual retry
         toast.info("Pour traiter plus de références, cliquez à nouveau sur le bouton de rafraîchissement");
       }
     } catch (error) {
@@ -175,15 +179,14 @@ const PlayerImages = () => {
           </div>
         </motion.div>
         
-        {/* Bucket status section */}
         <div className="mb-6">
           {bucketStatus === "loading" && (
             <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
               <div className="flex items-center space-x-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse"></div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-64" />
+                  <div className="h-4 w-48 bg-gray-200 animate-pulse"></div>
+                  <div className="h-4 w-64 bg-gray-200 animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -191,10 +194,9 @@ const PlayerImages = () => {
           
           {bucketStatus === "exists" && (
             <>
-              {/* RLS Warning if needed */}
               {rlsStatus.checked && !rlsStatus.canUpload && (
                 <Alert className="bg-amber-50 border-amber-100 mb-3">
-                  <ShieldAlert className="h-4 w-4 text-amber-600" />
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertTitle>Problème de permissions RLS</AlertTitle>
                   <AlertDescription>
                     <p>
@@ -251,7 +253,7 @@ const PlayerImages = () => {
                       className="flex items-center gap-2"
                       disabled={isProcessingClearAll}
                     >
-                      <Link2Off className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                       Supprimer toutes les références d'images
                     </Button>
                   </DialogTrigger>
@@ -338,6 +340,7 @@ const PlayerImages = () => {
           <PlayerImagesImport 
             bucketStatus={bucketStatus}
             rlsEnabled={rlsStatus.checked && !rlsStatus.canUpload}
+            showRlsHelp={() => setShowRlsHelp(true)}
           />
         </motion.div>
       </main>
