@@ -15,7 +15,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
-        <PlayerImage name={player.name} image={player.image} />
+        <PlayerImage name={player.name} image={player.image} role={player.role} />
         <RoleBadge role={player.role} />
       </div>
       

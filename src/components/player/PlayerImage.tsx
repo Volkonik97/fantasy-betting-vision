@@ -1,13 +1,15 @@
 
 import React from "react";
 import { Badge } from "../ui/badge";
+import { getRoleIconPath } from "./RoleBadge";
 
 interface PlayerImageProps {
   name: string;
   image?: string;
+  role?: string;
 }
 
-const PlayerImage: React.FC<PlayerImageProps> = ({ name, image }) => {
+const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       {image ? (
@@ -27,10 +29,19 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image }) => {
         </div>
       )}
       
-      <div className="absolute top-2 left-2">
+      <div className="absolute top-2 left-2 flex gap-2 items-center">
         <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs">
           {name}
         </Badge>
+        {role && (
+          <div className="bg-black/50 rounded-full p-1">
+            <img 
+              src={getRoleIconPath(role)} 
+              alt={`${role} icon`}
+              className="w-4 h-4 object-contain" 
+            />
+          </div>
+        )}
       </div>
     </div>
   );

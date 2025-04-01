@@ -1,20 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-export const getRoleColor = (role: string) => {
-  switch (role) {
-    case "Top": return "bg-gradient-to-r from-yellow-500 to-yellow-600";
-    case "Jungle": return "bg-gradient-to-r from-green-500 to-green-600";
-    case "Mid": return "bg-gradient-to-r from-blue-500 to-blue-600";
-    case "ADC": return "bg-gradient-to-r from-red-500 to-red-600";
-    case "Support": return "bg-gradient-to-r from-purple-500 to-purple-600";
-    default: return "bg-gradient-to-r from-gray-500 to-gray-600";
-  }
-};
+import { getRoleColor, getRoleDisplayName, getRoleIconPath } from "./RoleBadge";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -54,17 +45,6 @@ const PlayerHeader = ({
 
     fetchTeamLogo();
   }, [player.team]);
-
-  const getRoleDisplayName = (role: string): string => {
-    switch (role) {
-      case "Top": return "Top";
-      case "Jungle": return "Jng";
-      case "Mid": return "Mid";
-      case "ADC": return "Bot";
-      case "Support": return "Sup";
-      default: return role;
-    }
-  };
   
   const playerKda = kdaOverride !== null ? kdaOverride : 
     (typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0'));
@@ -100,7 +80,12 @@ const PlayerHeader = ({
               <span className="text-4xl font-bold text-gray-300">{player.name.charAt(0)}</span>
             </div>
           )}
-          <div className={`absolute bottom-0 left-0 right-0 h-6 ${getRoleColor(player.role)} flex items-center justify-center`}>
+          <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(player.role)} flex items-center justify-center`}>
+            <img 
+              src={getRoleIconPath(player.role)} 
+              alt={`${player.role} icon`}
+              className="w-4 h-4 mr-1 object-contain"
+            />
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
         </div>
