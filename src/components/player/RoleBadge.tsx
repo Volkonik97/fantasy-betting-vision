@@ -7,16 +7,16 @@ interface RoleBadgeProps {
 
 export const getRoleColor = (role: string) => {
   switch (role.toLowerCase()) {
-    case "top": return "bg-red-600";
+    case "top": return "bg-rose-400";
     case "jungle": 
     case "jng": 
-    case "jg": return "bg-green-600";
-    case "mid": return "bg-purple-600";
+    case "jg": return "bg-emerald-400";
+    case "mid": return "bg-violet-400";
     case "adc": 
-    case "bot": return "bg-blue-600";
+    case "bot": return "bg-sky-400";
     case "support": 
-    case "sup": return "bg-cyan-500";
-    default: return "bg-slate-600";
+    case "sup": return "bg-teal-400";
+    default: return "bg-slate-400";
   }
 };
 
