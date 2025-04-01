@@ -6,3 +6,4 @@ export * from './services/playerService';
 export * from './services/tournamentService';
 export * from './services/dataUpdateService';
 export * from './matches/matchesService';
+

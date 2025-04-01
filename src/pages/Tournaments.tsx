@@ -1,17 +1,38 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Globe, Trophy } from "lucide-react";
-import { tournaments } from "@/utils/mockData";
+import { Calendar, Globe } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tournament } from "@/utils/models/types";
+import { getTournaments } from "@/utils/database/services/tournamentService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Tournaments = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const regions = ["All", "International", "Korea", "China", "Europe", "North America"];
+  
+  // Load tournaments data with the optimized service
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        setLoading(true);
+        const data = await getTournaments();
+        setTournaments(data);
+      } catch (error) {
+        console.error("Error loading tournaments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTournaments();
+  }, []);
   
   const filteredTournaments = tournaments.filter(tournament => 
     (selectedRegion === "All" || tournament.region === selectedRegion) &&
@@ -57,7 +78,29 @@ const Tournaments = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTournaments.length > 0 ? (
+          {loading ? (
+            // Skeleton loaders
+            Array(6).fill(0).map((_, index) => (
+              <Card key={index} className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="w-14 h-14 rounded-md" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : filteredTournaments.length > 0 ? (
             filteredTournaments.map((tournament, index) => (
               <motion.div
                 key={tournament.id}
@@ -77,6 +120,7 @@ const Tournaments = () => {
                             const target = e.target as HTMLImageElement;
                             target.src = "/placeholder.svg";
                           }}
+                          loading="lazy"
                         />
                       </div>
                       <div>
