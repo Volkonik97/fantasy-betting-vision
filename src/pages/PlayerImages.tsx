@@ -5,17 +5,18 @@ import Navbar from "@/components/Navbar";
 import PlayerImagesImport from "@/components/player/PlayerImagesImport";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Check, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, RefreshCw, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import BucketCreator from "@/components/player/BucketCreator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { refreshImageReferences } from "@/utils/database/teams/imageUtils";
 
 const PlayerImages = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   
   const checkBucket = async () => {
     setBucketStatus("loading");
@@ -134,10 +135,14 @@ const PlayerImages = () => {
               <AlertDescription>
                 <p>Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}</p>
                 <div className="mt-4">
-                  <BucketCreator 
-                    bucketId="player-images"
-                    onBucketCreated={checkBucket}
-                  />
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => setShowHelp(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Comment créer le bucket manuellement
+                  </Button>
                 </div>
               </AlertDescription>
             </Alert>
@@ -153,6 +158,52 @@ const PlayerImages = () => {
           <PlayerImagesImport />
         </motion.div>
       </main>
+
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Comment créer le bucket "player-images"</DialogTitle>
+            <DialogDescription>
+              Suivez ces étapes pour créer manuellement le bucket de stockage dans Supabase.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <ol className="list-decimal pl-5 space-y-2">
+              <li>Connectez-vous à votre <a href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">tableau de bord Supabase</a></li>
+              <li>Sélectionnez votre projet <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">dtddoxxazhmfudrvpszu</span></li>
+              <li>Cliquez sur "Storage" dans le menu de gauche</li>
+              <li>Cliquez sur le bouton "New Bucket"</li>
+              <li>Nommez le bucket <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">player-images</span></li>
+              <li>Cochez "Public bucket" pour permettre l'accès public aux images</li>
+              <li>Cliquez sur "Create bucket"</li>
+              <li>Revenez à cette page et actualisez-la pour vérifier si le bucket est accessible</li>
+            </ol>
+            
+            <Alert className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Note importante</AlertTitle>
+              <AlertDescription>
+                Vous devez avoir des droits d'administration sur le projet Supabase pour créer des buckets.
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowHelp(false)}>Fermer</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                window.open(`https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage`, '_blank');
+              }}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ouvrir Supabase Storage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
