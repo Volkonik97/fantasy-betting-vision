@@ -1,4 +1,3 @@
-
 import React from "react";
 
 interface RoleBadgeProps {
@@ -28,29 +27,13 @@ export const getRoleDisplayName = (role: string): string => {
 };
 
 export const getRoleIconPath = (role: string): string => {
-  switch (role) {
-    case "Top": return "/lovable-uploads/dd586820-c7c2-4090-88d3-0e098b78e64a.png";
-    case "Jungle": return "/lovable-uploads/b4424660-1959-4f59-a957-2bb026698af9.png"; // Nouvelle icône ajoutée
-    case "Mid": return ""; 
-    case "ADC": return "";
-    case "Support": return "";
-    default: return "";
-  }
+  return "";
 };
 
 const RoleBadge: React.FC<RoleBadgeProps> = ({ role }) => {
-  const iconPath = getRoleIconPath(role);
-  
   return (
     <div className={`absolute bottom-0 left-0 right-0 h-8 ${getRoleColor(role)} flex items-center justify-center shadow-md`}>
       <div className="flex items-center text-white font-medium">
-        {iconPath && (
-          <img 
-            src={iconPath} 
-            alt={`${role} role icon`} 
-            className="w-5 h-5 mr-1.5 object-contain"
-          />
-        )}
         <span>{getRoleDisplayName(role)}</span>
       </div>
     </div>
