@@ -27,23 +27,34 @@ const PlayerHeader = ({
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchTeamLogo = async () => {
-      if (player.team) {
-        setIsLogoLoading(true);
-        setLogoError(false);
-        try {
-          const logoUrl = await getTeamLogoUrl(player.team);
+      if (!player.team) return;
+      
+      setIsLogoLoading(true);
+      setLogoError(false);
+      try {
+        const logoUrl = await getTeamLogoUrl(player.team);
+        if (isMounted) {
           setTeamLogo(logoUrl);
-        } catch (error) {
-          console.error("Error fetching team logo:", error);
+        }
+      } catch (error) {
+        console.error("Error fetching team logo:", error);
+        if (isMounted) {
           setLogoError(true);
-        } finally {
+        }
+      } finally {
+        if (isMounted) {
           setIsLogoLoading(false);
         }
       }
     };
 
     fetchTeamLogo();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [player.team]);
   
   const playerKda = kdaOverride !== null ? kdaOverride : 
@@ -69,6 +80,7 @@ const PlayerHeader = ({
               src={player.image} 
               alt={player.name} 
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.onerror = null; // Prevent infinite error loop

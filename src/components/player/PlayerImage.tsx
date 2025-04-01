@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Badge } from "../ui/badge";
-import { getRoleIconPath } from "./RoleBadge";
 
 interface PlayerImageProps {
   name: string;
@@ -16,6 +15,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         <img
           src={image}
           alt={name}
+          loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
             const target = e.target as HTMLImageElement;

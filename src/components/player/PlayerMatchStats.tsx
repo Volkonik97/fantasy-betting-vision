@@ -18,6 +18,8 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
   const [matchErrors, setMatchErrors] = useState<Record<string, string>>({});
   
   useEffect(() => {
+    let isMounted = true;
+    
     const loadMatchDetails = async () => {
       if (matchStats.length === 0) {
         setEnhancedStats([]);
@@ -26,17 +28,30 @@ const PlayerMatchStats = ({ matchStats, isWinForPlayer }: PlayerMatchStatsProps)
       
       setIsLoading(true);
       
-      const { enhancedStats: processedStats, errors } = await fetchEnhancedMatchStats(
-        matchStats,
-        isWinForPlayer
-      );
-      
-      setEnhancedStats(processedStats);
-      setMatchErrors(errors);
-      setIsLoading(false);
+      try {
+        const { enhancedStats: processedStats, errors } = await fetchEnhancedMatchStats(
+          matchStats,
+          isWinForPlayer
+        );
+        
+        if (isMounted) {
+          setEnhancedStats(processedStats);
+          setMatchErrors(errors);
+        }
+      } catch (error) {
+        console.error("Error enhancing match stats:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     };
     
     loadMatchDetails();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [matchStats, isWinForPlayer]);
   
   return (

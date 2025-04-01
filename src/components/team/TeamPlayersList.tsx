@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
@@ -41,7 +41,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {
-            // Enrichir le joueur avec le nom de l'équipe si disponible
+            // Enrich player with team name if available
             const enrichedPlayer = {
               ...player,
               teamName: teamName || player.teamName || player.team
@@ -53,7 +53,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
                 key={player.id}
                 className="h-full block"
               >
-                <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
+                <PlayerCard player={enrichedPlayer} showTeamLogo={false} />
               </Link>
             );
           })
