@@ -60,16 +60,23 @@ const PlayerHeader = ({
       className="bg-white rounded-xl border border-gray-100 shadow-subtle p-6 mb-8"
     >
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-        <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative">
-          <img 
-            src={player.image} 
-            alt={player.name} 
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = "/placeholder.svg";
-            }}
-          />
+        <div className="w-24 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 relative flex-shrink-0">
+          {player.image ? (
+            <img 
+              src={player.image} 
+              alt={player.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite error loop
+                target.src = "/placeholder.svg";
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <span className="text-4xl font-bold text-gray-300">{player.name.charAt(0)}</span>
+            </div>
+          )}
           <div className={`absolute bottom-0 left-0 right-0 h-6 ${getRoleColor(player.role)} flex items-center justify-center`}>
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
