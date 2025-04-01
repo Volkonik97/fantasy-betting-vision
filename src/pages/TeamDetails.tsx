@@ -1,19 +1,14 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Team, Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
-import { getTeamById } from "@/utils/database/teamsService";
-import { getMatchesByTeamId, clearMatchCache } from "@/utils/database/matchesService";
+import { getTeamById } from "@/utils/database";
+import { getMatchesByTeamId, clearMatchCache } from "@/utils/database";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
-import TeamHeader from "@/components/team/TeamHeader";
-import TeamPlayersList from "@/components/team/TeamPlayersList";
-import TeamRecentMatches from "@/components/team/TeamRecentMatches";
-import TeamStatistics from "@/components/TeamStatistics";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();

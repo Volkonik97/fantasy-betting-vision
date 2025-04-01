@@ -1,4 +1,3 @@
-
 // This file now serves as a centralized export point for all CSV-related services
 // Import and re-export all the functions from the individual service files
 
@@ -15,7 +14,7 @@ import {
   getPlayers,
   getMatches,
   getTournaments,
-} from './database/databaseService';
+} from './database';
 import { 
   getLoadedTeams,
   getLoadedPlayers,
@@ -27,7 +26,7 @@ import {
   setLoadedTournaments,
   resetCache
 } from './csv/cache/dataCache';
-import { getPlayerMatchStats } from './database/matchesService';
+import { getPlayerMatchStats } from './database';
 import { getSideStatistics } from './statistics'; // Updated import
 
 // Re-export types

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
-import { isSeriesMatch, isStandardSeries } from "@/utils/database/matchesService";
+import { isSeriesMatch, isStandardSeries } from "@/utils/database/matches/matchesService";
 
 import MatchCardHeader from "./MatchCardHeader";
 import MatchTeams from "./MatchTeams";

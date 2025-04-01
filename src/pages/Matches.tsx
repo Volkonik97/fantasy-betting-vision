@@ -6,8 +6,8 @@ import MatchesHeader from "@/components/matches/MatchesHeader";
 import MatchFilters from "@/components/matches/MatchFilters";
 import TournamentFilter from "@/components/matches/TournamentFilter";
 import MatchesTabs from "@/components/matches/MatchesTabs";
-import { getTournaments } from "@/utils/database/tournamentsService";
-import { getMatches } from "@/utils/database/matchesService";
+import { getTournaments } from "@/utils/database";
+import { getMatches } from "@/utils/database";
 import { Match, Tournament } from "@/utils/models/types";
 import { toast } from "sonner";
 

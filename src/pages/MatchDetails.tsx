@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getMatches } from "@/utils/database/matchesService";
+import { getMatches } from "@/utils/database";
 import { getSideStatistics } from "@/utils/statistics"; 
 import { Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";

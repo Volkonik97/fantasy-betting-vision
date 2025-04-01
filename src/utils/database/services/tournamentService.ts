@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Tournament } from '../../models/types';
 import { getLoadedTournaments, setLoadedTournaments } from '../../csvTypes';
-import { mockTournaments } from '../../mockData';
+import { tournaments as mockTournaments } from '../../mockData';
 
 // Get tournaments from the database
 export const getTournaments = async (): Promise<Tournament[]> => {
