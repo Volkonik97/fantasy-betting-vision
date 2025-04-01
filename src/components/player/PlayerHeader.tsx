@@ -85,6 +85,12 @@ const PlayerHeader = ({
               src={getRoleIconPath(player.role)} 
               alt={`${player.role} icon`}
               className="w-4 h-4 mr-1 object-contain"
+              onError={(e) => {
+                console.error(`Failed to load role icon for ${player.role}`);
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                target.style.display = 'none';
+              }}
             />
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>

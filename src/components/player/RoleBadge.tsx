@@ -28,6 +28,7 @@ export const getRoleDisplayName = (role: string): string => {
 };
 
 export const getRoleIconPath = (role: string): string => {
+  // Use public direct paths for role icons
   switch (role) {
     case "Top": return "/lovable-uploads/e8ad379a-9beb-4829-9c74-75a074568549.png";
     case "Jungle": return "/lovable-uploads/072fbcd9-2c2a-4db9-b9d1-771a0b61f798.png";
@@ -46,6 +47,12 @@ const RoleBadge: React.FC<RoleBadgeProps> = ({ role }) => {
           src={getRoleIconPath(role)} 
           alt={`${role} icon`}
           className="w-5 h-5 mr-1 object-contain"
+          onError={(e) => {
+            console.error(`Failed to load role icon for ${role}`);
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.style.display = 'none';
+          }}
         />
         <span>{getRoleDisplayName(role)}</span>
       </div>
