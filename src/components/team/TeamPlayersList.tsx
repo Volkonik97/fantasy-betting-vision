@@ -21,7 +21,21 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       'Support': 4
     };
     
-    return (roleOrder[a.role] || 99) - (roleOrder[b.role] || 99);
+    // Normalize role names for consistent sorting
+    const normalizeRoleForSort = (role: string): string => {
+      const normalizedRole = role.toLowerCase().trim();
+      if (normalizedRole === 'top') return 'Top';
+      if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
+      if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
+      if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
+      if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
+      return 'Mid'; // Default to Mid if role is unknown
+    };
+    
+    const roleA = normalizeRoleForSort(a.role);
+    const roleB = normalizeRoleForSort(b.role);
+    
+    return (roleOrder[roleA] || 99) - (roleOrder[roleB] || 99);
   });
 
   return (
