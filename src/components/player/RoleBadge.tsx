@@ -22,15 +22,15 @@ export const getRoleColor = (role: string) => {
 
 export const getRoleDisplayName = (role: string): string => {
   switch (role.toLowerCase()) {
-    case "top": return "top";
+    case "top": return "Top";
     case "jungle": 
     case "jng":
-    case "jg": return "jng";
-    case "mid": return "mid";
+    case "jg": return "Jungle";
+    case "mid": return "Mid";
     case "adc": 
-    case "bot": return "bot";
+    case "bot": return "Bot";
     case "support": 
-    case "sup": return "sup";
+    case "sup": return "Support";
     default: return role.toLowerCase();
   }
 };

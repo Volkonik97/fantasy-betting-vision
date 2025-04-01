@@ -73,13 +73,13 @@ const Players = () => {
   const filteredPlayers = allPlayers.filter(player => {
     const isAL = player.teamRegion === "AL";
     
-    // Improve role matching to handle more variations of Jungle role
+    // Improve role matching to handle all variations of roles
     const roleMatches = selectedRole === "All" || (
       player.role && (
         player.role.toLowerCase() === selectedRole.toLowerCase() ||
         (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(player.role.toLowerCase())) ||
         (selectedRole === "Support" && ["support", "sup", "supp"].includes(player.role.toLowerCase())) ||
-        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(player.role.toLowerCase()))
+        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler", "jng"].includes(player.role.toLowerCase()))
       )
     );
     
