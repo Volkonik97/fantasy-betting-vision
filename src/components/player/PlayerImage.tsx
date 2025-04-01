@@ -33,23 +33,6 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs">
           {name}
         </Badge>
-        {role && (
-          <div className="bg-black/50 rounded-full p-1">
-            <img 
-              src={getRoleIconPath(role)} 
-              alt={`${role} icon`}
-              width={16}
-              height={16}
-              className="w-4 h-4 object-contain" 
-              onError={(e) => {
-                console.error(`Failed to load role icon for ${role}`);
-                const target = e.target as HTMLImageElement;
-                target.onerror = null;
-                target.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

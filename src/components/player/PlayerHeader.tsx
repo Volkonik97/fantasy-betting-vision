@@ -5,7 +5,7 @@ import { Activity, Trophy, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getRoleColor, getRoleDisplayName, getRoleIconPath } from "./RoleBadge";
+import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -81,17 +81,6 @@ const PlayerHeader = ({
             </div>
           )}
           <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(player.role)} flex items-center justify-center`}>
-            <img 
-              src={getRoleIconPath(player.role)} 
-              alt={`${player.role} icon`}
-              className="w-4 h-4 mr-1 object-contain"
-              onError={(e) => {
-                console.error(`Failed to load role icon for ${player.role}`);
-                const target = e.target as HTMLImageElement;
-                target.onerror = null;
-                target.style.display = 'none';
-              }}
-            />
             <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
           </div>
         </div>
