@@ -62,6 +62,12 @@ const Players = () => {
         });
       });
 
+      // 🧾 Log tous les joueurs collectés avant filtrage
+      console.log("🧾 Liste brute des joueurs récupérés :");
+      playersWithTeamInfo.forEach(p => {
+        console.log(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
+      });
+
       setAllPlayers(playersWithTeamInfo);
 
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
