@@ -12,7 +12,7 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Ensure role is normalized
+  // Always normalize role when rendering
   const normalizedRole = normalizeRoleName(player.role || 'Mid');
   
   // Create a normalized player object

@@ -12,14 +12,22 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
+  // Ensure all roles are normalized before counting
+  const normalizedPlayers = players.map(player => ({
+    ...player,
+    role: normalizeRoleName(player.role)
+  }));
+  
   // Log player counts by role for debugging
-  const roleCounts = players.reduce((acc, player) => {
-    const normalizedRole = normalizeRoleName(player.role);
-    acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
+  const roleCounts = normalizedPlayers.reduce((acc, player) => {
+    acc[player.role] = (acc[player.role] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
   
   console.log("Filtered players by role:", roleCounts);
+  
+  // Log specific players for debugging
+  console.log("Top players:", normalizedPlayers.filter(p => p.role === 'Top').map(p => `${p.name} (${p.teamName})`));
   
   if (loading) {
     return (
@@ -29,19 +37,13 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
-  if (players.length === 0) {
+  if (normalizedPlayers.length === 0) {
     return (
       <div className="col-span-full py-10 text-center">
         <p className="text-gray-500">No players found matching your filters.</p>
       </div>
     );
   }
-
-  // Normalize all player roles before rendering
-  const normalizedPlayers = players.map(player => ({
-    ...player,
-    role: normalizeRoleName(player.role)
-  }));
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

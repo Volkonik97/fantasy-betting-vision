@@ -26,24 +26,24 @@ export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC
   
   const normalizedRole = role.toLowerCase().trim();
   
-  // Enhanced role mappings with even more variations
-  if (['top', 'toplane', 'top lane', 'toplaner', 'toplane', 'top laner', 'toplar'].includes(normalizedRole)) {
+  // Enhanced role mappings with more variations for Top lane
+  if (['top', 'toplane', 'top lane', 'toplaner', 'toplane', 'top laner', 'toplar', 't', 'ㅆ', 'tpplanee', 'tplaner', 'topl', 'toplne'].includes(normalizedRole)) {
     return 'Top';
   }
   
-  if (['jungle', 'jng', 'jgl', 'jg', 'jungler', 'jgler', 'jung'].includes(normalizedRole)) {
+  if (['jungle', 'jng', 'jgl', 'jg', 'jungler', 'jgler', 'jung', 'j'].includes(normalizedRole)) {
     return 'Jungle';
   }
   
-  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner', 'middle lane', 'middler', 'midlar'].includes(normalizedRole)) {
+  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner', 'middle lane', 'middler', 'midlar', 'm'].includes(normalizedRole)) {
     return 'Mid';
   }
   
-  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner', 'ad', 'marksman', 'bot laner'].includes(normalizedRole)) {
+  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner', 'ad', 'marksman', 'bot laner', 'a', 'b'].includes(normalizedRole)) {
     return 'ADC';
   }
   
-  if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp'].includes(normalizedRole)) {
+  if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp', 's'].includes(normalizedRole)) {
     return 'Support';
   }
   

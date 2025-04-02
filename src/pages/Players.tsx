@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -54,9 +53,21 @@ const Players = () => {
           if (team.players && team.players.length > 0) {
             console.log(`Team ${team.name} has ${team.players.length} players`);
             
+            // Log roles for each team to debug
+            const rolesByTeam = team.players.reduce((acc, player) => {
+              acc[player.role] = (acc[player.role] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+            console.log(`Team ${team.name} players by role:`, rolesByTeam);
+            
             const teamPlayers = team.players.map(player => {
-              // Ensure role is properly normalized
+              // Always normalize role
               const normalizedRole = normalizeRoleName(player.role || 'Mid');
+              
+              // Log if the role needed normalization
+              if (normalizedRole !== player.role) {
+                console.log(`Normalized role for ${player.name} from ${player.role} to ${normalizedRole} in team ${team.name}`);
+              }
               
               return {
                 ...player,
@@ -121,12 +132,19 @@ const Players = () => {
       player.role = 'Mid';
     }
     
-    // Normalize player role for comparison
+    // Always normalize player role for comparison, even if it was already normalized earlier
     const normalizedPlayerRole = normalizeRoleName(player.role);
     
     // Match roles - use normalized roles for comparison
     const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
     const roleMatches = normalizedSelectedRole === "All" || normalizedPlayerRole === normalizedSelectedRole;
+    
+    // If we're filtering for Top role, log the players that match/don't match
+    if (normalizedSelectedRole === 'Top' && normalizedPlayerRole === 'Top') {
+      console.log(`Found Top player: ${player.name} from ${player.teamName}`);
+    } else if (normalizedSelectedRole === 'Top' && normalizedPlayerRole !== 'Top') {
+      console.log(`Non-Top player with role ${player.role}: ${player.name}`);
+    }
     
     // Handle region matching
     let regionMatches = true;
@@ -155,11 +173,6 @@ const Players = () => {
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Debug specific players or roles for troubleshooting
-    if (normalizedPlayerRole === 'Top' && !roleMatches && selectedRole === 'Top') {
-      console.log(`Top player not matching filter: ${player.name}, role=${player.role}, normalized=${normalizedPlayerRole}, selected=${normalizedSelectedRole}`);
-    }
     
     return roleMatches && regionMatches && searchMatches;
   });

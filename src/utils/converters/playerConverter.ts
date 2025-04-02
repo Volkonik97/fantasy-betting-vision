@@ -25,13 +25,29 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
   });
   console.log(`Unique roles in CSV: ${Array.from(uniqueRoles).join(', ')}`);
   
-  return validPlayers.map(player => {
+  // Count players by team and role before normalization
+  const playersByTeam = validPlayers.reduce((acc, player) => {
+    const teamId = player.team || 'unknown';
+    if (!acc[teamId]) {
+      acc[teamId] = { total: 0, roles: {} };
+    }
+    acc[teamId].total++;
+    
+    const role = player.role || 'unknown';
+    acc[teamId].roles[role] = (acc[teamId].roles[role] || 0) + 1;
+    
+    return acc;
+  }, {} as Record<string, { total: number, roles: Record<string, number> }>);
+  
+  console.log("Players by team and role before normalization:", playersByTeam);
+  
+  const normalizedPlayers = validPlayers.map(player => {
     // Ensure role is properly normalized
     const normalizedRole = normalizeRoleName(player.role || 'Mid');
     
     // Log any unexpected roles
-    if (player.role && normalizedRole === 'Mid' && player.role.toLowerCase() !== 'mid') {
-      console.warn(`Unknown role '${player.role}' for player ${player.name} normalized to 'Mid'`);
+    if (player.role && normalizedRole !== player.role) {
+      console.log(`Normalized role '${player.role}' to '${normalizedRole}' for player ${player.name}`);
     }
     
     // Ensure team ID is set
@@ -55,4 +71,21 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
         : []
     };
   });
+  
+  // Count players by team and role after normalization
+  const normalizedPlayersByTeam = normalizedPlayers.reduce((acc, player) => {
+    const teamId = player.team || 'unknown';
+    if (!acc[teamId]) {
+      acc[teamId] = { total: 0, roles: {} };
+    }
+    acc[teamId].total++;
+    
+    acc[teamId].roles[player.role] = (acc[teamId].roles[player.role] || 0) + 1;
+    
+    return acc;
+  }, {} as Record<string, { total: number, roles: Record<string, number> }>);
+  
+  console.log("Players by team and role after normalization:", normalizedPlayersByTeam);
+  
+  return normalizedPlayers;
 };
