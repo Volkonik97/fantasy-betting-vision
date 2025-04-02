@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -37,7 +36,6 @@ const TeamDetails = () => {
         setIsLoading(true);
         setError(null);
         
-        // Load team from database
         console.log(`Chargement de l'équipe avec l'ID: ${id}`);
         const foundTeam = await getTeamById(id);
         
@@ -47,22 +45,18 @@ const TeamDetails = () => {
           return;
         }
         
-        // Log team info for debugging
         console.log(`Équipe trouvée: ${foundTeam.name}`);
         console.log(`Joueurs dans l'équipe:`, foundTeam.players?.length || 0);
         
-        // Make sure we have players array initialized
         if (!foundTeam.players) {
           console.log("Players array is undefined, initializing empty array");
           foundTeam.players = [];
         }
         
-        // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
         console.log("Side statistics data:", sideStatsData);
         
         if (sideStatsData) {
-          // Assign side statistics to the team object
           foundTeam.blueFirstBlood = sideStatsData.blueFirstBlood;
           foundTeam.redFirstBlood = sideStatsData.redFirstBlood;
           foundTeam.blueFirstDragon = sideStatsData.blueFirstDragon;
@@ -76,10 +70,8 @@ const TeamDetails = () => {
         setTeam(foundTeam);
         setSideStats(sideStatsData);
         
-        // Clear match cache to ensure fresh data
         await clearMatchCache();
         
-        // Run all data fetches in parallel for better performance
         const [teamMatchesArray, timelineData] = await Promise.all([
           getMatchesByTeamId(id),
           getTeamTimelineStats(id)
@@ -87,7 +79,6 @@ const TeamDetails = () => {
         
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
         
-        // Trier les matchs par date (plus récent en premier)
         const sortedMatches = [...teamMatchesArray].sort((a, b) => {
           return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
@@ -132,7 +123,6 @@ const TeamDetails = () => {
     );
   }
   
-  // Log player data just before rendering to debug
   console.log("Rendering TeamDetails with players:", team.players?.length || 0);
   if (team.players && team.players.length > 0) {
     console.log("First player:", team.players[0].name, team.players[0].role);
@@ -162,8 +152,7 @@ const TeamDetails = () => {
           <TeamHeader team={team} />
         </motion.div>
         
-        {/* Affichage du roster d'équipe */}
-        <TeamRoster players={team.players || []} teamName={team.name} />
+        <TeamRoster players={team.players || []} teamName={team.name} teamId={team.id} />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
