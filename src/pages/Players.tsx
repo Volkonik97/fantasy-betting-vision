@@ -68,6 +68,15 @@ const Players = () => {
         console.log(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
       });
 
+      // 🔍 Dump ciblé pour l'équipe Gen.G
+      const debugTeam = teams.find(t => t.name.trim().toLowerCase() === "gen.g");
+      if (debugTeam) {
+        console.log("🔎 Équipe ciblée : Gen.G");
+        console.log(JSON.stringify(debugTeam, null, 2));
+      } else {
+        console.warn("❌ Aucune équipe Gen.G trouvée dans getTeams()");
+      }
+
       setAllPlayers(playersWithTeamInfo);
 
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
