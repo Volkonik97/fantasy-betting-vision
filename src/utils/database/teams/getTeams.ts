@@ -100,6 +100,16 @@ export const getTeams = async (): Promise<Team[]> => {
 // Group players by team_id for faster lookup – ignore joueurs sans team_id
 const playersByTeamId = allPlayersData
   ? allPlayersData.reduce((acc, player) => {
+      // Debug spécifique pour Kiin
+      if (player.name?.toLowerCase() === "kiin") {
+        console.warn("🧪 Kiin debug :", {
+          name: player.name,
+          team_id: player.team_id,
+          raw: player
+        });
+      }
+
+      // Vérifie si team_id est valide
       if (!player.team_id) {
         console.warn(`⛔️ Joueur sans team_id : ${player.name}`, player);
         return acc;
@@ -115,6 +125,7 @@ const playersByTeamId = allPlayersData
       return acc;
     }, {} as Record<string, any[]>)
   : {};
+
 
     
     // Log team IDs with players for debugging
