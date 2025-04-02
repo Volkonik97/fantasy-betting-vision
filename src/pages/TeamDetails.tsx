@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -45,9 +46,14 @@ const TeamDetails = () => {
           return;
         }
         
+        // Make sure we have players array initialized
+        if (!foundTeam.players) {
+          foundTeam.players = [];
+        }
+        
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
-        console.log("Side statistics data:", sideStatsData); // Log pour déboguer
+        console.log("Side statistics data:", sideStatsData);
         
         if (sideStatsData) {
           // Assign side statistics to the team object
@@ -158,7 +164,7 @@ const TeamDetails = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
+              <TeamPlayersList players={team.players || []} teamName={team.name || ""} />
             </motion.div>
             
             <motion.div

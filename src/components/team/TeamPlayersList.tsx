@@ -24,7 +24,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     
     // Get the standardized role for sorting purposes
     const getRoleSortValue = (role: string): number => {
-      return roleOrder[normalizeRoleName(role)] || 2; // Default to Mid (2) if unknown
+      const normalizedRole = normalizeRoleName(role);
+      return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 5;
     };
     
     return getRoleSortValue(a.role) - getRoleSortValue(b.role);

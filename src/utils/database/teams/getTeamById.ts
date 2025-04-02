@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../../models/types';
 import { toast } from "sonner";
 import { findTeamInCache, updateTeamInCache } from './teamCache';
+import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
 /**
  * Get a single team by ID
@@ -66,17 +67,22 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     // Assign players to the team
     if (playersData && playersData.length > 0) {
+      console.log(`Found ${playersData.length} players for team ${teamId}`);
+      
       team.players = playersData.map(player => ({
         id: player.id as string,
         name: player.name as string,
-        role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+        role: normalizeRoleName(player.role || 'Mid'),
         image: player.image as string,
         team: player.team_id as string,
+        teamName: team.name,
         kda: Number(player.kda) || 0,
         csPerMin: Number(player.cs_per_min) || 0,
         damageShare: Number(player.damage_share) || 0,
         championPool: player.champion_pool as string[] || []
       }));
+    } else {
+      console.warn(`No players found for team ${teamId} in database`);
     }
     
     // Update cache
