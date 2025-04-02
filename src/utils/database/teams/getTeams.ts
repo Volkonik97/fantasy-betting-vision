@@ -97,17 +97,25 @@ export const getTeams = async (): Promise<Team[]> => {
       });
     }
     
-    // Group players by team_id for faster lookup - inclure tous les joueurs même ceux sans team_id
-    const playersByTeamId = allPlayersData ? allPlayersData.reduce((acc, player) => {
-      const teamId = player.team_id || 'unknown';
-      
+// Group players by team_id for faster lookup – ignore joueurs sans team_id
+const playersByTeamId = allPlayersData
+  ? allPlayersData.reduce((acc, player) => {
+      if (!player.team_id) {
+        console.warn(`⛔️ Joueur sans team_id : ${player.name}`, player);
+        return acc;
+      }
+
+      const teamId = player.team_id;
+
       if (!acc[teamId]) {
         acc[teamId] = [];
       }
-      
+
       acc[teamId].push(player);
       return acc;
-    }, {} as Record<string, any[]>) : {};
+    }, {} as Record<string, any[]>)
+  : {};
+
     
     // Log team IDs with players for debugging
     console.log(`Teams with players: ${Object.keys(playersByTeamId).length}`);
