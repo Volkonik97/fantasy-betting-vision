@@ -13,6 +13,12 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
+  // Validation des données et des valeurs par défaut
+  if (!player) {
+    console.error("PlayerCard received undefined player");
+    return null;
+  }
+
   // Ensure role is normalized and always has a valid value
   const normalizedRole = normalizeRoleName(player.role || 'Unknown');
   
@@ -23,6 +29,11 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
 
   // Use player.team as teamId, ensuring it exists
   const teamId = player.team || '';
+
+  // Log for debugging
+  if (!teamId) {
+    console.warn("Player has no team ID:", player.name);
+  }
 
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">

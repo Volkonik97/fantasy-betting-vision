@@ -34,15 +34,15 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     console.log("Sample player data:", players[0]);
   }
 
+  // Vérification supplémentaire que tous les joueurs ont les données requises
+  const validPlayers = players.filter(player => player && player.id && player.name);
+  if (validPlayers.length !== players.length) {
+    console.warn(`Filtered out ${players.length - validPlayers.length} invalid players`);
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {players.map((player, index) => {
-        // Vérification supplémentaire que le joueur a un ID
-        if (!player.id) {
-          console.warn("Player missing ID, skipping:", player);
-          return null;
-        }
-        
+      {validPlayers.map((player, index) => {
         return (
           <motion.div
             key={player.id || `player-${index}`}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -93,7 +94,12 @@ const Players = () => {
             if (Array.isArray(player.champion_pool)) {
               championPoolArray = player.champion_pool;
             } else if (typeof player.champion_pool === 'string') {
-              championPoolArray = player.champion_pool.split(',').map(c => c.trim());
+              try {
+                championPoolArray = player.champion_pool.split(',').map(c => c.trim());
+              } catch (error) {
+                console.error("Error processing champion_pool string:", player.champion_pool, error);
+                championPoolArray = [];
+              }
             }
           }
           
@@ -111,6 +117,9 @@ const Players = () => {
             championPool: championPoolArray
           };
         });
+        
+        // Debug the number of players after mapping
+        console.log(`Mapped ${mappedPlayers.length} players from ${validPlayers.length} valid players`);
         
         const uniqueRegions = [...new Set(mappedPlayers
           .map(player => player.teamRegion)
@@ -167,7 +176,7 @@ const Players = () => {
           championPool: Array.isArray(player.championPool) 
             ? player.championPool 
             : typeof player.championPool === 'string'
-              ? (player.championPool as string).split(',').map(c => c.trim())
+              ? player.championPool.split(',').map(c => c.trim())
               : []
         }));
         
@@ -197,6 +206,11 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
+    if (!player || !player.name) {
+      console.warn("Invalid player found in filter:", player);
+      return false;
+    }
+
     const normalizedPlayerRole = player.role?.toLowerCase() || '';
     const roleMatches = selectedRole === "All" || (
       normalizedPlayerRole && (
@@ -243,6 +257,9 @@ const Players = () => {
     
     return roleMatches && regionMatches && searchMatches;
   });
+
+  // Debug filtered players
+  console.log(`Filtered players: ${filteredPlayers.length} out of ${allPlayers.length} total players`);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
