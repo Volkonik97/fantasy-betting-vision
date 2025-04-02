@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,6 +13,7 @@ import TeamHeader from "@/components/team/TeamHeader";
 import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import TeamStatistics from "@/components/TeamStatistics";
+import { checkTeamPlayerLinks } from "@/utils/database/diagnosis";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +37,12 @@ const TeamDetails = () => {
         setIsLoading(true);
         setError(null);
         
+        console.log(`Loading team data for ID: ${id}`);
+        
+        // Exécuter notre diagnostic pour voir s'il y a des problèmes avec les liens joueur-équipe
+        const diagnosticResult = await checkTeamPlayerLinks(id);
+        console.log("Diagnostic result:", diagnosticResult);
+        
         // Load team from database
         const foundTeam = await getTeamById(id);
         
@@ -45,6 +51,8 @@ const TeamDetails = () => {
           setIsLoading(false);
           return;
         }
+        
+        console.log(`Team ${foundTeam.name} loaded with ${foundTeam.players?.length || 0} players`);
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
@@ -62,12 +70,6 @@ const TeamDetails = () => {
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
           foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
-          
-          // Log pour vérifier les valeurs
-          console.log("First Blood stats (after correction):", {
-            blue: foundTeam.blueFirstBlood,
-            red: foundTeam.redFirstBlood
-          });
         }
         
         setTeam(foundTeam);
@@ -83,7 +85,6 @@ const TeamDetails = () => {
         ]);
         
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
-        console.log("Données timeline récupérées:", timelineData);
         
         // Trier les matchs par date (plus récent en premier)
         const sortedMatches = [...teamMatchesArray].sort((a, b) => {
@@ -151,6 +152,23 @@ const TeamDetails = () => {
         >
           <TeamHeader team={team} />
         </motion.div>
+        
+        {team && team.players && team.players.length === 0 && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  Aucun joueur trouvé pour cette équipe. Vérifiez si les données ont été correctement importées.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -67,21 +66,15 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
               // Normalize the role before saving
               const normalizedRole = normalizeRoleName(player.role);
               
-              // Log Hanwha Life players or specific players for debugging
-              if ((player.team === 'oe:team:658a9939b7c42b80b15fe9a639577f5' || // Hanwha Life Esports team ID 
-                  player.name.toLowerCase().includes('zeka'))) {
-                console.log(`Saving player: ${player.name}, Role: ${player.role} -> Normalized: ${normalizedRole}, Team ID: ${player.team}`);
-              }
-              
               return {
                 id: player.id,
                 name: player.name,
                 role: normalizedRole,
-                image: player.image,
+                image: player.image || '',
                 team_id: player.team,
-                kda: player.kda,
-                cs_per_min: player.csPerMin,
-                damage_share: player.damageShare,
+                kda: player.kda || 0,
+                cs_per_min: player.csPerMin || 0,
+                damage_share: player.damageShare || 0,
                 champion_pool: championPoolArray
               };
             }),
@@ -129,25 +122,17 @@ export const getPlayers = async (): Promise<Player[]> => {
     
     console.log(`Récupéré ${playersData.length} joueurs de la base de données`);
     
-    // Débogage pour Hanwha Life Esports et autres joueurs spécifiques
-    const hanwhaPlayers = playersData.filter(p => p.team_id === 'oe:team:658a9939b7c42b80b15fe9a639577f5');
-    console.log(`Joueurs Hanwha Life Esports trouvés: ${hanwhaPlayers.length}`);
-    hanwhaPlayers.forEach(p => console.log(`Joueur Hanwha: ${p.name}, Role: ${p.role}`));
-    
-    const zekaPlayer = playersData.find(p => p.name.toLowerCase().includes('zeka'));
-    if (zekaPlayer) {
-      console.log(`Joueur Zeka trouvé: ID=${zekaPlayer.id}, Team=${zekaPlayer.team_id}, Role=${zekaPlayer.role}`);
-    } else {
-      console.warn("Joueur Zeka non trouvé dans la base de données!");
-    }
+    // Log all players retrieved from the database for debugging
+    console.log("All players from database:", playersData.map(p => ({ 
+      id: p.id, 
+      name: p.name, 
+      team: p.team_id,
+      role: p.role
+    })));
     
     const players: Player[] = playersData.map(player => {
       // Standardize the role using the normalizeRoleName function
       const normalizedRole = normalizeRoleName(player.role || 'Mid');
-      
-      if (player.name.toLowerCase().includes('zeka')) {
-        console.log(`Transformation de Zeka: Role=${player.role} -> ${normalizedRole}, Team=${player.team_id}`);
-      }
       
       return {
         id: player.id as string,

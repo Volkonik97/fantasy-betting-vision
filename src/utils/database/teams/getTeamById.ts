@@ -46,6 +46,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       .select('*')
       .eq('team_id', teamId);
     
+    // Debug log to see what we're getting back
+    console.log(`Team ${teamId} (${teamData.name}) - Players query results:`, playersData?.length || 0, "players found");
+    
     if (playersError) {
       console.error(`Error retrieving players for team ${teamId}:`, playersError);
       // Continue without players
@@ -66,17 +69,29 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     // Assign players to the team
     if (playersData && playersData.length > 0) {
-      team.players = playersData.map(player => ({
-        id: player.id as string,
-        name: player.name as string,
-        role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
-        image: player.image as string,
-        team: player.team_id as string,
-        kda: Number(player.kda) || 0,
-        csPerMin: Number(player.cs_per_min) || 0,
-        damageShare: Number(player.damage_share) || 0,
-        championPool: player.champion_pool as string[] || []
-      }));
+      console.log(`Processing ${playersData.length} players for team ${teamData.name}`);
+      
+      team.players = playersData.map(player => {
+        // Log for debugging
+        console.log(`Processing player: ${player.name}, Role: ${player.role}, Team: ${player.team_id}`);
+        
+        return {
+          id: player.id as string,
+          name: player.name as string,
+          role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+          image: player.image as string,
+          team: player.team_id as string,
+          teamName: team.name, // Set the team name directly
+          kda: Number(player.kda) || 0,
+          csPerMin: Number(player.cs_per_min) || 0,
+          damageShare: Number(player.damage_share) || 0,
+          championPool: player.champion_pool as string[] || []
+        };
+      });
+      
+      console.log(`Team ${teamData.name} has ${team.players.length} players after processing`);
+    } else {
+      console.warn(`No players found for team ${teamData.name} (${teamId})`);
     }
     
     // Update cache
