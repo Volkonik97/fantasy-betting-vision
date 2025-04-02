@@ -48,7 +48,14 @@ const Players = () => {
     setIsLoading(true);
 
     const teams = await getTeams();
-    console.log(`✅ ${teams.length} équipes chargées depuis la base de données.`);
+    // 🧪 Filtrer une équipe spécifique pour debug
+    const rawTeam = teams.find(t => t.name.includes("Gen"));
+    console.log("📌 Dump ciblé de l'équipe :", rawTeam);
+
+    // Et si tu veux voir ses joueurs
+    console.log("📋 Joueurs dans cette équipe :", rawTeam?.players?.map(p => p.name));
+
+
 
     const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
