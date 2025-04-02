@@ -14,9 +14,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    console.log(`Fetching team ${teamId} from Supabase`);
+    console.log(`Fetching team ${teamId} from Supabase (bypassing cache)`);
     
-    // Fetch team from database - toujours récupérer les données fraîches
+    // Fetch team from database - always get fresh data
     const { data: teamData, error: teamError } = await supabase
       .from('teams')
       .select('*')
@@ -33,7 +33,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Fetch ALL players for this team - toujours récupérer les données fraîches
+    // Fetch ALL players for this team - always get fresh data
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*')

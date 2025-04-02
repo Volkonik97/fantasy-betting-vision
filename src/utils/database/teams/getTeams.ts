@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player } from '../../models/types';
 import { toast } from "sonner";
-import { getTeamsFromCache, updateTeamsCache } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
@@ -11,16 +10,9 @@ const BUCKET_NAME = "team-logos";
 /**
  * Get teams from database
  */
-export const getTeams = async (forceRefresh = false): Promise<Team[]> => {
+export const getTeams = async (): Promise<Team[]> => {
   try {
-    // Check if we have a recent cache and not forcing refresh
-    const cachedTeams = forceRefresh ? null : getTeamsFromCache();
-    if (cachedTeams) {
-      console.log("Using cached teams data");
-      return cachedTeams;
-    }
-    
-    console.log("Fetching teams from Supabase");
+    console.log("Fetching teams from Supabase directly (skipping cache)");
     
     // Fetch teams from database
     const { data: teamsData, error: teamsError } = await supabase
@@ -165,9 +157,6 @@ export const getTeams = async (forceRefresh = false): Promise<Team[]> => {
         console.log(`First 3 players of ${team.name}:`, team.players.slice(0, 3).map(p => `${p.name} (${p.role})`));
       }
     });
-    
-    // Update cache
-    updateTeamsCache(teams);
     
     return teams;
   } catch (error) {

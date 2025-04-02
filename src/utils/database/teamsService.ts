@@ -4,8 +4,7 @@ export { getTeams } from './teams/getTeams';
 export { getTeamById } from './teams/getTeamById';
 export { saveTeams } from './teams/saveTeams';
 
-// Fonction utilitaire pour vider le cache
+// Function that previously cleared cache now logs that cache has been removed
 export const clearTeamsCache = () => {
-  console.log("Cette fonction ne fait plus rien car le cache a été supprimé");
-  // Le cache a été supprimé, cette fonction reste pour compatibilité
+  console.log("Cache has been removed from the system");
 };

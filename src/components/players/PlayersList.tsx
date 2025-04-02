@@ -35,7 +35,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     
     // Debug LCK players specifically
     const lckPlayers = players.filter(p => p.teamRegion === 'LCK');
-    console.log(`Found ${lckPlayers.length} LCK players`);
+    console.log(`Found ${lckPlayers.length} LCK players in PlayersList component`);
     if (lckPlayers.length > 0) {
       console.log("Sample of LCK players:", 
         lckPlayers.slice(0, Math.min(5, lckPlayers.length)).map(p => ({
@@ -69,15 +69,14 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
       {players.map((player, index) => {
         // Make sure the player has all required data
         if (!player.id || !player.name) {
-  console.warn("Rendering fallback card for player with missing data:", player);
-  return (
-    <div key={index} className="p-4 bg-red-100 text-sm">
-      ⚠️ Player sans ID ou nom<br />
-      <pre>{JSON.stringify(player, null, 2)}</pre>
-    </div>
-  );
-}
-
+          console.warn("Rendering fallback card for player with missing data:", player);
+          return (
+            <div key={index} className="p-4 bg-red-100 text-sm">
+              ⚠️ Player sans ID ou nom<br />
+              <pre>{JSON.stringify(player, null, 2)}</pre>
+            </div>
+          );
+        }
         
         // Ensure player has teamName and teamRegion (defensive coding)
         const enrichedPlayer = {
