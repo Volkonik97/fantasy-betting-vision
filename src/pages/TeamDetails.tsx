@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -46,6 +47,7 @@ const TeamDetails = () => {
         const diagnosticResult = await checkTeamPlayerLinks(id);
         console.log("Résultat du diagnostic :", diagnosticResult);
 
+        // Toujours récupérer des données fraîches
         const foundTeam = await getTeamById(id);
         if (!foundTeam) {
           setError("Équipe non trouvée");
@@ -58,22 +60,16 @@ const TeamDetails = () => {
           Object.assign(foundTeam, sideStatsData);
         }
 
-        setTeam({ ...foundTeam }); // nouvelle référence
-
-        if (foundTeam.players && foundTeam.players.length > 0) {
-          setPlayers(foundTeam.players);
-        } else {
-          console.warn("⚠️ Aucun joueur trouvé au moment du chargement, tentative de fallback");
-          setTimeout(() => {
-            if (foundTeam.players && foundTeam.players.length > 0) {
-              console.log("✅ Joueurs récupérés via fallback timeout");
-              setPlayers(foundTeam.players);
-            }
-          }, 500);
-        }
-
+        // S'assurer que nous avons une nouvelle référence pour team et players
+        setTeam({ ...foundTeam });
+        
+        // S'assurer que les joueurs sont correctement extraits et mis à jour
+        console.log(`Mise à jour des joueurs, ${foundTeam.players?.length || 0} joueurs trouvés`);
+        setPlayers(foundTeam.players || []);
+        
         setSideStats(sideStatsData);
 
+        // Vider le cache des matchs pour récupérer des données fraîches
         await clearMatchCache();
 
         const [teamMatchesArray, timelineData] = await Promise.all([
@@ -99,12 +95,6 @@ const TeamDetails = () => {
 
     loadTeamData();
   }, [id]);
-
-  useEffect(() => {
-    if (team?.players && team.players.length > 0) {
-      setPlayers(team.players);
-    }
-  }, [team?.players]);
 
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -191,7 +181,7 @@ const TeamDetails = () => {
                 <p className="text-center text-gray-500">Chargement des joueurs...</p>
               ) : (
                 <TeamPlayersList
-                  key={players.length}
+                  key={`players-list-${players.length}`}
                   players={players}
                   teamName={team.name}
                   teamRegion={team.region}

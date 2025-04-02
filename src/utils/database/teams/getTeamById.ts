@@ -2,7 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../../models/types';
 import { toast } from "sonner";
-import { findTeamInCache, updateTeamInCache } from './teamCache';
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
 /**
@@ -15,25 +14,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Try to find in cache first
-    const cachedTeam = findTeamInCache(teamId);
-    if (cachedTeam) {
-      console.log(`Found team ${teamId} in cache with ${cachedTeam.players?.length || 0} players`);
-      
-      // Ensure all players have normalized roles
-      if (cachedTeam.players) {
-        cachedTeam.players = cachedTeam.players.map(player => ({
-          ...player,
-          role: normalizeRoleName(player.role)
-        }));
-      }
-      
-      return cachedTeam;
-    }
-    
     console.log(`Fetching team ${teamId} from Supabase`);
     
-    // Fetch team from database
+    // Fetch team from database - toujours récupérer les données fraîches
     const { data: teamData, error: teamError } = await supabase
       .from('teams')
       .select('*')
@@ -50,7 +33,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Fetch ALL players for this team
+    // Fetch ALL players for this team - toujours récupérer les données fraîches
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*')
@@ -99,6 +82,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
           image: player.image as string,
           team: player.team_id as string,
           teamName: team.name, // Set the team name directly
+          teamRegion: team.region,
           kda: Number(player.kda) || 0,
           csPerMin: Number(player.cs_per_min) || 0,
           damageShare: Number(player.damage_share) || 0,
@@ -151,6 +135,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
               image: player.image as string,
               team: player.team_id as string,
               teamName: team.name,
+              teamRegion: team.region,
               kda: Number(player.kda) || 0,
               csPerMin: Number(player.cs_per_min) || 0,
               damageShare: Number(player.damage_share) || 0,
@@ -163,9 +148,6 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         }
       }
     }
-    
-    // Update cache
-    updateTeamInCache(team);
     
     return team;
   } catch (error) {
