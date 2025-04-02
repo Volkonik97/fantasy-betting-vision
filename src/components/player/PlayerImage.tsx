@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Badge } from "../ui/badge";
-import { getRoleIconPath } from "./RoleBadge";
+import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 
 interface PlayerImageProps {
   name: string;
@@ -34,6 +34,14 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           {name}
         </Badge>
       </div>
+
+      {role && (
+        <div className={`absolute bottom-0 left-0 right-0 h-8 ${getRoleColor(role)} flex items-center justify-center shadow-md`}>
+          <div className="flex items-center text-white font-medium">
+            <span>{getRoleDisplayName(role)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

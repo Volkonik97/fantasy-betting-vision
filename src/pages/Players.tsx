@@ -6,6 +6,7 @@ import { Player } from "@/utils/models/types";
 import { getTeams } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,15 +74,12 @@ const Players = () => {
   const filteredPlayers = allPlayers.filter(player => {
     const isAL = player.teamRegion === "AL";
     
-    // Fix role matching to properly handle the Jungle role
-    const roleMatches = selectedRole === "All" || (
-      player.role && (
-        player.role === selectedRole ||
-        (selectedRole === "ADC" && player.role === "ADC") ||
-        (selectedRole === "Support" && player.role === "Support") ||
-        (selectedRole === "Jungle" && player.role === "Jungle")
-      )
-    );
+    // Normalize player role for consistent comparison
+    const normalizedPlayerRole = player.role ? normalizeRoleName(player.role) : "";
+    const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
+    
+    // Match roles using normalized values
+    const roleMatches = normalizedSelectedRole === "All" || normalizedPlayerRole === normalizedSelectedRole;
     
     let regionMatches = true;
     
