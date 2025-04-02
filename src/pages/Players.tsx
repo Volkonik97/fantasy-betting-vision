@@ -8,7 +8,7 @@ import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
-import { getPlayers, clearPlayersCache } from "@/utils/database/playersService";
+import { getPlayers, clearPlayersCache, transformPlayersForList } from "@/utils/database/playersService";
 
 interface DbPlayer {
   id: string;
@@ -68,20 +68,23 @@ const Players = () => {
         // Filter valid players
         const validPlayers = players.filter(player => player && player.id && player.name);
         
+        // Transform players to ensure they have required teamName and teamRegion properties
+        const transformedPlayers = transformPlayersForList(validPlayers);
+        
         // Check for Hanwha Life Esports players
-        const hanwhaPlayers = validPlayers.filter(player => 
+        const hanwhaPlayers = transformedPlayers.filter(player => 
           player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
           (player.teamName && player.teamName.includes("Hanwha"))
         );
         
         console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
         
-        const uniqueRegions = [...new Set(validPlayers
+        const uniqueRegions = [...new Set(transformedPlayers
           .map(player => player.teamRegion)
           .filter(Boolean)
         )];
         
-        setAllPlayers(validPlayers);
+        setAllPlayers(transformedPlayers);
         setAvailableRegions(uniqueRegions);
       } catch (error) {
         console.error("Error fetching players data:", error);

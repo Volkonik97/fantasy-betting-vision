@@ -48,7 +48,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     console.log("Hanwha players:", hanwhaPlayers);
   }
 
-  // Vérification supplémentaire que tous les joueurs ont les données requises
+  // Additional verification that all players have the required data
   const validPlayers = players.filter(player => player && player.id && player.name);
   if (validPlayers.length !== players.length) {
     console.warn(`Filtered out ${players.length - validPlayers.length} invalid players`);
