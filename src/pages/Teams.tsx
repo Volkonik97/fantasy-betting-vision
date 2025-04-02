@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
-import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
+import { getTeams } from "@/utils/database/teamsService";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";
@@ -9,7 +9,6 @@ import TeamsList from "@/components/team/TeamsList";
 import TeamRegionFilter from "@/components/team/TeamRegionFilter";
 import TeamLogoUploaderSection from "@/components/team/TeamLogoUploaderSection";
 import TeamPageHeader from "@/components/team/TeamPageHeader";
-import { clearLogoCache } from "@/utils/database/teams/logoUtils";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -32,9 +31,6 @@ const Teams = () => {
   const loadTeams = async () => {
     try {
       setIsLoading(true);
-      // Clear the caches to ensure fresh data
-      clearTeamsCache();
-      clearLogoCache();
       
       const loadedTeams = await getTeams();
       
@@ -87,8 +83,6 @@ const Teams = () => {
   };
 
   const handleLogoUploadComplete = () => {
-    // Effacer le cache des logos avant de recharger les équipes
-    clearLogoCache();
     loadTeams();
     setShowLogoUploader(false);
   };
