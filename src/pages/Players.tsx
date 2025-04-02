@@ -44,7 +44,14 @@ const Players = () => {
       setIsLoading(true);
 
       const teams = await getTeams();
-      console.log(`✅ ${teams.length} équipes chargées.`);
+      teams.forEach(team => {
+  team.players?.forEach(player => {
+    if (player.name?.toLowerCase() === "kiin") {
+      console.warn("🔥 Kiin trouvé dans getTeams() :", player);
+    }
+  });
+});
+
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
