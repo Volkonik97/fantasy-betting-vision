@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Team } from "@/utils/models/types";
 import { TrendingUp, Percent, Clock } from "lucide-react";
@@ -15,17 +14,14 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
           <Avatar className="w-16 h-16">
-            {team.logo ? (
-              <AvatarImage
-                src={team.logo}
-                alt={`${team.name} logo`}
-                className="object-contain"
-              />
-            ) : (
-              <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
-                {team.name.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            )}
+            <AvatarImage
+              src={team.logo || ''}
+              alt={`${team.name} logo`}
+              className="object-contain"
+            />
+            <AvatarFallback className="text-lg font-medium bg-gray-100 text-gray-700">
+              {team.name.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
         </div>
         

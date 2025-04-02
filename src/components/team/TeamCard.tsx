@@ -1,4 +1,3 @@
-
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -24,17 +23,14 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
               <Avatar className="w-12 h-12">
-                {team.logo ? (
-                  <AvatarImage
-                    src={team.logo}
-                    alt={`${team.name} logo`}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                    {team.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                )}
+                <AvatarImage
+                  src={team.logo || ''}
+                  alt={`${team.name} logo`}
+                  className="h-full w-full object-contain"
+                />
+                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                  {team.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
             </div>
             <div>

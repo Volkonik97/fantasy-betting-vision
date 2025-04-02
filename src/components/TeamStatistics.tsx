@@ -55,17 +55,14 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
               <Avatar className="w-10 h-10">
-                {team.logo ? (
-                  <AvatarImage
-                    src={team.logo}
-                    alt={`${team.name} logo`}
-                    className="object-contain"
-                  />
-                ) : (
-                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                    {team.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                )}
+                <AvatarImage
+                  src={team.logo || ''}
+                  alt={`${team.name} logo`}
+                  className="object-contain"
+                />
+                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                  {team.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
             </div>
             <div>
