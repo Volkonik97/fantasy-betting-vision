@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
@@ -12,7 +12,27 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
-  // Ensure all roles are normalized before counting
+  // Make sure we have players to display
+  useEffect(() => {
+    console.log(`PlayersList: Received ${players?.length || 0} players`);
+    if (players?.length > 0) {
+      // Log the first few players for debugging
+      players.slice(0, 5).forEach(player => {
+        console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.teamName}`);
+      });
+      
+      // Count players by role
+      const roleCounts = players.reduce((acc, player) => {
+        const normalizedRole = normalizeRoleName(player.role);
+        acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log("Players by role:", roleCounts);
+    }
+  }, [players]);
+  
+  // Ensure all roles are normalized before rendering
   const normalizedPlayers = players.map(player => ({
     ...player,
     role: normalizeRoleName(player.role)

@@ -24,26 +24,27 @@ export function teamToTeamObject(teamCsv: any): Team {
 export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
   if (!role) return 'Mid'; // Default to Mid if role is undefined or empty
   
-  const normalizedRole = role.toString().toLowerCase().trim();
+  // Convert to string in case it's a number or other type, then normalize
+  const normalizedRole = String(role).toLowerCase().trim();
   
   // Enhanced role mappings with more variations for Top lane
-  if (['top', 'toplane', 'top lane', 'toplaner', 'toplaner', 'top laner', 'toplar', 't', 'ㅆ', 'tpplanee', 'tplaner', 'topl', 'toplne', 'toplaine', 'toplaine', 'top-laner', 'topln', 'top lane', 'tope', 'to', 'tp'].includes(normalizedRole)) {
+  if (['top', 'toplane', 'top lane', 'toplaner', 'toplaner', 'top laner', 'toplar', 't', 'ㅆ', 'tpplanee', 'tplaner', 'topl', 'toplne', 'toplaine', 'toplaine', 'top-laner', 'topln', 'top lane', 'tope', 'to', 'tp', '1'].includes(normalizedRole)) {
     return 'Top';
   }
   
-  if (['jungle', 'jng', 'jgl', 'jg', 'jungler', 'jgler', 'jung', 'j'].includes(normalizedRole)) {
+  if (['jungle', 'jng', 'jgl', 'jg', 'jungler', 'jgler', 'jung', 'j', '2'].includes(normalizedRole)) {
     return 'Jungle';
   }
   
-  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner', 'middle lane', 'middler', 'midlar', 'm'].includes(normalizedRole)) {
+  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner', 'middle lane', 'middler', 'midlar', 'm', '3'].includes(normalizedRole)) {
     return 'Mid';
   }
   
-  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner', 'ad', 'marksman', 'bot laner', 'a', 'b'].includes(normalizedRole)) {
+  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner', 'ad', 'marksman', 'bot laner', 'a', 'b', '4'].includes(normalizedRole)) {
     return 'ADC';
   }
   
-  if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp', 's'].includes(normalizedRole)) {
+  if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp', 's', '5'].includes(normalizedRole)) {
     return 'Support';
   }
   
@@ -60,6 +61,11 @@ export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC
 export function playerToPlayerObject(playerCsv: any): Player {
   // Normalize the role
   const normalizedRole = normalizeRoleName(playerCsv.role || 'Mid');
+  
+  // Log the role normalization for debugging
+  if (normalizedRole !== playerCsv.role) {
+    console.log(`Normalized role for ${playerCsv.name}: ${playerCsv.role} -> ${normalizedRole}`);
+  }
   
   return {
     id: playerCsv.id,

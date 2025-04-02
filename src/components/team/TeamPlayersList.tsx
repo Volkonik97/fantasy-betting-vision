@@ -26,7 +26,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     
     // Log all players for debugging
     players.forEach(player => {
-      console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.team}`);
+      const normalizedRole = normalizeRoleName(player.role);
+      console.log(`Player in team list: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, Team: ${player.team}`);
     });
     
     // Create a deep copy of the players array to avoid mutation issues
@@ -35,7 +36,6 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     // Ensure all players have normalized roles before sorting
     const playersWithNormalizedRoles = playersCopy.map((player: Player) => {
       const normalizedRole = normalizeRoleName(player.role || "Mid");
-      console.log(`Normalized role for player ${player.name}: ${player.role} -> ${normalizedRole}`);
       return {
         ...player,
         role: normalizedRole
@@ -102,11 +102,13 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {
-            console.log(`Rendering player: ${player.name}, Role: ${player.role}`);
+            // Ensure role is properly normalized for each player
+            const normalizedRole = normalizeRoleName(player.role);
             
             // Enrichir le joueur avec le nom de l'équipe si disponible
             const enrichedPlayer = {
               ...player,
+              role: normalizedRole, // Use the normalized role
               teamName: teamName || player.teamName || player.team
             };
             

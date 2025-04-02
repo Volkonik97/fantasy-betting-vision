@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -55,9 +56,11 @@ const Players = () => {
             
             // Log roles for each team to debug
             const rolesByTeam = team.players.reduce((acc, player) => {
-              acc[player.role] = (acc[player.role] || 0) + 1;
+              const normalizedRole = normalizeRoleName(player.role);
+              acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
               return acc;
             }, {} as Record<string, number>);
+            
             console.log(`Team ${team.name} players by role:`, rolesByTeam);
             
             const teamPlayers = team.players.map(player => {
@@ -87,19 +90,12 @@ const Players = () => {
         
         // Log players by role for debugging
         const playersByRole = playersWithTeamInfo.reduce((acc, player) => {
-          acc[player.role] = (acc[player.role] || 0) + 1;
+          const normalizedRole = normalizeRoleName(player.role);
+          acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
         
         console.log("Players by role:", playersByRole);
-        
-        // Log players by region for debugging
-        const playersByRegion = playersWithTeamInfo.reduce((acc, player) => {
-          acc[player.teamRegion] = (acc[player.teamRegion] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        console.log("Players by region:", playersByRegion);
         setAllPlayers(playersWithTeamInfo);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -127,23 +123,15 @@ const Players = () => {
   
   const filteredPlayers = allPlayers.filter(player => {
     // Make sure player.role exists and is properly normalized
-    if (!player.role) {
-      console.warn(`Player ${player.name} has undefined role, normalizing to Mid`);
-      player.role = 'Mid';
-    }
-    
-    // Always normalize player role for comparison, even if it was already normalized earlier
-    const normalizedPlayerRole = normalizeRoleName(player.role);
+    const normalizedPlayerRole = normalizeRoleName(player.role || 'Mid');
     
     // Match roles - use normalized roles for comparison
     const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
     const roleMatches = normalizedSelectedRole === "All" || normalizedPlayerRole === normalizedSelectedRole;
     
     // If we're filtering for Top role, log the players that match/don't match
-    if (normalizedSelectedRole === 'Top' && normalizedPlayerRole === 'Top') {
-      console.log(`Found Top player: ${player.name} from ${player.teamName}`);
-    } else if (normalizedSelectedRole === 'Top' && normalizedPlayerRole !== 'Top') {
-      console.log(`Non-Top player with role ${player.role}: ${player.name}`);
+    if (normalizedSelectedRole === 'Top') {
+      console.log(`Player ${player.name}: Role=${player.role}, NormalizedRole=${normalizedPlayerRole}, Matches=${normalizedPlayerRole === 'Top'}`);
     }
     
     // Handle region matching
@@ -176,6 +164,29 @@ const Players = () => {
     
     return roleMatches && regionMatches && searchMatches;
   });
+  
+  // Log filtered players for debugging
+  useEffect(() => {
+    console.log(`Filtered players: ${filteredPlayers.length}`);
+    
+    // Count filtered players by role
+    const filteredRoleCounts = filteredPlayers.reduce((acc, player) => {
+      const normalizedRole = normalizeRoleName(player.role);
+      acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log("Filtered players by role:", filteredRoleCounts);
+    
+    // If selected role is Top, log all Top players
+    if (selectedRole === "Top") {
+      const topPlayers = filteredPlayers.filter(p => normalizeRoleName(p.role) === "Top");
+      console.log(`Found ${topPlayers.length} Top players after filtering`);
+      topPlayers.forEach(p => {
+        console.log(`Top player: ${p.name} (${p.teamName}), original role: ${p.role}`);
+      });
+    }
+  }, [filteredPlayers, selectedRole]);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);

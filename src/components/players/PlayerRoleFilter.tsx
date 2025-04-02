@@ -13,9 +13,9 @@ interface PlayerRoleFilterProps {
 const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFilterProps) => {
   // Icons for each role
   const getRoleIcon = (role: string) => {
-    const normalizedRole = normalizeRoleName(role);
-    
     if (role === "All") return null;
+    
+    const normalizedRole = normalizeRoleName(role);
     
     switch (normalizedRole) {
       case "Top": return <Axe className="h-4 w-4 mr-1.5" />;
@@ -49,6 +49,11 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
     }
   };
 
+  const handleRoleSelect = (role: string) => {
+    console.log(`Selecting role: ${role}`);
+    setSelectedRole(role);
+  };
+
   return (
     <div className="w-full md:w-auto">
       <h3 className="font-medium mb-2">Filter by Role</h3>
@@ -61,7 +66,7 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
           return (
             <button
               key={role}
-              onClick={() => setSelectedRole(role)}
+              onClick={() => handleRoleSelect(role)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center ${
                 getRoleFilterStyle(role, isSelected)
               }`}
