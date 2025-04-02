@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -21,10 +22,12 @@ export interface Team {
   redFirstBaron?: number;
 }
 
+export type PlayerRole = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
+
 export interface Player {
   id: string;
   name: string;
-  role: 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
+  role: PlayerRole;
   image: string;
   team: string;
   teamName?: string;  // Added teamName as an optional property

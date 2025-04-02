@@ -1,5 +1,5 @@
 
-import { Team, Player } from '../../models/types';
+import { Team, Player, PlayerRole } from '../../models/types';
 
 /**
  * Helper function to convert team CSV to team object
@@ -21,7 +21,7 @@ export function teamToTeamObject(teamCsv: any): Team {
 /**
  * Normalizes role names to standard format
  */
-export function normalizeRoleName(role?: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
+export function normalizeRoleName(role?: string): PlayerRole {
   if (!role) return 'Mid'; // Default to Mid if role is undefined or empty
   
   // Convert to string in case it's a number or other type, then normalize
@@ -53,6 +53,11 @@ export function normalizeRoleName(role?: string): 'Top' | 'Jungle' | 'Mid' | 'AD
   // Support variations
   if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp', 's', '5'].includes(normalizedRole)) {
     return 'Support';
+  }
+  
+  // If the role is already normalized, return it directly
+  if (role === 'Top' || role === 'Jungle' || role === 'Mid' || role === 'ADC' || role === 'Support') {
+    return role as PlayerRole;
   }
   
   // Log unknown roles for debugging

@@ -3,6 +3,7 @@ import React from "react";
 import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
 import { getRoleColor, getRoleDisplayName } from "../player/RoleBadge";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { PlayerRole } from "@/utils/models/types";
 
 interface PlayerRoleFilterProps {
   selectedRole: string;
@@ -50,6 +51,7 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
   };
 
   const handleRoleSelect = (role: string) => {
+    console.log(`Role selected: ${role}`);
     setSelectedRole(role);
   };
 

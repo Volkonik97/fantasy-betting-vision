@@ -12,11 +12,30 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
+  console.log(`PlayersList: Received ${players.length} players`);
+  
+  // Log all roles before normalization
+  const rolesBefore = players.map(p => p.role);
+  console.log("Roles before normalization:", rolesBefore);
+  
   // Ensure all roles are normalized before rendering
   const normalizedPlayers = players.map(player => ({
     ...player,
     role: normalizeRoleName(player.role)
   }));
+  
+  // Log all roles after normalization
+  const rolesAfter = normalizedPlayers.map(p => p.role);
+  console.log("Roles after normalization:", rolesAfter);
+  
+  // Count players by role for debugging
+  const roleCounts = normalizedPlayers.reduce((acc, player) => {
+    const role = player.role;
+    acc[role] = (acc[role] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  console.log("Player counts by role:", roleCounts);
   
   if (loading) {
     return (

@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Player } from '../models/types';
+import { Player, PlayerRole } from '../models/types';
 import { chunk } from '../dataConverter';
 import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
 import { toast } from "sonner";
@@ -146,6 +147,14 @@ export const getPlayers = async (): Promise<Player[]> => {
         championPool: player.champion_pool as string[] || []
       };
     });
+    
+    // Log normalized player roles
+    const roleCounts = players.reduce((acc, p) => {
+      acc[p.role] = (acc[p.role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log("Player counts by normalized role:", roleCounts);
     
     setLoadedPlayers(players);
     return players;
