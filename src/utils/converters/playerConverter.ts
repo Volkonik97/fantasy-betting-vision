@@ -9,16 +9,30 @@ import { normalizeRoleName } from '../leagueData/assembler/modelConverter';
 export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
   console.log(`Converting ${playersCSV.length} players from CSV data`);
   
-  // Filtrer les joueurs sans ID ou sans nom pour éviter les problèmes
+  // Filter players without ID or name to avoid problems
   const validPlayers = playersCSV.filter(player => player.id && player.name);
   
   if (validPlayers.length < playersCSV.length) {
     console.warn(`Filtered out ${playersCSV.length - validPlayers.length} players with missing ID or name`);
   }
   
+  // Log unique roles in the CSV for debugging
+  const uniqueRoles = new Set<string>();
+  validPlayers.forEach(player => {
+    if (player.role) {
+      uniqueRoles.add(player.role);
+    }
+  });
+  console.log(`Unique roles in CSV: ${Array.from(uniqueRoles).join(', ')}`);
+  
   return validPlayers.map(player => {
     // Ensure role is properly normalized
     const normalizedRole = normalizeRoleName(player.role || 'Mid');
+    
+    // Log any unexpected roles
+    if (player.role && normalizedRole === 'Mid' && player.role.toLowerCase() !== 'mid') {
+      console.warn(`Unknown role '${player.role}' for player ${player.name} normalized to 'Mid'`);
+    }
     
     // Ensure team ID is set
     if (!player.team) {

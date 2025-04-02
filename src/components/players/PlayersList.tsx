@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface PlayersListProps {
   players: (Player & { teamName: string; teamRegion: string })[];
@@ -11,6 +12,15 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
+  // Log player counts by role for debugging
+  const roleCounts = players.reduce((acc, player) => {
+    const normalizedRole = normalizeRoleName(player.role);
+    acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  console.log("Filtered players by role:", roleCounts);
+  
   if (loading) {
     return (
       <div className="text-center py-10">
@@ -27,9 +37,15 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
+  // Normalize all player roles before rendering
+  const normalizedPlayers = players.map(player => ({
+    ...player,
+    role: normalizeRoleName(player.role)
+  }));
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {players.map((player, index) => (
+      {normalizedPlayers.map((player, index) => (
         <motion.div
           key={player.id}
           initial={{ opacity: 0, y: 20 }}

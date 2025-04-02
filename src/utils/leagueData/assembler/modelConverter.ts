@@ -26,16 +26,26 @@ export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC
   
   const normalizedRole = role.toLowerCase().trim();
   
-  // Enhanced role mappings with more variations
-  if (['top', 'toplane', 'top lane', 'toplaner'].includes(normalizedRole)) return 'Top';
+  // Enhanced role mappings with even more variations
+  if (['top', 'toplane', 'top lane', 'toplaner', 'toplane', 'top laner', 'toplar'].includes(normalizedRole)) {
+    return 'Top';
+  }
   
-  if (['jungle', 'jng', 'jgl', 'jg', 'jungler'].includes(normalizedRole)) return 'Jungle';
+  if (['jungle', 'jng', 'jgl', 'jg', 'jungler', 'jgler', 'jung'].includes(normalizedRole)) {
+    return 'Jungle';
+  }
   
-  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner'].includes(normalizedRole)) return 'Mid';
+  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner', 'middle lane', 'middler', 'midlar'].includes(normalizedRole)) {
+    return 'Mid';
+  }
   
-  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner'].includes(normalizedRole)) return 'ADC';
+  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner', 'ad', 'marksman', 'bot laner'].includes(normalizedRole)) {
+    return 'ADC';
+  }
   
-  if (['support', 'sup', 'supp', 'soutien', 'supporter'].includes(normalizedRole)) return 'Support';
+  if (['support', 'sup', 'supp', 'soutien', 'supporter', 'support lane', 'sp'].includes(normalizedRole)) {
+    return 'Support';
+  }
   
   // Log unknown roles for debugging
   console.warn(`Unknown role encountered: "${role}" (normalized: "${normalizedRole}"), defaulting to Mid`);

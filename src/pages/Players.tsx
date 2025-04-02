@@ -54,13 +54,17 @@ const Players = () => {
           if (team.players && team.players.length > 0) {
             console.log(`Team ${team.name} has ${team.players.length} players`);
             
-            const teamPlayers = team.players.map(player => ({
-              ...player,
-              // Ensure role is normalized
-              role: normalizeRoleName(player.role),
-              teamName: team.name,
-              teamRegion: team.region
-            }));
+            const teamPlayers = team.players.map(player => {
+              // Ensure role is properly normalized
+              const normalizedRole = normalizeRoleName(player.role || 'Mid');
+              
+              return {
+                ...player,
+                role: normalizedRole,
+                teamName: team.name,
+                teamRegion: team.region
+              };
+            });
             
             playersWithTeamInfo.push(...teamPlayers);
           } else {
@@ -70,7 +74,15 @@ const Players = () => {
         
         console.log("Total players with team data:", playersWithTeamInfo.length);
         
-        // Log players by region
+        // Log players by role for debugging
+        const playersByRole = playersWithTeamInfo.reduce((acc, player) => {
+          acc[player.role] = (acc[player.role] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log("Players by role:", playersByRole);
+        
+        // Log players by region for debugging
         const playersByRegion = playersWithTeamInfo.reduce((acc, player) => {
           acc[player.teamRegion] = (acc[player.teamRegion] || 0) + 1;
           return acc;
@@ -103,6 +115,12 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
+    // Make sure player.role exists and is properly normalized
+    if (!player.role) {
+      console.warn(`Player ${player.name} has undefined role, normalizing to Mid`);
+      player.role = 'Mid';
+    }
+    
     // Normalize player role for comparison
     const normalizedPlayerRole = normalizeRoleName(player.role);
     
@@ -138,9 +156,9 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    // Debug specific players for troubleshooting
-    if (player.name.toLowerCase().includes('zeka')) {
-      console.log(`Filtering Zeka: role=${player.role}, normalized=${normalizedPlayerRole}, selected=${normalizedSelectedRole}, roleMatches=${roleMatches}, regionMatches=${regionMatches}, searchMatches=${searchMatches}`);
+    // Debug specific players or roles for troubleshooting
+    if (normalizedPlayerRole === 'Top' && !roleMatches && selectedRole === 'Top') {
+      console.log(`Top player not matching filter: ${player.name}, role=${player.role}, normalized=${normalizedPlayerRole}, selected=${normalizedSelectedRole}`);
     }
     
     return roleMatches && regionMatches && searchMatches;
