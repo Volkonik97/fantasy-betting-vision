@@ -29,10 +29,13 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.team}`);
     });
     
+    // Create a copy of the players array to avoid mutation issues
+    const playersCopy = [...players];
+    
     // Ensure all players have normalized roles before sorting
-    const playersWithNormalizedRoles = players.map(player => ({
+    const playersWithNormalizedRoles = playersCopy.map(player => ({
       ...player,
-      role: normalizeRoleName(player.role)
+      role: normalizeRoleName(player.role || "Mid")
     }));
     
     // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
@@ -47,14 +50,14 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       
       // Get the standardized role for sorting purposes
       const getRoleSortValue = (role: string): number => {
-        const normalizedRole = normalizeRoleName(role);
-        return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 2; // Default to Mid (2) if unknown
+        const normalizedRole = normalizeRoleName(role || "Mid");
+        return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 999; // Default to end if unknown
       };
       
       return getRoleSortValue(a.role) - getRoleSortValue(b.role);
     });
     
-    console.log(`Sorted players: ${sorted.map(p => p.name).join(', ')}`);
+    console.log(`Sorted players (${sorted.length}): ${sorted.map(p => `${p.name} (${p.role})`).join(', ')}`);
     setSortedPlayers(sorted);
   }, [players, teamName]);
 
