@@ -41,10 +41,11 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Fetch players for this team
+    // Fetch players for this team using a join with the teams table
+    // This ensures we get all players with the correct team relationship
     const { data: playersData, error: playersError } = await supabase
       .from('players')
-      .select('*')
+      .select('*, teams:team_id(*)')
       .eq('team_id', teamId);
     
     if (playersError) {
@@ -93,7 +94,40 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         console.log("Sample player data:", JSON.stringify(team.players[0]));
       }
     } else {
-      console.warn(`No players found for team ${teamId} in database`);
+      // Si aucun joueur n'a été trouvé avec la requête précédente, essayons une requête directe
+      console.warn(`No players found for team ${teamId} in first query, trying direct query`);
+      
+      const { data: directPlayersData, error: directPlayersError } = await supabase
+        .from('players')
+        .select('*')
+        .eq('team_id', teamId);
+        
+      if (directPlayersError) {
+        console.error(`Error in direct player query for team ${teamId}:`, directPlayersError);
+      } else if (directPlayersData && directPlayersData.length > 0) {
+        console.log(`Found ${directPlayersData.length} players in direct query for team ${teamId}`);
+        
+        team.players = directPlayersData.map(player => {
+          const playerRole = normalizeRoleName(player.role || 'Mid');
+          
+          return {
+            id: player.id,
+            name: player.name || '',
+            role: playerRole,
+            image: player.image || '',
+            team: player.team_id,
+            teamName: team.name,
+            kda: Number(player.kda) || 0,
+            csPerMin: Number(player.cs_per_min) || 0,
+            damageShare: Number(player.damage_share) || 0,
+            championPool: Array.isArray(player.champion_pool) ? player.champion_pool : []
+          } as Player;
+        });
+        
+        console.log(`Successfully mapped ${team.players.length} players from direct query for team ${teamId}`);
+      } else {
+        console.warn(`No players found for team ${teamId} in direct query either`);
+      }
     }
     
     // Update cache

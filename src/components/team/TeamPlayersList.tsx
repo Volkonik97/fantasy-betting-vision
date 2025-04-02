@@ -18,6 +18,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
   useEffect(() => {
     if (Array.isArray(players) && players.length > 0) {
       console.log(`TeamPlayersList: Received ${players.length} players`);
+      console.log("Player data sample:", players[0]);
       
       // Define role order for sorting
       const roleOrder: Record<string, number> = {
@@ -37,7 +38,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       
       setSortedPlayers(sortedList);
     } else {
-      console.log("TeamPlayersList: No players data received or empty array");
+      console.log("TeamPlayersList: No players data received or empty array", players);
       setSortedPlayers([]);
     }
   }, [players]);

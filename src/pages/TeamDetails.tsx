@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -71,8 +70,6 @@ const TeamDetails = () => {
           foundTeam.redFirstHerald = sideStatsData.redFirstHerald;
           foundTeam.blueFirstTower = sideStatsData.blueFirstTower;
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
-          foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
-          foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
         }
         
         setTeam(foundTeam);
@@ -138,6 +135,8 @@ const TeamDetails = () => {
   console.log("Rendering TeamDetails with players:", team.players?.length || 0);
   if (team.players && team.players.length > 0) {
     console.log("First player:", team.players[0].name, team.players[0].role);
+  } else {
+    console.warn("No players found in team object at render time");
   }
   
   return (

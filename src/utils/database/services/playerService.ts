@@ -116,9 +116,10 @@ export const getPlayers = async (): Promise<Player[]> => {
   if (loadedPlayers) return loadedPlayers;
   
   try {
+    // Améliorons la requête pour inclure les informations des équipes
     const { data: playersData, error: playersError } = await supabase
       .from('players')
-      .select('*');
+      .select('*, teams:team_id(name, region)');
     
     if (playersError || !playersData || playersData.length === 0) {
       console.error("Erreur lors de la récupération des joueurs:", playersError);
@@ -132,6 +133,8 @@ export const getPlayers = async (): Promise<Player[]> => {
       role: normalizeRoleName(player.role || 'Mid'),
       image: player.image as string,
       team: player.team_id as string,
+      teamName: player.teams?.name as string,
+      teamRegion: player.teams?.region as string,
       kda: Number(player.kda) || 0,
       csPerMin: Number(player.cs_per_min) || 0,
       damageShare: Number(player.damage_share) || 0,
@@ -157,10 +160,10 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       if (player) return player;
     }
     
-    // If not found in loaded players, query the database
+    // If not found in loaded players, query the database with a join
     const { data: playerData, error } = await supabase
       .from('players')
-      .select('*, teams!inner(*)')
+      .select('*, teams:team_id(name, region)')
       .eq('id', playerId)
       .single();
     
@@ -177,6 +180,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       image: playerData.image as string,
       team: playerData.team_id as string,
       teamName: playerData.teams?.name as string,
+      teamRegion: playerData.teams?.region as string,
       kda: Number(playerData.kda) || 0,
       csPerMin: Number(playerData.cs_per_min) || 0,
       damageShare: Number(playerData.damage_share) || 0,
