@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import TeamStatistics from "@/components/TeamStatistics";
+import TeamRoster from "@/components/team/TeamRoster";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,6 +49,13 @@ const TeamDetails = () => {
         
         // Log team info for debugging
         console.log(`Équipe trouvée: ${foundTeam.name}`);
+        console.log(`Joueurs dans l'équipe:`, foundTeam.players?.length || 0);
+        
+        // Make sure we have players array initialized
+        if (!foundTeam.players) {
+          console.log("Players array is undefined, initializing empty array");
+          foundTeam.players = [];
+        }
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
@@ -124,6 +132,14 @@ const TeamDetails = () => {
     );
   }
   
+  // Log player data just before rendering to debug
+  console.log("Rendering TeamDetails with players:", team.players?.length || 0);
+  if (team.players && team.players.length > 0) {
+    console.log("First player:", team.players[0].name, team.players[0].role);
+  } else {
+    console.warn("No players found in team object at render time");
+  }
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -145,6 +161,9 @@ const TeamDetails = () => {
         >
           <TeamHeader team={team} />
         </motion.div>
+        
+        {/* Affichage du roster d'équipe */}
+        <TeamRoster players={team.players || []} teamName={team.name} />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
