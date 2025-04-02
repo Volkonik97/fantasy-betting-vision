@@ -6,10 +6,11 @@ import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 interface TeamInfoProps {
   teamId: string;
   teamName?: string;
+  region?: string;
   showTeamLogo?: boolean;
 }
 
-const TeamInfo: React.FC<TeamInfoProps> = ({ teamId, teamName, showTeamLogo = false }) => {
+const TeamInfo: React.FC<TeamInfoProps> = ({ teamId, teamName, region, showTeamLogo = false }) => {
   const [teamLogo, setTeamLogo] = useState<string | null>(null);
   const [isLogoLoading, setIsLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
@@ -35,7 +36,7 @@ const TeamInfo: React.FC<TeamInfoProps> = ({ teamId, teamName, showTeamLogo = fa
   }, [teamId, showTeamLogo]);
   
   if (!showTeamLogo) {
-    return <p className="text-sm text-gray-500">{teamName || teamId}</p>;
+    return <p className="text-sm text-gray-500">{teamName || teamId}{region ? `, ${region}` : ""}</p>;
   }
   
   return (
@@ -57,7 +58,7 @@ const TeamInfo: React.FC<TeamInfoProps> = ({ teamId, teamName, showTeamLogo = fa
           </AvatarFallback>
         </Avatar>
       )}
-      <p className="text-sm text-gray-500">{teamName || teamId}</p>
+      <p className="text-sm text-gray-500">{teamName || teamId}{region ? `, ${region}` : ""}</p>
     </div>
   );
 };
