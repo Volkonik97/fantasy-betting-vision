@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team, Player } from '../../models/types';
 import { toast } from "sonner";
@@ -82,18 +81,31 @@ export const getTeams = async (): Promise<Team[]> => {
     // Log players count for debugging
     console.log(`Processing ${allPlayersData?.length || 0} total players in database`);
     
-    // Group players by team_id for faster lookup
+    // Avant d'assigner les joueurs aux équipes, vérifier les problèmes potentiels
+    if (allPlayersData) {
+      console.log(`Analyzing ${allPlayersData.length} players for team assignment`);
+      allPlayersData.forEach(player => {
+        if (!player.team_id) {
+          console.warn(`⚠️ Player ${player.name} (ID: ${player.id}) has no team_id`);
+        } else {
+          // Vérifiez si l'équipe existe
+          const teamExists = teamsData.some(t => t.id === player.team_id);
+          if (!teamExists) {
+            console.warn(`⚠️ Player ${player.name} references non-existent team ID: ${player.team_id}`);
+          }
+        }
+      });
+    }
+    
+    // Group players by team_id for faster lookup - inclure tous les joueurs même ceux sans team_id
     const playersByTeamId = allPlayersData ? allPlayersData.reduce((acc, player) => {
-      if (!player.team_id) {
-        console.warn(`Player ${player.name} has no team_id`);
-        return acc;
+      const teamId = player.team_id || 'unknown';
+      
+      if (!acc[teamId]) {
+        acc[teamId] = [];
       }
       
-      if (!acc[player.team_id]) {
-        acc[player.team_id] = [];
-      }
-      
-      acc[player.team_id].push(player);
+      acc[teamId].push(player);
       return acc;
     }, {} as Record<string, any[]>) : {};
     
@@ -109,15 +121,15 @@ export const getTeams = async (): Promise<Team[]> => {
         
         team.players = teamPlayers.map(player => {
           // Always normalize role using our updated function
-          const normalizedRole = normalizeRoleName(player.role);
+          const normalizedRole = normalizeRoleName(player.role) || 'Unknown';
           
           return {
             id: player.id as string,
             name: player.name as string,
             role: normalizedRole,
             image: player.image as string,
-            team: player.team_id as string,
-            teamName: team.name, // Always set the team name and region
+            team: team.id, // Utilisez team.id au lieu de player.team_id pour assurer la cohérence
+            teamName: team.name,
             teamRegion: team.region,
             kda: Number(player.kda) || 0,
             csPerMin: Number(player.cs_per_min) || 0,
@@ -157,6 +169,10 @@ export const getTeams = async (): Promise<Team[]> => {
         console.log(`First 3 players of ${team.name}:`, team.players.slice(0, 3).map(p => `${p.name} (${p.role})`));
       }
     });
+    
+    // Compter le nombre total de joueurs après assignation
+    const totalPlayers = teams.reduce((count, team) => count + (team.players?.length || 0), 0);
+    console.log(`Total players assigned to teams: ${totalPlayers}`);
     
     return teams;
   } catch (error) {
