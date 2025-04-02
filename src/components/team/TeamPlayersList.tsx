@@ -29,11 +29,11 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.team}`);
     });
     
-    // Create a copy of the players array to avoid mutation issues
-    const playersCopy = [...players];
+    // Create a deep copy of the players array to avoid mutation issues
+    const playersCopy = JSON.parse(JSON.stringify(players));
     
     // Ensure all players have normalized roles before sorting
-    const playersWithNormalizedRoles = playersCopy.map(player => ({
+    const playersWithNormalizedRoles = playersCopy.map((player: Player) => ({
       ...player,
       role: normalizeRoleName(player.role || "Mid")
     }));

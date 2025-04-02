@@ -27,7 +27,7 @@ export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC
   const normalizedRole = role.toLowerCase().trim();
   
   // Enhanced role mappings with more variations
-  if (['top', 'toplane', 'top lane'].includes(normalizedRole)) return 'Top';
+  if (['top', 'toplane', 'top lane', 'toplaner'].includes(normalizedRole)) return 'Top';
   
   if (['jungle', 'jng', 'jgl', 'jg', 'jungler'].includes(normalizedRole)) return 'Jungle';
   
