@@ -46,6 +46,19 @@ export const getTeams = async (): Promise<Team[]> => {
       console.error("Error retrieving players:", playersError);
       // Continue without players
     }
+
+    // 🔍 Test ciblé pour "Kiin"
+const { data: kiinData, error: kiinError } = await supabase
+  .from("players")
+  .select("*")
+  .eq("name", "Kiin");
+
+if (kiinError) {
+  console.error("❌ Erreur en récupérant Kiin :", kiinError);
+} else {
+  console.warn("🔍 Résultat ciblé de Kiin :", kiinData);
+}
+
     
     // Convert database format to application format
     const teams: Team[] = teamsData.map(team => {
