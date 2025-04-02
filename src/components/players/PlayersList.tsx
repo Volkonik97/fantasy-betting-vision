@@ -11,37 +11,38 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
-  // Improved logging with better information
+  // Log detailed information about players on initial render and when players change
   useEffect(() => {
     console.log(`PlayersList: Received ${players.length} players`);
     
-    // Log how many players per region
+    // Log players by region
     const regionCounts = players.reduce((acc, player) => {
       const region = player.teamRegion || 'Unknown';
       acc[region] = (acc[region] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    console.log("Players by region in PlayersList:", regionCounts);
+    console.log("Players by region:", regionCounts);
     
-    // Log roles distribution
+    // Log players by role
     const roleCounts = players.reduce((acc, player) => {
       const role = player.role || 'Unknown';
       acc[role] = (acc[role] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    console.log("Players by role in PlayersList:", roleCounts);
+    console.log("Players by role:", roleCounts);
     
-    // Log LCK players specifically for debugging
+    // Debug LCK players specifically
     const lckPlayers = players.filter(p => p.teamRegion === 'LCK');
-    console.log(`Found ${lckPlayers.length} LCK players in PlayersList`);
+    console.log(`Found ${lckPlayers.length} LCK players`);
     if (lckPlayers.length > 0) {
       console.log("Sample of LCK players:", 
-        lckPlayers.slice(0, 5).map(p => ({
+        lckPlayers.slice(0, Math.min(5, lckPlayers.length)).map(p => ({
           name: p.name,
           role: p.role,
-          team: p.teamName
+          team: p.teamName,
+          region: p.teamRegion
         }))
       );
     }
@@ -72,6 +73,13 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
           return null;
         }
         
+        // Ensure player has teamName and teamRegion (defensive coding)
+        const enrichedPlayer = {
+          ...player,
+          teamName: player.teamName || "",
+          teamRegion: player.teamRegion || ""
+        };
+        
         return (
           <motion.div
             key={player.id || index}
@@ -81,7 +89,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
             className="h-full"
           >
             <Link to={`/players/${player.id}`} className="h-full block">
-              <PlayerCard player={player} showTeamLogo={true} />
+              <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
             </Link>
           </motion.div>
         );

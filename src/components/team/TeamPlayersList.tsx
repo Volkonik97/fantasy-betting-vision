@@ -18,32 +18,35 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   
   useEffect(() => {
-    console.log(`TeamPlayersList: Received ${players?.length || 0} players for team ${teamName} (${teamRegion || 'unknown region'})`);
+    // Log detailed information about the players received
+    console.log(`TeamPlayersList: ${teamName} (${teamRegion || 'unknown region'}) - Received ${players?.length || 0} players`);
     
     if (!players || players.length === 0) {
-      console.warn(`No players provided to TeamPlayersList for team: ${teamName}`);
+      console.warn(`No players provided for team: ${teamName}`);
       return;
     }
     
-    // Create a deep copy of the players array to avoid mutation issues
+    // Make sure we have a clean, deep copy to avoid mutation issues
     const playersCopy = JSON.parse(JSON.stringify(players));
     
-    // Ensure all players have normalized roles before sorting
-    const playersWithNormalizedRoles = playersCopy.map((player: Player) => {
+    // Enrich and normalize each player
+    const enrichedPlayers = playersCopy.map((player: Player) => {
       const normalizedRole = normalizeRoleName(player.role);
-      console.log(`Player in team list: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, Team: ${player.team}`);
       
-      // Make sure all players have the teamName and teamRegion set
+      // Log each player being processed
+      console.log(`Processing player: ${player.name}, Role: ${normalizedRole}, Original Team: ${player.team}, Team Name: ${player.teamName || teamName}`);
+      
+      // Make sure the player has all required data, especially team information
       return {
         ...player,
         role: normalizedRole,
-        teamName: player.teamName || teamName,
-        teamRegion: player.teamRegion || teamRegion
+        teamName: player.teamName || teamName || "",
+        teamRegion: player.teamRegion || teamRegion || ""
       };
     });
     
-    // Sort players by role in the standard order: Top, Jungle, Mid, ADC, Support
-    const sorted = [...playersWithNormalizedRoles].sort((a, b) => {
+    // Sort by standard role order
+    const sorted = [...enrichedPlayers].sort((a, b) => {
       const roleOrder: Record<string, number> = {
         'Top': 0,
         'Jungle': 1, 
@@ -58,7 +61,12 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
       return (roleOrder[roleA] ?? 99) - (roleOrder[roleB] ?? 99);
     });
     
-    console.log(`Sorted players (${sorted.length}): ${sorted.map(p => `${p.name} (${p.role})`).join(', ')}`);
+    // Log all sorted players for debugging
+    console.log(`Team ${teamName}: Sorted players (${sorted.length}):`);
+    sorted.forEach(player => {
+      console.log(`- ${player.name} (${player.role}) with team ${player.teamName}, region ${player.teamRegion}`);
+    });
+    
     setSortedPlayers(sorted);
   }, [players, teamName, teamRegion]);
 
@@ -99,7 +107,7 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {
-            // Always ensure role is properly normalized
+            // Final enrichment of player data before rendering
             const enrichedPlayer = {
               ...player,
               teamName: player.teamName || teamName || "",

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
@@ -11,24 +11,31 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Ensure player has all necessary properties with better defensive coding
+  // Defensive check for player data
   if (!player) {
     console.error("PlayerCard received undefined player");
     return null;
   }
   
-  // Add debugging information
-  console.log(`Rendering PlayerCard for: ${player.name}, Role: ${player.role}, Team: ${player.team}, Region: ${player.teamRegion || 'unknown'}`);
-  
+  // Ensure required properties exist with meaningful defaults
   const normalizedPlayer = {
     ...player,
-    role: player.role || 'Mid', // Fallback to Mid if role is missing
-    teamName: player.teamName || "",
+    role: player.role || 'Mid', // Fallback role if missing
+    teamName: player.teamName || "", 
     teamRegion: player.teamRegion || "",
     kda: player.kda || 0,
     csPerMin: player.csPerMin || 0,
     damageShare: player.damageShare || 0,
   };
+  
+  // Add debug information for this specific player
+  useEffect(() => {
+    console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}`);
+    
+    return () => {
+      console.log(`PlayerCard unmounted for: ${player.name}`);
+    };
+  }, [player]);
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
