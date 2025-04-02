@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
 
 interface TeamCardProps {
   team: Team;
@@ -63,30 +64,18 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
         <CardHeader className="pb-3">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
-              {logoLoading ? (
-                <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
-              ) : logoUrl && !logoError ? (
-                <Avatar className="w-12 h-12">
-                  <AvatarImage
-                    src={logoUrl}
-                    alt={`${team.name} logo`}
-                    className="object-contain"
-                    onError={() => {
-                      console.log(`Error loading logo for ${team.name} in card`);
-                      setLogoError(true);
-                    }}
-                  />
-                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                    {team.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <Avatar className="w-12 h-12">
-                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                    {team.name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
+              <Avatar className="w-12 h-12">
+                <ImageWithFallback
+                  src={logoUrl}
+                  alt={`${team.name} logo`}
+                  className="h-full w-full object-contain"
+                  fallback={
+                    <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                      {team.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  }
+                />
+              </Avatar>
             </div>
             <div>
               <CardTitle className="text-xl">{team.name}</CardTitle>

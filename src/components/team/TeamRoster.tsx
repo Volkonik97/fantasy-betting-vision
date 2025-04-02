@@ -4,11 +4,12 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Player } from "@/utils/models/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TeamRosterProps {
   players: Player[];
@@ -150,26 +151,20 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
           >
             <Card className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="relative h-48 bg-gradient-to-b from-gray-50 to-gray-100">
-                {player.image ? (
-                  <img 
-                    src={player.image} 
-                    alt={player.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = "/placeholder.svg";
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <Avatar className="h-24 w-24">
-                      <AvatarFallback className="text-3xl">
-                        {player.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                )}
+                <ImageWithFallback
+                  src={player.image}
+                  alt={`${player.name}`}
+                  className="w-full h-full object-cover"
+                  fallback={
+                    <div className="flex items-center justify-center h-full">
+                      <Avatar className="h-24 w-24">
+                        <AvatarFallback className="text-3xl">
+                          {player.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  }
+                />
                 <div className="absolute top-0 right-0 m-2">
                   <Badge className="bg-black bg-opacity-70 hover:bg-opacity-80 text-white border-none">
                     {normalizeRoleName(player.role)}
