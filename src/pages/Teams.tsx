@@ -9,7 +9,7 @@ import TeamsList from "@/components/team/TeamsList";
 import TeamRegionFilter from "@/components/team/TeamRegionFilter";
 import TeamLogoUploaderSection from "@/components/team/TeamLogoUploaderSection";
 import TeamPageHeader from "@/components/team/TeamPageHeader";
-import { preloadTeamLogos, getTeamLogoUrl, clearLogoCache } from "@/utils/database/teams/logoUtils";
+import { clearLogoCache } from "@/utils/database/teams/logoUtils";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -50,16 +50,6 @@ const Teams = () => {
         
         const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
         setRegions(uniqueRegions);
-        
-        // Précharger les logos des équipes immédiatement pour les 20 premières équipes
-        const teamIds = sortedTeams.slice(0, 20).map(team => team.id);
-        preloadTeamLogos(teamIds, getTeamLogoUrl);
-        
-        // Précharger le reste des logos avec un délai
-        setTimeout(() => {
-          const remainingTeamIds = sortedTeams.slice(20).map(team => team.id);
-          preloadTeamLogos(remainingTeamIds, getTeamLogoUrl);
-        }, 1000);
       } else {
         console.warn("No teams loaded from database");
         toast.error("Aucune équipe trouvée");
@@ -106,8 +96,6 @@ const Teams = () => {
   const toggleLogoUploader = () => {
     setShowLogoUploader(!showLogoUploader);
   };
-
-  console.log("Filtered teams:", filteredTeams.length, "of", teams.length, "total teams");
 
   return (
     <div className="min-h-screen bg-gray-50">
