@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getRoleColor, getRoleDisplayName, getRoleIconPath } from "./RoleBadge";
+import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -64,8 +65,6 @@ const PlayerHeader = ({
   
   const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
-
-  const roleIconPath = getRoleIconPath(player.role);
 
   return (
     <motion.div 
