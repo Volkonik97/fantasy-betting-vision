@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -134,10 +133,11 @@ export const getPlayers = async (forceRefresh = false): Promise<Player[]> => {
   try {
     console.log("Fetching players from database with team data");
     
-    // Improved query to get players with their team information
+    // Improved query to get players with their team information in a single efficient query
     const { data: playersData, error: playersError } = await supabase
       .from('players')
-      .select('*, teams:team_id(name, region)');
+      .select('*, teams:team_id(name, region)')
+      .order('name', { ascending: true });
     
     if (playersError || !playersData || playersData.length === 0) {
       console.error("Erreur lors de la récupération des joueurs:", playersError);
@@ -160,16 +160,6 @@ export const getPlayers = async (forceRefresh = false): Promise<Player[]> => {
       damageShare: Number(player.damage_share) || 0,
       championPool: player.champion_pool as string[] || []
     }));
-    
-    // Check for Hanwha Life Esports players
-    const hanwhaPlayers = players.filter(p => 
-      p.teamName?.includes("Hanwha") || 
-      p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934"
-    );
-    console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players in database`);
-    if (hanwhaPlayers.length > 0) {
-      hanwhaPlayers.forEach(p => console.log(`Hanwha player: ${p.name}, role: ${p.role}, team: ${p.teamName}`));
-    }
     
     // Update both caches
     playersCache = { players, timestamp: Date.now() };

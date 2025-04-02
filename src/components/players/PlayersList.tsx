@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
 import PlayerSkeletonCard from "@/components/players/PlayerSkeletonCard";
+import { useInView } from "react-intersection-observer";
 
 interface PlayersListProps {
   players: (Player & { teamName: string; teamRegion: string })[];
@@ -38,16 +39,6 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
-  // Debug to check for Hanwha players
-  const hanwhaPlayers = players.filter(p => 
-    (p.teamName && p.teamName.includes("Hanwha")) || 
-    p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934"
-  );
-  console.log(`Found ${hanwhaPlayers.length} Hanwha players in PlayersList render`);
-  if (hanwhaPlayers.length > 0) {
-    console.log("Hanwha players:", hanwhaPlayers);
-  }
-
   // Additional verification that all players have the required data
   const validPlayers = players.filter(player => player && player.id && player.name);
   if (validPlayers.length !== players.length) {
@@ -56,22 +47,45 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {validPlayers.map((player, index) => {
-        return (
-          <motion.div
-            key={player.id || `player-${index}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.9) }}
-            className="h-full"
-          >
-            <Link to={`/players/${player.id}`} className="h-full block">
-              <PlayerCard player={player} showTeamLogo={true} />
-            </Link>
-          </motion.div>
-        );
-      })}
+      {validPlayers.map((player, index) => (
+        <LazyPlayerCard 
+          key={player.id || `player-${index}`} 
+          player={player} 
+          index={index} 
+        />
+      ))}
     </div>
+  );
+};
+
+// Component that lazily renders a player card when it comes into view
+const LazyPlayerCard = ({ player, index }: { 
+  player: Player & { teamName: string; teamRegion: string }, 
+  index: number 
+}) => {
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    rootMargin: '200px 0px', // Start loading when player is 200px from viewport
+  });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.9) }}
+      className="h-full"
+    >
+      {inView ? (
+        <Link to={`/players/${player.id}`} className="h-full block">
+          <PlayerCard player={player} showTeamLogo={true} />
+        </Link>
+      ) : (
+        <div className="h-full">
+          <PlayerSkeletonCard />
+        </div>
+      )}
+    </motion.div>
   );
 };
 

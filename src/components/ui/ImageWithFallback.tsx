@@ -14,6 +14,7 @@ interface ImageWithFallbackProps {
   onLoad?: () => void;
   onError?: () => void;
   forceRefresh?: boolean;
+  lazy?: boolean;
 }
 
 const ImageWithFallback = ({
@@ -27,15 +28,16 @@ const ImageWithFallback = ({
   onLoad,
   onError,
   forceRefresh = false,
+  lazy = true,
 }: ImageWithFallbackProps) => {
   const [isLoading, setIsLoading] = useState(!!src); // Only show loading if there's a src
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2; // Maximum number of retry attempts
+  const maxRetries = 1; // Reduced max retries to speed up fallback display
   
   // Always add a timestamp parameter for cache busting to ensure fresh images
   const [imgSrc, setImgSrc] = useState<string | null | undefined>(
-    src ? `${src}?t=${Date.now()}` : src
+    src ? `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}` : src
   );
   
   // Update the image source when the src prop changes, forceRefresh is triggered, or when retry is needed
@@ -43,7 +45,7 @@ const ImageWithFallback = ({
     if (src) {
       // Always add timestamp to avoid browser caching issues
       const timestamp = Date.now() + retryCount; // Add retryCount to make each retry URL unique
-      setImgSrc(`${src}?t=${timestamp}`);
+      setImgSrc(`${src}${src.includes('?') ? '&' : '?'}t=${timestamp}`);
       setIsLoading(true);
       setHasError(false);
     } else {
@@ -63,7 +65,6 @@ const ImageWithFallback = ({
     
     // If we haven't reached max retries, try again with a different timestamp
     if (retryCount < maxRetries && src) {
-      console.log(`Retrying image with new timestamp: ${src}`);
       setRetryCount(prev => prev + 1);
     } else {
       // If max retries reached or no src, show fallback
@@ -96,6 +97,8 @@ const ImageWithFallback = ({
           src={imgSrc}
           alt={alt}
           className="hidden"
+          loading={lazy ? "lazy" : "eager"}
+          decoding="async"
           onLoad={handleLoad}
           onError={handleError}
         />
@@ -124,6 +127,8 @@ const ImageWithFallback = ({
       className={className}
       width={width}
       height={height}
+      loading={lazy ? "lazy" : "eager"}
+      decoding="async"
       onError={handleError} // Add onError here to catch runtime errors after successful load
     />
   );

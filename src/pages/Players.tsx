@@ -1,30 +1,12 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { getPlayers, clearPlayersCache, transformPlayersForList } from "@/utils/database/playersService";
-
-interface DbPlayer {
-  id: string;
-  name: string;
-  role: string | null;
-  image: string | null;
-  team_id: string | null;
-  kda: number | null;
-  cs_per_min: number | null;
-  damage_share: number | null;
-  champion_pool: string[] | null | string;
-  teams?: {
-    name: string;
-    region: string;
-  };
-}
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,33 +33,80 @@ const Players = () => {
   const subRegions = {
     LTA: ["All", "LTA N", "LTA S"]
   };
+
+  // Memoized filter function to improve performance
+  const filterPlayers = useCallback((players: (Player & { teamName: string; teamRegion: string })[]) => {
+    return players.filter(player => {
+      if (!player || !player.name) {
+        return false;
+      }
+
+      const normalizedPlayerRole = player.role?.toLowerCase() || '';
+      const roleMatches = selectedRole === "All" || (
+        normalizedPlayerRole && (
+          normalizedPlayerRole === selectedRole.toLowerCase() ||
+          (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(normalizedPlayerRole)) ||
+          (selectedRole === "Support" && ["support", "sup", "supp"].includes(normalizedPlayerRole)) ||
+          (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(normalizedPlayerRole))
+        )
+      );
+      
+      let regionMatches = true;
+      
+      if (selectedCategory !== "All") {
+        if (selectedRegion === "All") {
+          regionMatches = regionCategories[selectedCategory].some(region => 
+            region === "All" || (player.teamRegion && player.teamRegion === region)
+          );
+        } else {
+          regionMatches = player.teamRegion === selectedRegion;
+        }
+      } else if (selectedRegion !== "All") {
+        regionMatches = player.teamRegion === selectedRegion;
+      }
+      
+      if (selectedRegion === "LTA") {
+        if (selectedSubRegion === "All") {
+          regionMatches = player.teamRegion && player.teamRegion.startsWith("LTA");
+        } else {
+          regionMatches = player.teamRegion === selectedSubRegion;
+        }
+      }
+      
+      const searchMatches = !searchTerm || (
+        player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      
+      const isHanwha = player.teamName?.includes("Hanwha") || 
+                      player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934";
+                      
+      if (searchTerm && searchTerm.toLowerCase().includes("hanwha") && isHanwha) {
+        return true;
+      }
+      
+      return roleMatches && regionMatches && searchMatches;
+    });
+  }, [selectedRole, selectedCategory, selectedRegion, selectedSubRegion, searchTerm]);
+  
+  // Memoized filtered players
+  const [filteredPlayers, setFilteredPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
+
+  // Update filtered players when filter criteria or all players change
+  useEffect(() => {
+    setFilteredPlayers(filterPlayers(allPlayers));
+  }, [allPlayers, filterPlayers]);
   
   useEffect(() => {
     const fetchPlayersData = async () => {
       try {
         setLoading(true);
         
-        // Clear cache to get fresh data
-        clearPlayersCache();
-        
         // Get all players from the improved service
-        const players = await getPlayers(true);
-        
-        console.log(`Loaded ${players.length} players from database`);
-        
-        // Filter valid players
-        const validPlayers = players.filter(player => player && player.id && player.name);
+        const players = await getPlayers(false); // Use cached data when available
         
         // Transform players to ensure they have required teamName and teamRegion properties
-        const transformedPlayers = transformPlayersForList(validPlayers);
-        
-        // Check for Hanwha Life Esports players
-        const hanwhaPlayers = transformedPlayers.filter(player => 
-          player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
-          (player.teamName && player.teamName.includes("Hanwha"))
-        );
-        
-        console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
+        const transformedPlayers = transformPlayersForList(players);
         
         const uniqueRegions = [...new Set(transformedPlayers
           .map(player => player.teamRegion)
@@ -100,61 +129,6 @@ const Players = () => {
   useEffect(() => {
     setSelectedSubRegion("All");
   }, [selectedRegion]);
-  
-  const filteredPlayers = allPlayers.filter(player => {
-    if (!player || !player.name) {
-      console.warn("Invalid player found in filter:", player);
-      return false;
-    }
-
-    const normalizedPlayerRole = player.role?.toLowerCase() || '';
-    const roleMatches = selectedRole === "All" || (
-      normalizedPlayerRole && (
-        normalizedPlayerRole === selectedRole.toLowerCase() ||
-        (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(normalizedPlayerRole)) ||
-        (selectedRole === "Support" && ["support", "sup", "supp"].includes(normalizedPlayerRole)) ||
-        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(normalizedPlayerRole))
-      )
-    );
-    
-    let regionMatches = true;
-    
-    if (selectedCategory !== "All") {
-      if (selectedRegion === "All") {
-        regionMatches = regionCategories[selectedCategory].some(region => 
-          region === "All" || (player.teamRegion && player.teamRegion === region)
-        );
-      } else {
-        regionMatches = player.teamRegion === selectedRegion;
-      }
-    } else if (selectedRegion !== "All") {
-      regionMatches = player.teamRegion === selectedRegion;
-    }
-    
-    if (selectedRegion === "LTA") {
-      if (selectedSubRegion === "All") {
-        regionMatches = player.teamRegion && player.teamRegion.startsWith("LTA");
-      } else {
-        regionMatches = player.teamRegion === selectedSubRegion;
-      }
-    }
-    
-    const searchMatches = !searchTerm || (
-      player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    
-    const isHanwha = player.teamName?.includes("Hanwha") || 
-                    player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934";
-                    
-    if (searchTerm && searchTerm.toLowerCase().includes("hanwha") && isHanwha) {
-      return true;
-    }
-    
-    return roleMatches && regionMatches && searchMatches;
-  });
-
-  console.log(`Filtered players: ${filteredPlayers.length} out of ${allPlayers.length} total players`);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
