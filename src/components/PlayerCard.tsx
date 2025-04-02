@@ -5,6 +5,7 @@ import PlayerImage from "@/components/player/PlayerImage";
 import RoleBadge from "@/components/player/RoleBadge";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
@@ -12,11 +13,23 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
+  // Ensure role is normalized and always has a valid value
+  const normalizedRole = normalizeRoleName(player.role || 'Unknown');
+  
+  // Ensure numeric values are valid numbers
+  const kda = typeof player.kda === 'number' && !isNaN(player.kda) ? player.kda : 0;
+  const csPerMin = typeof player.csPerMin === 'number' && !isNaN(player.csPerMin) ? player.csPerMin : 0;
+  const damageShare = typeof player.damageShare === 'number' && !isNaN(player.damageShare) ? player.damageShare : 0;
+
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
-        <PlayerImage name={player.name} image={player.image} role={player.role} />
-        <RoleBadge role={player.role} />
+        <PlayerImage 
+          name={player.name} 
+          image={player.image} 
+          role={normalizedRole} 
+        />
+        <RoleBadge role={normalizedRole} />
       </div>
       
       <div className="p-4">
@@ -30,9 +43,9 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         </div>
         
         <PlayerStats 
-          kda={player.kda} 
-          csPerMin={player.csPerMin} 
-          damageShare={player.damageShare} 
+          kda={kda} 
+          csPerMin={csPerMin} 
+          damageShare={damageShare} 
         />
       </div>
     </div>

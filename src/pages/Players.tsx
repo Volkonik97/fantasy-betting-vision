@@ -6,6 +6,7 @@ import { Player } from "@/utils/models/types";
 import { getTeams } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
+import { toast } from "sonner";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,7 +40,14 @@ const Players = () => {
         setLoading(true);
         const teams = await getTeams();
         
-        const players = teams.flatMap(team => 
+        // Ensure all teams have players array
+        const teamsWithPlayers = teams.map(team => ({
+          ...team,
+          players: team.players || []
+        }));
+        
+        // Flatten and map players with team data
+        const players = teamsWithPlayers.flatMap(team => 
           team.players.map(player => ({
             ...player,
             teamName: team.name,
@@ -47,17 +55,47 @@ const Players = () => {
           }))
         );
         
-        console.log("Players with team data:", players);
-        console.log("Players in AL region:", players.filter(player => player.teamRegion === "AL").length);
-        console.log("AL players sample:", players.filter(player => player.teamRegion === "AL").slice(0, 3));
-        setAllPlayers(players);
+        // Filter out players without required fields
+        const validPlayers = players.filter(player => 
+          player.id && 
+          player.name && 
+          player.role
+        );
         
-        const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
+        console.log(`Loaded ${validPlayers.length} valid players out of ${players.length} total`);
+        
+        if (validPlayers.length === 0 && players.length > 0) {
+          console.warn("No valid players found after filtering. Check player data structure.");
+          console.log("Sample player data:", players[0]);
+        }
+        
+        // Set player data with proper defaults for missing values
+        const processedPlayers = validPlayers.map(player => ({
+          ...player,
+          kda: typeof player.kda === 'number' ? player.kda : 0,
+          csPerMin: typeof player.csPerMin === 'number' ? player.csPerMin : 0,
+          damageShare: typeof player.damageShare === 'number' ? player.damageShare : 0,
+          championPool: Array.isArray(player.championPool) 
+            ? player.championPool 
+            : typeof player.championPool === 'string'
+              ? player.championPool.split(',').map(c => c.trim())
+              : []
+        }));
+        
+        setAllPlayers(processedPlayers);
+        
+        // Get unique regions
+        const uniqueRegions = [...new Set(teamsWithPlayers
+          .map(team => team.region)
+          .filter(Boolean)
+        )];
+        
         console.log("Available regions in database:", uniqueRegions);
         setAvailableRegions(uniqueRegions);
         
       } catch (error) {
         console.error("Error fetching player data:", error);
+        toast.error("Erreur lors du chargement des données des joueurs");
       } finally {
         setLoading(false);
       }
@@ -71,58 +109,46 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
-    const isAL = player.teamRegion === "AL";
-    
-    // Improve role matching to handle more variations of Jungle role
+    // Normalize and improve role matching
+    const normalizedPlayerRole = player.role?.toLowerCase() || '';
     const roleMatches = selectedRole === "All" || (
-      player.role && (
-        player.role.toLowerCase() === selectedRole.toLowerCase() ||
-        (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(player.role.toLowerCase())) ||
-        (selectedRole === "Support" && ["support", "sup", "supp"].includes(player.role.toLowerCase())) ||
-        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(player.role.toLowerCase()))
+      normalizedPlayerRole && (
+        normalizedPlayerRole === selectedRole.toLowerCase() ||
+        (selectedRole === "ADC" && ["adc", "bot", "botlane"].includes(normalizedPlayerRole)) ||
+        (selectedRole === "Support" && ["support", "sup", "supp"].includes(normalizedPlayerRole)) ||
+        (selectedRole === "Jungle" && ["jungle", "jgl", "jg", "jungler"].includes(normalizedPlayerRole))
       )
     );
     
+    // Region filtering logic
     let regionMatches = true;
     
     if (selectedCategory !== "All") {
       if (selectedRegion === "All") {
         regionMatches = regionCategories[selectedCategory].some(region => 
-          region === "All" || player.teamRegion === region
+          region === "All" || (player.teamRegion && player.teamRegion === region)
         );
-        
-        if (isAL && selectedCategory === "ERL") {
-          console.log("AL player being filtered for ERL category:", 
-            { name: player.name, region: player.teamRegion, matches: regionMatches });
-        }
       } else {
         regionMatches = player.teamRegion === selectedRegion;
-        
-        if (selectedRegion === "AL") {
-          console.log("AL player being filtered for AL region:", 
-            { name: player.name, region: player.teamRegion, matches: regionMatches });
-        }
       }
     } else if (selectedRegion !== "All") {
       regionMatches = player.teamRegion === selectedRegion;
-      
-      if (selectedRegion === "AL") {
-        console.log("AL player being filtered (no category):", 
-          { name: player.name, region: player.teamRegion, matches: regionMatches });
-      }
     }
     
+    // Handle LTA subregions
     if (selectedRegion === "LTA") {
       if (selectedSubRegion === "All") {
-        regionMatches = player.teamRegion.startsWith("LTA");
+        regionMatches = player.teamRegion && player.teamRegion.startsWith("LTA");
       } else {
         regionMatches = player.teamRegion === selectedSubRegion;
       }
     }
     
-    const searchMatches = 
+    // Name and team search
+    const searchMatches = !searchTerm || (
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      player.teamName.toLowerCase().includes(searchTerm.toLowerCase());
+      (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
     
     return roleMatches && regionMatches && searchMatches;
   });
@@ -138,11 +164,6 @@ const Players = () => {
 
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region);
-    
-    if (region === "AL") {
-      console.log("AL region selected");
-      console.log("Players in AL region:", allPlayers.filter(p => p.teamRegion === "AL").length);
-    }
   };
 
   return (

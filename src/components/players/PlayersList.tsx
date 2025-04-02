@@ -14,6 +14,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
   if (loading) {
     return (
       <div className="text-center py-10">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lol-blue mb-4"></div>
         <p className="text-gray-500">Loading players...</p>
       </div>
     );
@@ -31,7 +32,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {players.map((player, index) => (
         <motion.div
-          key={player.id}
+          key={player.id || `player-${index}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05 }}

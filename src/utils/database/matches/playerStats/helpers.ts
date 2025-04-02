@@ -8,8 +8,8 @@
 export function calculateAverage(values: any[], defaultValue = 0) {
   if (!values || values.length === 0) return defaultValue;
   
-  // Filtrer les valeurs non numériques
-  const numericValues = values.filter(v => !isNaN(Number(v)));
+  // Filtrer les valeurs non numériques et nulles
+  const numericValues = values.filter(v => v !== null && v !== undefined && !isNaN(Number(v)));
   
   if (numericValues.length === 0) return defaultValue;
   
