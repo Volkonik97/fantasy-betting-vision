@@ -23,10 +23,10 @@ export const getRoleDisplayName = (role: string): string => {
   
   switch (normalizedRole) {
     case "Top": return "Top";
-    case "Jungle": return "Jng";
+    case "Jungle": return "Jungle";
     case "Mid": return "Mid";
     case "ADC": return "Bot";
-    case "Support": return "Sup";
+    case "Support": return "Support";
     default: return role;
   }
 };
