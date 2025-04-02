@@ -76,7 +76,7 @@ const TeamInfo = ({
             alt={`${teamName} logo`}
             className="object-contain"
             onError={onImageError}
-            lazy={true}
+            lazy={false}
             fallback={
               <AvatarFallback className="text-[10px] font-medium">
                 {teamName?.substring(0, 2).toUpperCase()}
@@ -95,7 +95,6 @@ const TeamInfo = ({
     </div>
   );
 
-  // Fix: Don't nest Link components - conditionally render either a Link or plain div
   if (linkDisabled || !teamId) {
     return content;
   }

@@ -9,7 +9,7 @@ import TeamsList from "@/components/team/TeamsList";
 import TeamRegionFilter from "@/components/team/TeamRegionFilter";
 import TeamLogoUploaderSection from "@/components/team/TeamLogoUploaderSection";
 import TeamPageHeader from "@/components/team/TeamPageHeader";
-import { preloadTeamLogos, getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { preloadTeamLogos, getTeamLogoUrl, clearLogoCache } from "@/utils/database/teams/logoUtils";
 
 const Teams = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -32,8 +32,9 @@ const Teams = () => {
   const loadTeams = async () => {
     try {
       setIsLoading(true);
-      // Clear the teams cache to ensure fresh data
+      // Clear the caches to ensure fresh data
       clearTeamsCache();
+      clearLogoCache();
       
       const loadedTeams = await getTeams();
       
@@ -50,11 +51,15 @@ const Teams = () => {
         const uniqueRegions = ["All", ...new Set(loadedTeams.map(team => team.region))];
         setRegions(uniqueRegions);
         
-        // Précharger les logos des équipes avec un léger délai pour ne pas bloquer le rendu
+        // Précharger les logos des équipes immédiatement pour les 20 premières équipes
+        const teamIds = sortedTeams.slice(0, 20).map(team => team.id);
+        preloadTeamLogos(teamIds, getTeamLogoUrl);
+        
+        // Précharger le reste des logos avec un délai
         setTimeout(() => {
-          const teamIds = sortedTeams.map(team => team.id);
-          preloadTeamLogos(teamIds, getTeamLogoUrl);
-        }, 300);
+          const remainingTeamIds = sortedTeams.slice(20).map(team => team.id);
+          preloadTeamLogos(remainingTeamIds, getTeamLogoUrl);
+        }, 1000);
       } else {
         console.warn("No teams loaded from database");
         toast.error("Aucune équipe trouvée");
@@ -92,6 +97,8 @@ const Teams = () => {
   };
 
   const handleLogoUploadComplete = () => {
+    // Effacer le cache des logos avant de recharger les équipes
+    clearLogoCache();
     loadTeams();
     setShowLogoUploader(false);
   };

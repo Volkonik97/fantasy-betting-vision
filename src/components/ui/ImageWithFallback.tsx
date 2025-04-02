@@ -51,12 +51,13 @@ const ImageWithFallback = ({
     } else {
       setImgSrc(null);
       setIsLoading(false);
+      setHasError(true); // Immediately show fallback if no src
     }
   }, [src, forceRefresh, retryCount]); // Include retryCount to trigger updates
 
   const handleLoad = () => {
     setIsLoading(false);
-    onLoad?.();
+    if (onLoad) onLoad();
   };
 
   const handleError = () => {
@@ -71,7 +72,7 @@ const ImageWithFallback = ({
       // If max retries reached or no src, show fallback
       console.log(`Max retries reached for ${alt}, showing fallback`);
       setHasError(true);
-      onError?.();
+      if (onError) onError();
     }
   };
 
@@ -81,7 +82,7 @@ const ImageWithFallback = ({
       <div className={cn("flex items-center justify-center w-full h-full", className)}>
         {fallback || (
           <div className="bg-gray-100 flex items-center justify-center w-full h-full">
-            <span className="text-gray-400 text-lg font-medium">{alt.charAt(0)}</span>
+            <span className="text-gray-400 text-lg font-medium">{alt.charAt(0).toUpperCase()}</span>
           </div>
         )}
       </div>
@@ -114,7 +115,7 @@ const ImageWithFallback = ({
       <div className={cn("flex items-center justify-center w-full h-full", className)}>
         {fallback || (
           <div className="bg-gray-100 flex items-center justify-center w-full h-full">
-            <span className="text-gray-400 text-lg font-medium">{alt.charAt(0)}</span>
+            <span className="text-gray-400 text-lg font-medium">{alt.charAt(0).toUpperCase()}</span>
           </div>
         )}
       </div>

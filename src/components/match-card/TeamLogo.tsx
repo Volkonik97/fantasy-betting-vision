@@ -14,6 +14,7 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const handleImageError = () => {
+    console.log(`TeamLogo: Error loading logo for ${teamName}`);
     onError();
     // Only trigger one more refresh attempt if error occurs
     if (refreshTrigger === 0) {
@@ -36,6 +37,7 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
           forceRefresh={refreshTrigger > 0}
           onLoad={handleImageLoad}
           onError={handleImageError}
+          lazy={false}
           fallback={
             <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
               {teamName.substring(0, 2).toUpperCase()}

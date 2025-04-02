@@ -13,8 +13,8 @@ interface LogoCache {
 // Cache global pour les logos d'équipe
 const globalLogoCache: LogoCache = {};
 
-// Durée de vie du cache en millisecondes (24 heures)
-const CACHE_LIFETIME = 24 * 60 * 60 * 1000;
+// Durée de vie du cache en millisecondes (1 heure)
+const CACHE_LIFETIME = 60 * 60 * 1000;
 
 // Nombre maximum de tentatives de rechargement pour un logo
 const MAX_RELOAD_ATTEMPTS = 2;
@@ -30,6 +30,8 @@ export const cacheTeamLogo = (teamId: string, url: string | null): void => {
     timestamp: Date.now(),
     attempts: 0
   };
+  
+  console.log(`Cached logo for team ${teamId}: ${url ? 'found' : 'not available'}`);
 };
 
 /**
@@ -43,6 +45,7 @@ export const getTeamLogoFromCache = (teamId: string): string | null | undefined 
   // Si le cache est périmé, on le considère comme invalide
   if (Date.now() - cacheEntry.timestamp > CACHE_LIFETIME) {
     console.log(`Logo cache expired for team ${teamId}`);
+    delete globalLogoCache[teamId]; // Supprimer l'entrée périmée
     return undefined;
   }
   
@@ -54,7 +57,18 @@ export const getTeamLogoFromCache = (teamId: string): string | null | undefined 
  * @returns true si une autre tentative doit être faite, false sinon
  */
 export const handleLogoError = (teamId: string, teamName?: string): boolean => {
-  if (!teamId || !globalLogoCache[teamId]) return false;
+  if (!teamId) return false;
+  
+  // Si l'entrée n'existe pas dans le cache, la créer avec une tentative
+  if (!globalLogoCache[teamId]) {
+    globalLogoCache[teamId] = {
+      url: null,
+      timestamp: Date.now(),
+      attempts: 1
+    };
+    console.log(`Created new cache entry for team ${teamId} (${teamName || 'unknown'}) after error`);
+    return false; // Pas de nouvelle tentative dans ce cas
+  }
   
   const cacheEntry = globalLogoCache[teamId];
   
@@ -77,9 +91,9 @@ export const handleLogoError = (teamId: string, teamName?: string): boolean => {
  * Efface le cache des logos
  */
 export const clearLogoCache = (): void => {
+  const cacheSize = Object.keys(globalLogoCache).length;
   Object.keys(globalLogoCache).forEach(key => delete globalLogoCache[key]);
-  toast.success("Cache des logos effacé");
-  console.log("Logo cache cleared");
+  console.log(`Logo cache cleared (${cacheSize} entries removed)`);
 };
 
 /**
@@ -89,10 +103,15 @@ export const preloadTeamLogos = async (
   teamIds: string[], 
   getLogoFunction: (teamId: string) => Promise<string | null>
 ): Promise<void> => {
+  if (!teamIds || teamIds.length === 0) return;
+  
   // Filtrer les IDs qui ne sont pas déjà dans le cache
   const uncachedIds = teamIds.filter(id => getTeamLogoFromCache(id) === undefined);
   
-  if (uncachedIds.length === 0) return;
+  if (uncachedIds.length === 0) {
+    console.log('All team logos are already cached');
+    return;
+  }
   
   console.log(`Preloading ${uncachedIds.length} team logos`);
   
@@ -103,17 +122,21 @@ export const preloadTeamLogos = async (
     
     await Promise.all(batch.map(async (teamId) => {
       try {
+        if (!teamId) return;
+        
         const url = await getLogoFunction(teamId);
         cacheTeamLogo(teamId, url);
       } catch (error) {
         console.error(`Error preloading logo for team ${teamId}:`, error);
-        cacheTeamLogo(teamId, null);
+        if (teamId) {
+          cacheTeamLogo(teamId, null);
+        }
       }
     }));
     
-    // Petite pause entre les lots
+    // Petite pause entre les lots pour ne pas surcharger le réseau
     if (i + batchSize < uncachedIds.length) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 };
