@@ -72,9 +72,7 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
               key={role}
               onClick={() => setSelectedRole(role)}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center ${
-                isSelected
-                  ? "bg-lol-blue text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                getRoleFilterStyle(normalizedRole, isSelected)
               }`}
               data-role-value={normalizedRole}
             >

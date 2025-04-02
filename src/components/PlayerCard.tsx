@@ -2,7 +2,6 @@
 import React from "react";
 import { Player } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
-import RoleBadge from "@/components/player/RoleBadge";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
 
