@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Player } from "@/utils/models/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -142,52 +143,58 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {sortedPlayers.map((player) => (
-          <Card key={player.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="relative h-48 bg-gradient-to-b from-gray-50 to-gray-100">
-              {player.image ? (
-                <img 
-                  src={player.image} 
-                  alt={player.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    target.src = "/placeholder.svg";
-                  }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Avatar className="h-24 w-24">
-                    <AvatarFallback className="text-3xl">
-                      {player.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              )}
-              <div className="absolute top-0 right-0 m-2">
-                <Badge className="bg-black bg-opacity-70 hover:bg-opacity-80 text-white border-none">
-                  {normalizeRoleName(player.role)}
-                </Badge>
-              </div>
-            </div>
-            <CardContent className="pt-4">
-              <h3 className="font-bold text-lg truncate">{player.name}</h3>
-              <div className="flex flex-col mt-2 text-sm text-gray-500">
-                <div className="flex justify-between">
-                  <span>KDA</span>
-                  <span className="font-medium">{player.kda.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>CS/min</span>
-                  <span className="font-medium">{player.csPerMin.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Dmg %</span>
-                  <span className="font-medium">{(player.damageShare * 100).toFixed(0)}%</span>
+          <Link 
+            to={`/players/${player.id}`} 
+            key={player.id}
+            className="block transition-transform hover:scale-105"
+          >
+            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="relative h-48 bg-gradient-to-b from-gray-50 to-gray-100">
+                {player.image ? (
+                  <img 
+                    src={player.image} 
+                    alt={player.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/placeholder.svg";
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <Avatar className="h-24 w-24">
+                      <AvatarFallback className="text-3xl">
+                        {player.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
+                <div className="absolute top-0 right-0 m-2">
+                  <Badge className="bg-black bg-opacity-70 hover:bg-opacity-80 text-white border-none">
+                    {normalizeRoleName(player.role)}
+                  </Badge>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <CardContent className="pt-4">
+                <h3 className="font-bold text-lg truncate">{player.name}</h3>
+                <div className="flex flex-col mt-2 text-sm text-gray-500">
+                  <div className="flex justify-between">
+                    <span>KDA</span>
+                    <span className="font-medium">{player.kda.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>CS/min</span>
+                    <span className="font-medium">{player.csPerMin.toFixed(1)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Dmg %</span>
+                    <span className="font-medium">{(player.damageShare * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </motion.div>
