@@ -11,7 +11,7 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
-  // Log detailed information about players on initial render and when players change
+  // Log players info on initial render and when players change 
   useEffect(() => {
     console.log(`PlayersList: Received ${players.length} players`);
     
@@ -32,20 +32,6 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     }, {} as Record<string, number>);
     
     console.log("Players by role:", roleCounts);
-    
-    // Debug LCK players specifically
-    const lckPlayers = players.filter(p => p.teamRegion === 'LCK');
-    console.log(`Found ${lckPlayers.length} LCK players in PlayersList component`);
-    if (lckPlayers.length > 0) {
-      console.log("Sample of LCK players:", 
-        lckPlayers.slice(0, Math.min(5, lckPlayers.length)).map(p => ({
-          name: p.name,
-          role: p.role,
-          team: p.teamName,
-          region: p.teamRegion
-        }))
-      );
-    }
   }, [players]);
   
   if (loading) {
@@ -86,17 +72,14 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
         };
         
         return (
-          <motion.div
+          <div
             key={player.id || index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
             className="h-full"
           >
             <Link to={`/players/${player.id}`} className="h-full block">
               <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
             </Link>
-          </motion.div>
+          </div>
         );
       })}
     </div>

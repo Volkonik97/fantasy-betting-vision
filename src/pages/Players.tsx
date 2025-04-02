@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -49,32 +50,25 @@ const Players = () => {
       const teams = await getTeams();
       console.log(`Loaded ${teams.length} teams for Players page`);
       
-      // Log all team regions for easier debugging
-      console.log("All team regions:", teams.map(team => team.region).sort());
-      
-      // Check specifically for LCK teams
-      const lckTeams = teams.filter(team => team.region === 'LCK');
-      console.log(`Found ${lckTeams.length} LCK teams:`, lckTeams.map(t => t.name));
-      
       // Extract all players with team information
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
       
       teams.forEach(team => {
-        if (!team.players || team.players.length === 0) {
-          console.warn(`No players for team ${team.name} (${team.region})`);
-        } else {
+        if (team.players && team.players.length > 0) {
+          // Add all players from this team with team information
           team.players.forEach(player => {
-            if (!player.name || !player.id) {
-              console.warn(`Player missing id or name in team ${team.name}:`, player);
-            } else {
-              // Add player with team information
+            if (player.name && player.id) {
               playersWithTeamInfo.push({
                 ...player,
                 teamName: team.name,
                 teamRegion: team.region || ""
               });
+            } else {
+              console.warn(`Player missing id or name in team ${team.name}:`, player);
             }
           });
+        } else {
+          console.log(`No players found for team: ${team.name} (${team.region})`);
         }
       });
       
@@ -88,10 +82,6 @@ const Players = () => {
       }, {} as Record<string, number>);
       
       console.log("Players by region:", playersByRegion);
-      
-      // Check specifically for LCK players
-      const lckPlayers = playersWithTeamInfo.filter(p => p.teamRegion === 'LCK');
-      console.log(`Found ${lckPlayers.length} LCK players:`, lckPlayers.map(p => p.name));
       
       setAllPlayers(playersWithTeamInfo);
       
@@ -149,20 +139,6 @@ const Players = () => {
     
     return roleMatches && regionMatches && searchMatches;
   });
-  
-  // Log filtered results for debugging
-  useEffect(() => {
-    console.log(`Filtered players: ${filteredPlayers.length}`);
-    
-    // Look specifically for LCK players in filtered results
-    if (selectedCategory === "Ligues Majeures" || selectedRegion === "LCK") {
-      const lckPlayers = filteredPlayers.filter(p => p.teamRegion === "LCK");
-      console.log(`Found ${lckPlayers.length} LCK players in filtered results`);
-      if (lckPlayers.length > 0) {
-        console.log("LCK teams represented:", [...new Set(lckPlayers.map(p => p.teamName))]);
-      }
-    }
-  }, [filteredPlayers, selectedCategory, selectedRegion]);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
