@@ -7,6 +7,8 @@ import { getTeams } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,7 +37,80 @@ const Players = () => {
   };
   
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPlayersData = async () => {
+      try {
+        setLoading(true);
+        
+        console.log("Fetching all players from database directly...");
+        
+        // Récupérer tous les joueurs directement de la base de données
+        const { data: playersData, error: playersError } = await supabase
+          .from('players')
+          .select('*, teams:team_id(name, region)');
+          
+        if (playersError) {
+          console.error("Error fetching players data:", playersError);
+          throw playersError;
+        }
+        
+        if (!playersData || playersData.length === 0) {
+          console.log("No players found in direct database query, falling back to teams approach");
+          await fetchPlayersFromTeams();
+          return;
+        }
+        
+        const validPlayers = playersData.filter(player => 
+          player && player.id && player.name
+        );
+        
+        console.log(`Direct query found ${validPlayers.length} valid players out of ${playersData.length} total`);
+        
+        // Add special check for Hanwha Life
+        const hanwhaPlayers = validPlayers.filter(p => 
+          p.team_id === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
+          p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
+          (p.teams?.name && p.teams.name.includes("Hanwha"))
+        );
+        
+        console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
+        
+        const mappedPlayers = validPlayers.map(player => ({
+          id: player.id,
+          name: player.name,
+          role: normalizeRoleName(player.role || "Unknown"),
+          image: player.image || "",
+          team: player.team_id || player.team,
+          teamName: player.teams?.name || "Unknown team",
+          teamRegion: player.teams?.region || "Unknown region",
+          kda: typeof player.kda === 'number' ? player.kda : 0,
+          csPerMin: typeof player.cs_per_min === 'number' ? player.cs_per_min : 0,
+          damageShare: typeof player.damage_share === 'number' ? player.damage_share : 0,
+          championPool: Array.isArray(player.champion_pool) 
+            ? player.champion_pool 
+            : typeof player.champion_pool === 'string'
+              ? player.champion_pool.split(',').map(c => c.trim())
+              : []
+        }));
+        
+        // Collect unique regions
+        const uniqueRegions = [...new Set(mappedPlayers
+          .map(player => player.teamRegion)
+          .filter(Boolean)
+        )];
+        
+        setAllPlayers(mappedPlayers);
+        setAvailableRegions(uniqueRegions);
+        
+      } catch (error) {
+        console.error("Error in direct players fetch:", error);
+        // Fallback to the previous approach
+        await fetchPlayersFromTeams();
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fetchPlayersFromTeams = async () => {
       try {
         setLoading(true);
         const teams = await getTeams();
@@ -62,7 +137,7 @@ const Players = () => {
           player.role
         );
         
-        console.log(`Loaded ${validPlayers.length} valid players out of ${players.length} total`);
+        console.log(`Loaded ${validPlayers.length} valid players out of ${players.length} total via teams`);
         
         if (validPlayers.length === 0 && players.length > 0) {
           console.warn("No valid players found after filtering. Check player data structure.");
@@ -101,7 +176,7 @@ const Players = () => {
       }
     };
     
-    fetchData();
+    fetchPlayersData();
   }, []);
 
   useEffect(() => {
@@ -149,6 +224,14 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+    
+    // Special case pour Hanwha Life Esports
+    const isHanwha = player.teamName?.includes("Hanwha") || 
+                    player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934";
+                    
+    if (searchTerm && searchTerm.toLowerCase().includes("hanwha") && isHanwha) {
+      return true;
+    }
     
     return roleMatches && regionMatches && searchMatches;
   });
