@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
@@ -12,8 +12,16 @@ interface TeamPlayersListProps {
 }
 
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
+  console.log(`TeamPlayersList: Received ${players.length} players for team ${teamName}`);
+  
+  // Ensure all players have normalized roles before sorting
+  const playersWithNormalizedRoles = players.map(player => ({
+    ...player,
+    role: normalizeRoleName(player.role)
+  }));
+  
   // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
-  const sortedPlayers = [...players].sort((a, b) => {
+  const sortedPlayers = [...playersWithNormalizedRoles].sort((a, b) => {
     const roleOrder: Record<string, number> = {
       'Top': 0,
       'Jungle': 1, 
@@ -24,7 +32,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     
     // Get the standardized role for sorting purposes
     const getRoleSortValue = (role: string): number => {
-      return roleOrder[normalizeRoleName(role)] || 2; // Default to Mid (2) if unknown
+      const normalizedRole = normalizeRoleName(role);
+      return roleOrder[normalizedRole] || 2; // Default to Mid (2) if unknown
     };
     
     return getRoleSortValue(a.role) - getRoleSortValue(b.role);
@@ -41,6 +50,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {
+            console.log(`Rendering player: ${player.name}, Role: ${player.role}`);
+            
             // Enrichir le joueur avec le nom de l'équipe si disponible
             const enrichedPlayer = {
               ...player,

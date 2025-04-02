@@ -22,13 +22,18 @@ export function teamToTeamObject(teamCsv: any): Team {
  * Normalizes role names to standard format
  */
 export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
+  if (!role) return 'Mid'; // Default to Mid if role is undefined or empty
+  
   const normalizedRole = role.toLowerCase().trim();
   
   if (normalizedRole === 'top' || normalizedRole === 'toplane') return 'Top';
   if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
   if (['mid', 'middle', 'midlane'].includes(normalizedRole)) return 'Mid';
-  if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
-  if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
+  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'adcarry'].includes(normalizedRole)) return 'ADC';
+  if (['support', 'sup', 'supp', 'soutien'].includes(normalizedRole)) return 'Support';
+  
+  // Log unknown roles for debugging
+  console.log(`Unknown role encountered: "${role}", defaulting to Mid`);
   
   // Default to Mid if role is unknown
   return 'Mid';

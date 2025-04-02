@@ -40,17 +40,41 @@ const Players = () => {
         setLoading(true);
         const teams = await getTeams();
         
+        // Log all teams for debugging
+        console.log(`Loaded ${teams.length} teams`);
+        
+        // Check for Hanwha Life Esports specifically
+        const hanwhaTeam = teams.find(team => team.name.includes("Hanwha") || team.name.includes("HLE"));
+        if (hanwhaTeam) {
+          console.log(`Found Hanwha Life Esports: ${hanwhaTeam.name}, ID: ${hanwhaTeam.id}`);
+          console.log(`Hanwha players: ${hanwhaTeam.players?.length || 0}`);
+          if (hanwhaTeam.players && hanwhaTeam.players.length > 0) {
+            hanwhaTeam.players.forEach(p => 
+              console.log(`- ${p.name}: role=${p.role}`)
+            );
+          }
+        }
+        
         const players = teams.flatMap(team => 
-          team.players.map(player => ({
+          team.players?.map(player => ({
             ...player,
+            // Ensure role is normalized
+            role: normalizeRoleName(player.role),
             teamName: team.name,
             teamRegion: team.region
-          }))
+          })) || []
         );
         
-        console.log("Players with team data:", players);
-        console.log("Players in AL region:", players.filter(player => player.teamRegion === "AL").length);
-        console.log("AL players sample:", players.filter(player => player.teamRegion === "AL").slice(0, 3));
+        console.log("Players with team data:", players.length);
+        
+        // Log how many players we have per region
+        const playersByRegion = players.reduce((acc, player) => {
+          acc[player.teamRegion] = (acc[player.teamRegion] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log("Players by region:", playersByRegion);
+        
         setAllPlayers(players);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -72,15 +96,14 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
-    const isAL = player.teamRegion === "AL";
+    // Normalize player role for comparison
+    const normalizedPlayerRole = normalizeRoleName(player.role);
     
-    // Normalize player role for consistent comparison
-    const normalizedPlayerRole = player.role ? normalizeRoleName(player.role) : "";
+    // Match roles - use normalized roles for comparison
     const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
-    
-    // Match roles using normalized values
     const roleMatches = normalizedSelectedRole === "All" || normalizedPlayerRole === normalizedSelectedRole;
     
+    // Handle region matching
     let regionMatches = true;
     
     if (selectedCategory !== "All") {
@@ -88,26 +111,11 @@ const Players = () => {
         regionMatches = regionCategories[selectedCategory].some(region => 
           region === "All" || player.teamRegion === region
         );
-        
-        if (isAL && selectedCategory === "ERL") {
-          console.log("AL player being filtered for ERL category:", 
-            { name: player.name, region: player.teamRegion, matches: regionMatches });
-        }
       } else {
         regionMatches = player.teamRegion === selectedRegion;
-        
-        if (selectedRegion === "AL") {
-          console.log("AL player being filtered for AL region:", 
-            { name: player.name, region: player.teamRegion, matches: regionMatches });
-        }
       }
     } else if (selectedRegion !== "All") {
       regionMatches = player.teamRegion === selectedRegion;
-      
-      if (selectedRegion === "AL") {
-        console.log("AL player being filtered for AL region (no category):", 
-          { name: player.name, region: player.teamRegion, matches: regionMatches });
-      }
     }
     
     if (selectedRegion === "LTA") {
@@ -118,6 +126,7 @@ const Players = () => {
       }
     }
     
+    // Handle search term matching
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       player.teamName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -136,11 +145,6 @@ const Players = () => {
 
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region);
-    
-    if (region === "AL") {
-      console.log("AL region selected");
-      console.log("Players in AL region:", allPlayers.filter(p => p.teamRegion === "AL").length);
-    }
   };
 
   return (

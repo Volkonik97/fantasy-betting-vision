@@ -67,6 +67,11 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
               // Normalize the role before saving
               const normalizedRole = normalizeRoleName(player.role);
               
+              // Log before saving for debugging
+              if (player.team === 'oe:team:658a9939b7c42b80b15fe9a639577f5') { // Hanwha Life Esports team ID
+                console.log(`Saving Hanwha player: ${player.name}, Role: ${player.role} -> Normalized: ${normalizedRole}`);
+              }
+              
               return {
                 id: player.id,
                 name: player.name,
@@ -120,17 +125,29 @@ export const getPlayers = async (): Promise<Player[]> => {
       return teams.flatMap(team => team.players);
     }
     
-    const players: Player[] = playersData.map(player => ({
-      id: player.id as string,
-      name: player.name as string,
-      role: normalizeRoleName(player.role || 'Mid'),
-      image: player.image as string,
-      team: player.team_id as string,
-      kda: Number(player.kda) || 0,
-      csPerMin: Number(player.cs_per_min) || 0,
-      damageShare: Number(player.damage_share) || 0,
-      championPool: player.champion_pool as string[] || []
-    }));
+    console.log(`Récupéré ${playersData.length} joueurs de la base de données`);
+    
+    // Débogage pour Hanwha Life Esports
+    const hanwhaPlayers = playersData.filter(p => p.team_id === 'oe:team:658a9939b7c42b80b15fe9a639577f5');
+    console.log(`Joueurs Hanwha Life Esports trouvés: ${hanwhaPlayers.length}`);
+    hanwhaPlayers.forEach(p => console.log(`Joueur Hanwha: ${p.name}, Role: ${p.role}`));
+    
+    const players: Player[] = playersData.map(player => {
+      // Standardize the role using the normalizeRoleName function
+      const normalizedRole = normalizeRoleName(player.role || 'Mid');
+      
+      return {
+        id: player.id as string,
+        name: player.name as string,
+        role: normalizedRole,
+        image: player.image as string,
+        team: player.team_id as string,
+        kda: Number(player.kda) || 0,
+        csPerMin: Number(player.cs_per_min) || 0,
+        damageShare: Number(player.damage_share) || 0,
+        championPool: player.champion_pool as string[] || []
+      };
+    });
     
     setLoadedPlayers(players);
     return players;
@@ -163,11 +180,13 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       return null;
     }
     
-    // Convert database format to application format
+    // Convert database format to application format with normalized role
+    const normalizedRole = normalizeRoleName(playerData.role || 'Mid');
+    
     const player: Player = {
       id: playerData.id as string,
       name: playerData.name as string,
-      role: normalizeRoleName(playerData.role || 'Mid'),
+      role: normalizedRole,
       image: playerData.image as string,
       team: playerData.team_id as string,
       kda: Number(playerData.kda) || 0,

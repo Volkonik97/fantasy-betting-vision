@@ -1,8 +1,8 @@
 
 import React from "react";
-import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
 import { getRoleColor, getRoleDisplayName } from "../player/RoleBadge";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface PlayerRoleFilterProps {
   selectedRole: string;
@@ -13,16 +13,18 @@ interface PlayerRoleFilterProps {
 const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFilterProps) => {
   // Icons for each role
   const getRoleIcon = (role: string) => {
-    const normalizedRole = role.toLowerCase();
+    const normalizedRole = normalizeRoleName(role);
     
-    if (normalizedRole === "all") return null;
-    if (normalizedRole === "top") return <Axe className="h-4 w-4 mr-1.5" />;
-    if (normalizedRole === "jungle" || normalizedRole === "jng" || normalizedRole === "jgl") return <Swords className="h-4 w-4 mr-1.5" />;
-    if (normalizedRole === "mid") return <Target className="h-4 w-4 mr-1.5" />;
-    if (normalizedRole === "adc" || normalizedRole === "bot") return <Axe className="h-4 w-4 mr-1.5" />;
-    if (normalizedRole === "support" || normalizedRole === "sup" || normalizedRole === "supp") return <Heart className="h-4 w-4 mr-1.5" />;
+    if (role === "All") return null;
     
-    return <ShieldCheck className="h-4 w-4 mr-1.5" />;
+    switch (normalizedRole) {
+      case "Top": return <Axe className="h-4 w-4 mr-1.5" />;
+      case "Jungle": return <Swords className="h-4 w-4 mr-1.5" />;
+      case "Mid": return <Target className="h-4 w-4 mr-1.5" />;
+      case "ADC": return <Axe className="h-4 w-4 mr-1.5" />;
+      case "Support": return <Heart className="h-4 w-4 mr-1.5" />;
+      default: return <ShieldCheck className="h-4 w-4 mr-1.5" />;
+    }
   };
 
   // Generate role background style with opacity for the filter buttons
@@ -31,18 +33,19 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
       return isSelected ? "bg-lol-blue text-white" : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
     }
     
+    const normalizedRole = normalizeRoleName(role);
+    
     if (isSelected) {
-      return `${getRoleColor(role)} text-white`;
+      return `${getRoleColor(normalizedRole)} text-white`;
     } else {
-      const normalizedRole = role.toLowerCase();
-      
-      if (normalizedRole === "top") return "bg-white text-red-600 hover:bg-red-50 border border-red-200";
-      if (normalizedRole === "jungle" || normalizedRole === "jng" || normalizedRole === "jgl") return "bg-white text-green-600 hover:bg-green-50 border border-green-200";
-      if (normalizedRole === "mid") return "bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200";
-      if (normalizedRole === "adc" || normalizedRole === "bot") return "bg-white text-blue-600 hover:bg-blue-50 border border-blue-200";
-      if (normalizedRole === "support" || normalizedRole === "sup" || normalizedRole === "supp") return "bg-white text-purple-600 hover:bg-purple-50 border border-purple-200";
-      
-      return "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
+      switch (normalizedRole) {
+        case "Top": return "bg-white text-red-600 hover:bg-red-50 border border-red-200";
+        case "Jungle": return "bg-white text-green-600 hover:bg-green-50 border border-green-200";
+        case "Mid": return "bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200";
+        case "ADC": return "bg-white text-blue-600 hover:bg-blue-50 border border-blue-200";
+        case "Support": return "bg-white text-purple-600 hover:bg-purple-50 border border-purple-200";
+        default: return "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
+      }
     }
   };
 
