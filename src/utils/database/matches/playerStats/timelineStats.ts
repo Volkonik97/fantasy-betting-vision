@@ -1,83 +1,7 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { calculateTimelineStats } from '@/utils/statistics/timelineStats';
-
-// Cache for player stats to improve performance
-const playerStatsCache = new Map<string, any[]>();
- 
-/**
- * Clear the player stats cache
- */
-export function clearPlayerStatsCache() {
-  playerStatsCache.clear();
-  console.log('Player stats cache cleared');
-}
-
-/**
- * Récupère les statistiques d'un joueur sur tous ses matchs
- * @param playerId ID du joueur
- * @returns Liste des statistiques du joueur pour tous ses matchs
- */
-export async function getPlayerMatchStats(playerId: string) {
-  try {
-    // Check if data exists in cache
-    if (playerStatsCache.has(playerId)) {
-      console.log(`Using cached stats for player ${playerId}`);
-      return playerStatsCache.get(playerId) || [];
-    }
-    
-    const { data, error } = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId);
-    
-    if (error) {
-      console.error("Erreur lors de la récupération des statistiques du joueur:", error);
-      return [];
-    }
-    
-    // Cache the results
-    if (data) {
-      playerStatsCache.set(playerId, data);
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques du joueur:", error);
-    return [];
-  }
-}
-
-/**
- * Alias for getPlayerMatchStats for backward compatibility
- * @param playerId ID du joueur
- * @returns Liste des statistiques du joueur pour tous ses matchs
- */
-export const getPlayerStats = getPlayerMatchStats;
-
-/**
- * Récupère les statistiques de joueurs pour une équipe spécifique
- * @param teamId ID de l'équipe
- * @returns Liste des statistiques des joueurs de l'équipe
- */
-export async function getTeamPlayersStats(teamId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('team_id', teamId);
-    
-    if (error) {
-      console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
-    return [];
-  }
-}
+import { calculateAverage } from './helpers';
+import { getPlayerMatchStats, getTeamPlayersStats } from './playerMatchStats';
+import { calculateTimelineStats as calculateTimelineStatsUtil } from '@/utils/statistics/timelineStats';
 
 /**
  * Récupère et calcule les statistiques de timeline pour un joueur spécifique
@@ -99,7 +23,7 @@ export async function getPlayerTimelineStats(playerId: string) {
     console.log(`Trouvé ${playerStats.length} statistiques pour le joueur ${playerId}`);
     
     // Utiliser la fonction existante pour calculer les statistiques timeline
-    return calculateTimelineStats(playerStats);
+    return calculateTimelineStatsUtil(playerStats);
   } catch (error) {
     console.error("Erreur lors du calcul des statistiques timeline du joueur:", error);
     return null;
@@ -204,23 +128,3 @@ export async function getTeamTimelineStats(teamId: string) {
     return null;
   }
 }
-
-/**
- * Calcule la moyenne d'un tableau de valeurs
- * @param values Tableau de valeurs
- * @param defaultValue Valeur par défaut si le tableau est vide
- * @returns Moyenne des valeurs
- */
-function calculateAverage(values: any[], defaultValue = 0) {
-  if (!values || values.length === 0) return defaultValue;
-  
-  // Filtrer les valeurs non numériques
-  const numericValues = values.filter(v => !isNaN(Number(v)));
-  
-  if (numericValues.length === 0) return defaultValue;
-  
-  // Calculer la moyenne
-  const sum = numericValues.reduce((acc, val) => acc + Number(val), 0);
-  return sum / numericValues.length;
-}
-
