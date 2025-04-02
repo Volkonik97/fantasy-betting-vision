@@ -48,12 +48,26 @@ const Players = () => {
     setIsLoading(true);
 
     const teams = await getTeams();
-    // 🧪 Filtrer une équipe spécifique pour debug
-    const rawTeam = teams.find(t => t.name.includes("Gen"));
-    console.log("📌 Dump ciblé de l'équipe :", rawTeam);
+console.log(`✅ ${teams.length} équipes chargées.`);
 
-    // Et si tu veux voir ses joueurs
-    console.log("📋 Joueurs dans cette équipe :", rawTeam?.players?.map(p => p.name));
+// 🔍 LOG ciblé pour GEN.G
+const genG = teams.find(t => t.name.toLowerCase().includes("gen.g"));
+if (genG) {
+  console.log("📌 Dump complet de l’équipe GEN.G :", JSON.stringify(genG, null, 2));
+
+  if (Array.isArray(genG.players)) {
+    console.log("👥 Joueurs trouvés dans GEN.G :", genG.players.map((p, idx) => ({
+      index: idx,
+      name: p.name,
+      id: p.id,
+      role: p.role
+    })));
+  } else {
+    console.warn("⚠️ L’équipe GEN.G n’a pas de tableau 'players' !");
+  }
+} else {
+  console.warn("❌ Aucune équipe nommée 'Gen.G' trouvée !");
+}
 
 
 
