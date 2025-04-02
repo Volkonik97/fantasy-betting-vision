@@ -6,23 +6,23 @@ interface RoleBadgeProps {
 }
 
 export const getRoleColor = (role: string) => {
-  switch (role) {
-    case "Top": return "bg-gradient-to-r from-red-600 to-red-500";
-    case "Jungle": return "bg-gradient-to-r from-green-600 to-green-500";
-    case "Mid": return "bg-gradient-to-r from-yellow-500 to-yellow-400";
-    case "ADC": return "bg-gradient-to-r from-blue-600 to-blue-500";
-    case "Support": return "bg-gradient-to-r from-purple-600 to-purple-500";
+  switch (role.toLowerCase()) {
+    case "top": return "bg-gradient-to-r from-red-600 to-red-500";
+    case "jungle": return "bg-gradient-to-r from-green-600 to-green-500";
+    case "mid": return "bg-gradient-to-r from-yellow-500 to-yellow-400";
+    case "adc": return "bg-gradient-to-r from-blue-600 to-blue-500";
+    case "support": return "bg-gradient-to-r from-purple-600 to-purple-500";
     default: return "bg-gradient-to-r from-gray-500 to-gray-400";
   }
 };
 
 export const getRoleDisplayName = (role: string): string => {
-  switch (role) {
-    case "Top": return "Top";
-    case "Jungle": return "Jungle";
-    case "Mid": return "Mid";
-    case "ADC": return "Bot";
-    case "Support": return "Support";
+  switch (role.toLowerCase()) {
+    case "top": return "Top";
+    case "jungle": return "Jungle";
+    case "mid": return "Mid";
+    case "adc": return "Bot";
+    case "support": return "Support";
     default: return role;
   }
 };

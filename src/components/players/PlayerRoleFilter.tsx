@@ -1,7 +1,7 @@
+
 import React from "react";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
-import { getRoleColor, getRoleDisplayName } from "../player/RoleBadge";
 
 interface PlayerRoleFilterProps {
   selectedRole: string;
@@ -10,14 +10,14 @@ interface PlayerRoleFilterProps {
 }
 
 const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFilterProps) => {
-  // Display names for the roles using the same function as the badge
+  // Display names for the roles
   const roleDisplayNames: Record<string, string> = {
     "All": "All",
-    "Top": getRoleDisplayName("Top"),
-    "Jungle": getRoleDisplayName("Jungle"),
-    "Mid": getRoleDisplayName("Mid"),
-    "ADC": getRoleDisplayName("ADC"),
-    "Support": getRoleDisplayName("Support")
+    "Top": "Top",
+    "Jungle": "Jungle", 
+    "Mid": "Mid",
+    "ADC": "Bot",
+    "Support": "Support"
   };
   
   // Icons for each role
@@ -40,14 +40,21 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
     }
     
     if (isSelected) {
-      return `${getRoleColor(role)} text-white`;
+      switch (role.toLowerCase()) {
+        case "top": return "bg-gradient-to-r from-red-600 to-red-500 text-white";
+        case "jungle": return "bg-gradient-to-r from-green-600 to-green-500 text-white";
+        case "mid": return "bg-gradient-to-r from-yellow-500 to-yellow-400 text-white";
+        case "adc": return "bg-gradient-to-r from-blue-600 to-blue-500 text-white";
+        case "support": return "bg-gradient-to-r from-purple-600 to-purple-500 text-white";
+        default: return "bg-gradient-to-r from-gray-500 to-gray-400 text-white";
+      }
     } else {
-      switch (role) {
-        case "Top": return "bg-white text-red-600 hover:bg-red-50 border border-red-200";
-        case "Jungle": return "bg-white text-green-600 hover:bg-green-50 border border-green-200";
-        case "Mid": return "bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200";
-        case "ADC": return "bg-white text-blue-600 hover:bg-blue-50 border border-blue-200";
-        case "Support": return "bg-white text-purple-600 hover:bg-purple-50 border border-purple-200";
+      switch (role.toLowerCase()) {
+        case "top": return "bg-white text-red-600 hover:bg-red-50 border border-red-200";
+        case "jungle": return "bg-white text-green-600 hover:bg-green-50 border border-green-200";
+        case "mid": return "bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200";
+        case "adc": return "bg-white text-blue-600 hover:bg-blue-50 border border-blue-200";
+        case "support": return "bg-white text-purple-600 hover:bg-purple-50 border border-purple-200";
         default: return "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
       }
     }
