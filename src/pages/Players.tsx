@@ -80,6 +80,7 @@ const Players = () => {
         
         console.log(`Direct query found ${validPlayers.length} valid players out of ${playersData.length} total`);
         
+        // Rechercher spécifiquement les joueurs de Hanwha Life Esports pour le debugging
         const hanwhaPlayers = validPlayers.filter((p: DbPlayer) => 
           p.team_id === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
           (p.teams?.name && p.teams.name.includes("Hanwha"))
