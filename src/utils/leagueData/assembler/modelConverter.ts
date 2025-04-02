@@ -24,10 +24,10 @@ export function teamToTeamObject(teamCsv: any): Team {
 export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
   if (!role) return 'Mid'; // Default to Mid if role is undefined or empty
   
-  const normalizedRole = role.toLowerCase().trim();
+  const normalizedRole = role.toString().toLowerCase().trim();
   
   // Enhanced role mappings with more variations for Top lane
-  if (['top', 'toplane', 'top lane', 'toplaner', 'toplane', 'top laner', 'toplar', 't', 'ㅆ', 'tpplanee', 'tplaner', 'topl', 'toplne'].includes(normalizedRole)) {
+  if (['top', 'toplane', 'top lane', 'toplaner', 'toplaner', 'top laner', 'toplar', 't', 'ㅆ', 'tpplanee', 'tplaner', 'topl', 'toplne', 'toplaine', 'toplaine', 'top-laner', 'topln', 'top lane', 'tope', 'to', 'tp'].includes(normalizedRole)) {
     return 'Top';
   }
   

@@ -19,6 +19,15 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     const cachedTeam = findTeamInCache(teamId);
     if (cachedTeam) {
       console.log(`Found team ${teamId} in cache with ${cachedTeam.players?.length || 0} players`);
+      
+      // Ensure all players have normalized roles
+      if (cachedTeam.players) {
+        cachedTeam.players = cachedTeam.players.map(player => ({
+          ...player,
+          role: normalizeRoleName(player.role)
+        }));
+      }
+      
       return cachedTeam;
     }
     
@@ -83,7 +92,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         const normalizedRole = normalizeRoleName(player.role || 'Mid');
         
         // Log for debugging
-        console.log(`Adding player: ${player.name}, Role: ${normalizedRole}, ID: ${player.id}, Team: ${player.team_id}`);
+        console.log(`Adding player: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, ID: ${player.id}, Team: ${player.team_id}`);
         
         return {
           id: player.id as string,
@@ -100,6 +109,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       });
       
       console.log(`Team ${teamData.name} has ${team.players.length} players after processing`);
+      console.log(`Player roles: ${team.players.map(p => `${p.name} (${p.role})`).join(', ')}`);
     } else {
       console.warn(`No players found for team ${teamData.name} (${teamId})`);
       
@@ -116,18 +126,24 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         
         if (teamPlayers.length > 0) {
           console.log(`Found players through alternative query, adding them to the team`);
-          team.players = teamPlayers.map(player => ({
-            id: player.id as string,
-            name: player.name as string,
-            role: normalizeRoleName(player.role || 'Mid'),
-            image: player.image as string,
-            team: player.team_id as string,
-            teamName: team.name,
-            kda: Number(player.kda) || 0,
-            csPerMin: Number(player.cs_per_min) || 0,
-            damageShare: Number(player.damage_share) || 0,
-            championPool: player.champion_pool as string[] || []
-          }));
+          team.players = teamPlayers.map(player => {
+            const normalizedRole = normalizeRoleName(player.role || 'Mid');
+            return {
+              id: player.id as string,
+              name: player.name as string,
+              role: normalizedRole,
+              image: player.image as string,
+              team: player.team_id as string,
+              teamName: team.name,
+              kda: Number(player.kda) || 0,
+              csPerMin: Number(player.cs_per_min) || 0,
+              damageShare: Number(player.damage_share) || 0,
+              championPool: player.champion_pool as string[] || []
+            };
+          });
+          
+          console.log(`Added ${team.players.length} players using alternative query`);
+          console.log(`Player roles (alt): ${team.players.map(p => `${p.name} (${p.role})`).join(', ')}`);
         }
       }
     }

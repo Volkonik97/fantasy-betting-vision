@@ -33,10 +33,14 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     const playersCopy = JSON.parse(JSON.stringify(players));
     
     // Ensure all players have normalized roles before sorting
-    const playersWithNormalizedRoles = playersCopy.map((player: Player) => ({
-      ...player,
-      role: normalizeRoleName(player.role || "Mid")
-    }));
+    const playersWithNormalizedRoles = playersCopy.map((player: Player) => {
+      const normalizedRole = normalizeRoleName(player.role || "Mid");
+      console.log(`Normalized role for player ${player.name}: ${player.role} -> ${normalizedRole}`);
+      return {
+        ...player,
+        role: normalizedRole
+      };
+    });
     
     // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
     const sorted = [...playersWithNormalizedRoles].sort((a, b) => {

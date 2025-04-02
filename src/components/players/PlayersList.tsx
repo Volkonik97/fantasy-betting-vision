@@ -27,7 +27,8 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
   console.log("Filtered players by role:", roleCounts);
   
   // Log specific players for debugging
-  console.log("Top players:", normalizedPlayers.filter(p => p.role === 'Top').map(p => `${p.name} (${p.teamName})`));
+  const topPlayers = normalizedPlayers.filter(p => p.role === 'Top');
+  console.log("Top players:", topPlayers.map(p => `${p.name} (${p.teamName})`));
   
   if (loading) {
     return (
