@@ -54,29 +54,63 @@ const Players = () => {
       // 🔍 Liste de toutes les équipes récupérées
       console.warn("📋 Liste de toutes les équipes récupérées :");
       teams.forEach(t => {
-        console.warn(`- ${t.name}`);
+        console.warn(`- ${t.name} (${t.region}) - ${t.players?.length || 0} joueurs`);
       });
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach((team, teamIndex) => {
-        if (!Array.isArray(team.players) || team.players.length === 0) return;
+        if (!Array.isArray(team.players)) {
+          console.warn(`⚠️ L'équipe ${team.name} n'a pas de tableau de joueurs valide`);
+          return;
+        }
+        
+        if (team.players.length === 0) {
+          console.warn(`⚠️ L'équipe ${team.name} (${team.region}) n'a aucun joueur`);
+          return;
+        }
 
         team.players.forEach((player, playerIndex) => {
-          if (!player.id || !player.name) return;
+          if (!player.id || !player.name) {
+            console.warn(`⚠️ Joueur sans ID ou nom dans l'équipe ${team.name}`);
+            return;
+          }
 
-          playersWithTeamInfo.push({
+          // Vérifier que le joueur a toutes les propriétés nécessaires
+          const enrichedPlayer = {
             ...player,
             teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown"
-          });
+            teamRegion: team.region || "Unknown",
+            // S'assurer que ces propriétés existent toujours
+            role: player.role || "Unknown",
+            kda: player.kda || 0,
+            csPerMin: player.csPerMin || 0,
+            damageShare: player.damageShare || 0
+          };
+
+          playersWithTeamInfo.push(enrichedPlayer);
         });
       });
 
       // 🧾 Log tous les joueurs collectés avant filtrage
-      console.warn("🧾 Liste brute des joueurs récupérés :");
-      playersWithTeamInfo.forEach(p => {
-        console.warn(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
+      console.warn(`🧾 Liste brute des joueurs récupérés: ${playersWithTeamInfo.length} joueurs au total`);
+      
+      // Group by region for more concise logging
+      const playersByRegion = playersWithTeamInfo.reduce((acc, p) => {
+        const region = p.teamRegion || "Unknown";
+        if (!acc[region]) acc[region] = [];
+        acc[region].push(p);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      Object.entries(playersByRegion).forEach(([region, players]) => {
+        console.warn(`- Région ${region}: ${players.length} joueurs`);
+        players.slice(0, 3).forEach(p => {
+          console.warn(`  - ${p.name} (${p.role}) - Équipe: ${p.teamName}`);
+        });
+        if (players.length > 3) {
+          console.warn(`  - ... et ${players.length - 3} autres joueurs`);
+        }
       });
 
       setAllPlayers(playersWithTeamInfo);
@@ -86,6 +120,8 @@ const Players = () => {
 
       if (playersWithTeamInfo.length === 0) {
         toast.warning("Aucun joueur trouvé dans la base de données");
+      } else {
+        console.warn(`✅ ${playersWithTeamInfo.length} joueurs chargés avec succès!`);
       }
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données :", error);
@@ -96,6 +132,12 @@ const Players = () => {
   };
 
   const filteredPlayers = allPlayers.filter(player => {
+    // Vérifier si le joueur a toutes les propriétés nécessaires
+    if (!player.name || !player.role || !player.teamName || !player.teamRegion) {
+      console.warn(`🚫 Joueur incomplet ignoré dans le filtrage: ${player.name || "Sans nom"}`);
+      return false;
+    }
+    
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
     let regionMatches = true;
@@ -123,22 +165,53 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    console.warn("🧪 Filter debug →", {
-      name: player.name,
-      role: player.role,
-      teamRegion: player.teamRegion,
-      selectedCategory,
-      selectedRegion,
-      selectedSubRegion,
-      searchTerm,
-      regionMatches,
-      roleMatches,
-      searchMatches,
-      included: roleMatches && regionMatches && searchMatches
-    });
+    const included = roleMatches && regionMatches && searchMatches;
+    
+    // Réduire le nombre de logs pour éviter d'encombrer la console
+    if (!included && (!player.role || !player.teamRegion)) {
+      console.warn("🧪 Filter debug →", {
+        name: player.name,
+        role: player.role,
+        teamRegion: player.teamRegion,
+        teamName: player.teamName,
+        selectedCategory,
+        selectedRegion,
+        selectedSubRegion,
+        searchTerm,
+        regionMatches,
+        roleMatches,
+        searchMatches,
+        included
+      });
+    }
 
-    return roleMatches && regionMatches && searchMatches;
+    return included;
   });
+
+  // Log des statistiques de filtrage
+  useEffect(() => {
+    console.warn(`📊 Filtrage: ${allPlayers.length} joueurs au total → ${filteredPlayers.length} après filtrage`);
+    
+    if (filteredPlayers.length > 0) {
+      // Grouper par équipe pour voir la distribution
+      const teamCounts = filteredPlayers.reduce((acc, player) => {
+        const teamName = player.teamName || 'Unknown';
+        acc[teamName] = (acc[teamName] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.warn("📋 Joueurs filtrés par équipe:", teamCounts);
+      
+      // Grouper par rôle pour vérifier la distribution
+      const roleCounts = filteredPlayers.reduce((acc, player) => {
+        const role = player.role || 'Unknown';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.warn("📋 Joueurs filtrés par rôle:", roleCounts);
+    }
+  }, [filteredPlayers.length]);
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
