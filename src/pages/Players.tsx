@@ -128,8 +128,6 @@ console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length
       }
     }
 
-    console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p => p.name));
-
     const searchMatches =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -151,6 +149,9 @@ console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length
     return roleMatches && regionMatches && searchMatches;
   });
 
+// ✅ DÉPLACE ICI le log :
+console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p => p.name));
+  
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
