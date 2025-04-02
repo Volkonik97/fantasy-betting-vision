@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -31,7 +30,7 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
     const playersCopy = JSON.parse(JSON.stringify(players));
 
     playersCopy.forEach((p: Player) => {
-  if (p.name?.toLowerCase().includes("peyz")) {
+  if (p.name?.toLowerCase().includes("kiin")) {
     console.warn("👀 Joueur trouvé dans TeamPlayersList :", p);
   }
 });
