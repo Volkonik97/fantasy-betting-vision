@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
-import { Team, Match, SideStatistics } from "@/utils/models/types";
+import { Team, Match, SideStatistics, Player } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import { getTeamById } from "@/utils/database/teamsService";
 import { getMatchesByTeamId, clearMatchCache } from "@/utils/database/matchesService";
@@ -19,6 +20,8 @@ const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
+  // État séparé pour les joueurs pour assurer les mises à jour de composant
+  const [teamPlayers, setTeamPlayers] = useState<Player[]>([]);
   const [teamMatches, setTeamMatches] = useState<Match[]>([]);
   const [sideStats, setSideStats] = useState<SideStatistics | null>(null);
   const [timelineStats, setTimelineStats] = useState<any>(null);
@@ -53,6 +56,25 @@ const TeamDetails = () => {
         }
         
         console.log(`Team ${foundTeam.name} loaded with ${foundTeam.players?.length || 0} players`);
+
+        // Assurer que players est toujours un tableau, même s'il est null ou undefined
+        const players = foundTeam.players || [];
+        
+        // Enrichir les données des joueurs avec le nom et la région de l'équipe
+        const enrichedPlayers = players.map(player => ({
+          ...player,
+          teamName: player.teamName || foundTeam.name || "",
+          teamRegion: player.teamRegion || foundTeam.region || ""
+        }));
+        
+        // Logs détaillés pour déboguer les joueurs chargés
+        console.log(`Enriched players for team ${foundTeam.name}: ${enrichedPlayers.length}`);
+        enrichedPlayers.forEach((player, index) => {
+          console.log(`- ${player.name} (${player.role}) with team ${player.teamName}, region ${player.teamRegion}`);
+        });
+        
+        // Mise à jour de l'état des joueurs séparément de l'équipe
+        setTeamPlayers(enrichedPlayers);
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
@@ -72,6 +94,7 @@ const TeamDetails = () => {
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
         }
         
+        // Mise à jour de l'équipe, mais sans les joueurs car ils sont gérés séparément maintenant
         setTeam(foundTeam);
         setSideStats(sideStatsData);
         
@@ -153,7 +176,7 @@ const TeamDetails = () => {
           <TeamHeader team={team} />
         </motion.div>
         
-        {team && team.players && team.players.length === 0 && (
+        {teamPlayers.length === 0 && !isLoading && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -176,8 +199,13 @@ const TeamDetails = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
+              key={`players-${teamPlayers.length}`} // Forcer une nouvelle instance du composant quand les joueurs changent
             >
-              <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
+              <TeamPlayersList 
+                players={teamPlayers} 
+                teamName={team?.name || ""} 
+                teamRegion={team?.region || ""}
+              />
             </motion.div>
             
             <motion.div
@@ -205,3 +233,4 @@ const TeamDetails = () => {
 };
 
 export default TeamDetails;
+

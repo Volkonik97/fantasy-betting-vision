@@ -23,6 +23,7 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
     
     if (!players || players.length === 0) {
       console.warn(`No players provided for team: ${teamName}`);
+      setSortedPlayers([]);
       return;
     }
     
@@ -68,7 +69,7 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
     });
     
     setSortedPlayers(sorted);
-  }, [players, teamName, teamRegion]);
+  }, [players, teamName, teamRegion]); // Dépendance explicite à players, teamName et teamRegion
 
   // Defensive check to avoid errors with undefined players
   if (!players || players.length === 0) {
@@ -102,11 +103,12 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.2 }}
       className="mt-8"
+      key={`players-list-${sortedPlayers.length}`} // Force re-render on player list changes
     >
       <h2 className="text-2xl font-bold mb-4">Joueurs ({sortedPlayers.length})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
-          sortedPlayers.map(player => {
+          sortedPlayers.map((player, index) => {
             // Final enrichment of player data before rendering
             const enrichedPlayer = {
               ...player,
@@ -116,10 +118,10 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
             
             return (
               <motion.div 
-                key={player.id}
+                key={`${player.id || index}-${player.name}`} // Use more reliable key with fallback
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="h-full"
               >
                 <Link 
