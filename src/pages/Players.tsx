@@ -41,39 +41,16 @@ const Players = () => {
         const teams = await getTeams();
         
         const players = teams.flatMap(team => 
-          team.players.map(player => {
-            // Log players with unusual roles to help debug
-            if (player.role && !['Top', 'Jungle', 'Mid', 'ADC', 'Support'].includes(player.role)) {
-              console.log(`Player with non-standard role: ${player.name}, Team: ${team.name}, Role: ${player.role}`);
-            }
-            
-            // Check for Hanwha Life Esport players specifically
-            if (team.name.includes('Hanwha') || team.region === 'HW') {
-              console.log(`Hanwha player found: ${player.name}, Role: ${player.role}, Normalized: ${normalizeRoleName(player.role)}`);
-            }
-            
-            return {
-              ...player,
-              teamName: team.name,
-              teamRegion: team.region
-            };
-          })
+          team.players.map(player => ({
+            ...player,
+            teamName: team.name,
+            teamRegion: team.region
+          }))
         );
         
-        console.log("Players with team data:", players.length);
-        console.log("Teams by region:", teams.reduce((acc, team) => {
-          acc[team.region] = (acc[team.region] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>));
-        
-        const roleDistribution = players.reduce((acc, player) => {
-          const normalizedRole = normalizeRoleName(player.role);
-          acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        
-        console.log("Role distribution:", roleDistribution);
-        
+        console.log("Players with team data:", players);
+        console.log("Players in AL region:", players.filter(player => player.teamRegion === "AL").length);
+        console.log("AL players sample:", players.filter(player => player.teamRegion === "AL").slice(0, 3));
         setAllPlayers(players);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -95,6 +72,8 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
+    const isAL = player.teamRegion === "AL";
+    
     // Normalize player role for consistent comparison
     const normalizedPlayerRole = player.role ? normalizeRoleName(player.role) : "";
     const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
@@ -109,11 +88,26 @@ const Players = () => {
         regionMatches = regionCategories[selectedCategory].some(region => 
           region === "All" || player.teamRegion === region
         );
+        
+        if (isAL && selectedCategory === "ERL") {
+          console.log("AL player being filtered for ERL category:", 
+            { name: player.name, region: player.teamRegion, matches: regionMatches });
+        }
       } else {
         regionMatches = player.teamRegion === selectedRegion;
+        
+        if (selectedRegion === "AL") {
+          console.log("AL player being filtered for AL region:", 
+            { name: player.name, region: player.teamRegion, matches: regionMatches });
+        }
       }
     } else if (selectedRegion !== "All") {
       regionMatches = player.teamRegion === selectedRegion;
+      
+      if (selectedRegion === "AL") {
+        console.log("AL player being filtered for AL region (no category):", 
+          { name: player.name, region: player.teamRegion, matches: regionMatches });
+      }
     }
     
     if (selectedRegion === "LTA") {
@@ -122,11 +116,6 @@ const Players = () => {
       } else {
         regionMatches = player.teamRegion === selectedSubRegion;
       }
-    }
-    
-    // Check for HW region specifically to debug Hanwha Life issues
-    if (player.teamRegion === 'HW' && !regionMatches) {
-      console.log(`Hanwha player filtered out: ${player.name}, Category: ${selectedCategory}, Region: ${selectedRegion}`);
     }
     
     const searchMatches = 
@@ -143,25 +132,14 @@ const Players = () => {
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setSelectedRegion("All");
-    
-    // Check if this category includes the HW region for Hanwha Life
-    if (category !== "All") {
-      const includesHW = regionCategories[category].includes("HW");
-      console.log(`Category ${category} includes HW region: ${includesHW}`);
-    }
   };
 
   const handleRegionSelect = (region: string) => {
     setSelectedRegion(region);
     
-    if (region === "HW") {
-      console.log("HW region selected");
-      console.log("Players in HW region:", allPlayers.filter(p => p.teamRegion === "HW").length);
-      console.log("HW players sample:", allPlayers.filter(p => p.teamRegion === "HW").map(p => ({
-        name: p.name,
-        role: p.role,
-        normalizedRole: normalizeRoleName(p.role)
-      })));
+    if (region === "AL") {
+      console.log("AL region selected");
+      console.log("Players in AL region:", allPlayers.filter(p => p.teamRegion === "AL").length);
     }
   };
 
