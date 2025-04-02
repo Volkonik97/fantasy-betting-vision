@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { toast } from "sonner";
 
 interface TeamPlayersListProps {
   players: Player[];
@@ -16,7 +17,17 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
   const hasPlayers = Array.isArray(players) && players.length > 0;
   
   console.log(`TeamPlayersList rendered with ${players?.length || 0} players for team ${teamName || 'unknown'}`);
-  console.log("Players data:", players);
+  if (Array.isArray(players)) {
+    console.log("Players data:", JSON.stringify(players, null, 2));
+  } else {
+    console.log("Players data is not an array:", players);
+  }
+  
+  useEffect(() => {
+    if (!hasPlayers && teamName) {
+      console.warn(`No players found for team ${teamName}`);
+    }
+  }, [hasPlayers, teamName]);
   
   // Sort players by role in the standard order: Top, Jungle, Mid, ADC/Bot, Support
   const sortedPlayers = hasPlayers 
@@ -41,6 +52,10 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
 
   if (!hasPlayers) {
     console.warn(`No players found for team ${teamName}`);
+    setTimeout(() => {
+      toast.error(`Impossible de charger les joueurs pour l'équipe ${teamName || 'sélectionnée'}`);
+    }, 1000);
+    
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}

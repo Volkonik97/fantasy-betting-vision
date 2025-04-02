@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -164,8 +165,8 @@ const TeamDetails = () => {
               transition={{ duration: 0.3, delay: 0.1 }}
             >
               <TeamPlayersList 
-                players={Array.isArray(team.players) ? team.players : []} 
-                teamName={team?.name || ""} 
+                players={team.players || []} 
+                teamName={team.name} 
               />
             </motion.div>
             

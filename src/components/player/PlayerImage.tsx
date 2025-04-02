@@ -1,39 +1,39 @@
 
 import React from "react";
-import { Badge } from "../ui/badge";
 
 interface PlayerImageProps {
   name: string;
-  image?: string;
-  role?: string;
+  image: string;
+  role: string;
 }
 
-const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
+const PlayerImage = ({ name, image, role }: PlayerImageProps) => {
+  // Add fallback image URL in case the provided URL is empty or invalid
+  const fallbackImage = "/placeholder.svg";
+  
+  // Handle image loading errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.warn(`Failed to load image for player ${name}:`, image);
+    const imgElement = e.currentTarget;
+    imgElement.src = fallbackImage;
+    imgElement.onerror = null; // Prevent infinite error loop
+  };
+  
   return (
-    <div className="h-48 bg-gray-50 relative overflow-hidden group">
+    <div className="aspect-w-16 aspect-h-9 bg-gray-100">
       {image ? (
-        <img
-          src={image}
-          alt={name}
+        <img 
+          src={image} 
+          alt={`${name} - ${role}`} 
+          onError={handleImageError}
+          className="w-full h-full object-cover object-center"
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.onerror = null; // Prevent infinite error loop
-            target.src = "/placeholder.svg";
-          }}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-          <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
+        <div className="flex items-center justify-center h-full bg-gray-100 text-gray-400">
+          <span className="text-2xl font-bold">{name.charAt(0)}</span>
         </div>
       )}
-      
-      <div className="absolute top-2 left-2 flex gap-2 items-center">
-        <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs">
-          {name}
-        </Badge>
-      </div>
     </div>
   );
 };
