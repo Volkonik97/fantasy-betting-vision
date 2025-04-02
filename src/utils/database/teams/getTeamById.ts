@@ -42,7 +42,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     // Fetch players for this team - USE A MORE DIRECT QUERY
     console.log(`Fetching players for team ${teamId}`);
-    const { data: playersData, error: playersError } = await supabase
+    const { data: supabasePlayers, error: playersError } = await supabase
       .from('players')
       .select('*')
       .eq('team_id', teamId);
@@ -53,18 +53,21 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     }
     
     // Log player data for debugging - More details
-    console.log(`Found ${playersData?.length || 0} players for team ${teamId}:`, playersData);
+    console.log(`Found ${supabasePlayers?.length || 0} players for team ${teamId}:`, supabasePlayers);
+    
+    // Initialize players array
+    let finalPlayersData = supabasePlayers || [];
     
     // Test with mock data if no players found
-    const useMockData = !playersData || playersData.length === 0;
-    if (useMockData) {
+    if (!finalPlayersData || finalPlayersData.length === 0) {
       console.log("No players found in database, trying to fetch mock players");
       try {
         const { players } = await import('../../models/mockPlayers');
         const teamPlayers = players.filter(p => p.team === teamId);
         console.log(`Found ${teamPlayers.length} mock players for team ${teamId}`);
         if (teamPlayers.length > 0) {
-          playersData = teamPlayers.map(p => ({
+          // Create a new array with the mock data converted to the expected format
+          finalPlayersData = teamPlayers.map(p => ({
             id: p.id,
             name: p.name,
             role: p.role,
@@ -95,8 +98,8 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     };
     
     // Assign players to the team with improved handling
-    if (playersData && Array.isArray(playersData) && playersData.length > 0) {
-      team.players = playersData.map(player => ({
+    if (finalPlayersData && Array.isArray(finalPlayersData) && finalPlayersData.length > 0) {
+      team.players = finalPlayersData.map(player => ({
         id: player.id as string,
         name: player.name as string,
         role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
