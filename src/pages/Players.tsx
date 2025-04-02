@@ -43,6 +43,7 @@ const Players = () => {
   }, [selectedRegion]);
 
   const fetchPlayers = async () => {
+    console.warn("🚀 fetchPlayers() appelée !");
     try {
       setIsLoading(true);
 
