@@ -1,7 +1,8 @@
+
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Player } from "@/utils/models/types";
+import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
 
 interface PlayersListProps {
@@ -76,11 +77,12 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
         }
         
         // Ensure player has teamName and teamRegion (defensive coding)
+        // We cast role to PlayerRole to ensure type compatibility
         const enrichedPlayer = {
           ...player,
           teamName: player.teamName || "Équipe inconnue",
           teamRegion: player.teamRegion || "Région inconnue",
-          role: player.role || "Rôle inconnu"
+          role: (player.role || "Unknown") as PlayerRole
         };
         
         return (

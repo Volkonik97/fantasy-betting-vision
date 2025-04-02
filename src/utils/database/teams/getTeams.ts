@@ -126,7 +126,7 @@ export const getTeams = async (): Promise<Team[]> => {
           return {
             id: player.id as string,
             name: player.name as string,
-            role: normalizedRole,
+            role: normalizedRole, // Here normalizedRole is guaranteed to be a PlayerRole
             image: player.image as string,
             team: team.id, // Utilisez team.id au lieu de player.team_id pour assurer la cohérence
             teamName: team.name,

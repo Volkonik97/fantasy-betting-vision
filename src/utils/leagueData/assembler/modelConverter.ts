@@ -105,10 +105,17 @@ export function normalizeRoleName(role?: string): PlayerRole {
     'sp': 'Support',
     's': 'Support',
     '5': 'Support',
+
+    // Unknown variations
+    'unknown': 'Unknown',
+    '?': 'Unknown',
+    'inconnu': 'Unknown',
+    'undefined': 'Unknown',
+    'null': 'Unknown'
   };
   
   // Direct match for canonical roles
-  if (role === 'Top' || role === 'Jungle' || role === 'Mid' || role === 'ADC' || role === 'Support') {
+  if (role === 'Top' || role === 'Jungle' || role === 'Mid' || role === 'ADC' || role === 'Support' || role === 'Unknown') {
     return role as PlayerRole;
   }
   
@@ -120,10 +127,10 @@ export function normalizeRoleName(role?: string): PlayerRole {
   }
   
   // Log unknown roles for debugging
-  console.warn(`Unknown role encountered: "${role}" (normalized: "${normalizedRole}"), defaulting to Mid`);
+  console.warn(`Unknown role encountered: "${role}" (normalized: "${normalizedRole}"), defaulting to Unknown`);
   
-  // Default to Mid if role is unknown
-  return 'Mid';
+  // Default to Unknown if role is unrecognized (changed from Mid to Unknown)
+  return 'Unknown';
 }
 
 /**

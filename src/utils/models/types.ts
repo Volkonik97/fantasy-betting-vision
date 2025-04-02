@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -22,7 +21,7 @@ export interface Team {
   redFirstBaron?: number;
 }
 
-export type PlayerRole = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
+export type PlayerRole = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' | 'Unknown';
 
 export interface Player {
   id: string;
