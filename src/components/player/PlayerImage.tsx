@@ -11,6 +11,9 @@ const PlayerImage = ({ name, image, role }: PlayerImageProps) => {
   // Add fallback image URL in case the provided URL is empty or invalid
   const fallbackImage = "/placeholder.svg";
   
+  // Clean up image URL to remove potential query parameters that can cause CORS issues
+  const cleanImageUrl = image ? image.split('?')[0] : '';
+  
   // Handle image loading errors
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     console.warn(`Failed to load image for player ${name}:`, image);
@@ -21,9 +24,9 @@ const PlayerImage = ({ name, image, role }: PlayerImageProps) => {
   
   return (
     <div className="aspect-w-16 aspect-h-9 bg-gray-100">
-      {image ? (
+      {cleanImageUrl ? (
         <img 
-          src={image} 
+          src={cleanImageUrl} 
           alt={`${name} - ${role}`} 
           onError={handleImageError}
           className="w-full h-full object-cover object-center"
