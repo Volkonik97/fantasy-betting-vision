@@ -2,9 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Player, PlayerRole } from '../models/types';
 import { chunk } from '../dataConverter';
-import { getLoadedPlayers, setLoadedPlayers } from '../csvTypes';
 import { toast } from "sonner";
 import { normalizeRoleName } from "../leagueData/assembler/modelConverter";
+import { getLoadedPlayers, setLoadedPlayers, resetCache } from '../csv/cache/dataCache';
 
 // Save players to database
 export const savePlayers = async (players: Player[]): Promise<boolean> => {
@@ -96,6 +96,10 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
     }
     
     console.log(`Successfully upserted ${successCount}/${validPlayers.length} players`);
+    
+    // Clear the cache after successful save to ensure we get fresh data
+    resetCache();
+    
     return successCount > 0;
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des joueurs:", error);
@@ -104,9 +108,11 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
   }
 };
 
-// Get players from database
-export const getPlayers = async (): Promise<Player[]> => {
-  const loadedPlayers = getLoadedPlayers();
+// Get players from database with better cache invalidation
+export const getPlayers = async (forceRefresh = false): Promise<Player[]> => {
+  // Skip cache if force refresh is requested
+  const loadedPlayers = forceRefresh ? null : getLoadedPlayers();
+  
   if (loadedPlayers) {
     console.log("Using cached players data");
     return loadedPlayers;
@@ -118,10 +124,16 @@ export const getPlayers = async (): Promise<Player[]> => {
       .from('players')
       .select('*');
     
-    if (playersError || !playersData || playersData.length === 0) {
+    if (playersError) {
       console.error("Erreur lors de la récupération des joueurs:", playersError);
+      throw playersError;
+    }
+    
+    if (!playersData || playersData.length === 0) {
+      console.warn("No players found in database, using mock data");
       const { teams } = await import('../mockData');
-      return teams.flatMap(team => team.players);
+      const mockPlayers = teams.flatMap(team => team.players || []);
+      return mockPlayers;
     }
     
     console.log(`Retrieved ${playersData.length} players from database`);
@@ -130,9 +142,32 @@ export const getPlayers = async (): Promise<Player[]> => {
     const uniqueTeamIds = [...new Set(playersData.map(p => p.team_id))];
     console.log(`Players belong to ${uniqueTeamIds.length} unique teams`);
     
+    // Now we need to fetch team names and regions to enrich player data
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select('id, name, region');
+      
+    if (teamsError) {
+      console.error("Erreur lors de la récupération des équipes pour enrichir les données des joueurs:", teamsError);
+    }
+    
+    // Create a map of team_id to team info for quick lookup
+    const teamInfoMap: Record<string, { name: string, region: string }> = {};
+    if (teamsData) {
+      teamsData.forEach(team => {
+        teamInfoMap[team.id] = {
+          name: team.name,
+          region: team.region
+        };
+      });
+    }
+    
     const players: Player[] = playersData.map(player => {
       // Always normalize the role using our updated function
       const normalizedRole = normalizeRoleName(player.role);
+      
+      // Get team info from our map
+      const teamInfo = teamInfoMap[player.team_id] || { name: "", region: "" };
       
       return {
         id: player.id as string,
@@ -140,6 +175,8 @@ export const getPlayers = async (): Promise<Player[]> => {
         role: normalizedRole,
         image: player.image as string,
         team: player.team_id as string,
+        teamName: teamInfo.name,           // Add team name from our map
+        teamRegion: teamInfo.region,       // Add team region from our map
         kda: Number(player.kda) || 0,
         csPerMin: Number(player.cs_per_min) || 0,
         damageShare: Number(player.damage_share) || 0,
@@ -155,23 +192,45 @@ export const getPlayers = async (): Promise<Player[]> => {
     
     console.log("Player counts by normalized role:", roleCounts);
     
+    // Log info about each region's players for better debugging
+    const regionCounts: Record<string, number> = {};
+    players.forEach(p => {
+      if (p.teamRegion) {
+        regionCounts[p.teamRegion] = (regionCounts[p.teamRegion] || 0) + 1;
+      }
+    });
+    console.log("Players by region:", regionCounts);
+    
+    // Check LCK players specifically
+    const lckPlayers = players.filter(p => p.teamRegion === 'LCK');
+    console.log(`Found ${lckPlayers.length} LCK players`);
+    if (lckPlayers.length > 0) {
+      console.log("LCK players sample:", lckPlayers.slice(0, 3).map(p => `${p.name} (${p.role})`));
+    }
+    
+    // Cache the results
     setLoadedPlayers(players);
+    
     return players;
   } catch (error) {
     console.error("Erreur lors de la récupération des joueurs:", error);
     const { teams } = await import('../mockData');
-    return teams.flatMap(team => team.players);
+    const fallbackPlayers = teams.flatMap(team => team.players || []);
+    return fallbackPlayers;
   }
 };
 
-// Get player by ID
-export const getPlayerById = async (playerId: string): Promise<Player | null> => {
+// Get player by ID with better team info
+export const getPlayerById = async (playerId: string, forceRefresh = false): Promise<Player | null> => {
   try {
-    // Check loaded players first
-    const loadedPlayers = getLoadedPlayers();
+    // Check loaded players first unless force refresh is requested
+    const loadedPlayers = forceRefresh ? null : getLoadedPlayers();
     if (loadedPlayers) {
       const player = loadedPlayers.find(p => p.id === playerId);
-      if (player) return player;
+      if (player) {
+        console.log(`Found player ${player.name} in cache`);
+        return player;
+      }
     }
     
     // If not found in loaded players, query the database
@@ -186,6 +245,13 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       return null;
     }
     
+    // Get team info to enrich the player data
+    const { data: teamData } = await supabase
+      .from('teams')
+      .select('name, region')
+      .eq('id', playerData.team_id)
+      .single();
+    
     // Always normalize the role
     const normalizedRole = normalizeRoleName(playerData.role);
     
@@ -196,6 +262,8 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       role: normalizedRole,
       image: playerData.image as string,
       team: playerData.team_id as string,
+      teamName: teamData?.name || "",
+      teamRegion: teamData?.region || "",
       kda: Number(playerData.kda) || 0,
       csPerMin: Number(playerData.cs_per_min) || 0,
       damageShare: Number(playerData.damage_share) || 0,
@@ -210,4 +278,10 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     const { players } = await import('../models/mockPlayers');
     return players.find(p => p.id === playerId) || null;
   }
+};
+
+// Clear player cache
+export const clearPlayerCache = () => {
+  setLoadedPlayers(null);
+  console.log("Player cache cleared");
 };

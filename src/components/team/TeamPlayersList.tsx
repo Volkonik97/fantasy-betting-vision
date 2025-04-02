@@ -11,13 +11,14 @@ import { AlertCircle } from "lucide-react";
 interface TeamPlayersListProps {
   players: Player[];
   teamName?: string;
+  teamRegion?: string;
 }
 
-const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
+const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps) => {
   const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   
   useEffect(() => {
-    console.log(`TeamPlayersList: Received ${players?.length || 0} players for team ${teamName}`);
+    console.log(`TeamPlayersList: Received ${players?.length || 0} players for team ${teamName} (${teamRegion || 'unknown region'})`);
     
     if (!players || players.length === 0) {
       console.warn(`No players provided to TeamPlayersList for team: ${teamName}`);
@@ -31,9 +32,13 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     const playersWithNormalizedRoles = playersCopy.map((player: Player) => {
       const normalizedRole = normalizeRoleName(player.role);
       console.log(`Player in team list: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, Team: ${player.team}`);
+      
+      // Make sure all players have the teamName and teamRegion set
       return {
         ...player,
-        role: normalizedRole
+        role: normalizedRole,
+        teamName: player.teamName || teamName,
+        teamRegion: player.teamRegion || teamRegion
       };
     });
     
@@ -50,12 +55,12 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       const roleA = normalizeRoleName(a.role);
       const roleB = normalizeRoleName(b.role);
       
-      return roleOrder[roleA] - roleOrder[roleB];
+      return (roleOrder[roleA] ?? 99) - (roleOrder[roleB] ?? 99);
     });
     
     console.log(`Sorted players (${sorted.length}): ${sorted.map(p => `${p.name} (${p.role})`).join(', ')}`);
     setSortedPlayers(sorted);
-  }, [players, teamName]);
+  }, [players, teamName, teamRegion]);
 
   // Defensive check to avoid errors with undefined players
   if (!players || players.length === 0) {
@@ -97,7 +102,8 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
             // Always ensure role is properly normalized
             const enrichedPlayer = {
               ...player,
-              teamName: teamName || player.teamName || player.team
+              teamName: player.teamName || teamName || "",
+              teamRegion: player.teamRegion || teamRegion || ""
             };
             
             return (

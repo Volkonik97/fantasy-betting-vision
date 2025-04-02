@@ -1,8 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Team, Player, PlayerRole } from '../../models/types';
+import { Team, Player } from '../../models/types';
 import { toast } from "sonner";
-import { getTeamsFromCache, updateTeamsCache, updatePlayersWithTeamName } from './teamCache';
+import { getTeamsFromCache, updateTeamsCache } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
@@ -11,10 +11,10 @@ const BUCKET_NAME = "team-logos";
 /**
  * Get teams from database
  */
-export const getTeams = async (): Promise<Team[]> => {
+export const getTeams = async (forceRefresh = false): Promise<Team[]> => {
   try {
-    // Check if we have a recent cache
-    const cachedTeams = getTeamsFromCache();
+    // Check if we have a recent cache and not forcing refresh
+    const cachedTeams = forceRefresh ? null : getTeamsFromCache();
     if (cachedTeams) {
       console.log("Using cached teams data");
       return cachedTeams;
@@ -39,7 +39,12 @@ export const getTeams = async (): Promise<Team[]> => {
     
     console.log(`Found ${teamsData.length} teams in database`);
     // Log team regions for debugging
-    console.log("Team regions:", teamsData.map(t => t.region).sort());
+    const regions = teamsData.map(t => t.region).filter(Boolean);
+    const regionCounts = regions.reduce((acc, region) => {
+      acc[region] = (acc[region] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log("Team regions:", regionCounts);
     
     // Fetch all players in a single query
     const { data: allPlayersData, error: playersError } = await supabase
@@ -156,15 +161,13 @@ export const getTeams = async (): Promise<Team[]> => {
     console.log(`Found ${lckTeams.length} LCK teams after processing`);
     lckTeams.forEach(team => {
       console.log(`LCK team ${team.name} has ${team.players?.length || 0} players`);
+      if (team.players && team.players.length > 0) {
+        console.log(`First 3 players of ${team.name}:`, team.players.slice(0, 3).map(p => `${p.name} (${p.role})`));
+      }
     });
     
     // Update cache
     updateTeamsCache(teams);
-    
-    // Update each team's players with the team name in cache
-    teams.forEach(team => {
-      updatePlayersWithTeamName(team.id, team.name);
-    });
     
     return teams;
   } catch (error) {

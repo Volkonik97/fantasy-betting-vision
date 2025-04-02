@@ -11,18 +11,33 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Ensure player has all necessary properties
+  // Ensure player has all necessary properties with better defensive coding
+  if (!player) {
+    console.error("PlayerCard received undefined player");
+    return null;
+  }
+  
+  // Add debugging information
+  console.log(`Rendering PlayerCard for: ${player.name}, Role: ${player.role}, Team: ${player.team}, Region: ${player.teamRegion || 'unknown'}`);
+  
   const normalizedPlayer = {
     ...player,
-    // Use player's role directly as it should already be normalized in our new approach
+    role: player.role || 'Mid', // Fallback to Mid if role is missing
     teamName: player.teamName || "",
-    teamRegion: player.teamRegion || ""
+    teamRegion: player.teamRegion || "",
+    kda: player.kda || 0,
+    csPerMin: player.csPerMin || 0,
+    damageShare: player.damageShare || 0,
   };
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
-        <PlayerImage name={normalizedPlayer.name} image={normalizedPlayer.image} role={normalizedPlayer.role} />
+        <PlayerImage 
+          name={normalizedPlayer.name} 
+          image={normalizedPlayer.image} 
+          role={normalizedPlayer.role} 
+        />
       </div>
       
       <div className="p-4">
