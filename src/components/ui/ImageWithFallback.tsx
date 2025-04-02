@@ -31,24 +31,23 @@ const ImageWithFallback = ({
   const [isLoading, setIsLoading] = useState(!!src); // Only show loading if there's a src
   const [hasError, setHasError] = useState(false);
   
-  // Add a timestamp parameter for cache busting when forceRefresh is true
+  // Always add a timestamp parameter for cache busting to ensure fresh images
   const [imgSrc, setImgSrc] = useState<string | null | undefined>(
-    forceRefresh && src ? `${src}?t=${Date.now()}` : src
+    src ? `${src}?t=${Date.now()}` : src
   );
   
-  // Update the image source when the src prop changes
+  // Update the image source when the src prop changes or forceRefresh is triggered
   useEffect(() => {
-    if (forceRefresh && src) {
-      setImgSrc(`${src}?t=${Date.now()}`);
-    } else {
-      setImgSrc(src);
-    }
-    
     if (src) {
+      // Always add timestamp to avoid browser caching issues
+      setImgSrc(`${src}?t=${Date.now()}`);
       setIsLoading(true);
       setHasError(false);
+    } else {
+      setImgSrc(null);
+      setIsLoading(false);
     }
-  }, [src, forceRefresh]);
+  }, [src, forceRefresh]); // Include forceRefresh in dependencies to trigger updates
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -56,13 +55,15 @@ const ImageWithFallback = ({
   };
 
   const handleError = () => {
+    console.log(`Error loading image: ${imgSrc}`);
     setIsLoading(false);
     setHasError(true);
     onError?.();
     
-    // If image fails to load and we have a source, try once more with cache busting
-    if (src && !forceRefresh) {
-      setImgSrc(`${src}?t=${Date.now()}`);
+    // If image fails to load and we have a source, try once more with a different timestamp
+    if (src) {
+      console.log(`Retrying image with new timestamp: ${src}`);
+      setImgSrc(`${src}?t=${Date.now() + 1000}`); // Add a different timestamp
     }
   };
 

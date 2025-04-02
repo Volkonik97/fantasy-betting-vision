@@ -17,7 +17,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
-  const [refreshLogo, setRefreshLogo] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   useEffect(() => {
     const fetchLogo = async () => {
@@ -40,7 +40,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           console.log(`Logo found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
           // Trigger a refresh to make sure we get the latest version
-          setRefreshLogo(true);
+          setRefreshTrigger(prev => prev + 1);
         } else {
           // Set logo error if no valid URL found
           setLogoError(true);
@@ -55,6 +55,12 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     
     fetchLogo();
   }, [team.id, team.logo, team.name]);
+
+  const handleLogoError = () => {
+    setLogoError(true);
+    // Try one more time with a different cache key
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <motion.div
@@ -72,12 +78,9 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                   src={logoUrl}
                   alt={`${team.name} logo`}
                   className="h-full w-full object-contain"
-                  forceRefresh={refreshLogo}
-                  onLoad={() => setRefreshLogo(false)}
-                  onError={() => {
-                    setLogoError(true);
-                    setRefreshLogo(false);
-                  }}
+                  forceRefresh={refreshTrigger > 0}
+                  onLoad={() => console.log(`TeamCard: Successfully loaded logo for ${team.name}`)}
+                  onError={handleLogoError}
                   fallback={
                     <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
                       {team.name.substring(0, 2).toUpperCase()}
