@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BUCKET_NAME } from './constants';
+import { getTeamLogoFromCache, cacheTeamLogo } from './images/logoCache';
 
 /**
  * Get the public URL for a team logo by team ID
@@ -9,6 +10,13 @@ import { BUCKET_NAME } from './constants';
  */
 export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => {
   if (!teamId) return null;
+  
+  // Check cache first
+  const cachedUrl = getTeamLogoFromCache(teamId);
+  if (cachedUrl !== undefined) {
+    console.log(`Using cached logo for team ${teamId}: ${cachedUrl ? 'found' : 'not available'}`);
+    return cachedUrl;
+  }
   
   try {
     // First, try to get the file directly using the team ID and common extensions
@@ -32,11 +40,12 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       
       // If we found the file
       if (fileExists && fileExists.some(f => f.name === fileName)) {
-        console.log(`Found exact match file for team ${teamId}: ${fileName}`);
         const { data: { publicUrl } } = supabase.storage
           .from(BUCKET_NAME)
           .getPublicUrl(fileName);
         
+        // Cache the result
+        cacheTeamLogo(teamId, publicUrl);
         return publicUrl;
       }
     }
@@ -49,6 +58,7 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
     
     if (error) {
       console.error("Error listing team logos:", error);
+      cacheTeamLogo(teamId, null);
       return null;
     }
     
@@ -56,19 +66,23 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
     const logoFile = files.find(file => file.name.toLowerCase().startsWith(teamId.toLowerCase()));
     
     if (logoFile) {
-      console.log(`Found logo file for team ${teamId}: ${logoFile.name}`);
       const { data: { publicUrl } } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(logoFile.name);
       
+      // Cache the result
+      cacheTeamLogo(teamId, publicUrl);
       return publicUrl;
     }
     
-    console.log(`No logo found for team ${teamId} after checking all methods`);
+    // Cache the negative result
+    cacheTeamLogo(teamId, null);
     return null;
     
   } catch (error) {
     console.error("Error getting team logo URL:", error);
+    // Cache the error result
+    cacheTeamLogo(teamId, null);
     return null;
   }
 };

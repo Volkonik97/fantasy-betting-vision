@@ -35,7 +35,7 @@ const ImageWithFallback = ({
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 1; // Reduced max retries to speed up fallback display
   
-  // Always add a timestamp parameter for cache busting to ensure fresh images
+  // Set initial image source with cache busting if needed
   const [imgSrc, setImgSrc] = useState<string | null | undefined>(
     src ? `${src}${src.includes('?') ? '&' : '?'}t=${Date.now()}` : src
   );
@@ -43,7 +43,7 @@ const ImageWithFallback = ({
   // Update the image source when the src prop changes, forceRefresh is triggered, or when retry is needed
   useEffect(() => {
     if (src) {
-      // Always add timestamp to avoid browser caching issues
+      // Use a timestamp to avoid browser caching
       const timestamp = Date.now() + retryCount; // Add retryCount to make each retry URL unique
       setImgSrc(`${src}${src.includes('?') ? '&' : '?'}t=${timestamp}`);
       setIsLoading(true);
@@ -52,7 +52,7 @@ const ImageWithFallback = ({
       setImgSrc(null);
       setIsLoading(false);
     }
-  }, [src, forceRefresh, retryCount]); // Include retryCount in dependencies to trigger updates
+  }, [src, forceRefresh, retryCount]); // Include retryCount to trigger updates
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -60,7 +60,6 @@ const ImageWithFallback = ({
   };
 
   const handleError = () => {
-    console.log(`Error loading image: ${imgSrc} (retry: ${retryCount}/${maxRetries})`);
     setIsLoading(false);
     
     // If we haven't reached max retries, try again with a different timestamp

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
+import { getTeamLogoFromCache, handleLogoError } from "@/utils/database/teams/images/logoCache";
 
 interface TeamInfoProps {
   teamId: string;
@@ -11,39 +12,52 @@ interface TeamInfoProps {
   showTeamLogo?: boolean;
 }
 
-// Map to cache team logos to reduce API calls
-const teamLogoCache = new Map<string, string | null>();
-
 const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: TeamInfoProps) => {
-  const [logoUrl, setLogoUrl] = useState<string | null>(() => teamLogoCache.get(teamId) || null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => {
+    // Utiliser le cache immédiatement si disponible
+    const cached = teamId ? getTeamLogoFromCache(teamId) : null;
+    return cached !== undefined ? cached : null;
+  });
   const [logoError, setLogoError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchTeamLogo = async () => {
       if (!teamId) return;
       
-      // Use cached logo if available
-      if (teamLogoCache.has(teamId)) {
-        setLogoUrl(teamLogoCache.get(teamId) || null);
-        return;
-      }
-
+      // Si on a déjà un logo ou si l'erreur est définitive, ne pas réessayer
+      if (logoUrl !== null || logoError) return;
+      
+      setIsLoading(true);
+      
       try {
         const url = await getTeamLogoUrl(teamId);
-        
-        // Cache the logo URL, even if it's null
-        teamLogoCache.set(teamId, url);
         setLogoUrl(url);
+        if (!url) setLogoError(true);
       } catch (error) {
         console.error(`Error fetching logo for team ${teamId}:`, error);
         setLogoError(true);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    if (showTeamLogo) {
+    if (showTeamLogo && !logoUrl && !logoError && !isLoading) {
       fetchTeamLogo();
     }
-  }, [teamId, showTeamLogo]);
+  }, [teamId, showTeamLogo, logoUrl, logoError, isLoading]);
+
+  const handleImageError = () => {
+    // Utiliser notre gestionnaire d'erreurs de logo
+    const shouldRetry = handleLogoError(teamId, teamName);
+    if (!shouldRetry) {
+      setLogoError(true);
+    } else {
+      // Forcer un rechargement avec un timestamp
+      const timestamp = Date.now();
+      setLogoUrl(logoUrl ? `${logoUrl}${logoUrl.includes('?') ? '&' : '?'}t=${timestamp}` : null);
+    }
+  };
 
   const hasLogo = showTeamLogo && logoUrl && !logoError;
 
@@ -55,7 +69,7 @@ const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: T
             src={logoUrl}
             alt={`${teamName} logo`}
             className="object-contain"
-            onError={() => setLogoError(true)}
+            onError={handleImageError}
             lazy={true}
             fallback={
               <AvatarFallback className="text-[10px] font-medium">

@@ -1,8 +1,10 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Team } from "@/utils/models/types";
 import TeamCard from "@/components/team/TeamCard";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { preloadTeamLogos } from "@/utils/database/teams/images/logoCache";
 
 interface TeamsListProps {
   teams: Team[];
@@ -10,6 +12,14 @@ interface TeamsListProps {
 }
 
 const TeamsList: React.FC<TeamsListProps> = ({ teams, isLoading }) => {
+  // Préchargement des logos dès que la liste des équipes est disponible
+  useEffect(() => {
+    if (!isLoading && teams.length > 0) {
+      const teamIds = teams.map(team => team.id);
+      preloadTeamLogos(teamIds, getTeamLogoUrl);
+    }
+  }, [teams, isLoading]);
+  
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-60">
@@ -17,8 +27,6 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, isLoading }) => {
       </div>
     );
   }
-  
-  console.log("TeamsList rendering with", teams.length, "teams");
   
   if (teams.length === 0) {
     return (

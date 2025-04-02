@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -8,39 +7,37 @@ import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
+import { getTeamLogoFromCache, handleLogoError } from "@/utils/database/teams/images/logoCache";
 
 interface TeamCardProps {
   team: Team;
 }
 
 const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
-  const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
-  const [logoLoading, setLogoLoading] = useState(true);
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => {
+    const cached = team.id ? getTeamLogoFromCache(team.id) : null;
+    return cached !== undefined ? cached : team.logo || null;
+  });
+  const [logoLoading, setLogoLoading] = useState(!logoUrl);
   const [logoError, setLogoError] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   useEffect(() => {
     const fetchLogo = async () => {
-      if (!team.id) return;
-
+      if (!team.id || logoUrl || logoError) return;
+      
       setLogoLoading(true);
-      setLogoError(false);
       
       try {
-        // First try to use the logo directly from the team object
         if (team.logo && !team.logo.includes("undefined")) {
           setLogoUrl(team.logo);
           setLogoLoading(false);
           return;
         }
         
-        // If no direct logo, try to fetch from storage
         const url = await getTeamLogoUrl(team.id);
         if (url && !url.includes("undefined")) {
-          console.log(`Logo found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
         } else {
-          // Set logo error if no valid URL found
           setLogoError(true);
         }
       } catch (error) {
@@ -52,20 +49,13 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     };
     
     fetchLogo();
-  }, [team.id, team.logo, team.name]);
+  }, [team.id, team.logo, team.name, logoUrl, logoError]);
 
   const handleLogoError = () => {
-    console.log(`TeamCard: Logo error for ${team.name}`);
-    setLogoError(true);
-    
-    // Try one more time with a different cache key
-    if (refreshTrigger === 0) {
-      setRefreshTrigger(1);
+    const shouldRetry = handleLogoError(team.id, team.name);
+    if (!shouldRetry) {
+      setLogoError(true);
     }
-  };
-
-  const handleLogoLoad = () => {
-    console.log(`TeamCard: Successfully loaded logo for ${team.name}`);
   };
 
   return (
@@ -84,8 +74,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                   src={logoUrl}
                   alt={`${team.name} logo`}
                   className="h-full w-full object-contain"
-                  forceRefresh={refreshTrigger > 0}
-                  onLoad={handleLogoLoad}
+                  onLoad={() => console.log(`Successfully loaded logo for ${team.name}`)}
                   onError={handleLogoError}
                   fallback={
                     <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
