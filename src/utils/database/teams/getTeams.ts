@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Team } from '../../models/types';
+import { Team, Player, PlayerRole } from '../../models/types';
 import { toast } from "sonner";
 import { getTeamsFromCache, updateTeamsCache, updatePlayersWithTeamName } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
+import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
 const BUCKET_NAME = "team-logos";
 
@@ -37,6 +38,8 @@ export const getTeams = async (): Promise<Team[]> => {
     }
     
     console.log(`Found ${teamsData.length} teams in database`);
+    // Log team regions for debugging
+    console.log("Team regions:", teamsData.map(t => t.region).sort());
     
     // Fetch all players in a single query
     const { data: allPlayersData, error: playersError } = await supabase
@@ -107,24 +110,48 @@ export const getTeams = async (): Promise<Team[]> => {
         const teamPlayers = playersByTeamId[team.id] || [];
         
         if (teamPlayers.length > 0) {
-          console.log(`Team ${team.name} has ${teamPlayers.length} players`);
+          console.log(`Team ${team.name} (${team.region}) has ${teamPlayers.length} players`);
           
-          team.players = teamPlayers.map(player => ({
-            id: player.id as string,
-            name: player.name as string,
-            role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
-            image: player.image as string,
-            team: player.team_id as string,
-            teamName: team.name, // Always set the teamName from the team.name
-            kda: Number(player.kda) || 0,
-            csPerMin: Number(player.cs_per_min) || 0,
-            damageShare: Number(player.damage_share) || 0,
-            championPool: player.champion_pool as string[] || []
-          }));
+          team.players = teamPlayers.map(player => {
+            // Always normalize role
+            const normalizedRole = normalizeRoleName(player.role || 'Mid');
+            
+            return {
+              id: player.id as string,
+              name: player.name as string,
+              role: normalizedRole,
+              image: player.image as string,
+              team: player.team_id as string,
+              teamName: team.name, // Always set the teamName from the team.name
+              teamRegion: team.region, // Always set the teamRegion from the team.region
+              kda: Number(player.kda) || 0,
+              csPerMin: Number(player.cs_per_min) || 0,
+              damageShare: Number(player.damage_share) || 0,
+              championPool: player.champion_pool as string[] || []
+            };
+          });
+          
+          // Log players by role for this team
+          const roleCountsByTeam = team.players.reduce((acc, p) => {
+            acc[p.role] = (acc[p.role] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          
+          console.log(`Team ${team.name} (${team.region}) players by role:`, roleCountsByTeam);
         } else {
-          console.warn(`No players found for team ${team.name} (${team.id})`);
+          console.warn(`No players found for team ${team.name} (${team.id}) in region ${team.region}`);
         }
       });
+      
+      // Count players by region after assignment
+      const playersByRegion = teams.reduce((acc, team) => {
+        if (team.players && team.players.length > 0) {
+          acc[team.region] = (acc[team.region] || 0) + team.players.length;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      console.log("Players by region after team assignment:", playersByRegion);
     }
     
     // Update each team's players with the team name in cache

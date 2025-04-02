@@ -21,6 +21,7 @@ const Players = () => {
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
   
+  // Updated region categories to ensure LCK is correctly categorized
   const regionCategories = {
     "All": ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
@@ -44,33 +45,21 @@ const Players = () => {
         clearTeamsCache();
         const teams = await getTeams();
         
-        // Log all teams for debugging
         console.log(`Loaded ${teams.length} teams for Players page`);
+        
+        // Log all teams regions for debugging
+        console.log("All team regions:", teams.map(team => team.region).sort());
         
         const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
         
         // Extract players from teams and add team information
         teams.forEach(team => {
           if (team.players && team.players.length > 0) {
-            console.log(`Team ${team.name} has ${team.players.length} players`);
-            
-            // Log roles for each team to debug
-            const rolesByTeam = team.players.reduce((acc, player) => {
-              const normalizedRole = normalizeRoleName(player.role);
-              acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
-              return acc;
-            }, {} as Record<string, number>);
-            
-            console.log(`Team ${team.name} players by role:`, rolesByTeam);
+            console.log(`Team ${team.name} (${team.region}) has ${team.players.length} players`);
             
             const teamPlayers = team.players.map(player => {
               // Always normalize role
               const normalizedRole = normalizeRoleName(player.role || 'Mid');
-              
-              // Log if the role needed normalization
-              if (normalizedRole !== player.role) {
-                console.log(`Normalized role for ${player.name} from ${player.role} to ${normalizedRole} in team ${team.name}`);
-              }
               
               return {
                 ...player,
@@ -82,20 +71,25 @@ const Players = () => {
             
             playersWithTeamInfo.push(...teamPlayers);
           } else {
-            console.warn(`No players found for team: ${team.name}`);
+            console.warn(`No players found for team: ${team.name} (${team.region})`);
           }
         });
         
         console.log("Total players with team data:", playersWithTeamInfo.length);
         
-        // Log players by role for debugging
-        const playersByRole = playersWithTeamInfo.reduce((acc, player) => {
-          const normalizedRole = normalizeRoleName(player.role);
-          acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
+        // Count players by region for debugging
+        const playersByRegion = playersWithTeamInfo.reduce((acc, player) => {
+          const region = player.teamRegion || 'Unknown';
+          acc[region] = (acc[region] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
         
-        console.log("Players by role:", playersByRole);
+        console.log("Players by region:", playersByRegion);
+        
+        // Check specifically for LCK players
+        const lckPlayers = playersWithTeamInfo.filter(p => p.teamRegion === 'LCK');
+        console.log(`Found ${lckPlayers.length} LCK players`);
+        
         setAllPlayers(playersWithTeamInfo);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
@@ -129,26 +123,26 @@ const Players = () => {
     const normalizedSelectedRole = selectedRole === "All" ? "All" : normalizeRoleName(selectedRole);
     const roleMatches = normalizedSelectedRole === "All" || normalizedPlayerRole === normalizedSelectedRole;
     
-    // If we're filtering for Top role, log the players that match/don't match
-    if (normalizedSelectedRole === 'Top') {
-      console.log(`Player ${player.name}: Role=${player.role}, NormalizedRole=${normalizedPlayerRole}, Matches=${normalizedPlayerRole === 'Top'}`);
-    }
-    
-    // Handle region matching
+    // Handle region matching - improved logic for categories and specific regions
     let regionMatches = true;
     
+    // If we select a category
     if (selectedCategory !== "All") {
+      // If no specific region is selected within the category
       if (selectedRegion === "All") {
-        regionMatches = regionCategories[selectedCategory].some(region => 
-          region === "All" || player.teamRegion === region
-        );
+        // Filter by all regions in this category
+        const regionsInCategory = regionCategories[selectedCategory] || [];
+        regionMatches = regionsInCategory.includes("All") || regionsInCategory.includes(player.teamRegion);
       } else {
+        // Specific region is selected
         regionMatches = player.teamRegion === selectedRegion;
       }
     } else if (selectedRegion !== "All") {
+      // Direct region selection (not through category)
       regionMatches = player.teamRegion === selectedRegion;
     }
     
+    // Special case for LTA subregions
     if (selectedRegion === "LTA") {
       if (selectedSubRegion === "All") {
         regionMatches = player.teamRegion.startsWith("LTA");
@@ -178,15 +172,23 @@ const Players = () => {
     
     console.log("Filtered players by role:", filteredRoleCounts);
     
-    // If selected role is Top, log all Top players
-    if (selectedRole === "Top") {
-      const topPlayers = filteredPlayers.filter(p => normalizeRoleName(p.role) === "Top");
-      console.log(`Found ${topPlayers.length} Top players after filtering`);
-      topPlayers.forEach(p => {
-        console.log(`Top player: ${p.name} (${p.teamName}), original role: ${p.role}`);
-      });
+    // Count filtered players by region
+    const filteredRegionCounts = filteredPlayers.reduce((acc, player) => {
+      acc[player.teamRegion] = (acc[player.teamRegion] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    console.log("Filtered players by region:", filteredRegionCounts);
+    
+    // If LCK is involved, log more details
+    if (selectedCategory === "Ligues Majeures" || selectedRegion === "LCK") {
+      const lckPlayers = filteredPlayers.filter(p => p.teamRegion === "LCK");
+      console.log(`Found ${lckPlayers.length} LCK players in filtered results`);
+      if (lckPlayers.length > 0) {
+        console.log("LCK teams represented:", [...new Set(lckPlayers.map(p => p.teamName))]);
+      }
     }
-  }, [filteredPlayers, selectedRole]);
+  }, [filteredPlayers, selectedCategory, selectedRegion]);
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);

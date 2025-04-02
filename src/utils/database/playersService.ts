@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player, PlayerRole } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -42,7 +41,7 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
       validPlayers.push(...uniquePlayers);
     }
     
-    // Insérer les joueurs par lots de 50 using upsert
+    // Insert players in batches of 50 using upsert
     let successCount = 0;
     const playerChunks = chunk(validPlayers, 50);
     
@@ -123,13 +122,9 @@ export const getPlayers = async (): Promise<Player[]> => {
     
     console.log(`Récupéré ${playersData.length} joueurs de la base de données`);
     
-    // Log all players retrieved from the database for debugging
-    console.log("All players from database:", playersData.map(p => ({ 
-      id: p.id, 
-      name: p.name, 
-      team: p.team_id,
-      role: p.role
-    })));
+    // Get unique team_ids for logging
+    const uniqueTeamIds = [...new Set(playersData.map(p => p.team_id))];
+    console.log(`Players belong to ${uniqueTeamIds.length} unique teams`);
     
     const players: Player[] = playersData.map(player => {
       // Standardize the role using the normalizeRoleName function

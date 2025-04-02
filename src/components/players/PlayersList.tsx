@@ -14,6 +14,15 @@ interface PlayersListProps {
 const PlayersList = ({ players, loading }: PlayersListProps) => {
   console.log(`PlayersList: Received ${players.length} players`);
   
+  // Log all regions before processing
+  const playerRegions = players.map(p => p.teamRegion);
+  const regionCounts = playerRegions.reduce((acc, region) => {
+    acc[region] = (acc[region] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  console.log("Players by region:", regionCounts);
+  
   // Log all roles before normalization
   const rolesBefore = players.map(p => p.role);
   console.log("Roles before normalization:", rolesBefore);
