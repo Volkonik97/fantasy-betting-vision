@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teamsService";
+import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";
@@ -31,6 +31,8 @@ const Teams = () => {
   const loadTeams = async () => {
     try {
       setIsLoading(true);
+      // Clear the teams cache to ensure fresh data
+      clearTeamsCache();
       
       const loadedTeams = await getTeams();
       
@@ -90,6 +92,8 @@ const Teams = () => {
   const toggleLogoUploader = () => {
     setShowLogoUploader(!showLogoUploader);
   };
+
+  console.log("Filtered teams:", filteredTeams.length, "of", teams.length, "total teams");
 
   return (
     <div className="min-h-screen bg-gray-50">

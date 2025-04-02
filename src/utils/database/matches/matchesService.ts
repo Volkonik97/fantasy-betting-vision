@@ -8,7 +8,7 @@ import {
   getTeamTimelineStats, 
   getPlayerTimelineStats, 
   clearPlayerStatsCache 
-} from './playerStats'; // This now imports from the index.ts file in the playerStats folder
+} from './playerStats';
 import { savePlayerMatchStats } from './savePlayerMatchStats';
 import { 
   isSeriesMatch, 

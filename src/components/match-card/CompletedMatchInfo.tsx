@@ -7,7 +7,7 @@ import {
   getBaseMatchId, 
   getSeriesScoreUpToGame,
   isStandardSeries
-} from "@/utils/database/matches/matchesService";
+} from "@/utils/database/matchesService";
 
 interface CompletedMatchInfoProps {
   result: {

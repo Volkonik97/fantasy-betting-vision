@@ -24,7 +24,7 @@ export interface Team {
 export interface Player {
   id: string;
   name: string;
-  role: string;
+  role: 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
   image: string;
   team: string;
   teamName?: string;  // Added teamName as an optional property

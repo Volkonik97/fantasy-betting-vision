@@ -18,6 +18,8 @@ const TeamsList: React.FC<TeamsListProps> = ({ teams, isLoading }) => {
     );
   }
   
+  console.log("TeamsList rendering with", teams.length, "teams");
+  
   if (teams.length === 0) {
     return (
       <div className="text-center py-10">

@@ -1,9 +1,11 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
 import { motion } from "framer-motion";
 import { formatTime } from "@/utils/formatters/timeFormatter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Trophy, Percent, Clock, Shield, Target, Flame, Mountain, Award } from "lucide-react";
 
@@ -13,11 +15,59 @@ interface TeamStatisticsProps {
 }
 
 const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
+  const [logoLoading, setLogoLoading] = useState(true);
+  const [logoError, setLogoError] = useState(false);
+  
+  useEffect(() => {
+    const fetchLogo = async () => {
+      if (!team.id) return;
+
+      setLogoLoading(true);
+      setLogoError(false);
+      
+      try {
+        // First try to use the logo directly from the team object
+        if (team.logo && !team.logo.includes("undefined")) {
+          setLogoUrl(team.logo);
+          setLogoLoading(false);
+          return;
+        }
+        
+        // If no direct logo, try to fetch from storage
+        const url = await getTeamLogoUrl(team.id);
+        if (url && !url.includes("undefined")) {
+          console.log(`Logo found for ${team.name} in statistics: ${url}`);
+          setLogoUrl(url);
+        } else {
+          // Set logo error if no valid URL found
+          setLogoError(true);
+        }
+      } catch (error) {
+        console.error(`Error fetching logo for ${team.name}:`, error);
+        setLogoError(true);
+      } finally {
+        setLogoLoading(false);
+      }
+    };
+    
+    fetchLogo();
+  }, [team.id, team.logo, team.name]);
+
+  // Ensure values are numerical and within the valid range (0-100)
   const ensureValidPercentage = (value: any): number => {
     const num = typeof value === 'number' ? value : parseInt(value, 10);
     if (isNaN(num)) return 50;
     return Math.min(100, Math.max(0, num));
   };
+
+  // Log the first blood values for debugging
+  console.log(`First Blood stats for ${team.name}:`, {
+    blueRaw: team.blueFirstBlood,
+    redRaw: team.redFirstBlood,
+    blueFormatted: ensureValidPercentage(team.blueFirstBlood),
+    redFormatted: ensureValidPercentage(team.redFirstBlood)
+  });
 
   const stats = [
     { 
@@ -54,16 +104,30 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden">
-              <Avatar className="w-10 h-10">
-                <AvatarImage
-                  src={team.logo || ''}
-                  alt={`${team.name} logo`}
-                  className="object-contain"
-                />
-                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                  {team.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              {logoLoading ? (
+                <div className="animate-pulse w-8 h-8 bg-gray-200 rounded-full"></div>
+              ) : logoUrl && !logoError ? (
+                <Avatar className="w-10 h-10">
+                  <AvatarImage
+                    src={logoUrl}
+                    alt={`${team.name} logo`}
+                    className="object-contain"
+                    onError={() => {
+                      console.log(`Error loading logo for ${team.name} in statistics`);
+                      setLogoError(true);
+                    }}
+                  />
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {team.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {team.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
             <div>
               <CardTitle className="text-lg">{team.name}</CardTitle>

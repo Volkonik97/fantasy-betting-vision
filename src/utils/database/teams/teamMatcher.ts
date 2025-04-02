@@ -1,4 +1,6 @@
 
+import { TEAM_VALIANT_ID } from './constants';
+
 /**
  * Find a team by its name (case-insensitive)
  * @param teams List of all teams
@@ -10,6 +12,12 @@ export const findTeamByName = (teams: { id: string, name: string }[], filename: 
   const normalizedName = filename.split('.')[0].toLowerCase().trim()
     .replace(/_/g, ' ')  // Replace underscores with spaces
     .replace(/-/g, ' '); // Replace hyphens with spaces
+  
+  // Special case for Team Valiant - use exact ID
+  if (normalizedName.includes("valiant")) {
+    console.log("Team Valiant detected in filename matching");
+    return TEAM_VALIANT_ID;
+  }
   
   // First, try exact match with team name
   const exactMatch = teams.find(team => 

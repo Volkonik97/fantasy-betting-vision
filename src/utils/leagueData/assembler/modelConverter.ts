@@ -1,66 +1,55 @@
 
+import { Team, Player } from '../../models/types';
+
 /**
- * Normalize role name to standard format
- * @param role The role name to normalize
- * @returns The normalized role name
+ * Helper function to convert team CSV to team object
  */
-export const normalizeRoleName = (role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' => {
-  if (!role) return 'Mid'; // Default role if none provided
+export function teamToTeamObject(teamCsv: any): Team {
+  return {
+    id: teamCsv.id,
+    name: teamCsv.name,
+    logo: teamCsv.logo,
+    region: teamCsv.region,
+    winRate: parseFloat(teamCsv.winRate) || 0,
+    blueWinRate: parseFloat(teamCsv.blueWinRate) || 0,
+    redWinRate: parseFloat(teamCsv.redWinRate) || 0,
+    averageGameTime: parseFloat(teamCsv.averageGameTime) || 0,
+    players: [] // Will be filled later
+  };
+}
+
+/**
+ * Normalizes role names to standard format
+ */
+export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
+  const normalizedRole = role.toLowerCase().trim();
   
-  const lowerRole = role.toLowerCase().trim();
+  if (normalizedRole === 'top') return 'Top';
+  if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
+  if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
+  if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
+  if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
   
-  if (lowerRole.includes('top')) return 'Top';
-  if (lowerRole.includes('jung') || lowerRole === 'jng' || lowerRole === 'jgl') return 'Jungle';
-  if (lowerRole.includes('mid')) return 'Mid';
-  if (lowerRole.includes('adc') || lowerRole === 'bot' || lowerRole.includes('bottom')) return 'ADC';
-  if (lowerRole.includes('sup') || lowerRole === 'supp') return 'Support';
-  
-  // If no match found, return Mid as default
-  console.warn(`Unknown role: ${role}, defaulting to Mid`);
+  // Default to Mid if role is unknown
   return 'Mid';
-};
+}
 
 /**
- * Convert team data from CSV format to application model
- * @param teamData Team data in CSV format
- * @returns Team object in application model format
+ * Helper function to convert player CSV to player object
  */
-export const teamToTeamObject = (teamData: any): any => {
-  if (!teamData) return null;
-  
-  return {
-    id: teamData.id || teamData.team_id || '',
-    name: teamData.name || teamData.team_name || '',
-    logo: teamData.logo || '',
-    region: teamData.region || '',
-    winRate: Number(teamData.win_rate || 0),
-    blueWinRate: Number(teamData.blue_win_rate || 0),
-    redWinRate: Number(teamData.red_win_rate || 0),
-    averageGameTime: Number(teamData.average_game_time || 0)
-  };
-};
-
-/**
- * Convert player data from CSV format to application model
- * @param playerData Player data in CSV format
- * @returns Player object in application model format
- */
-export const playerToPlayerObject = (playerData: any): any => {
-  if (!playerData) return null;
-  
+export function playerToPlayerObject(playerCsv: any): Player {
   // Normalize the role
-  const playerRole = normalizeRoleName(playerData.role || 'Mid');
+  const normalizedRole = normalizeRoleName(playerCsv.role || 'Mid');
   
   return {
-    id: playerData.id || playerData.player_id || '',
-    name: playerData.name || playerData.player_name || '',
-    role: playerRole,
-    image: playerData.image || '',
-    team: playerData.team || playerData.team_id || '',
-    teamName: playerData.team_name || '',
-    kda: Number(playerData.kda || 0),
-    csPerMin: Number(playerData.cs_per_min || 0),
-    damageShare: Number(playerData.damage_share || 0),
-    championPool: Array.isArray(playerData.champion_pool) ? playerData.champion_pool : []
+    id: playerCsv.id,
+    name: playerCsv.name,
+    role: normalizedRole,
+    image: playerCsv.image,
+    team: playerCsv.team,
+    kda: parseFloat(playerCsv.kda) || 0,
+    csPerMin: parseFloat(playerCsv.csPerMin) || 0,
+    damageShare: parseFloat(playerCsv.damageShare) || 0,
+    championPool: playerCsv.championPool ? playerCsv.championPool.split(',').map((champ: string) => champ.trim()) : []
   };
-};
+}

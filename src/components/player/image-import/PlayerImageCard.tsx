@@ -2,7 +2,6 @@
 import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Player } from "@/utils/models/types";
-import { Shield } from "lucide-react";
 
 interface PlayerImageCardProps {
   playerData: {
@@ -27,22 +26,17 @@ const PlayerImageCard = ({ playerData }: PlayerImageCardProps) => {
       }`}
     >
       <Avatar className="h-12 w-12 rounded-full overflow-hidden">
-        {playerData.newImageUrl || playerData.player.image ? (
-          <AvatarImage 
-            src={playerData.newImageUrl || playerData.player.image} 
-            alt={playerData.player.name}
-            onError={(e) => {
-              console.error(`Error loading image for ${playerData.player.name}:`, e);
-              const target = e.target as HTMLImageElement;
-              target.onerror = null;
-              target.src = "/placeholder.svg";
-            }}
-          />
-        ) : (
-          <AvatarFallback className="flex flex-col items-center justify-center">
-            <Shield className="h-5 w-5 text-gray-400" />
-          </AvatarFallback>
-        )}
+        <AvatarImage 
+          src={playerData.newImageUrl || playerData.player.image} 
+          alt={playerData.player.name}
+          onError={(e) => {
+            console.error(`Error loading image for ${playerData.player.name}:`, e);
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = "/placeholder.svg";
+          }}
+        />
+        <AvatarFallback>{playerData.player.name.charAt(0)}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm truncate">{playerData.player.name}</p>

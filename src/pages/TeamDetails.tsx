@@ -1,18 +1,19 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Team, Match, SideStatistics } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
-import { getTeamById } from "@/utils/database";
-import { getMatchesByTeamId, clearMatchCache } from "@/utils/database";
+import { getTeamById } from "@/utils/database/teamsService";
+import { getMatchesByTeamId, clearMatchCache } from "@/utils/database/matchesService";
 import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
+import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import TeamStatistics from "@/components/TeamStatistics";
-import TeamRoster from "@/components/team/TeamRoster";
 
 const TeamDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +37,7 @@ const TeamDetails = () => {
         setIsLoading(true);
         setError(null);
         
-        console.log(`Chargement de l'équipe avec l'ID: ${id}`);
+        // Load team from database
         const foundTeam = await getTeamById(id);
         
         if (!foundTeam) {
@@ -45,18 +46,12 @@ const TeamDetails = () => {
           return;
         }
         
-        console.log(`Équipe trouvée: ${foundTeam.name}`);
-        console.log(`Joueurs dans l'équipe:`, foundTeam.players?.length || 0);
-        
-        if (!foundTeam.players) {
-          console.log("Players array is undefined, initializing empty array");
-          foundTeam.players = [];
-        }
-        
+        // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
-        console.log("Side statistics data:", sideStatsData);
+        console.log("Side statistics data:", sideStatsData); // Log pour déboguer
         
         if (sideStatsData) {
+          // Assign side statistics to the team object
           foundTeam.blueFirstBlood = sideStatsData.blueFirstBlood;
           foundTeam.redFirstBlood = sideStatsData.redFirstBlood;
           foundTeam.blueFirstDragon = sideStatsData.blueFirstDragon;
@@ -65,20 +60,32 @@ const TeamDetails = () => {
           foundTeam.redFirstHerald = sideStatsData.redFirstHerald;
           foundTeam.blueFirstTower = sideStatsData.blueFirstTower;
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
+          foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
+          foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
+          
+          // Log pour vérifier les valeurs
+          console.log("First Blood stats (after correction):", {
+            blue: foundTeam.blueFirstBlood,
+            red: foundTeam.redFirstBlood
+          });
         }
         
         setTeam(foundTeam);
         setSideStats(sideStatsData);
         
+        // Clear match cache to ensure fresh data
         await clearMatchCache();
         
+        // Run all data fetches in parallel for better performance
         const [teamMatchesArray, timelineData] = await Promise.all([
           getMatchesByTeamId(id),
           getTeamTimelineStats(id)
         ]);
         
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
+        console.log("Données timeline récupérées:", timelineData);
         
+        // Trier les matchs par date (plus récent en premier)
         const sortedMatches = [...teamMatchesArray].sort((a, b) => {
           return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
@@ -123,13 +130,6 @@ const TeamDetails = () => {
     );
   }
   
-  console.log("Rendering TeamDetails with players:", team.players?.length || 0);
-  if (team.players && team.players.length > 0) {
-    console.log("First player:", team.players[0].name, team.players[0].role);
-  } else {
-    console.warn("No players found in team object at render time");
-  }
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -152,10 +152,16 @@ const TeamDetails = () => {
           <TeamHeader team={team} />
         </motion.div>
         
-        <TeamRoster players={team.players || []} teamName={team.name} teamId={team.id} />
-        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
+            </motion.div>
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

@@ -21,13 +21,10 @@ export const fetchEnhancedMatchStats = async (
   console.log(`Chargement des détails pour ${matchStats.length} matchs...`);
   
   try {
-    // Get all match IDs at once to batch the request
+    // Récupérer directement tous les matchs en une seule requête
     const matchIds = matchStats.map(stat => stat.match_id);
+    console.log("IDs des matchs à récupérer:", matchIds);
     
-    // Create a cache for team data to avoid redundant requests
-    const teamCache = new Map();
-    
-    // Fetch all matches in a single query
     const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
       .select('*')
@@ -39,101 +36,119 @@ export const fetchEnhancedMatchStats = async (
       return { enhancedStats: [], errors: { general: matchesError.message } };
     }
     
-    // Create a map for faster match lookup
+    console.log(`${matchesData?.length || 0} matchs trouvés sur ${matchIds.length} demandés`);
+    
+    // Créer un Map pour un accès plus rapide aux données des matchs
     const matchesMap = new Map();
     matchesData?.forEach(match => {
       matchesMap.set(match.id, match);
     });
     
-    // Process all match stats
-    const matchErrors: Record<string, string> = {};
-    const processPromises = matchStats.map(async (stat) => {
+    // Traitement de chaque statistique de joueur
+    const matchesWithDetails = [];
+    const errorsByMatchId: Record<string, string> = {};
+    
+    for (const stat of matchStats) {
       try {
+        // Récupérer les données du match depuis le Map
         const matchData = matchesMap.get(stat.match_id);
         
         if (!matchData) {
-          console.warn(`Match ${stat.match_id} non trouvé`);
-          return {
+          console.warn(`Match ${stat.match_id} non trouvé parmi les ${matchesData?.length || 0} matchs récupérés`);
+          errorsByMatchId[stat.match_id] = "Match non trouvé dans la réponse de la base de données";
+          
+          // Vérifier si le match existe vraiment dans la base de données
+          const { data: singleMatch, error: singleMatchError } = await supabase
+            .from('matches')
+            .select('*')
+            .eq('id', stat.match_id)
+            .maybeSingle();
+            
+          if (singleMatchError) {
+            console.error(`Erreur lors de la vérification du match ${stat.match_id}:`, singleMatchError);
+          } else if (singleMatch) {
+            console.log(`Le match ${stat.match_id} existe dans la base de données mais n'a pas été récupéré correctement:`, singleMatch);
+            errorsByMatchId[stat.match_id] = "Match existe mais n'a pas été récupéré correctement";
+          }
+          
+          matchesWithDetails.push({
             ...stat,
             matchDate: null,
             matchError: "Match non trouvé"
-          };
+          });
+          continue;
         }
         
-        // Determine opponent team
+        // Déterminer l'équipe adverse
         const isBlueTeam = stat.team_id === matchData.team_blue_id;
         const opponentTeamId = isBlueTeam ? matchData.team_red_id : matchData.team_blue_id;
         
-        // Check if opponent team is already in cache
-        let opponentTeamName = teamCache.get(opponentTeamId);
-        
-        if (!opponentTeamName) {
-          const { data: opponentTeam, error: opponentError } = await supabase
-            .from('teams')
-            .select('name')
-            .eq('id', opponentTeamId)
-            .maybeSingle();
-            
-          if (!opponentError && opponentTeam) {
-            opponentTeamName = opponentTeam.name;
-            teamCache.set(opponentTeamId, opponentTeamName);
-          } else {
-            opponentTeamName = `Équipe ${opponentTeamId}`;
-          }
+        // Récupérer le nom de l'équipe adverse
+        const { data: opponentTeam, error: opponentError } = await supabase
+          .from('teams')
+          .select('name')
+          .eq('id', opponentTeamId)
+          .maybeSingle();
+          
+        if (opponentError) {
+          console.error(`Erreur lors de la récupération de l'équipe adverse (${opponentTeamId}):`, opponentError);
+          errorsByMatchId[stat.match_id] = `Équipe adverse non trouvée: ${opponentError.message}`;
         }
         
-        // Format match date
+        // Formater la date si elle existe
         let formattedDate = null;
         if (matchData.date) {
           try {
             const dateObj = new Date(matchData.date);
             if (!isNaN(dateObj.getTime())) {
               formattedDate = dateObj;
+            } else {
+              console.warn(`Format de date invalide pour le match ${stat.match_id}: ${matchData.date}`);
+              errorsByMatchId[stat.match_id] = `Format de date invalide: ${matchData.date}`;
             }
           } catch (dateError) {
             console.warn(`Erreur de parsing de date pour le match ${stat.match_id}:`, dateError);
+            errorsByMatchId[stat.match_id] = "Erreur de conversion de date";
           }
+        } else {
+          console.warn(`Date manquante pour le match ${stat.match_id}`);
+          errorsByMatchId[stat.match_id] = "Date manquante dans les données du match";
         }
         
-        return {
+        // Ajouter les informations au stat
+        matchesWithDetails.push({
           ...stat,
-          opponentTeamName,
-          opponentTeamId,
+          opponentTeamName: opponentTeam?.name || `Équipe ${opponentTeamId}`,
+          opponentTeamId: opponentTeamId,
           matchDate: formattedDate,
           tournament: matchData.tournament || "Tournoi inconnu"
-        };
+        });
         
       } catch (error) {
-        const errorMessage = `Erreur lors du traitement du match ${stat.match_id}: ${error}`;
-        matchErrors[stat.match_id] = errorMessage;
-        console.error(errorMessage);
-        
-        return {
+        console.error(`Erreur lors du traitement du match ${stat.match_id}:`, error);
+        errorsByMatchId[stat.match_id] = `Erreur lors du traitement: ${error}`;
+        matchesWithDetails.push({
           ...stat,
           matchDate: null,
-          matchError: `Erreur: ${error}`
-        };
+          matchError: `Erreur lors du traitement: ${error}`
+        });
       }
-    });
+    }
     
-    // Wait for all stats to be processed
-    const processedStats = await Promise.all(processPromises);
-    
-    // Sort matches by date (newest first)
-    const sortedMatches = processedStats.sort((a, b) => {
-      // Handle missing dates
+    // Trier les matchs par date (du plus récent au plus ancien)
+    const sortedMatches = matchesWithDetails.sort((a, b) => {
+      // Si une date est manquante, la placer à la fin
       if (!a.matchDate) return 1;
       if (!b.matchDate) return -1;
       
-      // Sort newest first
+      // Trier du plus récent au plus ancien
       return b.matchDate.getTime() - a.matchDate.getTime();
     });
     
     return {
       enhancedStats: sortedMatches,
-      errors: matchErrors
+      errors: errorsByMatchId
     };
-    
   } catch (error) {
     console.error("Erreur lors du chargement des détails des matchs:", error);
     toast.error("Erreur lors du chargement des détails des matchs");

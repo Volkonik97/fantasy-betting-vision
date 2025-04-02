@@ -14,10 +14,10 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
   const roleDisplayNames: Record<string, string> = {
     "All": "All",
     "Top": "Top",
-    "Jungle": "Jungle",
+    "Jungle": "Jng",
     "Mid": "Mid",
     "ADC": "Bot", 
-    "Support": "Support"
+    "Support": "Sup"
   };
   
   // Icons for each role

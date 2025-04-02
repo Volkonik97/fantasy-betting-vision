@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { format, isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -21,23 +22,29 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   
   const [blueLogoUrl, setBlueLogoUrl] = useState<string | null>(match.teamBlue.logo || null);
   const [redLogoUrl, setRedLogoUrl] = useState<string | null>(match.teamRed.logo || null);
+  const [blueLogoError, setBlueLogoError] = useState(false);
+  const [redLogoError, setRedLogoError] = useState(false);
   
   useEffect(() => {
     const fetchLogos = async () => {
       try {
         // Fetch blue team logo if needed
-        if (!match.teamBlue.logo) {
+        if (!match.teamBlue.logo || match.teamBlue.logo.includes("undefined")) {
           const blueUrl = await getTeamLogoUrl(match.teamBlue.id);
-          if (blueUrl) {
+          if (blueUrl && !blueUrl.includes("undefined")) {
             setBlueLogoUrl(blueUrl);
+          } else {
+            setBlueLogoError(true);
           }
         }
         
         // Fetch red team logo if needed
-        if (!match.teamRed.logo) {
+        if (!match.teamRed.logo || match.teamRed.logo.includes("undefined")) {
           const redUrl = await getTeamLogoUrl(match.teamRed.id);
-          if (redUrl) {
+          if (redUrl && !redUrl.includes("undefined")) {
             setRedLogoUrl(redUrl);
+          } else {
+            setRedLogoError(true);
           }
         }
       } catch (error) {
@@ -98,16 +105,25 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
-              <Avatar className="w-10 h-10">
-                <AvatarImage 
-                  src={blueLogoUrl || ''} 
-                  alt={match.teamBlue.name} 
-                  className="object-contain"
-                />
-                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                  {match.teamBlue.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              {!blueLogoError && blueLogoUrl ? (
+                <Avatar className="w-10 h-10">
+                  <AvatarImage 
+                    src={blueLogoUrl} 
+                    alt={match.teamBlue.name} 
+                    className="object-contain"
+                    onError={() => setBlueLogoError(true)}
+                  />
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {match.teamBlue.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {match.teamBlue.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
             <div>
               <h3 className="font-medium">{match.teamBlue.name}</h3>
@@ -137,16 +153,25 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
               <span className="text-sm text-gray-500 block">{match.teamRed.region}</span>
             </div>
             <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
-              <Avatar className="w-10 h-10">
-                <AvatarImage 
-                  src={redLogoUrl || ''} 
-                  alt={match.teamRed.name} 
-                  className="object-contain"
-                />
-                <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
-                  {match.teamRed.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              {!redLogoError && redLogoUrl ? (
+                <Avatar className="w-10 h-10">
+                  <AvatarImage 
+                    src={redLogoUrl} 
+                    alt={match.teamRed.name} 
+                    className="object-contain"
+                    onError={() => setRedLogoError(true)}
+                  />
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {match.teamRed.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="w-10 h-10">
+                  <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
+                    {match.teamRed.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              )}
             </div>
           </div>
         </div>

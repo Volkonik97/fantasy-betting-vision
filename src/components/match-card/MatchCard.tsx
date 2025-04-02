@@ -3,13 +3,14 @@ import React, { useState, useEffect } from "react";
 import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
 import { cn } from "@/lib/utils";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { isSeriesMatch, isStandardSeries } from "@/utils/database/matchesService";
 
 import MatchCardHeader from "./MatchCardHeader";
 import MatchTeams from "./MatchTeams";
 import WinPrediction from "./WinPrediction";
 import UpcomingMatchInfo from "./UpcomingMatchInfo";
 import CompletedMatchInfo from "./CompletedMatchInfo";
-import { isSeriesMatch, isStandardSeries } from "@/utils/database/matches/matchesService";
 
 interface MatchCardProps {
   match: Match;
@@ -22,9 +23,39 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const isPastMatch = isPast(matchDate);
   const isUpcoming = isFuture(matchDate);
   
+  const [blueLogoUrl, setBlueLogoUrl] = useState<string | null>(match.teamBlue.logo || null);
+  const [redLogoUrl, setRedLogoUrl] = useState<string | null>(match.teamRed.logo || null);
+  const [blueLogoError, setBlueLogoError] = useState(false);
+  const [redLogoError, setRedLogoError] = useState(false);
   const [isSeries, setIsSeries] = useState(false);
   
   useEffect(() => {
+    const fetchLogos = async () => {
+      try {
+        // Fetch blue team logo if needed
+        if (!match.teamBlue.logo || match.teamBlue.logo.includes("undefined")) {
+          const blueUrl = await getTeamLogoUrl(match.teamBlue.id);
+          if (blueUrl && !blueUrl.includes("undefined")) {
+            setBlueLogoUrl(blueUrl);
+          } else {
+            setBlueLogoError(true);
+          }
+        }
+        
+        // Fetch red team logo if needed
+        if (!match.teamRed.logo || match.teamRed.logo.includes("undefined")) {
+          const redUrl = await getTeamLogoUrl(match.teamRed.id);
+          if (redUrl && !redUrl.includes("undefined")) {
+            setRedLogoUrl(redUrl);
+          } else {
+            setRedLogoError(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching team logos:", error);
+      }
+    };
+    
     // Check if this is a series match and verify it's a valid series
     const checkIfSeries = async () => {
       const isMatchInSeries = isSeriesMatch(match.id);
@@ -44,8 +75,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
       }
     };
     
+    fetchLogos();
     checkIfSeries();
-  }, [match.id]);
+  }, [match.teamBlue.id, match.teamBlue.logo, match.teamRed.id, match.teamRed.logo, match.id]);
   
   // Log for debugging
   console.log(`Match ${match.id} - Is series: ${isSeries}`);
@@ -83,8 +115,12 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         <MatchTeams 
           teamBlue={match.teamBlue}
           teamRed={match.teamRed}
-          blueLogoUrl={match.teamBlue.logo}
-          redLogoUrl={match.teamRed.logo}
+          blueLogoUrl={blueLogoUrl}
+          redLogoUrl={redLogoUrl}
+          blueLogoError={blueLogoError}
+          redLogoError={redLogoError}
+          onBlueLogoError={() => setBlueLogoError(true)}
+          onRedLogoError={() => setRedLogoError(true)}
           status={match.status}
           result={match.result}
           blueScore={blueScore}

@@ -1,8 +1,7 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Badge } from "../ui/badge";
-import ImageWithFallback from "@/components/ui/ImageWithFallback";
-import { Shield } from "lucide-react";
+import { getRoleIconPath } from "./RoleBadge";
 
 interface PlayerImageProps {
   name: string;
@@ -11,28 +10,24 @@ interface PlayerImageProps {
 }
 
 const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  const handleImageError = () => {
-    // Try once more with a new refresh key when an image fails to load
-    setRefreshKey(prev => prev + 1);
-  };
-  
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
-      <ImageWithFallback
-        src={image}
-        alt={name}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        forceRefresh={refreshKey > 0}
-        onError={handleImageError}
-        fallback={
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-            <Shield className="h-12 w-12 text-gray-300 mb-2" />
-            <span className="text-2xl font-bold text-gray-400">{name.charAt(0).toUpperCase()}</span>
-          </div>
-        }
-      />
+      {image ? (
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null; // Prevent infinite error loop
+            target.src = "/placeholder.svg";
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+          <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
+        </div>
+      )}
       
       <div className="absolute top-2 left-2 flex gap-2 items-center">
         <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs">

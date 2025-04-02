@@ -6,9 +6,7 @@ interface RoleBadgeProps {
 }
 
 export const getRoleColor = (role: string) => {
-  const normalizedRole = normalizeRoleName(role);
-  
-  switch (normalizedRole) {
+  switch (role) {
     case "Top": return "bg-gradient-to-r from-red-800 to-red-600";
     case "Jungle": return "bg-gradient-to-r from-green-600 to-green-400";
     case "Mid": return "bg-gradient-to-r from-orange-400 to-orange-300";
@@ -19,31 +17,14 @@ export const getRoleColor = (role: string) => {
 };
 
 export const getRoleDisplayName = (role: string): string => {
-  const normalizedRole = normalizeRoleName(role);
-  
-  switch (normalizedRole) {
+  switch (role) {
     case "Top": return "Top";
-    case "Jungle": return "Jungle";
+    case "Jungle": return "Jng";
     case "Mid": return "Mid";
     case "ADC": return "Bot";
-    case "Support": return "Support";
+    case "Support": return "Sup";
     default: return role;
   }
-};
-
-// Helper function to normalize role names
-export const normalizeRoleName = (role: string): string => {
-  if (!role) return "Mid"; // Default to Mid if role is undefined
-  
-  const roleUpper = role.toUpperCase();
-  
-  if (roleUpper.includes("TOP")) return "Top";
-  if (roleUpper.includes("JUNG") || roleUpper.includes("JNG") || roleUpper === "JG") return "Jungle";
-  if (roleUpper.includes("MID")) return "Mid";
-  if (roleUpper.includes("ADC") || roleUpper.includes("BOT") || roleUpper.includes("BOTTOM")) return "ADC";
-  if (roleUpper.includes("SUP") || roleUpper.includes("SP")) return "Support";
-  
-  return role; // Return original if no match
 };
 
 export const getRoleIconPath = (role: string): string => {

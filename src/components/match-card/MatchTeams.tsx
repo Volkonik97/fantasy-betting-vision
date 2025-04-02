@@ -8,6 +8,10 @@ interface MatchTeamsProps {
   teamRed: Team;
   blueLogoUrl: string | null;
   redLogoUrl: string | null;
+  blueLogoError: boolean;
+  redLogoError: boolean;
+  onBlueLogoError: () => void;
+  onRedLogoError: () => void;
   status: string;
   result?: {
     winner?: string;
@@ -24,6 +28,10 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
   teamRed,
   blueLogoUrl,
   redLogoUrl,
+  blueLogoError,
+  redLogoError,
+  onBlueLogoError,
+  onRedLogoError,
   status,
   result,
   blueScore,
@@ -55,7 +63,9 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
       <div className="flex items-center gap-3 flex-1">
         <TeamLogo 
           logoUrl={blueLogoUrl} 
-          teamName={teamBlue.name}
+          teamName={teamBlue.name} 
+          onError={onBlueLogoError}
+          hasError={blueLogoError}
         />
         <div>
           <h3 className="font-medium">{teamBlue.name}</h3>
@@ -87,6 +97,8 @@ const MatchTeams: React.FC<MatchTeamsProps> = ({
         <TeamLogo 
           logoUrl={redLogoUrl} 
           teamName={teamRed.name}
+          onError={onRedLogoError}
+          hasError={redLogoError}
         />
       </div>
     </div>

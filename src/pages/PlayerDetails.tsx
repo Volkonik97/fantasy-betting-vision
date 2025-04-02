@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
@@ -12,7 +12,7 @@ import { getPlayerTimelineStats } from "@/utils/database/matches/playerStats";
 import { getTeamById } from "@/utils/database/teamsService";
 import { toast } from "sonner";
 
-// Import components
+// Import our components
 import PlayerHeader from "@/components/player/PlayerHeader";
 import PlayerStatsOverview from "@/components/player/PlayerStatsOverview";
 import PlayerChampionStats from "@/components/player/PlayerChampionStats";
@@ -27,15 +27,8 @@ const PlayerDetails = () => {
   const [matchStats, setMatchStats] = useState<any[]>([]);
   const [timelineStats, setTimelineStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-  
-  const checkWinForPlayer = useCallback((stat: any) => {
-    return player ? isWinForPlayer(stat, player.team) : false;
-  }, [player]);
   
   useEffect(() => {
-    let isMounted = true;
-    
     const loadPlayerData = async () => {
       if (!id) return;
       
@@ -49,85 +42,46 @@ const PlayerDetails = () => {
           return;
         }
         
-        if (isMounted) {
-          setPlayer(playerData);
-        }
+        console.log("Player data:", playerData);
+        setPlayer(playerData);
         
         // Get team name
         if (playerData.team) {
           const team = await getTeamById(playerData.team);
-          if (team && isMounted) {
+          if (team) {
             setTeamName(team.name);
           }
         }
         
-        // Only load other data when it's needed based on active tab
-        if (activeTab === "overview" || activeTab === "champions" || activeTab === "matches") {
-          const stats = await getPlayerStats(id);
-          if (isMounted) {
-            setMatchStats(stats);
-          }
-        }
+        // Get match statistics directly for this player
+        const stats = await getPlayerStats(id);
+        console.log("Player match stats:", stats);
+        setMatchStats(stats);
         
-        if (activeTab === "timeline") {
-          try {
-            const timeline = await getPlayerTimelineStats(id);
-            if (isMounted) {
-              setTimelineStats(timeline);
-            }
-          } catch (timelineError) {
-            console.error("Erreur lors du chargement des statistiques timeline:", timelineError);
-            // Continue without timeline stats
-          }
+        // Get timeline statistics for this player
+        try {
+          const timeline = await getPlayerTimelineStats(id);
+          console.log("Player timeline stats:", timeline);
+          setTimelineStats(timeline);
+        } catch (timelineError) {
+          console.error("Erreur lors du chargement des statistiques timeline:", timelineError);
+          // Continue without timeline stats
         }
         
       } catch (error) {
         console.error("Error loading player data:", error);
         toast.error("Erreur lors du chargement des données du joueur");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     
     loadPlayerData();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [id, activeTab]);
-  
-  // Load specific data based on tab changes
-  const handleTabChange = async (value: string) => {
-    setActiveTab(value);
-    
-    if (!id || !player) return;
-    
-    // Load timeline data only when timeline tab is selected
-    if (value === "timeline" && !timelineStats) {
-      try {
-        const timeline = await getPlayerTimelineStats(id);
-        setTimelineStats(timeline);
-      } catch (error) {
-        console.error("Erreur lors du chargement des statistiques timeline:", error);
-      }
-    }
-    
-    // Load match stats if they haven't been loaded yet
-    if ((value === "overview" || value === "champions" || value === "matches") && matchStats.length === 0) {
-      try {
-        const stats = await getPlayerStats(id);
-        setMatchStats(stats);
-      } catch (error) {
-        console.error("Erreur lors du chargement des statistiques de match:", error);
-      }
-    }
-  };
+  }, [id]);
   
   // Calculate statistics
-  const averageStats = matchStats.length > 0 ? calculateAverages(matchStats) : null;
-  const championStats = matchStats.length > 0 && player ? getChampionStats(matchStats, player.team) : [];
+  const averageStats = calculateAverages(matchStats);
+  const championStats = getChampionStats(matchStats, player?.team);
   
   // Handle loading state
   if (isLoading) {
@@ -151,6 +105,11 @@ const PlayerDetails = () => {
       </div>
     );
   }
+  
+  // Helper function for checking if a player won a match
+  const checkWinForPlayer = (stat: any) => {
+    return isWinForPlayer(stat, player.team);
+  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,7 +138,7 @@ const PlayerDetails = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.1 }}
         >
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <Tabs defaultValue="overview">
             <TabsList className="w-full mb-4">
               <TabsTrigger value="overview" className="flex-1">Vue d'ensemble</TabsTrigger>
               <TabsTrigger value="timeline" className="flex-1">Timeline</TabsTrigger>
@@ -188,30 +147,22 @@ const PlayerDetails = () => {
             </TabsList>
             
             <TabsContent value="overview">
-              {activeTab === "overview" && (
-                <PlayerStatsOverview averageStats={averageStats} />
-              )}
+              <PlayerStatsOverview averageStats={averageStats} />
             </TabsContent>
             
             <TabsContent value="timeline">
-              {activeTab === "timeline" && (
-                <PlayerTimelineStats timelineStats={timelineStats} />
-              )}
+              <PlayerTimelineStats timelineStats={timelineStats} />
             </TabsContent>
             
             <TabsContent value="champions">
-              {activeTab === "champions" && (
-                <PlayerChampionStats championStats={championStats} />
-              )}
+              <PlayerChampionStats championStats={championStats} />
             </TabsContent>
             
             <TabsContent value="matches">
-              {activeTab === "matches" && (
-                <PlayerMatchStats 
-                  matchStats={matchStats} 
-                  isWinForPlayer={checkWinForPlayer} 
-                />
-              )}
+              <PlayerMatchStats 
+                matchStats={matchStats} 
+                isWinForPlayer={checkWinForPlayer} 
+              />
             </TabsContent>
           </Tabs>
         </motion.div>

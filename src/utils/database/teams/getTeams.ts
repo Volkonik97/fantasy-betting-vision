@@ -2,8 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../../models/types';
 import { toast } from "sonner";
+import { getTeamsFromCache, updateTeamsCache, updatePlayersWithTeamName } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
-import { normalizeRoleName } from '../../leagueData/assembler/modelConverter';
 
 const BUCKET_NAME = "team-logos";
 
@@ -12,6 +12,13 @@ const BUCKET_NAME = "team-logos";
  */
 export const getTeams = async (): Promise<Team[]> => {
   try {
+    // Check if we have a recent cache
+    const cachedTeams = getTeamsFromCache();
+    if (cachedTeams) {
+      console.log("Using cached teams data");
+      return cachedTeams;
+    }
+    
     console.log("Fetching teams from Supabase");
     
     // Fetch teams from database
@@ -43,8 +50,21 @@ export const getTeams = async (): Promise<Team[]> => {
     
     // Convert database format to application format
     const teams: Team[] = teamsData.map(team => {
-      // Use logo directly from database
-      const logoUrl = team.logo as string;
+      // Check if there's a custom logo in Supabase storage
+      let logoUrl = team.logo as string;
+      
+      // If the logo URL is not from storage, check if there's a logo in storage
+      if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
+        // Try to generate a storage URL based on team ID
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(`${team.id}.png`);
+        
+        // Use the storage URL if it exists, otherwise fall back to the database URL
+        if (publicUrl) {
+          logoUrl = publicUrl;
+        }
+      }
       
       return {
         id: team.id as string,
@@ -69,7 +89,7 @@ export const getTeams = async (): Promise<Team[]> => {
           .map(player => ({
             id: player.id as string,
             name: player.name as string,
-            role: normalizeRoleName(player.role || 'Mid'),
+            role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
             image: player.image as string,
             team: player.team_id as string,
             teamName: team.name, // Always set the teamName from the team.name
@@ -80,6 +100,14 @@ export const getTeams = async (): Promise<Team[]> => {
           }));
       });
     }
+    
+    // Update each team's players with the team name in cache
+    teams.forEach(team => {
+      updatePlayersWithTeamName(team.id, team.name);
+    });
+    
+    // Cache the results
+    updateTeamsCache(teams);
     
     return teams;
   } catch (error) {
