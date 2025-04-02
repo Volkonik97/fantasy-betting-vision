@@ -1,4 +1,3 @@
-
 import React from "react";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
@@ -40,16 +39,17 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
       return isSelected ? "bg-lol-blue text-white" : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
     }
     
-    const baseColor = getRoleColor(role);
-    // Extract color class to use for text
-    const colorClass = baseColor.includes("from-") 
-      ? baseColor.split("from-")[1].split(" ")[0] 
-      : "";
-    
     if (isSelected) {
-      return `${baseColor} text-white`;
+      return `${getRoleColor(role)} text-white`;
     } else {
-      return `bg-white text-${colorClass} hover:bg-gray-100 border border-gray-200`;
+      switch (role) {
+        case "Top": return "bg-white text-red-600 hover:bg-red-50 border border-red-200";
+        case "Jungle": return "bg-white text-green-600 hover:bg-green-50 border border-green-200";
+        case "Mid": return "bg-white text-yellow-600 hover:bg-yellow-50 border border-yellow-200";
+        case "ADC": return "bg-white text-blue-600 hover:bg-blue-50 border border-blue-200";
+        case "Support": return "bg-white text-purple-600 hover:bg-purple-50 border border-purple-200";
+        default: return "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200";
+      }
     }
   };
 
@@ -58,13 +58,9 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
       <h3 className="font-medium mb-2">Filter by Role</h3>
       <div className="flex flex-wrap gap-2">
         {roles.map(role => {
-          // Normalize the role for comparison and internal use
           const normalizedRole = role === "All" ? "All" : normalizeRoleName(role);
-          // Get the display name for the UI
           const displayName = role === "All" ? "All" : roleDisplayNames[normalizedRole] || normalizedRole;
-          // Get the icon for this role
           const icon = getRoleIcon(normalizedRole);
-          // Is this role selected?
           const isSelected = selectedRole === role;
           
           return (
