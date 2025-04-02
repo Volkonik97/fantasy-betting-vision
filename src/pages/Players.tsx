@@ -61,18 +61,21 @@ const Players = () => {
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
       
       teams.forEach(team => {
-  if (!team.players || team.players.length === 0) {
-    console.warn(`No players for team ${team.name} (${team.region})`);
-  } else {
-    team.players.forEach(player => {
-      if (!player.name || !player.id) {
-        console.warn(`Player missing id or name in team ${team.name}:`, player);
-      }
-    });
-  }
-});
- else {
-          console.log(`No players found for team: ${team.name} (${team.region})`);
+        if (!team.players || team.players.length === 0) {
+          console.warn(`No players for team ${team.name} (${team.region})`);
+        } else {
+          team.players.forEach(player => {
+            if (!player.name || !player.id) {
+              console.warn(`Player missing id or name in team ${team.name}:`, player);
+            } else {
+              // Add player with team information
+              playersWithTeamInfo.push({
+                ...player,
+                teamName: team.name,
+                teamRegion: team.region || ""
+              });
+            }
+          });
         }
       });
       
