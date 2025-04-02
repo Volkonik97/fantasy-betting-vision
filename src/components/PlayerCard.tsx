@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
@@ -30,7 +29,16 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   
   // Add debug information for this specific player
   useEffect(() => {
-    console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}`);
+    console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}, ID: ${player.id}`);
+    
+    // Vérifier si le joueur a toutes les propriétés nécessaires
+    if (!player.role || !player.teamName || !player.teamRegion) {
+      console.warn(`⚠️ PlayerCard: Joueur ${player.name} avec des propriétés manquantes: ` +
+        `${!player.role ? 'role ' : ''}` +
+        `${!player.teamName ? 'teamName ' : ''}` +
+        `${!player.teamRegion ? 'teamRegion ' : ''}`
+      );
+    }
     
     return () => {
       console.log(`PlayerCard unmounted for: ${player.name}`);
