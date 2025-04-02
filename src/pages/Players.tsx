@@ -1,6 +1,3 @@
-// 🔧 Forcer tous les logs à apparaître dans la console (niveau warning)
-console.log = (...args) => console.warn(...args);
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -11,7 +8,6 @@ import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
 
 const Players = () => {
-  console.warn("📦 Composant Players monté");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
@@ -44,74 +40,47 @@ const Players = () => {
   }, [selectedRegion]);
 
   const fetchPlayers = async () => {
-    console.warn("🚀 fetchPlayers() appelée !");
     try {
       setIsLoading(true);
 
       const teams = await getTeams();
-      console.warn(`✅ ${teams.length} équipes chargées.`);
-
-      // 🔍 Liste de toutes les équipes récupérées
-      console.warn("📋 Liste de toutes les équipes récupérées :");
-      teams.forEach(t => {
-        console.warn(`- ${t.name} (${t.region}) - ${t.players?.length || 0} joueurs`);
-      });
+      console.log(`✅ ${teams.length} équipes chargées.`);
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach((team, teamIndex) => {
-        if (!Array.isArray(team.players)) {
-          console.warn(`⚠️ L'équipe ${team.name} n'a pas de tableau de joueurs valide`);
-          return;
-        }
-        
-        if (team.players.length === 0) {
-          console.warn(`⚠️ L'équipe ${team.name} (${team.region}) n'a aucun joueur`);
-          return;
-        }
+        if (!Array.isArray(team.players) || team.players.length === 0) return;
 
         team.players.forEach((player, playerIndex) => {
           if (!player.id || !player.name) {
-            console.warn(`⚠️ Joueur sans ID ou nom dans l'équipe ${team.name}`);
-            return;
-          }
+  console.warn(`⚠️ Joueur sans ID ou nom dans l'équipe ${team.name}`);
+  console.warn("Joueur exclu :", player);
+  return;
+}
 
-          // Vérifier que le joueur a toutes les propriétés nécessaires
-          const enrichedPlayer = {
+
+          playersWithTeamInfo.push({
             ...player,
             teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown",
-            // S'assurer que ces propriétés existent toujours
-            role: player.role || "Unknown",
-            kda: player.kda || 0,
-            csPerMin: player.csPerMin || 0,
-            damageShare: player.damageShare || 0
-          };
-
-          playersWithTeamInfo.push(enrichedPlayer);
+            teamRegion: team.region || "Unknown"
+          });
         });
       });
 
       // 🧾 Log tous les joueurs collectés avant filtrage
-      console.warn(`🧾 Liste brute des joueurs récupérés: ${playersWithTeamInfo.length} joueurs au total`);
-      
-      // Group by region for more concise logging
-      const playersByRegion = playersWithTeamInfo.reduce((acc, p) => {
-        const region = p.teamRegion || "Unknown";
-        if (!acc[region]) acc[region] = [];
-        acc[region].push(p);
-        return acc;
-      }, {} as Record<string, any[]>);
-      
-      Object.entries(playersByRegion).forEach(([region, players]) => {
-        console.warn(`- Région ${region}: ${players.length} joueurs`);
-        players.slice(0, 3).forEach(p => {
-          console.warn(`  - ${p.name} (${p.role}) - Équipe: ${p.teamName}`);
-        });
-        if (players.length > 3) {
-          console.warn(`  - ... et ${players.length - 3} autres joueurs`);
-        }
+      console.log("🧾 Liste brute des joueurs récupérés :");
+      playersWithTeamInfo.forEach(p => {
+        console.log(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
       });
+
+      // 🔍 Dump ciblé pour l'équipe Gen.G
+      const debugTeam = teams.find(t => t.name.trim().toLowerCase() === "gen.g");
+      if (debugTeam) {
+        console.log("🔎 Équipe ciblée : Gen.G");
+        console.log(JSON.stringify(debugTeam, null, 2));
+      } else {
+        console.warn("❌ Aucune équipe Gen.G trouvée dans getTeams()");
+      }
 
       setAllPlayers(playersWithTeamInfo);
 
@@ -120,8 +89,6 @@ const Players = () => {
 
       if (playersWithTeamInfo.length === 0) {
         toast.warning("Aucun joueur trouvé dans la base de données");
-      } else {
-        console.warn(`✅ ${playersWithTeamInfo.length} joueurs chargés avec succès!`);
       }
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données :", error);
@@ -132,12 +99,6 @@ const Players = () => {
   };
 
   const filteredPlayers = allPlayers.filter(player => {
-    // Vérifier si le joueur a toutes les propriétés nécessaires
-    if (!player.name || !player.role || !player.teamName || !player.teamRegion) {
-      console.warn(`🚫 Joueur incomplet ignoré dans le filtrage: ${player.name || "Sans nom"}`);
-      return false;
-    }
-    
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
     let regionMatches = true;
@@ -165,53 +126,22 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const included = roleMatches && regionMatches && searchMatches;
-    
-    // Réduire le nombre de logs pour éviter d'encombrer la console
-    if (!included && (!player.role || !player.teamRegion)) {
-      console.warn("🧪 Filter debug →", {
-        name: player.name,
-        role: player.role,
-        teamRegion: player.teamRegion,
-        teamName: player.teamName,
-        selectedCategory,
-        selectedRegion,
-        selectedSubRegion,
-        searchTerm,
-        regionMatches,
-        roleMatches,
-        searchMatches,
-        included
-      });
-    }
+    console.log("🧪 Filter debug →", {
+      name: player.name,
+      role: player.role,
+      teamRegion: player.teamRegion,
+      selectedCategory,
+      selectedRegion,
+      selectedSubRegion,
+      searchTerm,
+      regionMatches,
+      roleMatches,
+      searchMatches,
+      included: roleMatches && regionMatches && searchMatches
+    });
 
-    return included;
+    return roleMatches && regionMatches && searchMatches;
   });
-
-  // Log des statistiques de filtrage
-  useEffect(() => {
-    console.warn(`📊 Filtrage: ${allPlayers.length} joueurs au total → ${filteredPlayers.length} après filtrage`);
-    
-    if (filteredPlayers.length > 0) {
-      // Grouper par équipe pour voir la distribution
-      const teamCounts = filteredPlayers.reduce((acc, player) => {
-        const teamName = player.teamName || 'Unknown';
-        acc[teamName] = (acc[teamName] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.warn("📋 Joueurs filtrés par équipe:", teamCounts);
-      
-      // Grouper par rôle pour vérifier la distribution
-      const roleCounts = filteredPlayers.reduce((acc, player) => {
-        const role = player.role || 'Unknown';
-        acc[role] = (acc[role] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.warn("📋 Joueurs filtrés par rôle:", roleCounts);
-    }
-  }, [filteredPlayers.length]);
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
