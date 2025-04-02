@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
+import PlayerSkeletonCard from "@/components/players/PlayerSkeletonCard";
 
 interface PlayersListProps {
   players: (Player & { teamName: string; teamRegion: string })[];
@@ -11,11 +12,20 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
+  // Generate skeleton placeholders while loading
   if (loading) {
     return (
-      <div className="text-center py-10">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lol-blue mb-4"></div>
-        <p className="text-gray-500">Loading players...</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {Array.from({ length: 15 }).map((_, index) => (
+          <motion.div
+            key={`skeleton-${index}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+          >
+            <PlayerSkeletonCard />
+          </motion.div>
+        ))}
       </div>
     );
   }
@@ -28,10 +38,14 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
-  // Log des joueurs pour debug
-  console.log(`Rendering ${players.length} players in PlayersList`);
-  if (players.length > 0) {
-    console.log("Sample player data:", players[0]);
+  // Debug to check for Hanwha players
+  const hanwhaPlayers = players.filter(p => 
+    (p.teamName && p.teamName.includes("Hanwha")) || 
+    p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934"
+  );
+  console.log(`Found ${hanwhaPlayers.length} Hanwha players in PlayersList render`);
+  if (hanwhaPlayers.length > 0) {
+    console.log("Hanwha players:", hanwhaPlayers);
   }
 
   // Vérification supplémentaire que tous les joueurs ont les données requises
@@ -48,7 +62,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
             key={player.id || `player-${index}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.9) }}
             className="h-full"
           >
             <Link to={`/players/${player.id}`} className="h-full block">

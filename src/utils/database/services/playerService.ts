@@ -6,6 +6,10 @@ import { getLoadedPlayers, setLoadedPlayers } from '../../csvTypes';
 import { toast } from "sonner";
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
+// Cache expiration time: 5 minutes
+const CACHE_EXPIRATION = 5 * 60 * 1000;
+let playersCache: { players: Player[], timestamp: number } | null = null;
+
 // Save players to database
 export const savePlayers = async (players: Player[]): Promise<boolean> => {
   try {
@@ -100,6 +104,8 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
     // Update the cache if any players were successfully saved
     if (successCount > 0) {
       setLoadedPlayers(validPlayers);
+      // Clear the players cache to ensure fresh data on next fetch
+      playersCache = null;
     }
     
     return successCount > 0;
@@ -110,13 +116,25 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
   }
 };
 
-// Get players from database
-export const getPlayers = async (): Promise<Player[]> => {
+// Get players from database with improved caching
+export const getPlayers = async (forceRefresh = false): Promise<Player[]> => {
+  // Use cached players if available and not expired
+  if (playersCache && !forceRefresh && (Date.now() - playersCache.timestamp) < CACHE_EXPIRATION) {
+    console.log("Using cached players data");
+    return playersCache.players;
+  }
+  
+  // Check loaded players from memory cache
   const loadedPlayers = getLoadedPlayers();
-  if (loadedPlayers) return loadedPlayers;
+  if (loadedPlayers && !forceRefresh) {
+    console.log("Using players from memory cache");
+    return loadedPlayers;
+  }
   
   try {
-    // Améliorons la requête pour inclure les informations des équipes
+    console.log("Fetching players from database with team data");
+    
+    // Improved query to get players with their team information
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*, teams:team_id(name, region)');
@@ -126,6 +144,8 @@ export const getPlayers = async (): Promise<Player[]> => {
       const { teams } = await import('../../mockData');
       return teams.flatMap(team => team.players);
     }
+    
+    console.log(`Retrieved ${playersData.length} players from database`);
     
     const players: Player[] = playersData.map(player => ({
       id: player.id as string,
@@ -141,13 +161,33 @@ export const getPlayers = async (): Promise<Player[]> => {
       championPool: player.champion_pool as string[] || []
     }));
     
+    // Check for Hanwha Life Esports players
+    const hanwhaPlayers = players.filter(p => 
+      p.teamName?.includes("Hanwha") || 
+      p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934"
+    );
+    console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players in database`);
+    if (hanwhaPlayers.length > 0) {
+      hanwhaPlayers.forEach(p => console.log(`Hanwha player: ${p.name}, role: ${p.role}, team: ${p.teamName}`));
+    }
+    
+    // Update both caches
+    playersCache = { players, timestamp: Date.now() };
     setLoadedPlayers(players);
+    
     return players;
   } catch (error) {
     console.error("Erreur lors de la récupération des joueurs:", error);
     const { teams } = await import('../../mockData');
     return teams.flatMap(team => team.players);
   }
+};
+
+// Clear players cache to force fresh data on next fetch
+export const clearPlayersCache = () => {
+  playersCache = null;
+  setLoadedPlayers(null);
+  console.log("Players cache cleared");
 };
 
 // Get player by ID
@@ -194,5 +234,52 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     // Fallback to mock data if database query fails
     const { players } = await import('../../models/mockPlayers');
     return players.find(p => p.id === playerId) || null;
+  }
+};
+
+// Get players by team ID
+export const getPlayersByTeamId = async (teamId: string): Promise<Player[]> => {
+  try {
+    console.log(`Fetching players for team ${teamId} directly from database`);
+    
+    const { data: playersData, error } = await supabase
+      .from('players')
+      .select('*, teams:team_id(name, region)')
+      .eq('team_id', teamId);
+    
+    if (error) {
+      console.error(`Error fetching players for team ${teamId}:`, error);
+      return [];
+    }
+    
+    if (!playersData || playersData.length === 0) {
+      console.log(`No players found for team ${teamId}`);
+      return [];
+    }
+    
+    console.log(`Found ${playersData.length} players for team ${teamId} from database`);
+    
+    const players: Player[] = playersData.map(player => ({
+      id: player.id as string,
+      name: player.name as string,
+      role: normalizeRoleName(player.role || 'Mid'),
+      image: player.image as string,
+      team: player.team_id as string,
+      teamName: player.teams?.name as string,
+      teamRegion: player.teams?.region as string,
+      kda: Number(player.kda) || 0,
+      csPerMin: Number(player.cs_per_min) || 0,
+      damageShare: Number(player.damage_share) || 0,
+      championPool: player.champion_pool as string[] || []
+    }));
+    
+    if (players.length > 0) {
+      console.log(`Sample player:`, players[0]);
+    }
+    
+    return players;
+  } catch (error) {
+    console.error(`Error fetching players for team ${teamId}:`, error);
+    return [];
   }
 };

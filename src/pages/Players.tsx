@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { getPlayers, clearPlayersCache } from "@/utils/database/playersService";
 
 interface DbPlayer {
   id: string;
@@ -57,142 +57,34 @@ const Players = () => {
       try {
         setLoading(true);
         
-        console.log("Fetching all players from database directly...");
+        // Clear cache to get fresh data
+        clearPlayersCache();
         
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select('*, teams:team_id(name, region)');
-          
-        if (playersError) {
-          console.error("Error fetching players data:", playersError);
-          throw playersError;
-        }
+        // Get all players from the improved service
+        const players = await getPlayers(true);
         
-        if (!playersData || playersData.length === 0) {
-          console.log("No players found in direct database query, falling back to teams approach");
-          await fetchPlayersFromTeams();
-          return;
-        }
+        console.log(`Loaded ${players.length} players from database`);
         
-        const validPlayers = playersData.filter((player: DbPlayer) => 
-          player && player.id && player.name
-        );
+        // Filter valid players
+        const validPlayers = players.filter(player => player && player.id && player.name);
         
-        console.log(`Direct query found ${validPlayers.length} valid players out of ${playersData.length} total`);
-        
-        // Rechercher spécifiquement les joueurs de Hanwha Life Esports pour le debugging
-        const hanwhaPlayers = validPlayers.filter((p: DbPlayer) => 
-          p.team_id === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
-          (p.teams?.name && p.teams.name.includes("Hanwha"))
+        // Check for Hanwha Life Esports players
+        const hanwhaPlayers = validPlayers.filter(player => 
+          player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
+          (player.teamName && player.teamName.includes("Hanwha"))
         );
         
         console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
         
-        const mappedPlayers = validPlayers.map((player: DbPlayer) => {
-          let championPoolArray: string[] = [];
-          
-          if (player.champion_pool) {
-            if (Array.isArray(player.champion_pool)) {
-              championPoolArray = player.champion_pool;
-            } else if (typeof player.champion_pool === 'string') {
-              try {
-                championPoolArray = player.champion_pool.split(',').map(c => c.trim());
-              } catch (error) {
-                console.error("Error processing champion_pool string:", player.champion_pool, error);
-                championPoolArray = [];
-              }
-            }
-          }
-          
-          return {
-            id: player.id,
-            name: player.name,
-            role: normalizeRoleName(player.role || "Unknown"),
-            image: player.image || "",
-            team: player.team_id || "",
-            teamName: player.teams?.name || "Unknown team",
-            teamRegion: player.teams?.region || "Unknown region",
-            kda: typeof player.kda === 'number' ? player.kda : 0,
-            csPerMin: typeof player.cs_per_min === 'number' ? player.cs_per_min : 0,
-            damageShare: typeof player.damage_share === 'number' ? player.damage_share : 0,
-            championPool: championPoolArray
-          };
-        });
-        
-        // Debug the number of players after mapping
-        console.log(`Mapped ${mappedPlayers.length} players from ${validPlayers.length} valid players`);
-        
-        const uniqueRegions = [...new Set(mappedPlayers
+        const uniqueRegions = [...new Set(validPlayers
           .map(player => player.teamRegion)
           .filter(Boolean)
         )];
         
-        setAllPlayers(mappedPlayers);
+        setAllPlayers(validPlayers);
         setAvailableRegions(uniqueRegions);
-        
       } catch (error) {
-        console.error("Error in direct players fetch:", error);
-        await fetchPlayersFromTeams();
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    const fetchPlayersFromTeams = async () => {
-      try {
-        setLoading(true);
-        const teams = await getTeams();
-        
-        const teamsWithPlayers = teams.map(team => ({
-          ...team,
-          players: team.players || []
-        }));
-        
-        const players = teamsWithPlayers.flatMap(team => 
-          team.players.map(player => ({
-            ...player,
-            teamName: team.name,
-            teamRegion: team.region
-          }))
-        );
-        
-        const validPlayers = players.filter(player => 
-          player.id && 
-          player.name && 
-          player.role
-        );
-        
-        console.log(`Loaded ${validPlayers.length} valid players out of ${players.length} total via teams`);
-        
-        if (validPlayers.length === 0 && players.length > 0) {
-          console.warn("No valid players found after filtering. Check player data structure.");
-          console.log("Sample player data:", players[0]);
-        }
-        
-        const processedPlayers = validPlayers.map(player => ({
-          ...player,
-          kda: typeof player.kda === 'number' ? player.kda : 0,
-          csPerMin: typeof player.csPerMin === 'number' ? player.csPerMin : 0,
-          damageShare: typeof player.damageShare === 'number' ? player.damageShare : 0,
-          championPool: Array.isArray(player.championPool) 
-            ? player.championPool 
-            : typeof player.championPool === 'string'
-              ? player.championPool.split(',').map(c => c.trim())
-              : []
-        }));
-        
-        setAllPlayers(processedPlayers);
-        
-        const uniqueRegions = [...new Set(teamsWithPlayers
-          .map(team => team.region)
-          .filter(Boolean)
-        )];
-        
-        console.log("Available regions in database:", uniqueRegions);
-        setAvailableRegions(uniqueRegions);
-        
-      } catch (error) {
-        console.error("Error fetching player data:", error);
+        console.error("Error fetching players data:", error);
         toast.error("Erreur lors du chargement des données des joueurs");
       } finally {
         setLoading(false);
@@ -259,7 +151,6 @@ const Players = () => {
     return roleMatches && regionMatches && searchMatches;
   });
 
-  // Debug filtered players
   console.log(`Filtered players: ${filteredPlayers.length} out of ${allPlayers.length} total players`);
   
   const handleSearch = (query: string) => {
