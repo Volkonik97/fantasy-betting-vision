@@ -10,9 +10,6 @@ interface PlayerImageProps {
 }
 
 const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
-  // Get the appropriate role color based on the role
-  const roleColorClass = role ? getRoleColor(role) : "";
-  
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       {image ? (
@@ -39,7 +36,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
       </div>
 
       {role && (
-        <div className={`absolute bottom-0 left-0 right-0 h-8 ${roleColorClass} flex items-center justify-center shadow-md`}>
+        <div className={`absolute bottom-0 left-0 right-0 h-8 ${getRoleColor(role)} flex items-center justify-center shadow-md`}>
           <div className="flex items-center text-white font-medium">
             <span>{getRoleDisplayName(role)}</span>
           </div>
