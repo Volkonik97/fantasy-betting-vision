@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -32,6 +31,18 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     }, {} as Record<string, number>);
     
     console.log("Players by role:", roleCounts);
+    
+    // Vérifier si des joueurs ont des données manquantes
+    const playersWithMissingData = players.filter(p => 
+      !p.id || !p.name || !p.role || !p.teamName || !p.teamRegion
+    );
+    
+    if (playersWithMissingData.length > 0) {
+      console.warn(`⚠️ ${playersWithMissingData.length} joueurs avec des données manquantes`);
+      playersWithMissingData.slice(0, 3).forEach(p => 
+        console.warn(`  - Joueur incomplet: ${p.name || 'Sans nom'}, ID: ${p.id || 'Sans ID'}, Équipe: ${p.teamName || 'Inconnue'}`)
+      );
+    }
   }, [players]);
   
   if (loading) {
@@ -67,8 +78,9 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
         // Ensure player has teamName and teamRegion (defensive coding)
         const enrichedPlayer = {
           ...player,
-          teamName: player.teamName || "",
-          teamRegion: player.teamRegion || ""
+          teamName: player.teamName || "Équipe inconnue",
+          teamRegion: player.teamRegion || "Région inconnue",
+          role: player.role || "Rôle inconnu"
         };
         
         return (
