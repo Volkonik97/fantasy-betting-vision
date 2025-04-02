@@ -30,24 +30,27 @@ const ImageWithFallback = ({
 }: ImageWithFallbackProps) => {
   const [isLoading, setIsLoading] = useState(!!src); // Only show loading if there's a src
   const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Maximum number of retry attempts
   
   // Always add a timestamp parameter for cache busting to ensure fresh images
   const [imgSrc, setImgSrc] = useState<string | null | undefined>(
     src ? `${src}?t=${Date.now()}` : src
   );
   
-  // Update the image source when the src prop changes or forceRefresh is triggered
+  // Update the image source when the src prop changes, forceRefresh is triggered, or when retry is needed
   useEffect(() => {
     if (src) {
       // Always add timestamp to avoid browser caching issues
-      setImgSrc(`${src}?t=${Date.now()}`);
+      const timestamp = Date.now() + retryCount; // Add retryCount to make each retry URL unique
+      setImgSrc(`${src}?t=${timestamp}`);
       setIsLoading(true);
       setHasError(false);
     } else {
       setImgSrc(null);
       setIsLoading(false);
     }
-  }, [src, forceRefresh]); // Include forceRefresh in dependencies to trigger updates
+  }, [src, forceRefresh, retryCount]); // Include retryCount in dependencies to trigger updates
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -55,15 +58,17 @@ const ImageWithFallback = ({
   };
 
   const handleError = () => {
-    console.log(`Error loading image: ${imgSrc}`);
+    console.log(`Error loading image: ${imgSrc} (retry: ${retryCount}/${maxRetries})`);
     setIsLoading(false);
-    setHasError(true);
-    onError?.();
     
-    // If image fails to load and we have a source, try once more with a different timestamp
-    if (src) {
+    // If we haven't reached max retries, try again with a different timestamp
+    if (retryCount < maxRetries && src) {
       console.log(`Retrying image with new timestamp: ${src}`);
-      setImgSrc(`${src}?t=${Date.now() + 1000}`); // Add a different timestamp
+      setRetryCount(prev => prev + 1);
+    } else {
+      // If max retries reached or no src, show fallback
+      setHasError(true);
+      onError?.();
     }
   };
 
@@ -119,6 +124,7 @@ const ImageWithFallback = ({
       className={className}
       width={width}
       height={height}
+      onError={handleError} // Add onError here to catch runtime errors after successful load
     />
   );
 };

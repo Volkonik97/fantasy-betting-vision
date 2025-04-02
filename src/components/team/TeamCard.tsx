@@ -39,8 +39,6 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
         if (url && !url.includes("undefined")) {
           console.log(`Logo found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
-          // Trigger a refresh to make sure we get the latest version
-          setRefreshTrigger(prev => prev + 1);
         } else {
           // Set logo error if no valid URL found
           setLogoError(true);
@@ -57,9 +55,17 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   }, [team.id, team.logo, team.name]);
 
   const handleLogoError = () => {
+    console.log(`TeamCard: Logo error for ${team.name}`);
     setLogoError(true);
+    
     // Try one more time with a different cache key
-    setRefreshTrigger(prev => prev + 1);
+    if (refreshTrigger === 0) {
+      setRefreshTrigger(1);
+    }
+  };
+
+  const handleLogoLoad = () => {
+    console.log(`TeamCard: Successfully loaded logo for ${team.name}`);
   };
 
   return (
@@ -79,7 +85,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                   alt={`${team.name} logo`}
                   className="h-full w-full object-contain"
                   forceRefresh={refreshTrigger > 0}
-                  onLoad={() => console.log(`TeamCard: Successfully loaded logo for ${team.name}`)}
+                  onLoad={handleLogoLoad}
                   onError={handleLogoError}
                   fallback={
                     <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">

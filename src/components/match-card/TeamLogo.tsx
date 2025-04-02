@@ -15,8 +15,15 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
   
   const handleError = () => {
     onError();
-    // Trigger one more refresh attempt if error occurs
-    setRefreshTrigger(prev => prev + 1);
+    // Only trigger one more refresh attempt if error occurs
+    if (refreshTrigger === 0) {
+      console.log(`TeamLogo: Retrying logo for ${teamName}`);
+      setRefreshTrigger(1);
+    }
+  };
+  
+  const handleLoad = () => {
+    console.log(`TeamLogo: Successfully loaded logo for ${teamName}`);
   };
   
   return (
@@ -27,7 +34,7 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
           alt={teamName}
           className="object-contain"
           forceRefresh={refreshTrigger > 0}
-          onLoad={() => console.log(`TeamLogo: Successfully loaded logo for ${teamName}`)}
+          onLoad={handleLoad}
           onError={handleError}
           fallback={
             <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">

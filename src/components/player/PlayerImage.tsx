@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "../ui/badge";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
 import { Shield } from "lucide-react";
@@ -11,12 +11,21 @@ interface PlayerImageProps {
 }
 
 const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  const handleImageError = () => {
+    // Try once more with a new refresh key when an image fails to load
+    setRefreshKey(prev => prev + 1);
+  };
+  
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       <ImageWithFallback
         src={image}
         alt={name}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        forceRefresh={refreshKey > 0}
+        onError={handleImageError}
         fallback={
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
             <Shield className="h-12 w-12 text-gray-300 mb-2" />
