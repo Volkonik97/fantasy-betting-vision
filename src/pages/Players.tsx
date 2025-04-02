@@ -1,3 +1,6 @@
+// 🔧 Forcer tous les logs à apparaître dans la console (niveau warning)
+console.log = (...args) => console.warn(...args);
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -44,12 +47,12 @@ const Players = () => {
       setIsLoading(true);
 
       const teams = await getTeams();
-      console.log(`✅ ${teams.length} équipes chargées.`);
+      console.warn(`✅ ${teams.length} équipes chargées.`);
 
       // 🔍 Liste de toutes les équipes récupérées
-      console.log("Liste de toutes les équipes récupérées :");
+      console.warn("📋 Liste de toutes les équipes récupérées :");
       teams.forEach(t => {
-        console.log(`- ${t.name}`);
+        console.warn(`- ${t.name}`);
       });
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
@@ -69,19 +72,10 @@ const Players = () => {
       });
 
       // 🧾 Log tous les joueurs collectés avant filtrage
-      console.log("🧾 Liste brute des joueurs récupérés :");
+      console.warn("🧾 Liste brute des joueurs récupérés :");
       playersWithTeamInfo.forEach(p => {
-        console.log(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
+        console.warn(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
       });
-
-      // 🔍 Dump ciblé pour l'équipe Gen.G
-      const debugTeam = teams.find(t => t.name.trim().toLowerCase() === "gen.g");
-      if (debugTeam) {
-        console.log("🔎 Équipe ciblée : Gen.G");
-        console.log(JSON.stringify(debugTeam, null, 2));
-      } else {
-        console.warn("❌ Aucune équipe Gen.G trouvée dans getTeams()");
-      }
 
       setAllPlayers(playersWithTeamInfo);
 
@@ -127,7 +121,7 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    console.log("🧪 Filter debug →", {
+    console.warn("🧪 Filter debug →", {
       name: player.name,
       role: player.role,
       teamRegion: player.teamRegion,
