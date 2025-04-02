@@ -44,61 +44,63 @@ const Players = () => {
   }, [selectedRegion]);
   
   const fetchPlayers = async () => {
-    try {
-      setIsLoading(true);
-      
-      const teams = await getTeams();
-      console.log(`Loaded ${teams.length} teams for Players page`);
-      
-      // Extract all players with team information
-      const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
-      
-      teams.forEach(team => {
-        if (team.players && team.players.length > 0) {
-          // Add all players from this team with team information
-          team.players.forEach(player => {
-            if (player.name && player.id) {
-              playersWithTeamInfo.push({
-                ...player,
-                teamName: team.name,
-                teamRegion: team.region || ""
-              });
-            } else {
-              console.warn(`Player missing id or name in team ${team.name}:`, player);
-            }
-          });
-        } else {
-          console.log(`No players found for team: ${team.name} (${team.region})`);
-        }
-      });
-      
-      console.log(`Total players with team data: ${playersWithTeamInfo.length}`);
-      
-      // Count players by region for debugging
-      const playersByRegion = playersWithTeamInfo.reduce((acc, player) => {
-        const region = player.teamRegion || 'Unknown';
-        acc[region] = (acc[region] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.log("Players by region:", playersByRegion);
-      
-      setAllPlayers(playersWithTeamInfo);
-      
-      const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
-      setAvailableRegions(uniqueRegions);
-      
-      if (playersWithTeamInfo.length === 0) {
-        toast.warning("Aucun joueur trouvé dans la base de données");
+  try {
+    setIsLoading(true);
+
+    const teams = await getTeams();
+    console.log(`✅ ${teams.length} équipes chargées depuis la base de données.`);
+
+    const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
+
+    teams.forEach((team, teamIndex) => {
+      console.log(`\n🔹 Équipe ${teamIndex + 1}: ${team.name} (${team.region})`);
+
+      if (!Array.isArray(team.players) || team.players.length === 0) {
+        console.warn(`⛔ Aucune liste de joueurs pour l'équipe "${team.name}"`);
+        return;
       }
-      
-    } catch (error) {
-      console.error("Error fetching player data:", error);
-      toast.error("Erreur lors du chargement des données des joueurs");
-    } finally {
-      setIsLoading(false);
+
+      team.players.forEach((player, playerIndex) => {
+        const hasId = Boolean(player.id);
+        const hasName = Boolean(player.name);
+
+        if (!hasId || !hasName) {
+          console.warn(`⚠️ Joueur invalide ignoré [${team.name}] :`, player);
+          return;
+        }
+
+        playersWithTeamInfo.push({
+          ...player,
+          teamName: team.name || "Unknown",
+          teamRegion: team.region || "Unknown"
+        });
+
+        console.log(`✅ Joueur ajouté : ${player.name} (${player.role || "no role"})`);
+      });
+    });
+
+    console.log(`\n📦 Nombre total de joueurs collectés : ${playersWithTeamInfo.length}`);
+    const missing = playersWithTeamInfo.filter(p => !p.id || !p.name);
+    if (missing.length > 0) {
+      console.warn("🚨 Joueurs invalides présents dans la liste finale :", missing);
     }
-  };
+
+    setAllPlayers(playersWithTeamInfo);
+
+    const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
+    setAvailableRegions(uniqueRegions);
+
+    if (playersWithTeamInfo.length === 0) {
+      toast.warning("Aucun joueur trouvé dans la base de données");
+    }
+  } catch (error) {
+    console.error("❌ Erreur lors du chargement des données :", error);
+    toast.error("Erreur lors du chargement des données des joueurs");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Filter players based on selected filters
   const filteredPlayers = allPlayers.filter(player => {
