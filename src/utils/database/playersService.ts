@@ -1,5 +1,7 @@
 
 // Re-export player-related functionality for easier access
+import { Player } from '@/utils/models/types';
+
 export {
   getPlayers,
   getPlayerById,
