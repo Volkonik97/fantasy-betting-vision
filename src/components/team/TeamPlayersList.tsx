@@ -29,6 +29,12 @@ const TeamPlayersList = ({ players, teamName, teamRegion }: TeamPlayersListProps
     
     // Make sure we have a clean, deep copy to avoid mutation issues
     const playersCopy = JSON.parse(JSON.stringify(players));
+
+    playersCopy.forEach((p: Player) => {
+  if (p.name?.toLowerCase().includes("peyz")) {
+    console.warn("👀 Joueur trouvé dans TeamPlayersList :", p);
+  }
+});
     
     // Enrich and normalize each player
     const enrichedPlayers = playersCopy.map((player: Player) => {
