@@ -8,7 +8,7 @@ import PlayerStats from "@/components/player/PlayerStats";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface PlayerCardProps {
-  player: Player & { teamName?: string; teamRegion?: string };
+  player: Player & { teamName?: string; teamRegion?: string; };
   showTeamLogo?: boolean;
 }
 
@@ -21,8 +21,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const csPerMin = typeof player.csPerMin === 'number' && !isNaN(player.csPerMin) ? player.csPerMin : 0;
   const damageShare = typeof player.damageShare === 'number' && !isNaN(player.damageShare) ? player.damageShare : 0;
 
-  // Use team_id as fallback if team is not available
-  const teamId = player.team || player.team_id || '';
+  // Use team as teamId, don't reference team_id directly since it's not in the Player type
+  const teamId = player.team || '';
 
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">

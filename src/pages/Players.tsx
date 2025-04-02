@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -59,7 +58,6 @@ const Players = () => {
         
         console.log("Fetching all players from database directly...");
         
-        // Récupérer tous les joueurs directement de la base de données
         const { data: playersData, error: playersError } = await supabase
           .from('players')
           .select('*, teams:team_id(name, region)');
@@ -81,7 +79,6 @@ const Players = () => {
         
         console.log(`Direct query found ${validPlayers.length} valid players out of ${playersData.length} total`);
         
-        // Add special check for Hanwha Life
         const hanwhaPlayers = validPlayers.filter((p: DbPlayer) => 
           p.team_id === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
           (p.teams?.name && p.teams.name.includes("Hanwha"))
@@ -107,7 +104,6 @@ const Players = () => {
               : []
         }));
         
-        // Collect unique regions
         const uniqueRegions = [...new Set(mappedPlayers
           .map(player => player.teamRegion)
           .filter(Boolean)
@@ -118,7 +114,6 @@ const Players = () => {
         
       } catch (error) {
         console.error("Error in direct players fetch:", error);
-        // Fallback to the previous approach
         await fetchPlayersFromTeams();
       } finally {
         setLoading(false);
@@ -130,13 +125,11 @@ const Players = () => {
         setLoading(true);
         const teams = await getTeams();
         
-        // Ensure all teams have players array
         const teamsWithPlayers = teams.map(team => ({
           ...team,
           players: team.players || []
         }));
         
-        // Flatten and map players with team data
         const players = teamsWithPlayers.flatMap(team => 
           team.players.map(player => ({
             ...player,
@@ -145,7 +138,6 @@ const Players = () => {
           }))
         );
         
-        // Filter out players without required fields
         const validPlayers = players.filter(player => 
           player.id && 
           player.name && 
@@ -159,7 +151,6 @@ const Players = () => {
           console.log("Sample player data:", players[0]);
         }
         
-        // Set player data with proper defaults for missing values
         const processedPlayers = validPlayers.map(player => ({
           ...player,
           kda: typeof player.kda === 'number' ? player.kda : 0,
@@ -168,13 +159,12 @@ const Players = () => {
           championPool: Array.isArray(player.championPool) 
             ? player.championPool 
             : typeof player.championPool === 'string'
-              ? player.championPool.split(',').map((c: string) => c.trim())
+              ? (player.championPool as string).split(',').map(c => c.trim())
               : []
         }));
         
         setAllPlayers(processedPlayers);
         
-        // Get unique regions
         const uniqueRegions = [...new Set(teamsWithPlayers
           .map(team => team.region)
           .filter(Boolean)
@@ -199,7 +189,6 @@ const Players = () => {
   }, [selectedRegion]);
   
   const filteredPlayers = allPlayers.filter(player => {
-    // Normalize and improve role matching
     const normalizedPlayerRole = player.role?.toLowerCase() || '';
     const roleMatches = selectedRole === "All" || (
       normalizedPlayerRole && (
@@ -210,7 +199,6 @@ const Players = () => {
       )
     );
     
-    // Region filtering logic
     let regionMatches = true;
     
     if (selectedCategory !== "All") {
@@ -225,7 +213,6 @@ const Players = () => {
       regionMatches = player.teamRegion === selectedRegion;
     }
     
-    // Handle LTA subregions
     if (selectedRegion === "LTA") {
       if (selectedSubRegion === "All") {
         regionMatches = player.teamRegion && player.teamRegion.startsWith("LTA");
@@ -234,13 +221,11 @@ const Players = () => {
       }
     }
     
-    // Name and team search
     const searchMatches = !searchTerm || (
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     
-    // Special case pour Hanwha Life Esports
     const isHanwha = player.teamName?.includes("Hanwha") || 
                     player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934";
                     
