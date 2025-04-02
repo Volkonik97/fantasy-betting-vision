@@ -5,6 +5,7 @@ import { Player } from "@/utils/models/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface TeamRosterProps {
   players: Player[];
@@ -22,7 +23,11 @@ const TeamRoster = ({ players, teamName }: TeamRosterProps) => {
       'Support': 4,
     };
     
-    return (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99);
+    // Normalize role names to ensure proper sorting
+    const roleA = normalizeRoleName(a.role);
+    const roleB = normalizeRoleName(b.role);
+    
+    return (roleOrder[roleA] ?? 99) - (roleOrder[roleB] ?? 99);
   });
 
   // If no players available
@@ -41,6 +46,8 @@ const TeamRoster = ({ players, teamName }: TeamRosterProps) => {
       </motion.div>
     );
   }
+
+  console.log(`Affichage de ${sortedPlayers.length} joueurs pour l'équipe ${teamName}`);
 
   return (
     <motion.div
@@ -77,7 +84,7 @@ const TeamRoster = ({ players, teamName }: TeamRosterProps) => {
               )}
               <div className="absolute top-0 right-0 m-2">
                 <Badge className="bg-black bg-opacity-70 hover:bg-opacity-80 text-white border-none">
-                  {player.role}
+                  {normalizeRoleName(player.role)}
                 </Badge>
               </div>
             </div>
