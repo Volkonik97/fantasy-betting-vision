@@ -69,9 +69,15 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
       {players.map((player, index) => {
         // Make sure the player has all required data
         if (!player.id || !player.name) {
-          console.warn("Invalid player data found:", player);
-          return null;
-        }
+  console.warn("Rendering fallback card for player with missing data:", player);
+  return (
+    <div key={index} className="p-4 bg-red-100 text-sm">
+      ⚠️ Player sans ID ou nom<br />
+      <pre>{JSON.stringify(player, null, 2)}</pre>
+    </div>
+  );
+}
+
         
         // Ensure player has teamName and teamRegion (defensive coding)
         const enrichedPlayer = {
