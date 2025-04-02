@@ -166,6 +166,17 @@ if (t1) {
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
+console.log("🔍 Filter debug", {
+  name: player.name,
+  team: player.teamName,
+  teamRegion: player.teamRegion,
+  selectedCategory,
+  selectedRegion,
+  selectedSubRegion,
+  regionMatches,
+  roleMatches,
+  searchMatches
+});
 
   return (
     <div className="min-h-screen bg-gray-50">
