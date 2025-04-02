@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from '../../models/types';
 import { chunk } from '../../dataConverter';
@@ -159,7 +160,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     // If not found in loaded players, query the database
     const { data: playerData, error } = await supabase
       .from('players')
-      .select('*')
+      .select('*, teams!inner(*)')
       .eq('id', playerId)
       .single();
     
@@ -175,6 +176,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       role: normalizeRoleName(playerData.role || 'Mid'),
       image: playerData.image as string,
       team: playerData.team_id as string,
+      teamName: playerData.teams?.name as string,
       kda: Number(playerData.kda) || 0,
       csPerMin: Number(playerData.cs_per_min) || 0,
       damageShare: Number(playerData.damage_share) || 0,

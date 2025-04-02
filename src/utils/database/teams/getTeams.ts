@@ -4,6 +4,7 @@ import { Team } from '../../models/types';
 import { toast } from "sonner";
 import { getTeamsFromCache, updateTeamsCache, updatePlayersWithTeamName } from './teamCache';
 import { teams as mockTeams } from '../../models/mockTeams';
+import { normalizeRoleName } from '../../leagueData/assembler/modelConverter';
 
 const BUCKET_NAME = "team-logos";
 
@@ -89,7 +90,7 @@ export const getTeams = async (): Promise<Team[]> => {
           .map(player => ({
             id: player.id as string,
             name: player.name as string,
-            role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+            role: normalizeRoleName(player.role || 'Mid'),
             image: player.image as string,
             team: player.team_id as string,
             teamName: team.name, // Always set the teamName from the team.name

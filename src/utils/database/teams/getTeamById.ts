@@ -75,7 +75,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         return {
           id: player.id,
           name: player.name || '',
-          role: playerRole as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+          role: playerRole,
           image: player.image || '',
           team: player.team_id,
           teamName: team.name,
