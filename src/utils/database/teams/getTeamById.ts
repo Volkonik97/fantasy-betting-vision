@@ -76,7 +76,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
             kda: p.kda,
             cs_per_min: p.csPerMin,
             damage_share: p.damageShare,
-            champion_pool: p.championPool
+            // Ensure champion_pool is always an array
+            champion_pool: Array.isArray(p.championPool) ? p.championPool : 
+              (typeof p.championPool === 'string' ? [p.championPool] : [])
           }));
         }
       } catch (mockError) {
@@ -109,7 +111,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         kda: Number(player.kda) || 0,
         csPerMin: Number(player.cs_per_min) || 0,
         damageShare: Number(player.damage_share) || 0,
-        championPool: Array.isArray(player.champion_pool) ? player.champion_pool : []
+        // Ensure champion_pool is always an array
+        championPool: Array.isArray(player.champion_pool) ? player.champion_pool : 
+          (typeof player.champion_pool === 'string' ? [player.champion_pool] : [])
       }));
     } else {
       console.warn(`No players found for team ${teamId} (${team.name})`);
