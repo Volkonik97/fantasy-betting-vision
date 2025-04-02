@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from '../../models/types';
 import { toast } from "sonner";
 import { findTeamInCache, updateTeamInCache } from './teamCache';
+import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
 /**
  * Get a single team by ID
@@ -47,7 +48,8 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       .eq('team_id', teamId);
     
     // Debug log to see what we're getting back
-    console.log(`Team ${teamId} (${teamData.name}) - Players query results:`, playersData?.length || 0, "players found");
+    console.log(`Team ${teamId} (${teamData.name}) - Players query results:`, 
+      playersData ? `${playersData.length} players found` : "No players data");
     
     if (playersError) {
       console.error(`Error retrieving players for team ${teamId}:`, playersError);
@@ -72,13 +74,16 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       console.log(`Processing ${playersData.length} players for team ${teamData.name}`);
       
       team.players = playersData.map(player => {
+        // Ensure role is normalized
+        const normalizedRole = normalizeRoleName(player.role || 'Mid');
+        
         // Log for debugging
-        console.log(`Processing player: ${player.name}, Role: ${player.role}, Team: ${player.team_id}`);
+        console.log(`Adding player: ${player.name}, Role: ${normalizedRole}, Team: ${player.team_id}`);
         
         return {
           id: player.id as string,
           name: player.name as string,
-          role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+          role: normalizedRole,
           image: player.image as string,
           team: player.team_id as string,
           teamName: team.name, // Set the team name directly

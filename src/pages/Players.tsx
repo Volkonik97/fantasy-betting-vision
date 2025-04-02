@@ -3,10 +3,11 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teamsService";
+import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { toast } from "sonner";
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,7 +16,7 @@ const Players = () => {
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>("All");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
@@ -37,78 +38,60 @@ const Players = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        setIsLoading(true);
+        
+        // Force a fresh load of data
+        clearTeamsCache();
         const teams = await getTeams();
         
         // Log all teams for debugging
-        console.log(`Loaded ${teams.length} teams`);
+        console.log(`Loaded ${teams.length} teams for Players page`);
         
-        // Check for Hanwha Life Esports specifically
-        const hanwhaTeams = teams.filter(team => 
-          team.name.includes("Hanwha") || 
-          team.id === 'oe:team:658a9939b7c42b80b15fe9a639577f5');
-          
-        hanwhaTeams.forEach(team => {
-          console.log(`Found Hanwha team: ${team.name}, ID: ${team.id}`);
-          console.log(`Hanwha players: ${team.players?.length || 0}`);
-          
+        const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
+        
+        // Extract players from teams and add team information
+        teams.forEach(team => {
           if (team.players && team.players.length > 0) {
-            team.players.forEach(p => {
-              // Log all Hanwha players
-              console.log(`- ${p.name}: originalRole=${p.role}, normalizedRole=${normalizeRoleName(p.role)}`);
-            });
+            console.log(`Team ${team.name} has ${team.players.length} players`);
+            
+            const teamPlayers = team.players.map(player => ({
+              ...player,
+              // Ensure role is normalized
+              role: normalizeRoleName(player.role),
+              teamName: team.name,
+              teamRegion: team.region
+            }));
+            
+            playersWithTeamInfo.push(...teamPlayers);
           } else {
             console.warn(`No players found for team: ${team.name}`);
           }
         });
         
-        // Check for Zeka player
-        let foundZeka = false;
-        teams.forEach(team => {
-          if (team.players) {
-            const zekaPlayer = team.players.find(p => 
-              p.name.toLowerCase().includes('zeka'));
-            if (zekaPlayer) {
-              foundZeka = true;
-              console.log(`Found Zeka in team ${team.name}, Role: ${zekaPlayer.role}, ID: ${zekaPlayer.id}`);
-            }
-          }
-        });
+        console.log("Total players with team data:", playersWithTeamInfo.length);
         
-        if (!foundZeka) {
-          console.warn("Zeka not found in any team!");
-        }
-        
-        const players = teams.flatMap(team => 
-          team.players?.map(player => ({
-            ...player,
-            // Ensure role is normalized
-            role: normalizeRoleName(player.role),
-            teamName: team.name,
-            teamRegion: team.region
-          })) || []
-        );
-        
-        console.log("Players with team data:", players.length);
-        
-        // Log how many players we have per region
-        const playersByRegion = players.reduce((acc, player) => {
+        // Log players by region
+        const playersByRegion = playersWithTeamInfo.reduce((acc, player) => {
           acc[player.teamRegion] = (acc[player.teamRegion] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
         
         console.log("Players by region:", playersByRegion);
-        
-        setAllPlayers(players);
+        setAllPlayers(playersWithTeamInfo);
         
         const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
         console.log("Available regions in database:", uniqueRegions);
         setAvailableRegions(uniqueRegions);
         
+        if (playersWithTeamInfo.length === 0) {
+          toast.warning("Aucun joueur trouvé dans la base de données");
+        }
+        
       } catch (error) {
         console.error("Error fetching player data:", error);
+        toast.error("Erreur lors du chargement des données des joueurs");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     
@@ -155,7 +138,7 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    // Debug specific players like Zeka
+    // Debug specific players for troubleshooting
     if (player.name.toLowerCase().includes('zeka')) {
       console.log(`Filtering Zeka: role=${player.role}, normalized=${normalizedPlayerRole}, selected=${normalizedSelectedRole}, roleMatches=${roleMatches}, regionMatches=${regionMatches}, searchMatches=${searchMatches}`);
     }
@@ -165,15 +148,6 @@ const Players = () => {
   
   const handleSearch = (query: string) => {
     setSearchTerm(query);
-  };
-
-  const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedRegion("All");
-  };
-
-  const handleRegionSelect = (region: string) => {
-    setSelectedRegion(region);
   };
 
   return (
@@ -196,9 +170,9 @@ const Players = () => {
           selectedRole={selectedRole}
           setSelectedRole={setSelectedRole}
           selectedCategory={selectedCategory}
-          handleCategorySelect={handleCategorySelect}
+          handleCategorySelect={setSelectedCategory}
           selectedRegion={selectedRegion}
-          handleRegionSelect={handleRegionSelect}
+          handleRegionSelect={setSelectedRegion}
           selectedSubRegion={selectedSubRegion}
           setSelectedSubRegion={setSelectedSubRegion}
           roles={roles}

@@ -38,8 +38,8 @@ export const getTeams = async (): Promise<Team[]> => {
     
     console.log(`Found ${teamsData.length} teams in database`);
     
-    // Fetch players for these teams
-    const { data: playersData, error: playersError } = await supabase
+    // Fetch all players in a single query
+    const { data: allPlayersData, error: playersError } = await supabase
       .from('players')
       .select('*');
     
@@ -79,14 +79,37 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
     
-    // Assign players to their teams
-    if (playersData && playersData.length > 0) {
-      console.log(`Found ${playersData.length} players in database`);
+    // Log players count for debugging
+    console.log(`Processing ${allPlayersData?.length || 0} total players in database`);
+    
+    // Associate players with their teams
+    if (allPlayersData && allPlayersData.length > 0) {
+      // Group players by team_id for faster lookup
+      const playersByTeamId = allPlayersData.reduce((acc, player) => {
+        if (!player.team_id) {
+          console.warn(`Player ${player.name} has no team_id`);
+          return acc;
+        }
+        
+        if (!acc[player.team_id]) {
+          acc[player.team_id] = [];
+        }
+        
+        acc[player.team_id].push(player);
+        return acc;
+      }, {} as Record<string, any[]>);
       
+      // Log team IDs with players for debugging
+      console.log(`Teams with players: ${Object.keys(playersByTeamId).length}`);
+      
+      // Assign players to their teams
       teams.forEach(team => {
-        team.players = playersData
-          .filter(player => player.team_id === team.id)
-          .map(player => ({
+        const teamPlayers = playersByTeamId[team.id] || [];
+        
+        if (teamPlayers.length > 0) {
+          console.log(`Team ${team.name} has ${teamPlayers.length} players`);
+          
+          team.players = teamPlayers.map(player => ({
             id: player.id as string,
             name: player.name as string,
             role: (player.role || 'Mid') as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
@@ -98,6 +121,9 @@ export const getTeams = async (): Promise<Team[]> => {
             damageShare: Number(player.damage_share) || 0,
             championPool: player.champion_pool as string[] || []
           }));
+        } else {
+          console.warn(`No players found for team ${team.name} (${team.id})`);
+        }
       });
     }
     
