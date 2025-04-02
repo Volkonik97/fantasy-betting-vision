@@ -10,9 +10,10 @@ import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string; };
   showTeamLogo?: boolean;
+  linkDisabled?: boolean;
 }
 
-const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
+const PlayerCard = ({ player, showTeamLogo = false, linkDisabled = false }: PlayerCardProps) => {
   // Validation des données et des valeurs par défaut
   if (!player) {
     console.error("PlayerCard received undefined player");
@@ -52,7 +53,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
           <TeamInfo 
             teamId={teamId} 
             teamName={player.teamName} 
-            showTeamLogo={showTeamLogo} 
+            showTeamLogo={showTeamLogo}
+            linkDisabled={linkDisabled}
           />
         </div>
         

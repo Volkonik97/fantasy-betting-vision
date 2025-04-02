@@ -10,9 +10,15 @@ interface TeamInfoProps {
   teamId: string;
   teamName?: string;
   showTeamLogo?: boolean;
+  linkDisabled?: boolean;
 }
 
-const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: TeamInfoProps) => {
+const TeamInfo = ({ 
+  teamId, 
+  teamName = "Unknown Team", 
+  showTeamLogo = false,
+  linkDisabled = false 
+}: TeamInfoProps) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(() => {
     // Utiliser le cache immédiatement si disponible
     const cached = teamId ? getTeamLogoFromCache(teamId) : null;
@@ -47,7 +53,7 @@ const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: T
     }
   }, [teamId, showTeamLogo, logoUrl, logoError, isLoading]);
 
-  const handleImageError = () => {
+  const onImageError = () => {
     // Utiliser notre gestionnaire d'erreurs de logo
     const shouldRetry = handleLogoError(teamId, teamName);
     if (!shouldRetry) {
@@ -60,16 +66,16 @@ const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: T
   };
 
   const hasLogo = showTeamLogo && logoUrl && !logoError;
-
-  return (
-    <Link to={`/teams/${teamId}`} className="flex items-center gap-2 mt-0.5 hover:opacity-80 transition-opacity">
+  
+  const content = (
+    <div className="flex items-center gap-2 mt-0.5 hover:opacity-80 transition-opacity">
       {hasLogo ? (
         <Avatar className="h-5 w-5">
           <ImageWithFallback
             src={logoUrl}
             alt={`${teamName} logo`}
             className="object-contain"
-            onError={handleImageError}
+            onError={onImageError}
             lazy={true}
             fallback={
               <AvatarFallback className="text-[10px] font-medium">
@@ -86,6 +92,17 @@ const TeamInfo = ({ teamId, teamName = "Unknown Team", showTeamLogo = false }: T
         </Avatar>
       ) : null}
       <span className="text-sm text-gray-600">{teamName}</span>
+    </div>
+  );
+
+  // Fix: Don't nest Link components - conditionally render either a Link or plain div
+  if (linkDisabled || !teamId) {
+    return content;
+  }
+
+  return (
+    <Link to={`/teams/${teamId}`}>
+      {content}
     </Link>
   );
 };

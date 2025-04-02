@@ -13,7 +13,7 @@ interface TeamLogoProps {
 const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasError }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  const handleError = () => {
+  const handleImageError = () => {
     onError();
     // Only trigger one more refresh attempt if error occurs
     if (refreshTrigger === 0) {
@@ -22,7 +22,7 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
     }
   };
   
-  const handleLoad = () => {
+  const handleImageLoad = () => {
     console.log(`TeamLogo: Successfully loaded logo for ${teamName}`);
   };
   
@@ -34,8 +34,8 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
           alt={teamName}
           className="object-contain"
           forceRefresh={refreshTrigger > 0}
-          onLoad={handleLoad}
-          onError={handleError}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
           fallback={
             <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
               {teamName.substring(0, 2).toUpperCase()}
