@@ -18,7 +18,7 @@ interface DbPlayer {
   kda: number | null;
   cs_per_min: number | null;
   damage_share: number | null;
-  champion_pool: string[] | null;
+  champion_pool: string[] | null | string;
   teams?: {
     name: string;
     region: string;
@@ -86,23 +86,31 @@ const Players = () => {
         
         console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
         
-        const mappedPlayers = validPlayers.map((player: DbPlayer) => ({
-          id: player.id,
-          name: player.name,
-          role: normalizeRoleName(player.role || "Unknown"),
-          image: player.image || "",
-          team: player.team_id || "",
-          teamName: player.teams?.name || "Unknown team",
-          teamRegion: player.teams?.region || "Unknown region",
-          kda: typeof player.kda === 'number' ? player.kda : 0,
-          csPerMin: typeof player.cs_per_min === 'number' ? player.cs_per_min : 0,
-          damageShare: typeof player.damage_share === 'number' ? player.damage_share : 0,
-          championPool: Array.isArray(player.champion_pool) 
-            ? player.champion_pool 
-            : typeof player.champion_pool === 'string'
-              ? player.champion_pool.split(',').map(c => c.trim())
-              : []
-        }));
+        const mappedPlayers = validPlayers.map((player: DbPlayer) => {
+          let championPoolArray: string[] = [];
+          
+          if (player.champion_pool) {
+            if (Array.isArray(player.champion_pool)) {
+              championPoolArray = player.champion_pool;
+            } else if (typeof player.champion_pool === 'string') {
+              championPoolArray = player.champion_pool.split(',').map(c => c.trim());
+            }
+          }
+          
+          return {
+            id: player.id,
+            name: player.name,
+            role: normalizeRoleName(player.role || "Unknown"),
+            image: player.image || "",
+            team: player.team_id || "",
+            teamName: player.teams?.name || "Unknown team",
+            teamRegion: player.teams?.region || "Unknown region",
+            kda: typeof player.kda === 'number' ? player.kda : 0,
+            csPerMin: typeof player.cs_per_min === 'number' ? player.cs_per_min : 0,
+            damageShare: typeof player.damage_share === 'number' ? player.damage_share : 0,
+            championPool: championPoolArray
+          };
+        });
         
         const uniqueRegions = [...new Set(mappedPlayers
           .map(player => player.teamRegion)

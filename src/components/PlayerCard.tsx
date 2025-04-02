@@ -21,7 +21,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const csPerMin = typeof player.csPerMin === 'number' && !isNaN(player.csPerMin) ? player.csPerMin : 0;
   const damageShare = typeof player.damageShare === 'number' && !isNaN(player.damageShare) ? player.damageShare : 0;
 
-  // Use team as teamId, don't reference team_id directly since it's not in the Player type
+  // Use player.team as teamId, ensuring it exists
   const teamId = player.team || '';
 
   return (
