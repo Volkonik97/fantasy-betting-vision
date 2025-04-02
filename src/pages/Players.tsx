@@ -53,11 +53,9 @@ const Players = () => {
 
         team.players.forEach((player, playerIndex) => {
           console.warn(`🧩 Tentative d'ajout du joueur ${player.name} (${player.id}) dans ${team.name}`);
-          if (!player.id || !player.name) {
-  console.warn(`🧩 Tentative d'ajout du joueur ${player.name} (${player.id}) dans ${team.name}`);
-  console.warn(`⚠️ Joueur sans ID ou nom dans l'équipe ${team.name}`);
-  console.warn("Joueur exclu :", player);
-  return;
+         if (!player.id || !player.name) {
+  console.warn(`⚠️ Joueur incomplet (id ou name manquant) dans ${team.name}`, player);
+  // Pas de return ici — on log mais on continue
 }
 
 
