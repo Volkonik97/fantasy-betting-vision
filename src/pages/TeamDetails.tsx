@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -37,29 +36,18 @@ const TeamDetails = () => {
         setIsLoading(true);
         setError(null);
         
-        console.log(`Loading team data for ID: ${id}`);
-        
         // Load team from database
         const foundTeam = await getTeamById(id);
-        console.log("Found team:", foundTeam); // Debug log
         
         if (!foundTeam) {
           setError("Équipe non trouvée");
           setIsLoading(false);
           return;
         }
-
-        // Ensure players array exists and has data
-        if (!foundTeam.players) {
-          console.warn("Team has no players array");
-          foundTeam.players = []; // Initialize to empty array if undefined
-        }
-        
-        console.log(`Team ${foundTeam.name} has ${foundTeam.players.length} players:`, foundTeam.players);
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
-        console.log("Side statistics data:", sideStatsData);
+        console.log("Side statistics data:", sideStatsData); // Log pour déboguer
         
         if (sideStatsData) {
           // Assign side statistics to the team object
@@ -73,6 +61,12 @@ const TeamDetails = () => {
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
           foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
+          
+          // Log pour vérifier les valeurs
+          console.log("First Blood stats (after correction):", {
+            blue: foundTeam.blueFirstBlood,
+            red: foundTeam.redFirstBlood
+          });
         }
         
         setTeam(foundTeam);
@@ -164,10 +158,7 @@ const TeamDetails = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <TeamPlayersList 
-                players={team.players || []} 
-                teamName={team.name} 
-              />
+              <TeamPlayersList players={team?.players || []} teamName={team?.name || ""} />
             </motion.div>
             
             <motion.div
