@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -10,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Shield } from "lucide-react";
 
 interface TeamRosterProps {
   players: Player[];
@@ -23,7 +23,6 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Function to fetch players directly from database if needed
     const fetchPlayersForTeam = async () => {
       if (initialPlayers.length > 0 || !teamId) return;
       
@@ -77,10 +76,8 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
     fetchPlayersForTeam();
   }, [initialPlayers, teamId, teamName]);
   
-  // Use provided players or those fetched from database
   const activePlayers = players.length > 0 ? players : initialPlayers;
 
-  // Sort players by role (Top, Jungle, Mid, ADC, Support)
   const sortedPlayers = [...activePlayers].sort((a, b) => {
     const roleOrder: Record<string, number> = {
       'Top': 0,
@@ -90,14 +87,12 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
       'Support': 4,
     };
     
-    // Normalize role names to ensure proper sorting
     const roleA = normalizeRoleName(a.role);
     const roleB = normalizeRoleName(b.role);
     
     return (roleOrder[roleA] ?? 99) - (roleOrder[roleB] ?? 99);
   });
 
-  // If loading
   if (isLoading) {
     return (
       <motion.div
@@ -114,7 +109,6 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
     );
   }
 
-  // If error or no players available
   if (error || (!activePlayers || activePlayers.length === 0)) {
     return (
       <motion.div
@@ -156,12 +150,9 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
                   alt={`${player.name}`}
                   className="w-full h-full object-cover"
                   fallback={
-                    <div className="flex items-center justify-center h-full">
-                      <Avatar className="h-24 w-24">
-                        <AvatarFallback className="text-3xl">
-                          {player.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <Shield className="h-12 w-12 text-gray-300 mb-2" />
+                      <span className="text-2xl font-bold text-gray-400">{player.name.charAt(0)}</span>
                     </div>
                   }
                 />

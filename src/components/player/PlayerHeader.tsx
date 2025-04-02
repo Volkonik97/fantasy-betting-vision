@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
-import { Activity, Trophy, Award } from "lucide-react";
+import { Activity, Trophy, Award, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -66,7 +65,6 @@ const PlayerHeader = ({
   const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
 
-  // Normalize the player's role
   const normalizedRole = normalizeRoleName(player.role);
 
   return (
@@ -91,8 +89,9 @@ const PlayerHeader = ({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <span className="text-4xl font-bold text-gray-300">{player.name.charAt(0)}</span>
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+              <Shield className="h-8 w-8 text-gray-300 mb-1" />
+              <span className="text-2xl font-bold text-gray-400">{player.name.charAt(0)}</span>
             </div>
           )}
           <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(normalizedRole)} flex items-center justify-center`}>

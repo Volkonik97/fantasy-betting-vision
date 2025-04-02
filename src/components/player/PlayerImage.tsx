@@ -2,6 +2,7 @@
 import React from "react";
 import { Badge } from "../ui/badge";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
+import { Shield } from "lucide-react";
 
 interface PlayerImageProps {
   name: string;
@@ -17,8 +18,9 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         alt={name}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         fallback={
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-            <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+            <Shield className="h-12 w-12 text-gray-300 mb-2" />
+            <span className="text-2xl font-bold text-gray-400">{name.charAt(0).toUpperCase()}</span>
           </div>
         }
       />
