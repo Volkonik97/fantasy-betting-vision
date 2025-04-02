@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -49,7 +48,7 @@ const TeamDetails = () => {
           return;
         }
 
-        // Check if players array exists and has data
+        // Ensure players array exists and has data
         if (!foundTeam.players) {
           console.warn("Team has no players array");
           foundTeam.players = []; // Initialize to empty array if undefined

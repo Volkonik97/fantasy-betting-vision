@@ -40,6 +40,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     : [];
 
   if (!hasPlayers) {
+    console.warn(`No players found for team ${teamName}`);
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
