@@ -52,7 +52,9 @@ const Players = () => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
 
         team.players.forEach((player, playerIndex) => {
+          console.warn(`🧩 Tentative d'ajout du joueur ${player.name} (${player.id}) dans ${team.name}`);
           if (!player.id || !player.name) {
+  console.warn(`🧩 Tentative d'ajout du joueur ${player.name} (${player.id}) dans ${team.name}`);
   console.warn(`⚠️ Joueur sans ID ou nom dans l'équipe ${team.name}`);
   console.warn("Joueur exclu :", player);
   return;
@@ -66,6 +68,9 @@ const Players = () => {
           });
         });
       });
+
+console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length}`);
+
 
       // 🧾 Log tous les joueurs collectés avant filtrage
       console.log("🧾 Liste brute des joueurs récupérés :");
