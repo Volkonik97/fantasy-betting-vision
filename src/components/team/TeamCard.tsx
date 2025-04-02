@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -51,7 +52,8 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     fetchLogo();
   }, [team.id, team.logo, team.name, logoUrl, logoError]);
 
-  const handleLogoError = () => {
+  const onLogoError = () => {
+    // Fix: Call the imported handleLogoError with proper arguments and store the result
     const shouldRetry = handleLogoError(team.id, team.name);
     if (!shouldRetry) {
       setLogoError(true);
@@ -75,7 +77,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                   alt={`${team.name} logo`}
                   className="h-full w-full object-contain"
                   onLoad={() => console.log(`Successfully loaded logo for ${team.name}`)}
-                  onError={handleLogoError}
+                  onError={onLogoError}
                   fallback={
                     <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
                       {team.name.substring(0, 2).toUpperCase()}
