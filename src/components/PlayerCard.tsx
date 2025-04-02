@@ -24,6 +24,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
             teamId={player.team} 
             teamName={player.teamName} 
             showTeamLogo={showTeamLogo} 
+            region={player.teamRegion}
           />
         </div>
         
