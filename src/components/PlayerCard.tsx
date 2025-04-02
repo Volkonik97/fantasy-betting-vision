@@ -21,6 +21,9 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const csPerMin = typeof player.csPerMin === 'number' && !isNaN(player.csPerMin) ? player.csPerMin : 0;
   const damageShare = typeof player.damageShare === 'number' && !isNaN(player.damageShare) ? player.damageShare : 0;
 
+  // Use team_id as fallback if team is not available
+  const teamId = player.team || player.team_id || '';
+
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
@@ -36,7 +39,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         <div className="flex flex-col">
           <h3 className="font-bold text-lg mb-1 text-gray-900">{player.name}</h3>
           <TeamInfo 
-            teamId={player.team} 
+            teamId={teamId} 
             teamName={player.teamName} 
             showTeamLogo={showTeamLogo} 
           />

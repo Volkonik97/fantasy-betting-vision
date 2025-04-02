@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -167,7 +168,7 @@ const Players = () => {
           championPool: Array.isArray(player.championPool) 
             ? player.championPool 
             : typeof player.championPool === 'string'
-              ? player.championPool.split(',').map(c => c.trim())
+              ? player.championPool.split(',').map((c: string) => c.trim())
               : []
         }));
         
