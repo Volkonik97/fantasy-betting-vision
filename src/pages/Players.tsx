@@ -46,6 +46,12 @@ const Players = () => {
       const teams = await getTeams();
       console.log(`✅ ${teams.length} équipes chargées.`);
 
+      // 🔍 Liste de toutes les équipes récupérées
+      console.log("📋 Liste de toutes les équipes récupérées :");
+      teams.forEach(t => {
+        console.log(`- ${t.name}`);
+      });
+
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach((team, teamIndex) => {
