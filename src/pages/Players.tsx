@@ -97,6 +97,7 @@ const Players = () => {
       setIsLoading(false);
     }
   };
+  console.warn("🔎 Tous les joueurs bruts (allPlayers):", allPlayers.map(p => p.name));
 
   const filteredPlayers = allPlayers.filter(player => {
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
@@ -121,6 +122,8 @@ const Players = () => {
         regionMatches = player.teamRegion === selectedSubRegion;
       }
     }
+
+    console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p => p.name));
 
     const searchMatches =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
