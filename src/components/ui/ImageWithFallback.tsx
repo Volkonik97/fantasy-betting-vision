@@ -26,7 +26,7 @@ const ImageWithFallback = ({
   onLoad,
   onError,
 }: ImageWithFallbackProps) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!src); // Only show loading if there's a src
   const [hasError, setHasError] = useState(false);
 
   const handleLoad = () => {
@@ -40,6 +40,19 @@ const ImageWithFallback = ({
     onError?.();
   };
 
+  // If there's no source, show fallback immediately without loading state
+  if (!src) {
+    return (
+      <div className={cn("flex items-center justify-center w-full h-full", className)}>
+        {fallback || (
+          <div className="bg-gray-100 flex items-center justify-center w-full h-full">
+            <span className="text-gray-400 text-lg font-medium">{alt.charAt(0)}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Display a skeleton while loading
   if (isLoading) {
     return (
@@ -47,21 +60,19 @@ const ImageWithFallback = ({
         <Skeleton 
           className={cn("w-full h-full", skeletonClassName)} 
         />
-        {src && (
-          <img
-            src={src}
-            alt={alt}
-            className="hidden"
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        )}
+        <img
+          src={src}
+          alt={alt}
+          className="hidden"
+          onLoad={handleLoad}
+          onError={handleError}
+        />
       </div>
     );
   }
 
-  // Display the fallback if there's an error or no source
-  if (hasError || !src) {
+  // Display the fallback if there's an error
+  if (hasError) {
     return (
       <div className={cn("flex items-center justify-center w-full h-full", className)}>
         {fallback || (
