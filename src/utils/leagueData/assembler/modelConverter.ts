@@ -1,55 +1,21 @@
 
-import { Team, Player } from '../../models/types';
-
 /**
- * Helper function to convert team CSV to team object
+ * Normalize role name to standard format
+ * @param role The role name to normalize
+ * @returns The normalized role name
  */
-export function teamToTeamObject(teamCsv: any): Team {
-  return {
-    id: teamCsv.id,
-    name: teamCsv.name,
-    logo: teamCsv.logo,
-    region: teamCsv.region,
-    winRate: parseFloat(teamCsv.winRate) || 0,
-    blueWinRate: parseFloat(teamCsv.blueWinRate) || 0,
-    redWinRate: parseFloat(teamCsv.redWinRate) || 0,
-    averageGameTime: parseFloat(teamCsv.averageGameTime) || 0,
-    players: [] // Will be filled later
-  };
-}
-
-/**
- * Normalizes role names to standard format
- */
-export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
-  const normalizedRole = role.toLowerCase().trim();
+export const normalizeRoleName = (role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' => {
+  if (!role) return 'Mid'; // Default role if none provided
   
-  if (normalizedRole === 'top') return 'Top';
-  if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
-  if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
-  if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
-  if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
+  const lowerRole = role.toLowerCase().trim();
   
-  // Default to Mid if role is unknown
+  if (lowerRole.includes('top')) return 'Top';
+  if (lowerRole.includes('jung') || lowerRole === 'jng' || lowerRole === 'jgl') return 'Jungle';
+  if (lowerRole.includes('mid')) return 'Mid';
+  if (lowerRole.includes('adc') || lowerRole === 'bot' || lowerRole.includes('bottom')) return 'ADC';
+  if (lowerRole.includes('sup') || lowerRole === 'supp') return 'Support';
+  
+  // If no match found, return Mid as default
+  console.warn(`Unknown role: ${role}, defaulting to Mid`);
   return 'Mid';
-}
-
-/**
- * Helper function to convert player CSV to player object
- */
-export function playerToPlayerObject(playerCsv: any): Player {
-  // Normalize the role
-  const normalizedRole = normalizeRoleName(playerCsv.role || 'Mid');
-  
-  return {
-    id: playerCsv.id,
-    name: playerCsv.name,
-    role: normalizedRole,
-    image: playerCsv.image,
-    team: playerCsv.team,
-    kda: parseFloat(playerCsv.kda) || 0,
-    csPerMin: parseFloat(playerCsv.csPerMin) || 0,
-    damageShare: parseFloat(playerCsv.damageShare) || 0,
-    championPool: playerCsv.championPool ? playerCsv.championPool.split(',').map((champ: string) => champ.trim()) : []
-  };
-}
+};

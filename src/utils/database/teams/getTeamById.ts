@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Team } from '../../models/types';
+import { Team, Player } from '../../models/types';
 import { toast } from "sonner";
 import { findTeamInCache, updateTeamInCache } from './teamCache';
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
@@ -41,7 +41,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Fetch players for this team - make sure we're matching the correct column name
+    // Fetch players for this team
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*')
@@ -54,10 +54,10 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     // Convert database format to application format
     const team: Team = {
-      id: teamData.id as string,
-      name: teamData.name as string,
-      logo: teamData.logo as string,
-      region: teamData.region as string,
+      id: teamData.id,
+      name: teamData.name,
+      logo: teamData.logo || '',
+      region: teamData.region || '',
       winRate: Number(teamData.win_rate) || 0,
       blueWinRate: Number(teamData.blue_win_rate) || 0,
       redWinRate: Number(teamData.red_win_rate) || 0,
@@ -69,18 +69,29 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     if (playersData && playersData.length > 0) {
       console.log(`Found ${playersData.length} players for team ${teamId}`);
       
-      team.players = playersData.map(player => ({
-        id: player.id as string,
-        name: player.name as string,
-        role: normalizeRoleName(player.role || 'Mid'),
-        image: player.image as string,
-        team: player.team_id as string,
-        teamName: team.name,
-        kda: Number(player.kda) || 0,
-        csPerMin: Number(player.cs_per_min) || 0,
-        damageShare: Number(player.damage_share) || 0,
-        championPool: player.champion_pool as string[] || []
-      }));
+      team.players = playersData.map(player => {
+        const playerRole = normalizeRoleName(player.role || 'Mid');
+        
+        return {
+          id: player.id,
+          name: player.name || '',
+          role: playerRole as 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support',
+          image: player.image || '',
+          team: player.team_id,
+          teamName: team.name,
+          kda: Number(player.kda) || 0,
+          csPerMin: Number(player.cs_per_min) || 0,
+          damageShare: Number(player.damage_share) || 0,
+          championPool: Array.isArray(player.champion_pool) ? player.champion_pool : []
+        } as Player;
+      });
+      
+      console.log(`Successfully mapped ${team.players.length} players for team ${teamId}`);
+      
+      // Log some player data for debugging
+      if (team.players.length > 0) {
+        console.log("Sample player data:", JSON.stringify(team.players[0]));
+      }
     } else {
       console.warn(`No players found for team ${teamId} in database`);
     }

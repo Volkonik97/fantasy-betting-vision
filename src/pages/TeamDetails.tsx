@@ -49,7 +49,7 @@ const TeamDetails = () => {
         
         // Log team info for debugging
         console.log(`Équipe trouvée: ${foundTeam.name}`);
-        console.log(`Joueurs dans l'équipe:`, foundTeam.players);
+        console.log(`Joueurs dans l'équipe:`, foundTeam.players?.length || 0);
         
         // Make sure we have players array initialized
         if (!foundTeam.players) {
@@ -73,12 +73,6 @@ const TeamDetails = () => {
           foundTeam.redFirstTower = sideStatsData.redFirstTower;
           foundTeam.blueFirstBaron = sideStatsData.blueFirstBaron;
           foundTeam.redFirstBaron = sideStatsData.redFirstBaron;
-          
-          // Log pour vérifier les valeurs
-          console.log("First Blood stats (after correction):", {
-            blue: foundTeam.blueFirstBlood,
-            red: foundTeam.redFirstBlood
-          });
         }
         
         setTeam(foundTeam);
@@ -94,7 +88,6 @@ const TeamDetails = () => {
         ]);
         
         console.log(`Trouvé ${teamMatchesArray.length} matchs pour l'équipe ${id} (${foundTeam.name})`);
-        console.log("Données timeline récupérées:", timelineData);
         
         // Trier les matchs par date (plus récent en premier)
         const sortedMatches = [...teamMatchesArray].sort((a, b) => {
@@ -139,6 +132,12 @@ const TeamDetails = () => {
         </div>
       </div>
     );
+  }
+  
+  // Log player data just before rendering to debug
+  console.log("Rendering TeamDetails with players:", team.players?.length || 0);
+  if (team.players && team.players.length > 0) {
+    console.log("First player:", team.players[0].name, team.players[0].role);
   }
   
   return (

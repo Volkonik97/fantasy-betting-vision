@@ -1,10 +1,11 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+import { toast } from "sonner";
 
 interface TeamPlayersListProps {
   players: Player[];
@@ -12,11 +13,37 @@ interface TeamPlayersListProps {
 }
 
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
-  // Vérifier si nous avons des données de joueurs
-  const hasPlayers = Array.isArray(players) && players.length > 0;
+  const [sortedPlayers, setSortedPlayers] = useState<Player[]>([]);
   
-  // Si aucun joueur n'est disponible, afficher un message
-  if (!hasPlayers) {
+  useEffect(() => {
+    if (Array.isArray(players) && players.length > 0) {
+      console.log(`TeamPlayersList: Received ${players.length} players`);
+      
+      // Define role order for sorting
+      const roleOrder: Record<string, number> = {
+        'Top': 0,
+        'Jungle': 1,
+        'Mid': 2,
+        'ADC': 3,
+        'Support': 4
+      };
+      
+      // Sort function using normalized role names
+      const sortedList = [...players].sort((a, b) => {
+        const roleA = normalizeRoleName(a.role);
+        const roleB = normalizeRoleName(b.role);
+        return (roleOrder[roleA] ?? 99) - (roleOrder[roleB] ?? 99);
+      });
+      
+      setSortedPlayers(sortedList);
+    } else {
+      console.log("TeamPlayersList: No players data received or empty array");
+      setSortedPlayers([]);
+    }
+  }, [players]);
+
+  // If no players data available
+  if (!Array.isArray(players) || players.length === 0) {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -32,26 +59,6 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     );
   }
   
-  // Définir l'ordre des rôles pour le tri
-  const roleOrder: Record<string, number> = {
-    'Top': 0,
-    'Jungle': 1,
-    'Mid': 2,
-    'ADC': 3,
-    'Support': 4
-  };
-  
-  // Fonction pour obtenir la valeur de tri pour un rôle
-  const getRoleValue = (role: string): number => {
-    const normalizedRole = normalizeRoleName(role);
-    return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 99;
-  };
-  
-  // Trier les joueurs par rôle selon l'ordre standard
-  const sortedPlayers = [...players].sort((a, b) => 
-    getRoleValue(a.role) - getRoleValue(b.role)
-  );
-  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -62,7 +69,13 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       <h2 className="text-2xl font-bold mb-4">Joueurs ({sortedPlayers.length})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.map((player) => {
-          // Enrichir le joueur avec le nom de l'équipe si disponible
+          // Ensure the player has all required data
+          if (!player.id) {
+            console.warn("Player missing ID:", player);
+            return null;
+          }
+          
+          // Enrich player with team name
           const enrichedPlayer = {
             ...player,
             teamName: teamName || player.teamName || player.team
