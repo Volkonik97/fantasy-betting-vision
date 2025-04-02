@@ -17,6 +17,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoUrl, setLogoUrl] = useState<string | null>(team.logo || null);
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
+  const [refreshLogo, setRefreshLogo] = useState(false);
   
   useEffect(() => {
     const fetchLogo = async () => {
@@ -38,6 +39,8 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
         if (url && !url.includes("undefined")) {
           console.log(`Logo found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
+          // Trigger a refresh to make sure we get the latest version
+          setRefreshLogo(true);
         } else {
           // Set logo error if no valid URL found
           setLogoError(true);
@@ -69,6 +72,12 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
                   src={logoUrl}
                   alt={`${team.name} logo`}
                   className="h-full w-full object-contain"
+                  forceRefresh={refreshLogo}
+                  onLoad={() => setRefreshLogo(false)}
+                  onError={() => {
+                    setLogoError(true);
+                    setRefreshLogo(false);
+                  }}
                   fallback={
                     <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
                       {team.name.substring(0, 2).toUpperCase()}

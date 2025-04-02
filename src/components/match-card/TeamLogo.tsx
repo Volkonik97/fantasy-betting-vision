@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
 
@@ -11,6 +11,8 @@ interface TeamLogoProps {
 }
 
 const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasError }) => {
+  const [refreshLogo, setRefreshLogo] = useState(true);
+  
   return (
     <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
       <Avatar className="w-10 h-10">
@@ -18,7 +20,12 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
           src={!hasError ? logoUrl : null}
           alt={teamName}
           className="object-contain"
-          onError={onError}
+          forceRefresh={refreshLogo}
+          onLoad={() => setRefreshLogo(false)}
+          onError={() => {
+            onError();
+            setRefreshLogo(false);
+          }}
           fallback={
             <AvatarFallback className="text-xs font-medium bg-gray-100 text-gray-700">
               {teamName.substring(0, 2).toUpperCase()}
