@@ -1,6 +1,6 @@
 
 import React from "react";
-import { normalizeRoleName } from "@/components/player/RoleBadge";
+import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 import { Axe, Swords, Target, Heart, ShieldCheck } from "lucide-react";
 
 interface PlayerRoleFilterProps {

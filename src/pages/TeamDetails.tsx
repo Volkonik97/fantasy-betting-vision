@@ -38,6 +38,7 @@ const TeamDetails = () => {
         setError(null);
         
         // Load team from database
+        console.log(`Chargement de l'équipe avec l'ID: ${id}`);
         const foundTeam = await getTeamById(id);
         
         if (!foundTeam) {
@@ -46,8 +47,13 @@ const TeamDetails = () => {
           return;
         }
         
+        // Log team info for debugging
+        console.log(`Équipe trouvée: ${foundTeam.name}`);
+        console.log(`Joueurs dans l'équipe:`, foundTeam.players);
+        
         // Make sure we have players array initialized
         if (!foundTeam.players) {
+          console.log("Players array is undefined, initializing empty array");
           foundTeam.players = [];
         }
         

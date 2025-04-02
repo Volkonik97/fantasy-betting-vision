@@ -12,8 +12,11 @@ interface TeamPlayersListProps {
 }
 
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
+  // Check if we actually have players data
+  const hasPlayers = Array.isArray(players) && players.length > 0;
+  
   // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
-  const sortedPlayers = [...players].sort((a, b) => {
+  const sortedPlayers = hasPlayers ? [...players].sort((a, b) => {
     const roleOrder: Record<string, number> = {
       'Top': 0,
       'Jungle': 1, 
@@ -29,7 +32,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     };
     
     return getRoleSortValue(a.role) - getRoleSortValue(b.role);
-  });
+  }) : [];
 
   return (
     <motion.div
@@ -38,9 +41,9 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       transition={{ duration: 0.3, delay: 0.2 }}
       className="mt-8"
     >
-      <h2 className="text-2xl font-bold mb-4">Joueurs ({players.length})</h2>
+      <h2 className="text-2xl font-bold mb-4">Joueurs ({hasPlayers ? players.length : 0})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {sortedPlayers.length > 0 ? (
+        {hasPlayers ? (
           sortedPlayers.map(player => {
             // Enrich player with team name if available
             const enrichedPlayer = {

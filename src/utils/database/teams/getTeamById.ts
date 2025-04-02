@@ -41,7 +41,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
     
-    // Fetch players for this team
+    // Fetch players for this team - make sure we're matching the correct column name
     const { data: playersData, error: playersError } = await supabase
       .from('players')
       .select('*')
