@@ -11,6 +11,7 @@ import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
 
 const Players = () => {
+  console.warn("📦 Composant Players monté");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
