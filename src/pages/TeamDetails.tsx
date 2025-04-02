@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,7 +11,6 @@ import { getSideStatistics } from "@/utils/statistics/sideStatistics";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
 import TeamHeader from "@/components/team/TeamHeader";
-import TeamPlayersList from "@/components/team/TeamPlayersList";
 import TeamRecentMatches from "@/components/team/TeamRecentMatches";
 import TeamStatistics from "@/components/TeamStatistics";
 
@@ -48,13 +48,6 @@ const TeamDetails = () => {
         
         // Log team info for debugging
         console.log(`Équipe trouvée: ${foundTeam.name}`);
-        console.log(`Joueurs dans l'équipe:`, foundTeam.players?.length || 0);
-        
-        // Make sure we have players array initialized
-        if (!foundTeam.players) {
-          console.log("Players array is undefined, initializing empty array");
-          foundTeam.players = [];
-        }
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
@@ -131,14 +124,6 @@ const TeamDetails = () => {
     );
   }
   
-  // Log player data just before rendering to debug
-  console.log("Rendering TeamDetails with players:", team.players?.length || 0);
-  if (team.players && team.players.length > 0) {
-    console.log("First player:", team.players[0].name, team.players[0].role);
-  } else {
-    console.warn("No players found in team object at render time");
-  }
-  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -163,14 +148,6 @@ const TeamDetails = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 space-y-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              <TeamPlayersList players={team.players || []} teamName={team.name || ""} />
-            </motion.div>
-            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
