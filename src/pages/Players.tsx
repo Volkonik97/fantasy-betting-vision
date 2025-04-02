@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -9,6 +8,22 @@ import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
+
+interface DbPlayer {
+  id: string;
+  name: string;
+  role: string | null;
+  image: string | null;
+  team_id: string | null;
+  kda: number | null;
+  cs_per_min: number | null;
+  damage_share: number | null;
+  champion_pool: string[] | null;
+  teams?: {
+    name: string;
+    region: string;
+  };
+}
 
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,27 +74,26 @@ const Players = () => {
           return;
         }
         
-        const validPlayers = playersData.filter(player => 
+        const validPlayers = playersData.filter((player: DbPlayer) => 
           player && player.id && player.name
         );
         
         console.log(`Direct query found ${validPlayers.length} valid players out of ${playersData.length} total`);
         
         // Add special check for Hanwha Life
-        const hanwhaPlayers = validPlayers.filter(p => 
+        const hanwhaPlayers = validPlayers.filter((p: DbPlayer) => 
           p.team_id === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
-          p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934" ||
           (p.teams?.name && p.teams.name.includes("Hanwha"))
         );
         
         console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
         
-        const mappedPlayers = validPlayers.map(player => ({
+        const mappedPlayers = validPlayers.map((player: DbPlayer) => ({
           id: player.id,
           name: player.name,
           role: normalizeRoleName(player.role || "Unknown"),
           image: player.image || "",
-          team: player.team_id || player.team,
+          team: player.team_id || "",
           teamName: player.teams?.name || "Unknown team",
           teamRegion: player.teams?.region || "Unknown region",
           kda: typeof player.kda === 'number' ? player.kda : 0,

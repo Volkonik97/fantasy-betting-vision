@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -16,6 +15,22 @@ interface TeamRosterProps {
   players: Player[];
   teamName: string;
   teamId?: string;
+}
+
+interface DbPlayer {
+  id: string;
+  name: string;
+  role: string | null;
+  image: string | null;
+  team_id: string | null;
+  kda: number | null;
+  cs_per_min: number | null;
+  damage_share: number | null;
+  champion_pool: string[] | null;
+  teams?: {
+    name: string;
+    region: string;
+  };
 }
 
 const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterProps) => {
@@ -54,41 +69,32 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
           
         // Si aucun joueur n'est trouvé avec team_id, essayer avec team
         if ((!playersData || playersData.length === 0) && !playersError) {
-          console.log(`No players found with team_id=${teamId}, trying with team=${teamId}`);
-          const { data: alternateData, error: alternateError } = await supabase
-            .from('players')
-            .select('*')
-            .eq('team', teamId);
-            
-          if (alternateData && alternateData.length > 0) {
-            playersData = alternateData;
-            playersError = alternateError;
-          }
-        }
-        
-        // Vérifier spécifiquement pour Hanwha Life Esports
-        if (teamName.includes("Hanwha") || teamId === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934") {
-          console.log("Special case: Hanwha Life Esports - Checking for all players");
+          console.log(`No players found with team_id=${teamId}, trying alternate approach`);
           
-          const { data: hanwhaData, error: hanwhaError } = await supabase
-            .from('players')
-            .select('*')
-            .ilike('team_id', '%hanwha%');
+          // Directly look for Hanwha Life players as a special case
+          if (teamName.includes("Hanwha") || teamId === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934") {
+            console.log("Special case: Hanwha Life Esports - Checking for all players");
             
-          if (hanwhaData && hanwhaData.length > 0) {
-            console.log(`Found ${hanwhaData.length} Hanwha players by team_id pattern match`);
-            playersData = hanwhaData;
-            playersError = hanwhaError;
-          } else {
-            const { data: backupData, error: backupError } = await supabase
+            const { data: hanwhaData, error: hanwhaError } = await supabase
               .from('players')
               .select('*')
-              .filter('team', 'eq', 'oe:team:3a1d18f46bcb3716ebcfcf4ef068934');
+              .ilike('team_id', '%hanwha%');
               
-            if (backupData && backupData.length > 0) {
-              console.log(`Found ${backupData.length} Hanwha players by exact team match`);
-              playersData = backupData;
-              playersError = backupError;
+            if (hanwhaData && hanwhaData.length > 0) {
+              console.log(`Found ${hanwhaData.length} Hanwha players by team_id pattern match`);
+              playersData = hanwhaData;
+              playersError = hanwhaError;
+            } else {
+              const { data: backupData, error: backupError } = await supabase
+                .from('players')
+                .select('*')
+                .eq('team_id', 'oe:team:3a1d18f46bcb3716ebcfcf4ef068934');
+                
+              if (backupData && backupData.length > 0) {
+                console.log(`Found ${backupData.length} Hanwha players by exact team_id match`);
+                playersData = backupData;
+                playersError = backupError;
+              }
             }
           }
         }
@@ -106,12 +112,13 @@ const TeamRoster = ({ players: initialPlayers, teamName, teamId }: TeamRosterPro
           return;
         }
         
-        const fetchedPlayers: Player[] = playersData.map(player => ({
+        // Cast the database players to our application Player type
+        const fetchedPlayers: Player[] = playersData.map((player: DbPlayer) => ({
           id: player.id,
           name: player.name,
           role: normalizeRoleName(player.role || 'Mid'),
           image: player.image || '',
-          team: player.team_id || player.team,
+          team: player.team_id || '',
           teamName: teamName,
           kda: Number(player.kda) || 0,
           csPerMin: Number(player.cs_per_min) || 0,

@@ -32,12 +32,6 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
   console.log(`Rendering ${players.length} players in PlayersList`);
   if (players.length > 0) {
     console.log("Sample player data:", players[0]);
-    
-    // Vérifier les joueurs de Hanwha Life Esports
-    const hanwhaPlayers = players.filter(p => 
-      p.teamName?.includes("Hanwha") || p.team?.includes("hanwha") || p.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934"
-    );
-    console.log(`Found ${hanwhaPlayers.length} Hanwha Life Esports players:`, hanwhaPlayers);
   }
 
   return (

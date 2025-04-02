@@ -21,11 +21,6 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const csPerMin = typeof player.csPerMin === 'number' && !isNaN(player.csPerMin) ? player.csPerMin : 0;
   const damageShare = typeof player.damageShare === 'number' && !isNaN(player.damageShare) ? player.damageShare : 0;
 
-  // Pour Hanwha Life Esports, ajoutons des logs supplémentaires
-  if (player.teamName?.includes("Hanwha") || player.team === "oe:team:3a1d18f46bcb3716ebcfcf4ef068934") {
-    console.log(`Rendering Hanwha player card for ${player.name}`, player);
-  }
-
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
