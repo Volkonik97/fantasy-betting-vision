@@ -44,15 +44,39 @@ const Players = () => {
         console.log(`Loaded ${teams.length} teams`);
         
         // Check for Hanwha Life Esports specifically
-        const hanwhaTeam = teams.find(team => team.name.includes("Hanwha") || team.name.includes("HLE"));
-        if (hanwhaTeam) {
-          console.log(`Found Hanwha Life Esports: ${hanwhaTeam.name}, ID: ${hanwhaTeam.id}`);
-          console.log(`Hanwha players: ${hanwhaTeam.players?.length || 0}`);
-          if (hanwhaTeam.players && hanwhaTeam.players.length > 0) {
-            hanwhaTeam.players.forEach(p => 
-              console.log(`- ${p.name}: role=${p.role}`)
-            );
+        const hanwhaTeams = teams.filter(team => 
+          team.name.includes("Hanwha") || 
+          team.id === 'oe:team:658a9939b7c42b80b15fe9a639577f5');
+          
+        hanwhaTeams.forEach(team => {
+          console.log(`Found Hanwha team: ${team.name}, ID: ${team.id}`);
+          console.log(`Hanwha players: ${team.players?.length || 0}`);
+          
+          if (team.players && team.players.length > 0) {
+            team.players.forEach(p => {
+              // Log all Hanwha players
+              console.log(`- ${p.name}: originalRole=${p.role}, normalizedRole=${normalizeRoleName(p.role)}`);
+            });
+          } else {
+            console.warn(`No players found for team: ${team.name}`);
           }
+        });
+        
+        // Check for Zeka player
+        let foundZeka = false;
+        teams.forEach(team => {
+          if (team.players) {
+            const zekaPlayer = team.players.find(p => 
+              p.name.toLowerCase().includes('zeka'));
+            if (zekaPlayer) {
+              foundZeka = true;
+              console.log(`Found Zeka in team ${team.name}, Role: ${zekaPlayer.role}, ID: ${zekaPlayer.id}`);
+            }
+          }
+        });
+        
+        if (!foundZeka) {
+          console.warn("Zeka not found in any team!");
         }
         
         const players = teams.flatMap(team => 
@@ -129,7 +153,12 @@ const Players = () => {
     // Handle search term matching
     const searchMatches = 
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      player.teamName.toLowerCase().includes(searchTerm.toLowerCase());
+      (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Debug specific players like Zeka
+    if (player.name.toLowerCase().includes('zeka')) {
+      console.log(`Filtering Zeka: role=${player.role}, normalized=${normalizedPlayerRole}, selected=${normalizedSelectedRole}, roleMatches=${roleMatches}, regionMatches=${regionMatches}, searchMatches=${searchMatches}`);
+    }
     
     return roleMatches && regionMatches && searchMatches;
   });

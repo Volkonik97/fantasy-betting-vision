@@ -14,6 +14,11 @@ interface TeamPlayersListProps {
 const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
   console.log(`TeamPlayersList: Received ${players.length} players for team ${teamName}`);
   
+  // Log all players for debugging
+  players.forEach(player => {
+    console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.team}`);
+  });
+  
   // Ensure all players have normalized roles before sorting
   const playersWithNormalizedRoles = players.map(player => ({
     ...player,
@@ -33,11 +38,13 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
     // Get the standardized role for sorting purposes
     const getRoleSortValue = (role: string): number => {
       const normalizedRole = normalizeRoleName(role);
-      return roleOrder[normalizedRole] || 2; // Default to Mid (2) if unknown
+      return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 2; // Default to Mid (2) if unknown
     };
     
     return getRoleSortValue(a.role) - getRoleSortValue(b.role);
   });
+  
+  console.log(`Sorted players length: ${sortedPlayers.length}`);
 
   return (
     <motion.div
@@ -46,7 +53,7 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       transition={{ duration: 0.3, delay: 0.2 }}
       className="mt-8"
     >
-      <h2 className="text-2xl font-bold mb-4">Joueurs ({players.length})</h2>
+      <h2 className="text-2xl font-bold mb-4">Joueurs ({sortedPlayers.length})</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {

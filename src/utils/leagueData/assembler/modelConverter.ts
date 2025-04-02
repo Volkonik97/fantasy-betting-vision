@@ -26,14 +26,19 @@ export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC
   
   const normalizedRole = role.toLowerCase().trim();
   
-  if (normalizedRole === 'top' || normalizedRole === 'toplane') return 'Top';
-  if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
-  if (['mid', 'middle', 'midlane'].includes(normalizedRole)) return 'Mid';
-  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'adcarry'].includes(normalizedRole)) return 'ADC';
-  if (['support', 'sup', 'supp', 'soutien'].includes(normalizedRole)) return 'Support';
+  // Enhanced role mappings with more variations
+  if (['top', 'toplane', 'top lane'].includes(normalizedRole)) return 'Top';
+  
+  if (['jungle', 'jng', 'jgl', 'jg', 'jungler'].includes(normalizedRole)) return 'Jungle';
+  
+  if (['mid', 'middle', 'midlane', 'mid lane', 'midlaner'].includes(normalizedRole)) return 'Mid';
+  
+  if (['adc', 'bot', 'bottom', 'carry', 'botlane', 'bot lane', 'adcarry', 'ad carry', 'botlaner'].includes(normalizedRole)) return 'ADC';
+  
+  if (['support', 'sup', 'supp', 'soutien', 'supporter'].includes(normalizedRole)) return 'Support';
   
   // Log unknown roles for debugging
-  console.log(`Unknown role encountered: "${role}", defaulting to Mid`);
+  console.warn(`Unknown role encountered: "${role}" (normalized: "${normalizedRole}"), defaulting to Mid`);
   
   // Default to Mid if role is unknown
   return 'Mid';
