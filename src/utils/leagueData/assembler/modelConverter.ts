@@ -24,9 +24,9 @@ export function teamToTeamObject(teamCsv: any): Team {
 export function normalizeRoleName(role: string): 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' {
   const normalizedRole = role.toLowerCase().trim();
   
-  if (normalizedRole === 'top') return 'Top';
+  if (normalizedRole === 'top' || normalizedRole === 'toplane') return 'Top';
   if (['jungle', 'jng', 'jgl', 'jg'].includes(normalizedRole)) return 'Jungle';
-  if (['mid', 'middle'].includes(normalizedRole)) return 'Mid';
+  if (['mid', 'middle', 'midlane'].includes(normalizedRole)) return 'Mid';
   if (['adc', 'bot', 'bottom', 'carry'].includes(normalizedRole)) return 'ADC';
   if (['support', 'sup', 'supp'].includes(normalizedRole)) return 'Support';
   
