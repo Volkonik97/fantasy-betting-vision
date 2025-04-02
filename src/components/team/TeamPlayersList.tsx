@@ -24,25 +24,20 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       return;
     }
     
-    // Log all players for debugging
-    players.forEach(player => {
-      const normalizedRole = normalizeRoleName(player.role);
-      console.log(`Player in team list: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, Team: ${player.team}`);
-    });
-    
     // Create a deep copy of the players array to avoid mutation issues
     const playersCopy = JSON.parse(JSON.stringify(players));
     
     // Ensure all players have normalized roles before sorting
     const playersWithNormalizedRoles = playersCopy.map((player: Player) => {
-      const normalizedRole = normalizeRoleName(player.role || "Mid");
+      const normalizedRole = normalizeRoleName(player.role);
+      console.log(`Player in team list: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, Team: ${player.team}`);
       return {
         ...player,
         role: normalizedRole
       };
     });
     
-    // Sort players by role in the standard order: Top, Jungle/Jng, Mid, ADC/Bot, Support/Sup
+    // Sort players by role in the standard order: Top, Jungle, Mid, ADC, Support
     const sorted = [...playersWithNormalizedRoles].sort((a, b) => {
       const roleOrder: Record<string, number> = {
         'Top': 0,
@@ -52,13 +47,10 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
         'Support': 4
       };
       
-      // Get the standardized role for sorting purposes
-      const getRoleSortValue = (role: string): number => {
-        const normalizedRole = normalizeRoleName(role || "Mid");
-        return roleOrder[normalizedRole] !== undefined ? roleOrder[normalizedRole] : 999; // Default to end if unknown
-      };
+      const roleA = normalizeRoleName(a.role);
+      const roleB = normalizeRoleName(b.role);
       
-      return getRoleSortValue(a.role) - getRoleSortValue(b.role);
+      return roleOrder[roleA] - roleOrder[roleB];
     });
     
     console.log(`Sorted players (${sorted.length}): ${sorted.map(p => `${p.name} (${p.role})`).join(', ')}`);
@@ -102,24 +94,27 @@ const TeamPlayersList = ({ players, teamName }: TeamPlayersListProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map(player => {
-            // Ensure role is properly normalized for each player
-            const normalizedRole = normalizeRoleName(player.role);
-            
-            // Enrichir le joueur avec le nom de l'équipe si disponible
+            // Always ensure role is properly normalized
             const enrichedPlayer = {
               ...player,
-              role: normalizedRole, // Use the normalized role
               teamName: teamName || player.teamName || player.team
             };
             
             return (
-              <Link 
-                to={`/players/${player.id}`} 
+              <motion.div 
                 key={player.id}
-                className="h-full block"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full"
               >
-                <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
-              </Link>
+                <Link 
+                  to={`/players/${player.id}`} 
+                  className="h-full block"
+                >
+                  <PlayerCard player={enrichedPlayer} showTeamLogo={true} />
+                </Link>
+              </motion.div>
             );
           })
         ) : (

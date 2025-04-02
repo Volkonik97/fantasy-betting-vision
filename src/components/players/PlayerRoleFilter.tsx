@@ -50,7 +50,6 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
   };
 
   const handleRoleSelect = (role: string) => {
-    console.log(`Selecting role: ${role}`);
     setSelectedRole(role);
   };
 

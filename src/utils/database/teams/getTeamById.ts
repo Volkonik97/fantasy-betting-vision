@@ -62,7 +62,6 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     if (playersError) {
       console.error(`Error retrieving players for team ${teamId}:`, playersError);
-      // Continue without players
     }
     
     // Convert database format to application format
@@ -82,14 +81,13 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     if (playersData && playersData.length > 0) {
       console.log(`Processing ${playersData.length} players for team ${teamData.name}`);
       
-      // Log all player data for debugging
-      playersData.forEach(player => {
-        console.log(`Raw player data: id=${player.id}, name=${player.name}, role=${player.role}, team_id=${player.team_id}`);
-      });
+      // Log roles for debugging
+      const roles = playersData.map(p => p.role);
+      console.log(`Roles before normalization for team ${teamData.name}:`, roles);
       
       team.players = playersData.map(player => {
-        // Ensure role is normalized
-        const normalizedRole = normalizeRoleName(player.role || 'Mid');
+        // Always normalize role
+        const normalizedRole = normalizeRoleName(player.role);
         
         // Log for debugging
         console.log(`Adding player: ${player.name}, Original Role: ${player.role}, Normalized Role: ${normalizedRole}, ID: ${player.id}, Team: ${player.team_id}`);
@@ -107,6 +105,24 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
           championPool: player.champion_pool as string[] || []
         };
       });
+      
+      // Check if we have all roles covered
+      const hasAllRoles = ['Top', 'Jungle', 'Mid', 'ADC', 'Support'].every(role => 
+        team.players.some(player => normalizeRoleName(player.role) === role)
+      );
+      
+      if (!hasAllRoles) {
+        console.warn(`Team ${teamData.name} is missing one or more standard roles`);
+        
+        // Log the roles we have
+        const roleMap = team.players.reduce((acc, player) => {
+          const role = normalizeRoleName(player.role);
+          acc[role] = (acc[role] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log(`Role distribution for team ${teamData.name}:`, roleMap);
+      }
       
       console.log(`Team ${teamData.name} has ${team.players.length} players after processing`);
       console.log(`Player roles: ${team.players.map(p => `${p.name} (${p.role})`).join(', ')}`);
@@ -127,7 +143,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         if (teamPlayers.length > 0) {
           console.log(`Found players through alternative query, adding them to the team`);
           team.players = teamPlayers.map(player => {
-            const normalizedRole = normalizeRoleName(player.role || 'Mid');
+            const normalizedRole = normalizeRoleName(player.role);
             return {
               id: player.id as string,
               name: player.name as string,

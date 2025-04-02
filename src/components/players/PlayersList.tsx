@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Player } from "@/utils/models/types";
@@ -12,43 +12,11 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
-  // Make sure we have players to display
-  useEffect(() => {
-    console.log(`PlayersList: Received ${players?.length || 0} players`);
-    if (players?.length > 0) {
-      // Log the first few players for debugging
-      players.slice(0, 5).forEach(player => {
-        console.log(`Player in list: ${player.name}, Role: ${player.role}, Team: ${player.teamName}`);
-      });
-      
-      // Count players by role
-      const roleCounts = players.reduce((acc, player) => {
-        const normalizedRole = normalizeRoleName(player.role);
-        acc[normalizedRole] = (acc[normalizedRole] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      console.log("Players by role:", roleCounts);
-    }
-  }, [players]);
-  
   // Ensure all roles are normalized before rendering
   const normalizedPlayers = players.map(player => ({
     ...player,
     role: normalizeRoleName(player.role)
   }));
-  
-  // Log player counts by role for debugging
-  const roleCounts = normalizedPlayers.reduce((acc, player) => {
-    acc[player.role] = (acc[player.role] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  console.log("Filtered players by role:", roleCounts);
-  
-  // Log specific players for debugging
-  const topPlayers = normalizedPlayers.filter(p => p.role === 'Top');
-  console.log("Top players:", topPlayers.map(p => `${p.name} (${p.teamName})`));
   
   if (loading) {
     return (
