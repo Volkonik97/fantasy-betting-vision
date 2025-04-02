@@ -47,7 +47,7 @@ const Players = () => {
       console.log(`✅ ${teams.length} équipes chargées.`);
 
       // 🔍 Liste de toutes les équipes récupérées
-      console.log("📋 Liste de toutes les équipes récupérées :");
+      console.log("Liste de toutes les équipes récupérées :");
       teams.forEach(t => {
         console.log(`- ${t.name}`);
       });
