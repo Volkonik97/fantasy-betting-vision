@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -60,7 +59,19 @@ const TeamDetails = () => {
         }
 
         setTeam({ ...foundTeam }); // nouvelle référence
-        setPlayers(foundTeam.players || []);
+
+        if (foundTeam.players && foundTeam.players.length > 0) {
+          setPlayers(foundTeam.players);
+        } else {
+          console.warn("⚠️ Aucun joueur trouvé au moment du chargement, tentative de fallback");
+          setTimeout(() => {
+            if (foundTeam.players && foundTeam.players.length > 0) {
+              console.log("✅ Joueurs récupérés via fallback timeout");
+              setPlayers(foundTeam.players);
+            }
+          }, 500);
+        }
+
         setSideStats(sideStatsData);
 
         await clearMatchCache();
@@ -88,6 +99,12 @@ const TeamDetails = () => {
 
     loadTeamData();
   }, [id]);
+
+  useEffect(() => {
+    if (team?.players && team.players.length > 0) {
+      setPlayers(team.players);
+    }
+  }, [team?.players]);
 
   const handleBackClick = (e: React.MouseEvent) => {
     e.preventDefault();
