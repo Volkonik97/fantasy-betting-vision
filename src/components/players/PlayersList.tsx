@@ -12,39 +12,8 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
+  // Log key information about the players we received
   console.log(`PlayersList: Received ${players.length} players`);
-  
-  // Log all regions before processing
-  const playerRegions = players.map(p => p.teamRegion);
-  const regionCounts = playerRegions.reduce((acc, region) => {
-    acc[region] = (acc[region] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  console.log("Players by region:", regionCounts);
-  
-  // Log all roles before normalization
-  const rolesBefore = players.map(p => p.role);
-  console.log("Roles before normalization:", rolesBefore);
-  
-  // Ensure all roles are normalized before rendering
-  const normalizedPlayers = players.map(player => ({
-    ...player,
-    role: normalizeRoleName(player.role)
-  }));
-  
-  // Log all roles after normalization
-  const rolesAfter = normalizedPlayers.map(p => p.role);
-  console.log("Roles after normalization:", rolesAfter);
-  
-  // Count players by role for debugging
-  const roleCounts = normalizedPlayers.reduce((acc, player) => {
-    const role = player.role;
-    acc[role] = (acc[role] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  console.log("Player counts by role:", roleCounts);
   
   if (loading) {
     return (
@@ -54,7 +23,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
-  if (normalizedPlayers.length === 0) {
+  if (players.length === 0) {
     return (
       <div className="col-span-full py-10 text-center">
         <p className="text-gray-500">No players found matching your filters.</p>
@@ -62,9 +31,25 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
     );
   }
 
+  // Group players by region for debugging
+  const regionCounts: Record<string, number> = {};
+  players.forEach(player => {
+    const region = player.teamRegion || 'Unknown';
+    regionCounts[region] = (regionCounts[region] || 0) + 1;
+  });
+  console.log("Players by region in PlayersList:", regionCounts);
+
+  // Log roles distribution
+  const roleCounts: Record<string, number> = {};
+  players.forEach(player => {
+    const role = player.role || 'Unknown';
+    roleCounts[role] = (roleCounts[role] || 0) + 1;
+  });
+  console.log("Players by role in PlayersList:", roleCounts);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {normalizedPlayers.map((player, index) => (
+      {players.map((player, index) => (
         <motion.div
           key={player.id}
           initial={{ opacity: 0, y: 20 }}

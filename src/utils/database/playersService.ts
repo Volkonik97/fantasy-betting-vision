@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player, PlayerRole } from '../models/types';
 import { chunk } from '../dataConverter';
@@ -63,13 +64,13 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
                 }
               }
               
-              // Normalize the role before saving
+              // Always normalize the role before saving
               const normalizedRole = normalizeRoleName(player.role);
               
               return {
                 id: player.id,
                 name: player.name,
-                role: normalizedRole,
+                role: normalizedRole, // Save normalized role
                 image: player.image || '',
                 team_id: player.team,
                 kda: player.kda || 0,
@@ -106,7 +107,10 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
 // Get players from database
 export const getPlayers = async (): Promise<Player[]> => {
   const loadedPlayers = getLoadedPlayers();
-  if (loadedPlayers) return loadedPlayers;
+  if (loadedPlayers) {
+    console.log("Using cached players data");
+    return loadedPlayers;
+  }
   
   try {
     console.log("Fetching players from database");
@@ -120,15 +124,15 @@ export const getPlayers = async (): Promise<Player[]> => {
       return teams.flatMap(team => team.players);
     }
     
-    console.log(`Récupéré ${playersData.length} joueurs de la base de données`);
+    console.log(`Retrieved ${playersData.length} players from database`);
     
     // Get unique team_ids for logging
     const uniqueTeamIds = [...new Set(playersData.map(p => p.team_id))];
     console.log(`Players belong to ${uniqueTeamIds.length} unique teams`);
     
     const players: Player[] = playersData.map(player => {
-      // Standardize the role using the normalizeRoleName function
-      const normalizedRole = normalizeRoleName(player.role || 'Mid');
+      // Always normalize the role using our updated function
+      const normalizedRole = normalizeRoleName(player.role);
       
       return {
         id: player.id as string,
@@ -182,9 +186,10 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       return null;
     }
     
-    // Convert database format to application format with normalized role
-    const normalizedRole = normalizeRoleName(playerData.role || 'Mid');
+    // Always normalize the role
+    const normalizedRole = normalizeRoleName(playerData.role);
     
+    // Convert database format to application format
     const player: Player = {
       id: playerData.id as string,
       name: playerData.name as string,

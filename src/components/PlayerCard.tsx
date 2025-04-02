@@ -1,10 +1,9 @@
 
 import React from "react";
-import { Player } from "@/utils/models/types";
+import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
-import { normalizeRoleName } from "@/utils/leagueData/assembler/modelConverter";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
@@ -12,13 +11,12 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Always normalize role when rendering
-  const normalizedRole = normalizeRoleName(player.role);
-  
-  // Create a normalized player object
+  // Ensure player has all necessary properties
   const normalizedPlayer = {
     ...player,
-    role: normalizedRole
+    // Use player's role directly as it should already be normalized in our new approach
+    teamName: player.teamName || "",
+    teamRegion: player.teamRegion || ""
   };
   
   return (
