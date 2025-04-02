@@ -37,6 +37,8 @@ const TeamDetails = () => {
         setIsLoading(true);
         setError(null);
         
+        console.log(`Loading team data for ID: ${id}`);
+        
         // Load team from database
         const foundTeam = await getTeamById(id);
         console.log("Found team:", foundTeam); // Debug log
@@ -52,7 +54,8 @@ const TeamDetails = () => {
           console.warn("Team has no players array");
           foundTeam.players = []; // Initialize to empty array if undefined
         }
-        console.log("Team players:", foundTeam.players); // Debug log
+        
+        console.log(`Team ${foundTeam.name} has ${foundTeam.players.length} players:`, foundTeam.players);
         
         // Récupérer les statistiques par côté
         const sideStatsData = await getSideStatistics(id);
@@ -161,7 +164,10 @@ const TeamDetails = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <TeamPlayersList players={team.players || []} teamName={team?.name || ""} />
+              <TeamPlayersList 
+                players={Array.isArray(team.players) ? team.players : []} 
+                teamName={team?.name || ""} 
+              />
             </motion.div>
             
             <motion.div
