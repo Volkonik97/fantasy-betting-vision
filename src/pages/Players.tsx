@@ -61,18 +61,17 @@ const Players = () => {
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
       
       teams.forEach(team => {
-        if (team.players && team.players.length > 0) {
-          console.log(`Team ${team.name} (${team.region}) has ${team.players.length} players`);
-          
-          // Map players with team information
-          const teamPlayers = team.players.map(player => ({
-            ...player,
-            teamName: team.name,
-            teamRegion: team.region
-          }));
-          
-          playersWithTeamInfo.push(...teamPlayers);
-        } else {
+  if (!team.players || team.players.length === 0) {
+    console.warn(`No players for team ${team.name} (${team.region})`);
+  } else {
+    team.players.forEach(player => {
+      if (!player.name || !player.id) {
+        console.warn(`Player missing id or name in team ${team.name}:`, player);
+      }
+    });
+  }
+});
+ else {
           console.log(`No players found for team: ${team.name} (${team.region})`);
         }
       });
