@@ -8,7 +8,7 @@ const BUCKET_NAME = "team-logos";
 
 export const getTeams = async (): Promise<Team[]> => {
   try {
-    console.log("🔁 [getTeams] Récupération des équipes et joueurs depuis Supabase...");
+    console.log("🧠 [DEBUG] getTeams.ts utilisé ✅");
 
     const { data: teamsData, error: teamsError } = await supabase
       .from("teams")
@@ -29,39 +29,46 @@ export const getTeams = async (): Promise<Team[]> => {
     }
 
     console.log(`✅ ${teamsData.length} équipes chargées`);
-    console.log(`✅ ${allPlayersData.length} joueurs chargés`);
+    console.log("👥 [DEBUG] Tous les joueurs (raw):", allPlayersData.map(p => p.name));
 
-    // 🔍 Check si Kiin est là
-    const kiinDirect = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
+    // 🔍 Vérif manuelle Kiin
+    const kiin = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
 
-    if (!kiinDirect) {
+    if (!kiin) {
       console.warn("🚫 Kiin absent — tentative de récupération via RPC");
-
       const { data: kiinByQuery, error: kiinQueryError } = await supabase
         .rpc("get_kiin_debug");
 
       if (kiinQueryError) {
-        console.error("❌ Erreur lors du fallback RPC pour Kiin :", kiinQueryError);
+        console.error("❌ Erreur RPC pour Kiin :", kiinQueryError);
       } else if (kiinByQuery?.length > 0) {
-        console.warn("🐛 Kiin récupéré via bypass SQL RPC :", kiinByQuery[0]);
+        console.warn("🐛 Kiin récupéré via RPC :", kiinByQuery[0]);
         allPlayersData.push(kiinByQuery[0]);
       } else {
-        console.warn("❌ Aucun résultat pour Kiin même via fallback");
+        console.warn("❌ Kiin introuvable même via RPC");
       }
+    }
+
+    const teamIds = teamsData.map(t => t.id.trim());
+    const kiinFinal = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
+    console.log("🔍 [DEBUG] Kiin brut :", kiinFinal);
+
+    if (kiinFinal && kiinFinal.team_id) {
+      const match = teamIds.includes(kiinFinal.team_id.trim());
+      console.log(`🔁 [CHECK] kiin.team_id = ${kiinFinal.team_id} → match team.id ?`, match);
     }
 
     // 🧩 Regroupement des joueurs par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
-      if (!player.team_id) return acc;
-      if (!acc[player.team_id]) acc[player.team_id] = [];
-      acc[player.team_id].push(player);
+      const teamId = player.team_id?.trim?.();
+      if (!teamId) return acc;
+      if (!acc[teamId]) acc[teamId] = [];
+      acc[teamId].push(player);
       return acc;
     }, {} as Record<string, any[]>);
 
-    // 🏗️ Construction des équipes enrichies
     const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
-
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
         const { data: { publicUrl } } = supabase.storage
           .from(BUCKET_NAME)
@@ -69,7 +76,7 @@ export const getTeams = async (): Promise<Team[]> => {
         if (publicUrl) logoUrl = publicUrl;
       }
 
-      const teamPlayers = playersByTeamId[team.id] || [];
+      const teamPlayers = playersByTeamId[team.id.trim()] || [];
 
       return {
         id: team.id,
@@ -96,7 +103,7 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🛠️ Injection automatique des joueurs fantômes (présents mais non assignés)
+    // 🛠️ Auto-injection des joueurs manquants
     const allTeamPlayerIds = new Set(
       teams.flatMap(t => t.players || []).map(p => p.id)
     );
@@ -108,27 +115,27 @@ export const getTeams = async (): Promise<Team[]> => {
     const injectedLog: { name: string; team: string }[] = [];
 
     for (const ghost of missingPlayers) {
-      const targetTeam = teams.find(t => t.id === ghost.team_id);
-      if (!targetTeam) {
-        console.warn(`⚠️ ${ghost.name} a un team_id invalide : ${ghost.team_id}`);
+      const teamMatch = teams.find(t => t.id.trim() === ghost.team_id?.trim());
+      if (!teamMatch) {
+        console.warn(`⚠️ ${ghost.name} → team_id introuvable : ${ghost.team_id}`);
         continue;
       }
 
-      targetTeam.players?.push({
+      teamMatch.players?.push({
         id: ghost.id,
         name: ghost.name,
         role: normalizeRoleName(ghost.role),
         image: ghost.image,
-        team: ghost.team_id,
-        teamName: targetTeam.name,
-        teamRegion: targetTeam.region,
+        team: teamMatch.id,
+        teamName: teamMatch.name,
+        teamRegion: teamMatch.region,
         kda: Number(ghost.kda) || 0,
         csPerMin: Number(ghost.cs_per_min) || 0,
         damageShare: Number(ghost.damage_share) || 0,
         championPool: ghost.champion_pool || [],
       });
 
-      injectedLog.push({ name: ghost.name, team: targetTeam.name });
+      injectedLog.push({ name: ghost.name, team: teamMatch.name });
     }
 
     if (injectedLog.length > 0) {
@@ -138,17 +145,9 @@ export const getTeams = async (): Promise<Team[]> => {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
     }
 
-    // ✅ Check finale pour Kiin
-    const kiinCheck = teams.flatMap(t => t.players || []).find(p => p.name?.toLowerCase() === "kiin");
-    if (kiinCheck) {
-      console.log("🧪 Vérification finale : Kiin est bien présent dans teams :", kiinCheck);
-    } else {
-      console.error("❌ Kiin toujours absent malgré fallback + auto-injection");
-    }
-
     return teams;
   } catch (error) {
-    console.error("❌ Erreur globale dans getTeams :", error);
+    console.error("❌ Erreur globale dans getTeams.ts :", error);
     toast.error("Erreur lors du chargement des équipes");
     return mockTeams;
   }
