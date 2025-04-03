@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
+import { clearTeamsCache } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
