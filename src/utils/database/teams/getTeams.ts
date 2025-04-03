@@ -31,13 +31,12 @@ export const getTeams = async (): Promise<Team[]> => {
     console.log(`✅ ${teamsData.length} équipes chargées`);
     console.log("👥 [DEBUG] Tous les joueurs (raw):", allPlayersData.map(p => p.name));
 
-    // 🔍 Vérif manuelle Kiin
+    // Vérifie si Kiin est là sinon le récupère via RPC
     const kiin = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
 
     if (!kiin) {
       console.warn("🚫 Kiin absent — tentative de récupération via RPC");
-      const { data: kiinByQuery, error: kiinQueryError } = await supabase
-        .rpc("get_kiin_debug");
+      const { data: kiinByQuery, error: kiinQueryError } = await supabase.rpc("get_kiin_debug");
 
       if (kiinQueryError) {
         console.error("❌ Erreur RPC pour Kiin :", kiinQueryError);
@@ -51,14 +50,12 @@ export const getTeams = async (): Promise<Team[]> => {
 
     const teamIds = teamsData.map(t => t.id.trim());
     const kiinFinal = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
-    console.log("🔍 [DEBUG] Kiin brut :", kiinFinal);
-
-    if (kiinFinal && kiinFinal.team_id) {
+    if (kiinFinal?.team_id) {
       const match = teamIds.includes(kiinFinal.team_id.trim());
       console.log(`🔁 [CHECK] kiin.team_id = ${kiinFinal.team_id} → match team.id ?`, match);
     }
 
-    // 🧩 Regroupement des joueurs par team_id
+    // Regroupement par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       const teamId = player.team_id?.trim?.();
       if (!teamId) return acc;
@@ -103,43 +100,55 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🛠️ Auto-injection des joueurs manquants
-    const allTeamPlayerIds = new Set(
-      teams.flatMap(t => t.players || []).map(p => p.id)
-    );
-
-    const missingPlayers = allPlayersData.filter(
-      (p) => p.team_id && !allTeamPlayerIds.has(p.id)
-    );
+    // Injection automatique des joueurs fantômes
+    const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
+    const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
 
     const injectedLog: { name: string; team: string }[] = [];
 
     for (const ghost of missingPlayers) {
-      const teamMatch = teams.find(t => t.id.trim() === ghost.team_id?.trim());
-      if (!teamMatch) {
-        console.warn(`⚠️ ${ghost.name} → team_id introuvable : ${ghost.team_id}`);
-        continue;
+      let targetTeam = teams.find(t => t.id.trim() === ghost.team_id?.trim());
+
+      if (!targetTeam) {
+        // Crée une team de fallback
+        targetTeam = teams.find(t => t.id === "__unknown__");
+        if (!targetTeam) {
+          targetTeam = {
+            id: "__unknown__",
+            name: "Unknown Team",
+            logo: "",
+            region: "Unknown",
+            winRate: 0,
+            blueWinRate: 0,
+            redWinRate: 0,
+            averageGameTime: 0,
+            players: []
+          };
+          teams.push(targetTeam);
+        }
+
+        console.warn(`🧩 Joueur sans team réelle : ${ghost.name} → fallback "Unknown Team"`);
       }
 
-      teamMatch.players?.push({
+      targetTeam.players?.push({
         id: ghost.id,
         name: ghost.name,
         role: normalizeRoleName(ghost.role),
         image: ghost.image,
-        team: teamMatch.id,
-        teamName: teamMatch.name,
-        teamRegion: teamMatch.region,
+        team: targetTeam.id,
+        teamName: targetTeam.name,
+        teamRegion: targetTeam.region,
         kda: Number(ghost.kda) || 0,
         csPerMin: Number(ghost.cs_per_min) || 0,
         damageShare: Number(ghost.damage_share) || 0,
         championPool: ghost.champion_pool || [],
       });
 
-      injectedLog.push({ name: ghost.name, team: teamMatch.name });
+      injectedLog.push({ name: ghost.name, team: targetTeam.name });
     }
 
     if (injectedLog.length > 0) {
-      console.warn(`✨ ${injectedLog.length} joueur(s) injectés automatiquement :`);
+      console.warn(`✨ ${injectedLog.length} joueur(s) injecté(s) automatiquement :`);
       injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
     } else {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
