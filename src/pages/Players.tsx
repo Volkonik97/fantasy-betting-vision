@@ -58,12 +58,18 @@ const Players = () => {
       teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
 
+        console.warn(`📦 ${team.name} → ${team.players.length} joueurs`);
+
         team.players.forEach(player => {
-          if (!player.id || !player.name) {
-            console.warn(`⚠️ Joueur ignoré (ID ou nom manquant) dans ${team.name}`, player);
-            return;
+          // Log brut de tous les joueurs
+          console.log(`🧾 Joueur brut :`, player);
+
+          // Log spécifique pour Kiin
+          if (player.name?.toLowerCase() === "kiin") {
+            console.warn("👀 Kiin trouvé dans boucle team.players :", player);
           }
 
+          // On ajoute tous les joueurs sans condition
           playersWithTeamInfo.push({
             ...player,
             teamName: team.name || "Unknown",
