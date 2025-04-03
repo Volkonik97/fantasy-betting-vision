@@ -42,6 +42,12 @@ const Players = () => {
   const fetchPlayers = async () => {
     try {
       setIsLoading(true);
+      import { clearTeamsCache } from "@/utils/database/teamsService";
+
+// 🧹 Vide le cache pour éviter d’avoir des données périmées
+clearTeamsCache();
+const teams = await getTeams();
+
       const teams = await getTeams();
       // 🔍 Log détaillé de Gen.G dans Players.tsx
 teams
