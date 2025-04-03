@@ -102,32 +102,53 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             value={`${Math.round(averageStats.damageShare * 100)}%`}
           />
           
-          {/* Win Rate Card */}
+          {/* Win Rate Card - Enhanced */}
           <StatCard
             icon={<Award className="h-5 w-5 text-lol-blue" />}
             title="Win Rate"
             value={`${Math.round(averageStats.winRate)}%`}
             footer={
               <div className="mt-2">
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs">Matchs joués: {averageStats.games}</span>
-                  <span className="text-xs font-medium">{averageStats.wins}/{averageStats.games}</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium">Victoires / Défaites</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-bold text-green-600">{averageStats.wins}</span>
+                    <span className="text-xs">-</span>
+                    <span className="text-xs font-bold text-red-600">{averageStats.games - averageStats.wins}</span>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-lol-blue h-full rounded-full" 
-                    style={{width: `${averageStats.winRate}%`}}
-                  ></div>
-                </div>
-                <div className="flex items-center gap-3 text-xs mt-2">
-                  <span className="inline-flex items-center text-green-600">
-                    <CheckCircle size={12} className="mr-1" />
-                    {averageStats.wins}
-                  </span>
-                  <span className="inline-flex items-center text-red-600">
-                    <XCircle size={12} className="mr-1" />
-                    {averageStats.games - averageStats.wins}
-                  </span>
+                
+                <div className="relative pt-1">
+                  <div className="flex mb-1.5 items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold inline-block py-0.5 px-1.5 uppercase rounded-sm bg-green-200 text-green-900">
+                        {Math.round(averageStats.winRate)}%
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-medium inline-block text-gray-600">
+                        {averageStats.games} matchs
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                    <div
+                      style={{ width: `${averageStats.winRate}%` }}
+                      className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-400 to-green-600"
+                    ></div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-1.5 text-xs">
+                    <span className="inline-flex items-center text-green-600">
+                      <CheckCircle size={12} className="mr-1" />
+                      Victoires
+                    </span>
+                    <span className="inline-flex items-center text-red-600">
+                      <XCircle size={12} className="mr-1" />
+                      Défaites
+                    </span>
+                  </div>
                 </div>
               </div>
             }
