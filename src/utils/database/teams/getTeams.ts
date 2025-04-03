@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Team, Player } from '../../models/types';
+import { Team, Player } from "../../models/types";
 import { toast } from "sonner";
-import { teams as mockTeams } from '../../models/mockTeams';
+import { teams as mockTeams } from "../../models/mockTeams";
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
 
 const BUCKET_NAME = "team-logos";
@@ -11,8 +11,8 @@ export const getTeams = async (): Promise<Team[]> => {
     console.log("🔁 Fetching teams from Supabase...");
 
     const { data: teamsData, error: teamsError } = await supabase
-      .from('teams')
-      .select('*');
+      .from("teams")
+      .select("*");
 
     if (teamsError) {
       console.error("❌ Error retrieving teams:", teamsError);
@@ -25,8 +25,8 @@ export const getTeams = async (): Promise<Team[]> => {
     }
 
     const { data: allPlayersData, error: playersError } = await supabase
-      .from('players')
-      .select('*');
+      .from("players")
+      .select("*");
 
     if (playersError) {
       console.error("❌ Error retrieving players:", playersError);
@@ -41,7 +41,7 @@ export const getTeams = async (): Promise<Team[]> => {
         }, {} as Record<string, any[]>)
       : {};
 
-    const teams: Team[] = teamsData.map(team => {
+    const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
         const { data: { publicUrl } } = supabase.storage
@@ -63,10 +63,10 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    teams.forEach(team => {
+    teams.forEach((team) => {
       const teamPlayers = playersByTeamId[team.id] || [];
 
-      team.players = teamPlayers.map(player => ({
+      team.players = teamPlayers.map((player) => ({
         id: player.id,
         name: player.name,
         role: normalizeRoleName(player.role),
@@ -77,16 +77,20 @@ export const getTeams = async (): Promise<Team[]> => {
         kda: Number(player.kda) || 0,
         csPerMin: Number(player.cs_per_min) || 0,
         damageShare: Number(player.damage_share) || 0,
-        championPool: player.champion_pool || []
+        championPool: player.champion_pool || [],
       }));
     });
 
-    const genGTeam = teams.find(t => t.name.toLowerCase().includes("gen.g"));
-    console.warn("📤 getTeams.ts retourne Gen.G avec :", {
-      id: genGTeam?.id,
-      playersCount: genGTeam?.players?.length,
-      players: genGTeam?.players?.map(p => p.name)
-    });
+    // ✅ Debug ciblé juste avant return
+    const kiinCheck = teams
+      .flatMap((t) => t.players || [])
+      .find((p) => p.name?.toLowerCase() === "kiin");
+
+    if (kiinCheck) {
+      console.warn("🧪 Kiin est bien présent dans getTeams final :", kiinCheck);
+    } else {
+      console.error("❌ Kiin a disparu dans getTeams.ts juste avant return !");
+    }
 
     return teams;
   } catch (error) {
