@@ -31,33 +31,20 @@ export const getTeams = async (): Promise<Team[]> => {
     console.log(`✅ ${teamsData.length} équipes chargées`);
     console.log("👥 [DEBUG] Tous les joueurs (raw):", allPlayersData.map(p => p.name));
 
-    // Vérifie si Kiin est là sinon le récupère via RPC
+    // Kiin RPC check (optionnel)
     const kiin = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
-
     if (!kiin) {
       console.warn("🚫 Kiin absent — tentative de récupération via RPC");
       const { data: kiinByQuery, error: kiinQueryError } = await supabase.rpc("get_kiin_debug");
-
-      if (kiinQueryError) {
-        console.error("❌ Erreur RPC pour Kiin :", kiinQueryError);
-      } else if (kiinByQuery?.length > 0) {
+      if (!kiinQueryError && kiinByQuery?.length > 0) {
         console.warn("🐛 Kiin récupéré via RPC :", kiinByQuery[0]);
         allPlayersData.push(kiinByQuery[0]);
-      } else {
-        console.warn("❌ Kiin introuvable même via RPC");
       }
     }
 
-    const teamIds = teamsData.map(t => t.id.trim());
-    const kiinFinal = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
-    if (kiinFinal?.team_id) {
-      const match = teamIds.includes(kiinFinal.team_id.trim());
-      console.log(`🔁 [CHECK] kiin.team_id = ${kiinFinal.team_id} → match team.id ?`, match);
-    }
-
-    // Regroupement par team_id
+    // Groupement des joueurs par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
-      const teamId = player.team_id?.trim?.();
+      const teamId = player.team_id?.trim();
       if (!teamId) return acc;
       if (!acc[teamId]) acc[teamId] = [];
       acc[teamId].push(player);
@@ -100,17 +87,15 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // Injection automatique des joueurs fantômes
+    // 🔁 Injection automatique des joueurs absents
     const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
     const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
-
     const injectedLog: { name: string; team: string }[] = [];
 
     for (const ghost of missingPlayers) {
       let targetTeam = teams.find(t => t.id.trim() === ghost.team_id?.trim());
 
       if (!targetTeam) {
-        // Crée une team de fallback
         targetTeam = teams.find(t => t.id === "__unknown__");
         if (!targetTeam) {
           targetTeam = {
@@ -126,7 +111,6 @@ export const getTeams = async (): Promise<Team[]> => {
           };
           teams.push(targetTeam);
         }
-
         console.warn(`🧩 Joueur sans team réelle : ${ghost.name} → fallback "Unknown Team"`);
       }
 
@@ -152,6 +136,19 @@ export const getTeams = async (): Promise<Team[]> => {
       injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
     } else {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
+    }
+
+    // 🔍 Vérifie s’il reste des joueurs ignorés à la fin
+    const allInjectedIds = teams.flatMap(t => t.players || []).map(p => p.id);
+    const stillMissing = allPlayersData
+      .filter(p => !allInjectedIds.includes(p.id))
+      .map(p => `${p.name} (${p.team_id})`);
+
+    if (stillMissing.length > 0) {
+      console.warn(`⚠️ ${stillMissing.length} joueur(s) présents en DB mais ignorés dans teams[].players :`);
+      stillMissing.forEach(n => console.warn("❌ Ignoré :", n));
+    } else {
+      console.log("✅ Tous les joueurs DB sont bien présents dans teams[].players.");
     }
 
     return teams;
