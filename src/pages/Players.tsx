@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { getTeams } from "@/utils/database/teamsService";
+import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
@@ -42,34 +42,32 @@ const Players = () => {
   const fetchPlayers = async () => {
     try {
       setIsLoading(true);
-      import { clearTeamsCache } from "@/utils/database/teamsService";
-
-// 🧹 Vide le cache pour éviter d’avoir des données périmées
-clearTeamsCache();
-const teams = await getTeams();
-
+      
+      // 🧹 Vide le cache pour éviter d'avoir des données périmées
+      clearTeamsCache();
       const teams = await getTeams();
+      
       // 🔍 Log détaillé de Gen.G dans Players.tsx
-teams
-  .filter(t => t.name.toLowerCase().includes("gen.g"))
-  .forEach(t => {
-    console.warn("🔍 Gen.G dans Players.tsx :", {
-      id: t.id,
-      playersCount: t.players?.length,
-      playerNames: t.players?.map(p => p.name)
-    });
-  });
+      teams
+        .filter(t => t.name.toLowerCase().includes("gen.g"))
+        .forEach(t => {
+          console.warn("🔍 Gen.G dans Players.tsx :", {
+            id: t.id,
+            playersCount: t.players?.length,
+            playerNames: t.players?.map(p => p.name)
+          });
+        });
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
         if (team.name.toLowerCase().includes("gen.g")) {
-  console.warn(`🧪 Gen.G team.id = ${team.id}`);
-  team.players?.forEach((p) => {
-    console.warn("➡️ Player in Gen.G (raw):", p);
-  });
-}
+          console.warn(`🧪 Gen.G team.id = ${team.id}`);
+          team.players?.forEach((p) => {
+            console.warn("➡️ Player in Gen.G (raw):", p);
+          });
+        }
 
         team.players.forEach(player => {
           if (!player.name) return;
