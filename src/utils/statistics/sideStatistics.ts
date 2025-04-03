@@ -1,12 +1,13 @@
 import { SideStatistics, TimelineStats } from '../models/types';
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Get side statistics for a team
 export const getSideStatistics = async (teamId: string): Promise<SideStatistics> => {
   try {
     console.log(`[sideStatistics] Fetching side statistics for team: ${teamId}`);
 
+    // Query the database for matches involving this team
     const { data: blueMatches, error: blueError } = await supabase
       .from('matches')
       .select('*')
@@ -17,8 +18,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       .select('*')
       .eq('team_red_id', teamId);
 
-    if (blueError) console.error("[sideStatistics] Error fetching blue side matches:", blueError);
-    if (redError) console.error("[sideStatistics] Error fetching red side matches:", redError);
+    if (blueError) console.error('[sideStatistics] Error fetching blue side matches:', blueError);
+    if (redError) console.error('[sideStatistics] Error fetching red side matches:', redError);
 
     const allMatches = [...(blueMatches || []), ...(redMatches || [])];
     if (allMatches.length === 0) return createDefaultSideStatistics(teamId);
@@ -33,8 +34,8 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       .select('match_id, team_id, is_blue_side, first_blood_kill')
       .eq('team_id', teamId);
 
-    if (statsError) console.error("[sideStatistics] Error fetching team match stats:", statsError);
-    if (playerError) console.error("[sideStatistics] Error fetching player match stats:", playerError);
+    if (statsError) console.error('[sideStatistics] Error fetching team match stats:', statsError);
+    if (playerError) console.error('[sideStatistics] Error fetching player match stats:', playerError);
 
     const stats = calculateSideStatistics(
       teamId,
@@ -46,15 +47,13 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     );
 
     return stats;
-
   } catch (error) {
-    console.error("[sideStatistics] Error getting side statistics:", error);
+    console.error('[sideStatistics] Error getting side statistics:', error);
     toast.error("Erreur lors du chargement des statistiques d'équipe");
     return createDefaultSideStatistics(teamId);
   }
 };
 
-// Corrected calculation using player match stats for First Blood
 function calculateSideStatistics(
   teamId: string,
   allMatches: any[],
@@ -77,7 +76,7 @@ function calculateSideStatistics(
     ? Math.round((redWins / completedRedMatches.length) * 100)
     : 50;
 
-  // --- New First Blood calculation using player match stats ---
+  // First Blood calculation from player stats
   const blueSideGames = new Set<string>();
   const redSideGames = new Set<string>();
   const blueFBGames = new Set<string>();
