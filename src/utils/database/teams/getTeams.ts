@@ -63,8 +63,20 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
+    const kiin = allPlayersData?.find(p => p.name?.toLowerCase() === "kiin");
+
     teams.forEach((team) => {
       const teamPlayers = playersByTeamId[team.id] || [];
+
+      if (kiin) {
+        console.log("🧩 Comparaison Kiin :", {
+          teamName: team.name,
+          teamIdFromTeams: team.id,
+          teamIdOfKiin: kiin.team_id,
+          match: team.id === kiin.team_id,
+          trimmedMatch: team.id.trim() === kiin.team_id?.trim()
+        });
+      }
 
       team.players = teamPlayers.map((player) => ({
         id: player.id,
@@ -81,7 +93,6 @@ export const getTeams = async (): Promise<Team[]> => {
       }));
     });
 
-    // ✅ Debug ciblé juste avant return
     const kiinCheck = teams
       .flatMap((t) => t.players || [])
       .find((p) => p.name?.toLowerCase() === "kiin");
