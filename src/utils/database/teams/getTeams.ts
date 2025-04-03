@@ -21,40 +21,43 @@ export const getTeams = async (): Promise<Team[]> => {
 
     let { data: allPlayersData, error: playersError } = await supabase
       .from("players")
-      .select("*");
+      .select("*")
+      .limit(2000); // 🔥 assure-toi que tous les joueurs sont récupérés
 
     if (playersError || !allPlayersData) {
       console.error("❌ Erreur lors du chargement des joueurs :", playersError);
       throw playersError;
     }
 
-    console.log(`✅ ${teamsData.length} équipes chargées`);
-    console.log("👥 [DEBUG] Tous les joueurs (raw):", allPlayersData.map(p => p.name));
+    console.log("📊 [DEBUG] Nombre total de joueurs récupérés :", allPlayersData.length);
+    console.log("👥 [DEBUG] Liste brute des joueurs :", allPlayersData.map(p => p.name));
 
-    // 🧪 FOCUS : River
+    // 🧪 Vérification ciblée : River
     const river = allPlayersData.find(p => p.name?.toLowerCase() === "river");
 
     if (!river) {
       console.error("❌ RIVER totalement absent de allPlayersData (DB)");
     } else {
+      const riverTeamMatch = teamsData.some(t => t.id.trim() === river.team_id?.trim());
       console.warn("🧪 RIVER trouvé dans DB :", {
         name: river.name,
         id: river.id,
         team_id: river.team_id,
-        team_id_trimmed: river.team_id?.trim(),
-        allTeamIds: teamsData.map(t => t.id),
-        match: teamsData.map(t => t.id.trim()).includes(river.team_id?.trim?.() || "")
+        trimmed: river.team_id?.trim(),
+        match: riverTeamMatch
       });
     }
 
+    // 🧩 Regroupement des joueurs par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
-      const teamId = player.team_id?.trim?.();
+      const teamId = player.team_id?.trim();
       if (!teamId) return acc;
       if (!acc[teamId]) acc[teamId] = [];
       acc[teamId].push(player);
       return acc;
     }, {} as Record<string, any[]>);
 
+    // 📦 Création des équipes avec joueurs
     const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
@@ -91,7 +94,7 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🔁 Injection automatique des joueurs absents
+    // 🩹 Injection automatique des joueurs absents
     const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
     const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
     const injectedLog: { name: string; team: string }[] = [];
@@ -139,26 +142,4 @@ export const getTeams = async (): Promise<Team[]> => {
       console.warn(`✨ ${injectedLog.length} joueur(s) injecté(s) automatiquement :`);
       injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
     } else {
-      console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
-    }
-
-    // Vérifie s’il manque encore des joueurs
-    const allInjectedIds = teams.flatMap(t => t.players || []).map(p => p.id);
-    const stillMissing = allPlayersData
-      .filter(p => !allInjectedIds.includes(p.id))
-      .map(p => `${p.name} (${p.team_id})`);
-
-    if (stillMissing.length > 0) {
-      console.warn(`⚠️ ${stillMissing.length} joueur(s) présents en DB mais ignorés dans teams[].players :`);
-      stillMissing.forEach(n => console.warn("❌ Ignoré :", n));
-    } else {
-      console.log("✅ Tous les joueurs DB sont bien présents dans teams[].players.");
-    }
-
-    return teams;
-  } catch (error) {
-    console.error("❌ Erreur globale dans getTeams.ts :", error);
-    toast.error("Erreur lors du chargement des équipes");
-    return mockTeams;
-  }
-};
+      console.log("✅ Aucun joueur fantôme détecté ou à
