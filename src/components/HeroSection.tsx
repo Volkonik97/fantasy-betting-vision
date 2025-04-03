@@ -10,11 +10,11 @@ interface HeroSectionProps {
 const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
   // State to track image loading errors
   const [t1LogoError, setT1LogoError] = useState(false);
-  const [genGLogoError, setGenGLogoError] = useState(false);
   
   // Backup images for logos
   const t1FallbackImage = "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/78/T1logo_profile.png";
-  const genGFallbackImage = "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png";
+  // Use directly uploaded Gen.G logo
+  const genGLogoUrl = "/lovable-uploads/8e2289d0-fe11-463b-a9fc-8116d67f7a15.png";
   
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 px-6">
@@ -93,7 +93,7 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto bg-white rounded-full shadow-subtle p-2 mb-2">
                     <img
-                      src={genGFallbackImage}
+                      src={genGLogoUrl}
                       alt="Gen.G"
                       className="w-full h-full object-contain"
                     />

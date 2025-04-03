@@ -18,10 +18,10 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
     .substring(0, 2)
     .toUpperCase();
 
-  // Special case for Gen.G logo
+  // Special case for Gen.G logo - use directly uploaded image
   const isGenG = teamName.toLowerCase().includes('gen.g') || teamName.toLowerCase() === 'geng';
   const finalLogoUrl = isGenG && (!logoUrl || hasError) 
-    ? "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png" 
+    ? "/lovable-uploads/8e2289d0-fe11-463b-a9fc-8116d67f7a15.png" 
     : logoUrl;
 
   return (
