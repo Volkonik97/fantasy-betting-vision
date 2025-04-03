@@ -24,12 +24,21 @@ export const getTeams = async (): Promise<Team[]> => {
       return mockTeams;
     }
 
+    // 🔍 Récupération de tous les joueurs
     const { data: allPlayersData, error: playersError } = await supabase
       .from("players")
       .select("*");
 
     if (playersError) {
       console.error("❌ Error retrieving players:", playersError);
+    } else {
+      console.log("✅ players récupérés :", allPlayersData?.length);
+      const kiinDirect = allPlayersData?.find(p => p.name?.toLowerCase() === "kiin");
+      if (kiinDirect) {
+        console.warn("🔥 Kiin est bien dans allPlayersData :", kiinDirect);
+      } else {
+        console.error("🚫 Kiin est complètement absent de allPlayersData");
+      }
     }
 
     const playersByTeamId = allPlayersData
@@ -63,20 +72,8 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    const kiin = allPlayersData?.find(p => p.name?.toLowerCase() === "kiin");
-
     teams.forEach((team) => {
       const teamPlayers = playersByTeamId[team.id] || [];
-
-      if (kiin) {
-        console.log("🧩 Comparaison Kiin :", {
-          teamName: team.name,
-          teamIdFromTeams: team.id,
-          teamIdOfKiin: kiin.team_id,
-          match: team.id === kiin.team_id,
-          trimmedMatch: team.id.trim() === kiin.team_id?.trim()
-        });
-      }
 
       team.players = teamPlayers.map((player) => ({
         id: player.id,
