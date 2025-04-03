@@ -83,9 +83,14 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto bg-white rounded-full shadow-subtle p-2 mb-2">
                     <img
-                      src="https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e3/Gen.Glogo_profile.png"
+                      src="https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/e/e3/Gen.Glogo_profile.png/revision/latest"
                       alt="Gen.G"
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null; // Prevent infinite loop
+                        target.src = "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png";
+                      }}
                     />
                   </div>
                   <span className="font-medium text-sm">Gen.G</span>
