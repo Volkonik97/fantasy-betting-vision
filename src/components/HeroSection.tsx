@@ -61,15 +61,18 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <div className="relative mx-auto max-w-md">
-            {/* Main card */}
+            {/* Main prediction card - Redesigned */}
             <div className="glass-card rounded-xl p-6 shadow-elevation">
-              <div className="flex justify-between items-center mb-4">
+              {/* Header with badges */}
+              <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold text-lg">Match Prediction</h3>
                 <span className="text-xs px-2 py-1 bg-blue-50 text-lol-blue rounded-full">Worlds 2023</span>
               </div>
               
-              <div className="flex items-center justify-between my-5">
-                <div className="text-center">
+              {/* Teams comparison section */}
+              <div className="grid grid-cols-5 items-center gap-4 my-5">
+                {/* T1 Team */}
+                <div className="col-span-2 text-center">
                   <div className="w-16 h-16 mx-auto bg-white rounded-full shadow-subtle p-2 mb-2">
                     <img
                       src={t1LogoError ? t1FallbackImage : "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/78/T1logo_profile.png"}
@@ -81,16 +84,18 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
                   <span className="font-medium text-sm">T1</span>
                 </div>
                 
-                <div className="text-center py-2 px-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                {/* Prediction */}
+                <div className="col-span-1 text-center py-2 px-1 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
                   <div className="text-xs text-gray-500 mb-1">Prediction</div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex flex-col items-center gap-1 text-sm">
                     <span className="text-lol-blue font-semibold">58%</span>
-                    <span className="text-gray-400">vs</span>
+                    <span className="text-gray-400 text-xs">vs</span>
                     <span className="text-lol-red font-semibold">42%</span>
                   </div>
                 </div>
                 
-                <div className="text-center">
+                {/* Gen.G Team */}
+                <div className="col-span-2 text-center">
                   <div className="w-16 h-16 mx-auto bg-white rounded-full shadow-subtle p-2 mb-2">
                     <img
                       src={genGLogoUrl}
@@ -102,7 +107,8 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-lg p-3">
+              {/* Key Insight section */}
+              <div className="bg-gray-50 rounded-lg p-3 mt-4">
                 <div className="text-xs text-gray-500 mb-1">Key Insight</div>
                 <p className="text-sm text-gray-700">
                   T1 has a 85% win rate on blue side and their mid-jungle synergy 
@@ -111,8 +117,8 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
               </div>
             </div>
             
-            {/* Floating elements - Repositioned for symmetry and to avoid overlap */}
-            <div className="absolute -right-4 -top-4 transform rotate-6 animate-float">
+            {/* Floating stat cards - Adjusted positions to ensure they're visible and don't overlap */}
+            <div className="absolute -right-4 -top-12 transform rotate-6 animate-float">
               <div className="glass-card rounded-lg p-3 shadow-subtle">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-lol-blue/10 rounded-full flex items-center justify-center">
@@ -126,8 +132,8 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
               </div>
             </div>
             
-            {/* Red Side Win Rate card - Repositioned to mirror the Blue Side Win Rate position */}
-            <div className="absolute -left-4 -top-4 transform -rotate-6 animate-float" style={{ animationDelay: "1s" }}>
+            {/* Red Side Win Rate card - Repositioned to ensure symmetry and visibility */}
+            <div className="absolute -left-4 -top-12 transform -rotate-6 animate-float" style={{ animationDelay: "1s" }}>
               <div className="glass-card rounded-lg p-3 shadow-subtle">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-lol-red/10 rounded-full flex items-center justify-center">
