@@ -43,11 +43,9 @@ const Players = () => {
     try {
       setIsLoading(true);
 
-      // 🔁 Force clean fetch
       clearTeamsCache();
       const teams = await getTeams();
 
-      // 🔍 Debug log Gen.G reçu
       const genG = teams.find(t => t.name.toLowerCase().includes("gen.g"));
       console.warn("📥 Players.tsx reçoit Gen.G avec :", {
         id: genG?.id,
@@ -65,8 +63,6 @@ const Players = () => {
             console.warn(`⚠️ Joueur ignoré (ID ou nom manquant) dans ${team.name}`, player);
             return;
           }
-
-          console.log(`✅ Ajout du joueur ${player.name} dans ${team.name}`);
 
           playersWithTeamInfo.push({
             ...player,
@@ -91,6 +87,30 @@ const Players = () => {
       setIsLoading(false);
     }
   };
+
+  // 🔍 Debug détaillé de chaque joueur avant filtrage
+  allPlayers.forEach(player => {
+    const roleMatches = selectedRole === "All" || player.role === selectedRole;
+    const regionMatches = selectedRegion === "All" || player.teamRegion === selectedRegion;
+    const searchMatches =
+      player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
+    const included = roleMatches && regionMatches && searchMatches;
+
+    if (player.name.toLowerCase() === "kiin") {
+      console.warn(`🧪 [Kiin] Filtrage détaillé`, {
+        role: player.role,
+        selectedRole,
+        region: player.teamRegion,
+        selectedRegion,
+        searchTerm,
+        roleMatches,
+        regionMatches,
+        searchMatches,
+        included
+      });
+    }
+  });
 
   const filteredPlayers = allPlayers.filter(player => {
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
@@ -123,6 +143,8 @@ const Players = () => {
     return roleMatches && regionMatches && searchMatches;
   });
 
+  console.warn("🎯 Joueurs filtrés finaux :", filteredPlayers.map(p => p.name));
+
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
@@ -133,9 +155,7 @@ const Players = () => {
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Players</h1>
-          <p className="text-gray-600">
-            Browse and analyze professional League of Legends players
-          </p>
+          <p className="text-gray-600">Browse and analyze professional League of Legends players</p>
         </div>
 
         <div className="mb-8">
@@ -156,10 +176,7 @@ const Players = () => {
           subRegions={subRegions}
         />
 
-        <PlayersList 
-          players={filteredPlayers}
-          loading={loading}
-        />
+        <PlayersList players={filteredPlayers} loading={loading} />
       </main>
     </div>
   );
