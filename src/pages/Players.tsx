@@ -43,6 +43,16 @@ const Players = () => {
     try {
       setIsLoading(true);
       const teams = await getTeams();
+      teams
+  .filter(t => t.name.toLowerCase().includes("gen.g"))
+  .forEach(t => {
+    console.warn("🔍 Gen.G dans Players.tsx :", {
+      id: t.id,
+      playersCount: t.players?.length,
+      playerNames: t.players?.map(p => p.name)
+    });
+  });
+
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach(team => {
