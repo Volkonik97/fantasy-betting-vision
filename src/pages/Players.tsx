@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -62,6 +63,7 @@ const Players = () => {
 
       teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
+        
         if (team.name.toLowerCase().includes("gen.g")) {
           console.warn(`🧪 Gen.G team.id = ${team.id}`);
           team.players?.forEach((p) => {
@@ -70,20 +72,20 @@ const Players = () => {
         }
 
         team.players.forEach((player, playerIndex) => {
-  if (!player.id || !player.name) {
-    console.warn(`⚠️ Joueur ignoré dans ${team.name} :`, player);
-    return;
-  }
+          if (!player.id || !player.name) {
+            console.warn(`⚠️ Joueur ignoré dans ${team.name} :`, player);
+            return;
+          }
 
-  console.log(`✅ Ajout du joueur ${player.name} (ID: ${player.id}) depuis ${team.name}`);
+          console.log(`✅ Ajout du joueur ${player.name} (ID: ${player.id}) depuis ${team.name}`);
 
-  playersWithTeamInfo.push({
-    ...player,
-    teamName: team.name || "Unknown",
-    teamRegion: team.region || "Unknown",
-  });
-});
-
+          playersWithTeamInfo.push({
+            ...player,
+            teamName: team.name || "Unknown",
+            teamRegion: team.region || "Unknown",
+          });
+        });
+      });
 
       setAllPlayers(playersWithTeamInfo);
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
