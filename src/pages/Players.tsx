@@ -43,7 +43,8 @@ const Players = () => {
     try {
       setIsLoading(true);
       const teams = await getTeams();
-      teams
+      // 🔍 Log détaillé de Gen.G dans Players.tsx
+teams
   .filter(t => t.name.toLowerCase().includes("gen.g"))
   .forEach(t => {
     console.warn("🔍 Gen.G dans Players.tsx :", {
