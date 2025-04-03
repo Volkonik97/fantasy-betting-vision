@@ -132,7 +132,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
                     </div>
                   </div>
                   
-                  <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                  <div className="overflow-hidden h-2 text-xs flex rounded bg-red-100">
                     <div
                       style={{ width: `${averageStats.winRate}%` }}
                       className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-green-400 to-green-600"
