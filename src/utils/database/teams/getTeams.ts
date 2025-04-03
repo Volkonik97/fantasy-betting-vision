@@ -24,23 +24,35 @@ export const getTeams = async (): Promise<Team[]> => {
       return mockTeams;
     }
 
-    // 🔍 Récupération de tous les joueurs
-    const { data: allPlayersData, error: playersError } = await supabase
+    // 🧠 Requête classique des joueurs
+    let { data: allPlayersData, error: playersError } = await supabase
       .from("players")
       .select("*");
 
     if (playersError) {
       console.error("❌ Error retrieving players:", playersError);
-    } else {
-      console.log("✅ players récupérés :", allPlayersData?.length);
-      const kiinDirect = allPlayersData?.find(p => p.name?.toLowerCase() === "kiin");
-      if (kiinDirect) {
-        console.warn("🔥 Kiin est bien dans allPlayersData :", kiinDirect);
+    }
+
+    // 🔍 Check si Kiin est présent dans allPlayersData
+    const kiinDirect = allPlayersData?.find(p => p.name?.toLowerCase() === "kiin");
+
+    if (!kiinDirect) {
+      console.warn("🚫 Kiin est absent de allPlayersData — tentative de récupération via RPC");
+
+      const { data: kiinByQuery, error: kiinQueryError } = await supabase
+        .rpc("get_kiin_debug");
+
+      if (kiinQueryError) {
+        console.error("❌ Erreur RPC debug :", kiinQueryError);
+      } else if (kiinByQuery && kiinByQuery.length > 0) {
+        console.warn("🐛 Kiin récupéré par bypass SQL RPC :", kiinByQuery[0]);
+        allPlayersData = [...(allPlayersData || []), kiinByQuery[0]];
       } else {
-        console.error("🚫 Kiin est complètement absent de allPlayersData");
+        console.error("❌ Aucun résultat pour Kiin via RPC non plus !");
       }
     }
 
+    // 🧩 Groupement par team_id
     const playersByTeamId = allPlayersData
       ? allPlayersData.reduce((acc, player) => {
           if (!player.team_id) return acc;
@@ -90,6 +102,7 @@ export const getTeams = async (): Promise<Team[]> => {
       }));
     });
 
+    // ✅ Confirmation finale
     const kiinCheck = teams
       .flatMap((t) => t.players || [])
       .find((p) => p.name?.toLowerCase() === "kiin");
@@ -97,7 +110,7 @@ export const getTeams = async (): Promise<Team[]> => {
     if (kiinCheck) {
       console.warn("🧪 Kiin est bien présent dans getTeams final :", kiinCheck);
     } else {
-      console.error("❌ Kiin a disparu dans getTeams.ts juste avant return !");
+      console.error("❌ Kiin a encore disparu dans getTeams.ts malgré le patch !");
     }
 
     return teams;
