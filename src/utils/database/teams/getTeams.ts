@@ -75,6 +75,12 @@ export const getTeams = async (): Promise<Team[]> => {
         };
       });
     });
+    const genGTeam = teams.find(t => t.name.toLowerCase().includes("gen.g"));
+console.warn("🧩 getTeams.ts retourne Gen.G avec :", {
+  id: genGTeam?.id,
+  playersCount: genGTeam?.players?.length,
+  players: genGTeam?.players?.map(p => p.name)
+});
 
     return teams;
   } catch (error) {
