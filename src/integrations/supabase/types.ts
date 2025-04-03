@@ -776,7 +776,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_kiin_debug: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          champion_pool: string[] | null
+          cs_per_min: number | null
+          damage_share: number | null
+          id: string
+          image: string | null
+          kda: number | null
+          name: string
+          role: string | null
+          team_id: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
