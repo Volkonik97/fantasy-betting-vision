@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, Award, BarChart, Pie, TrendingUp, Compass } from "lucide-react";
+import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass } from "lucide-react";
 
 interface PlayerAverageStats {
   kills: number;
@@ -64,7 +64,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
           
           {/* CS per minute Card */}
           <StatCard
-            icon={<Pie className="h-5 w-5 text-amber-500" />}
+            icon={<PieChart className="h-5 w-5 text-amber-500" />}
             title="CS par minute"
             value={averageStats.csPerMin.toFixed(1)}
           />
@@ -122,6 +122,23 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
   );
 };
 
+// Enhanced StatCard component
+const StatCard = ({ icon, title, value, subtitle, footer, isWide = false }: StatCardProps) => {
+  return (
+    <div className={`bg-gradient-to-br from-white to-gray-50 p-4 rounded-lg border border-gray-100 hover:shadow-md transition-all ${isWide ? 'col-span-2' : ''}`}>
+      <div className="flex items-center gap-2 mb-2">
+        {icon}
+        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+      </div>
+      <div className="flex justify-between items-baseline">
+        <span className="text-2xl font-bold text-gray-800">{value}</span>
+        {subtitle && <span className="text-sm text-gray-600">{subtitle}</span>}
+      </div>
+      {footer && <div className="text-xs text-gray-500 mt-2">{footer}</div>}
+    </div>
+  );
+};
+
 interface StatCardProps {
   icon?: React.ReactNode;
   title: string;
@@ -130,21 +147,5 @@ interface StatCardProps {
   footer?: React.ReactNode | string;
   isWide?: boolean;
 }
-
-const StatCard = ({ icon, title, value, subtitle, footer, isWide = false }: StatCardProps) => {
-  return (
-    <div className={`bg-gray-50 p-4 rounded-lg border border-gray-100 hover:shadow-md transition-all ${isWide ? 'col-span-2' : ''}`}>
-      <div className="flex items-center gap-2 mb-1">
-        {icon}
-        <h3 className="text-sm text-gray-500">{title}</h3>
-      </div>
-      <div className="flex justify-between items-baseline">
-        <span className="text-2xl font-bold">{value}</span>
-        {subtitle && <span className="text-sm text-gray-600">{subtitle}</span>}
-      </div>
-      {footer && <div className="text-xs text-gray-500 mt-1">{footer}</div>}
-    </div>
-  );
-};
 
 export default PlayerStatsOverview;
