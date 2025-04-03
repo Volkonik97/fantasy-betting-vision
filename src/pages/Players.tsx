@@ -47,6 +47,13 @@ const Players = () => {
       // 🧹 Vide le cache pour éviter d'avoir des données périmées
       clearTeamsCache();
       const teams = await getTeams();
+      const genGTeam = teams.find(t => t.name.toLowerCase().includes("gen.g"));
+console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
+  id: genGTeam?.id,
+  playersCount: genGTeam?.players?.length,
+  players: genGTeam?.players?.map(p => p.name)
+});
+
       
       // 🔍 Log détaillé de Gen.G dans Players.tsx
       teams
