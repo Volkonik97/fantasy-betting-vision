@@ -19,34 +19,41 @@ export const getTeams = async (): Promise<Team[]> => {
       throw teamsError;
     }
 
-    // ✅ Récupère jusqu'à 2000 joueurs via range()
-    const { data: allPlayersData, error: playersError } = await supabase
-      .from("players")
-      .select("*")
-      .range(0, 1999); // 👈 fix la limite
+    // ✅ Chargement de tous les joueurs par batchs de 1000
+    let allPlayersData: any[] = [];
+    let start = 0;
+    const pageSize = 1000;
 
-    if (playersError || !allPlayersData) {
-      console.error("❌ Erreur lors du chargement des joueurs :", playersError);
-      throw playersError;
+    while (true) {
+      const { data: page, error } = await supabase
+        .from("players")
+        .select("*")
+        .range(start, start + pageSize - 1);
+
+      if (error) {
+        console.error("❌ Erreur pagination joueurs Supabase :", error);
+        break;
+      }
+
+      if (!page || page.length === 0) break;
+
+      allPlayersData = [...allPlayersData, ...page];
+
+      if (page.length < pageSize) break;
+      start += pageSize;
     }
 
     console.log("📊 Nombre total de joueurs récupérés :", allPlayersData.length);
-    console.log("👥 Liste brute des joueurs :", allPlayersData.map(p => p.name));
 
-    // Vérifie River
+    // Vérif River (facultatif)
     const river = allPlayersData.find(p => p.name?.toLowerCase() === "river");
     if (!river) {
-      console.error("❌ RIVER totalement absent de allPlayersData (DB)");
+      console.warn("❌ River absent de allPlayersData");
     } else {
-      const match = teamsData.some(t => t.id.trim() === river.team_id?.trim());
-      console.warn("🧪 RIVER trouvé :", {
-        name: river.name,
-        team_id: river.team_id,
-        trimmed: river.team_id?.trim(),
-        match
-      });
+      console.log("✅ River présent :", river);
     }
 
+    // Groupement par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       const teamId = player.team_id?.trim();
       if (!teamId) return acc;
@@ -91,68 +98,8 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🔁 Ajoute les joueurs orphelins
-    const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
-    const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
-    const injectedLog: { name: string; team: string }[] = [];
-
-    for (const ghost of missingPlayers) {
-      let targetTeam = teams.find(t => t.id.trim() === ghost.team_id?.trim());
-
-      if (!targetTeam) {
-        targetTeam = teams.find(t => t.id === "__unknown__");
-        if (!targetTeam) {
-          targetTeam = {
-            id: "__unknown__",
-            name: "Unknown Team",
-            logo: "",
-            region: "Unknown",
-            winRate: 0,
-            blueWinRate: 0,
-            redWinRate: 0,
-            averageGameTime: 0,
-            players: []
-          };
-          teams.push(targetTeam);
-        }
-        console.warn(`🧩 Joueur sans team réelle : ${ghost.name} → fallback "Unknown Team"`);
-      }
-
-      targetTeam.players?.push({
-        id: ghost.id,
-        name: ghost.name,
-        role: normalizeRoleName(ghost.role),
-        image: ghost.image,
-        team: targetTeam.id,
-        teamName: targetTeam.name,
-        teamRegion: targetTeam.region,
-        kda: Number(ghost.kda) || 0,
-        csPerMin: Number(ghost.cs_per_min) || 0,
-        damageShare: Number(ghost.damage_share) || 0,
-        championPool: ghost.champion_pool || [],
-      });
-
-      injectedLog.push({ name: ghost.name, team: targetTeam.name });
-    }
-
-    if (injectedLog.length > 0) {
-      console.warn(`✨ ${injectedLog.length} joueur(s) injecté(s) automatiquement :`);
-      injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
-    } else {
-      console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
-    }
-
-    // Dernier check
-    const stillMissing = allPlayersData.filter(p => {
-      return !teams.some(t => t.players?.some(pl => pl.id === p.id));
-    });
-
-    if (stillMissing.length > 0) {
-      console.warn("⚠️ Certains joueurs sont encore manquants :");
-      stillMissing.forEach(p => console.warn(`❌ Manquant : ${p.name} (${p.team_id})`));
-    } else {
-      console.log("✅ Tous les joueurs DB sont bien présents dans teams[].players.");
-    }
+    // ✅ Vérification finale
+    console.log("📦 Total des joueurs injectés dans teams[] :", teams.reduce((total, team) => total + (team.players?.length || 0), 0));
 
     return teams;
   } catch (error) {
