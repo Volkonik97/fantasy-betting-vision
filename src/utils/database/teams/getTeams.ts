@@ -31,20 +31,24 @@ export const getTeams = async (): Promise<Team[]> => {
     console.log(`✅ ${teamsData.length} équipes chargées`);
     console.log("👥 [DEBUG] Tous les joueurs (raw):", allPlayersData.map(p => p.name));
 
-    // Kiin RPC check (optionnel)
-    const kiin = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
-    if (!kiin) {
-      console.warn("🚫 Kiin absent — tentative de récupération via RPC");
-      const { data: kiinByQuery, error: kiinQueryError } = await supabase.rpc("get_kiin_debug");
-      if (!kiinQueryError && kiinByQuery?.length > 0) {
-        console.warn("🐛 Kiin récupéré via RPC :", kiinByQuery[0]);
-        allPlayersData.push(kiinByQuery[0]);
-      }
+    // 🧪 FOCUS : River
+    const river = allPlayersData.find(p => p.name?.toLowerCase() === "river");
+
+    if (!river) {
+      console.error("❌ RIVER totalement absent de allPlayersData (DB)");
+    } else {
+      console.warn("🧪 RIVER trouvé dans DB :", {
+        name: river.name,
+        id: river.id,
+        team_id: river.team_id,
+        team_id_trimmed: river.team_id?.trim(),
+        allTeamIds: teamsData.map(t => t.id),
+        match: teamsData.map(t => t.id.trim()).includes(river.team_id?.trim?.() || "")
+      });
     }
 
-    // Groupement des joueurs par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
-      const teamId = player.team_id?.trim();
+      const teamId = player.team_id?.trim?.();
       if (!teamId) return acc;
       if (!acc[teamId]) acc[teamId] = [];
       acc[teamId].push(player);
@@ -138,7 +142,7 @@ export const getTeams = async (): Promise<Team[]> => {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
     }
 
-    // 🔍 Vérifie s’il reste des joueurs ignorés à la fin
+    // Vérifie s’il manque encore des joueurs
     const allInjectedIds = teams.flatMap(t => t.players || []).map(p => p.id);
     const stillMissing = allPlayersData
       .filter(p => !allInjectedIds.includes(p.id))
