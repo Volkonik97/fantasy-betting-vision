@@ -19,11 +19,11 @@ export const getTeams = async (): Promise<Team[]> => {
       throw teamsError;
     }
 
-    // 🧪 Ajout de limit(2000) pour éviter la limite de 1000 joueurs
-    let { data: allPlayersData, error: playersError } = await supabase
+    // ✅ Récupère jusqu'à 2000 joueurs via range()
+    const { data: allPlayersData, error: playersError } = await supabase
       .from("players")
       .select("*")
-      .limit(2000);
+      .range(0, 1999); // 👈 fix la limite
 
     if (playersError || !allPlayersData) {
       console.error("❌ Erreur lors du chargement des joueurs :", playersError);
@@ -31,24 +31,22 @@ export const getTeams = async (): Promise<Team[]> => {
     }
 
     console.log("📊 Nombre total de joueurs récupérés :", allPlayersData.length);
-    console.log("👥 [DEBUG] Liste brute des joueurs :", allPlayersData.map(p => p.name));
+    console.log("👥 Liste brute des joueurs :", allPlayersData.map(p => p.name));
 
-    // 🧪 Vérification ciblée : River
+    // Vérifie River
     const river = allPlayersData.find(p => p.name?.toLowerCase() === "river");
     if (!river) {
       console.error("❌ RIVER totalement absent de allPlayersData (DB)");
     } else {
-      const riverTeamMatch = teamsData.some(t => t.id.trim() === river.team_id?.trim());
-      console.warn("🧪 RIVER trouvé dans DB :", {
+      const match = teamsData.some(t => t.id.trim() === river.team_id?.trim());
+      console.warn("🧪 RIVER trouvé :", {
         name: river.name,
-        id: river.id,
         team_id: river.team_id,
         trimmed: river.team_id?.trim(),
-        match: riverTeamMatch
+        match
       });
     }
 
-    // 🧩 Regroupement par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       const teamId = player.team_id?.trim();
       if (!teamId) return acc;
@@ -57,8 +55,7 @@ export const getTeams = async (): Promise<Team[]> => {
       return acc;
     }, {} as Record<string, any[]>);
 
-    // 📦 Construction des équipes avec joueurs
-    const teams: Team[] = teamsData.map((team) => {
+    const teams: Team[] = teamsData.map(team => {
       let logoUrl = team.logo;
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
         const { data: { publicUrl } } = supabase.storage
@@ -78,7 +75,7 @@ export const getTeams = async (): Promise<Team[]> => {
         blueWinRate: Number(team.blue_win_rate) || 0,
         redWinRate: Number(team.red_win_rate) || 0,
         averageGameTime: Number(team.average_game_time) || 0,
-        players: teamPlayers.map((player) => ({
+        players: teamPlayers.map(player => ({
           id: player.id,
           name: player.name,
           role: normalizeRoleName(player.role),
@@ -94,7 +91,7 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🔁 Injection automatique des joueurs orphelins
+    // 🔁 Ajoute les joueurs orphelins
     const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
     const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
     const injectedLog: { name: string; team: string }[] = [];
@@ -145,13 +142,13 @@ export const getTeams = async (): Promise<Team[]> => {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
     }
 
-    // 🔍 Dernière vérif
+    // Dernier check
     const stillMissing = allPlayersData.filter(p => {
       return !teams.some(t => t.players?.some(pl => pl.id === p.id));
     });
 
     if (stillMissing.length > 0) {
-      console.warn("⚠️ Certains joueurs sont encore manquants dans teams[].players[] :");
+      console.warn("⚠️ Certains joueurs sont encore manquants :");
       stillMissing.forEach(p => console.warn(`❌ Manquant : ${p.name} (${p.team_id})`));
     } else {
       console.log("✅ Tous les joueurs DB sont bien présents dans teams[].players.");
