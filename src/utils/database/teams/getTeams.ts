@@ -30,7 +30,6 @@ export const getTeams = async (): Promise<Team[]> => {
 
     console.log(`✅ ${teamsData.length} teams & ${allPlayersData.length} players loaded.`);
 
-    // Group players by team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       if (!player.team_id) return acc;
       if (!acc[player.team_id]) acc[player.team_id] = [];
@@ -38,7 +37,6 @@ export const getTeams = async (): Promise<Team[]> => {
       return acc;
     }, {} as Record<string, any[]>);
 
-    // Build enriched teams
     const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
 
@@ -78,7 +76,7 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🧪 Auto-inject missing players not assigned in team.players[]
+    // ✅ Injection automatique des joueurs non affectés
     const allTeamPlayerIds = new Set(
       teams.flatMap((team) => team.players?.map((p) => p.id) || [])
     );
@@ -87,8 +85,10 @@ export const getTeams = async (): Promise<Team[]> => {
       (player) => player.team_id && !allTeamPlayerIds.has(player.id)
     );
 
+    const injectedPlayersLog: { name: string; team: string }[] = [];
+
     if (missingPlayers.length > 0) {
-      console.warn("🧩 Injection automatique de joueurs oubliés :", missingPlayers.map(p => p.name));
+      console.warn("🧩 Début de l'injection automatique de joueurs fantômes :", missingPlayers.map(p => p.name));
 
       for (const ghost of missingPlayers) {
         const team = teams.find((t) => t.id === ghost.team_id);
@@ -108,16 +108,21 @@ export const getTeams = async (): Promise<Team[]> => {
           };
 
           team.players?.push(enrichedGhost);
-          console.log(`✅ ${ghost.name} injecté dans ${team.name}`);
+          injectedPlayersLog.push({ name: ghost.name, team: team.name });
         } else {
           console.warn(`⚠️ ${ghost.name} a un team_id inexistant :`, ghost.team_id);
         }
       }
+
+      console.log(`✅ ${injectedPlayersLog.length} joueur(s) ont été automatiquement injectés :`);
+      injectedPlayersLog.forEach(p => {
+        console.log(`   - ${p.name} ajouté à ${p.team}`);
+      });
     } else {
       console.log("✅ Aucun joueur fantôme détecté.");
     }
 
-    // Final confirmation
+    // Vérification finale (ex: Kiin)
     const kiinCheck = teams.flatMap(t => t.players || []).find(p => p.name?.toLowerCase() === "kiin");
     if (kiinCheck) {
       console.log("🧪 Vérif finale : Kiin est bien présent :", kiinCheck);
