@@ -53,13 +53,39 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
       </CardHeader>
       <CardContent className="pt-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* KDA Card */}
+          {/* KDA Card - Improved */}
           <StatCard
             icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
             title="KDA"
             value={averageStats.kda.toFixed(2)}
-            subtitle={`${averageStats.kills.toFixed(1)} / ${averageStats.deaths.toFixed(1)} / ${averageStats.assists.toFixed(1)}`}
-            footer={`Total: ${Math.round(totalKills)} / ${Math.round(totalDeaths)} / ${Math.round(totalAssists)}`}
+            footer={
+              <div className="mt-3 flex flex-col space-y-1">
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-emerald-500 mr-1.5"></span>
+                    <span className="text-xs font-medium">Kills</span>
+                  </div>
+                  <span className="text-xs font-bold">{averageStats.kills.toFixed(1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-rose-500 mr-1.5"></span>
+                    <span className="text-xs font-medium">Deaths</span>
+                  </div>
+                  <span className="text-xs font-bold">{averageStats.deaths.toFixed(1)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    <span className="w-3 h-3 rounded-full bg-blue-500 mr-1.5"></span>
+                    <span className="text-xs font-medium">Assists</span>
+                  </div>
+                  <span className="text-xs font-bold">{averageStats.assists.toFixed(1)}</span>
+                </div>
+                <div className="mt-1 pt-1 border-t border-gray-100 text-xs text-gray-500">
+                  Total: {Math.round(totalKills)} / {Math.round(totalDeaths)} / {Math.round(totalAssists)}
+                </div>
+              </div>
+            }
           />
           
           {/* CS per minute Card */}
@@ -81,17 +107,28 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             icon={<Award className="h-5 w-5 text-lol-blue" />}
             title="Win Rate"
             value={`${Math.round(averageStats.winRate)}%`}
-            subtitle={`${averageStats.wins} / ${averageStats.games}`}
             footer={
-              <div className="flex items-center gap-3 text-xs mt-1">
-                <span className="inline-flex items-center text-green-600">
-                  <CheckCircle size={12} className="mr-1" />
-                  {averageStats.wins}
-                </span>
-                <span className="inline-flex items-center text-red-600">
-                  <XCircle size={12} className="mr-1" />
-                  {averageStats.games - averageStats.wins}
-                </span>
+              <div className="mt-2">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Matchs joués: {averageStats.games}</span>
+                  <span className="text-xs font-medium">{averageStats.wins}/{averageStats.games}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-lol-blue h-full rounded-full" 
+                    style={{width: `${averageStats.winRate}%`}}
+                  ></div>
+                </div>
+                <div className="flex items-center gap-3 text-xs mt-2">
+                  <span className="inline-flex items-center text-green-600">
+                    <CheckCircle size={12} className="mr-1" />
+                    {averageStats.wins}
+                  </span>
+                  <span className="inline-flex items-center text-red-600">
+                    <XCircle size={12} className="mr-1" />
+                    {averageStats.games - averageStats.wins}
+                  </span>
+                </div>
               </div>
             }
           />
