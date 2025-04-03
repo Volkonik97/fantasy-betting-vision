@@ -47,17 +47,17 @@ export const getTeams = async (): Promise<Team[]> => {
       // Continue without players
     }
 
-    // 🔍 Test ciblé pour "Kiin"
 const { data: kiinData, error: kiinError } = await supabase
   .from("players")
   .select("*")
-  .eq("name", "Kiin");
+  .ilike("name", "%kiin%");
 
 if (kiinError) {
   console.error("❌ Erreur en récupérant Kiin :", kiinError);
 } else {
-  console.warn("🔍 Résultat ciblé de Kiin :", kiinData);
+  console.warn("🔍 Résultat avec ilike %kiin% :", kiinData);
 }
+
 
     
     // Convert database format to application format
