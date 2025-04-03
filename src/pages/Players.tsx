@@ -20,15 +20,15 @@ const Players = () => {
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
-    All: ["All"],
+    "All": ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
-    ERL: ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
     "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
-    Autres: ["LCP", "LJL", "LTA N", "PCS", "VCS"],
+    "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
   };
 
   const subRegions = {
-    LTA: ["All", "LTA N", "LTA S"],
+    LTA: ["All", "LTA N", "LTA S"]
   };
 
   useEffect(() => {
@@ -44,33 +44,49 @@ const Players = () => {
       setIsLoading(true);
 
       const teams = await getTeams();
+      console.log(`✅ ${teams.length} équipes chargées.`);
+
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
-      teams.forEach((team) => {
-        if (!Array.isArray(team.players) || team.players.length === 0) return;
-
-        team.players.forEach((player) => {
+      teams.forEach(team => {
+        team.players?.forEach(player => {
           playersWithTeamInfo.push({
             ...player,
-            teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown",
+            teamName: player.teamName || team.name || "Unknown",
+            teamRegion: player.teamRegion || team.region || "Unknown",
           });
         });
       });
 
-      setAllPlayers(playersWithTeamInfo);
-
-      // ✅ Log tous les joueurs récupérés
       console.log("📦 [Players.tsx] Nombre total de joueurs injectés :", playersWithTeamInfo.length);
-      console.log("📦 [Players.tsx] Noms :", playersWithTeamInfo.map(p => p.name));
 
-      // 🧪 Focus sur River
-      const river = playersWithTeamInfo.find(p => p.name?.toLowerCase() === "river");
-      if (river) {
-        console.warn("🧪 Focus: RIVER trouvé dans allPlayers :", river);
+      // 🔍 Vérifie si des joueurs sont absents de la récupération brute initiale
+      const dbPlayerIds = new Set(playersWithTeamInfo.map(p => p.id));
+      const allTeamPlayers = teams.flatMap(team => team.players || []);
+      const missingPlayersFromTeams = allTeamPlayers.filter(p => !dbPlayerIds.has(p.id));
+
+      if (missingPlayersFromTeams.length > 0) {
+        console.warn(`🧩 ${missingPlayersFromTeams.length} joueur(s) manquant(s) trouvés dans teams[].players[] et injectés dans Players :`);
+        missingPlayersFromTeams.forEach(p => {
+          console.log(`→ ${p.name} (${p.teamName})`);
+          playersWithTeamInfo.push(p);
+        });
       } else {
-        console.error("❌ RIVER absent de allPlayers (Players.tsx)");
+        console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
       }
+
+      // Test de présence spécifique
+      const debugNames = ["kiin", "river"];
+      debugNames.forEach(name => {
+        const found = playersWithTeamInfo.find(p => p.name.toLowerCase() === name);
+        if (!found) {
+          console.error(`❌ ${name.toUpperCase()} absent de allPlayers (Players.tsx)`);
+        } else {
+          console.log(`✅ ${name} trouvé dans allPlayers :`, found);
+        }
+      });
+
+      setAllPlayers(playersWithTeamInfo);
 
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
       setAvailableRegions(uniqueRegions);
@@ -86,7 +102,7 @@ const Players = () => {
     }
   };
 
-  const filteredPlayers = allPlayers.filter((player) => {
+  const filteredPlayers = allPlayers.filter(player => {
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
     let regionMatches = true;
@@ -114,27 +130,8 @@ const Players = () => {
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // 🧪 FOCUS sur River
-    if (player.name?.toLowerCase() === "river") {
-      console.warn("🔍 Filter debug RIVER →", {
-        name: player.name,
-        role: player.role,
-        region: player.teamRegion,
-        selectedRole,
-        selectedRegion,
-        selectedCategory,
-        searchTerm,
-        roleMatches,
-        regionMatches,
-        searchMatches,
-        included: roleMatches && regionMatches && searchMatches,
-      });
-    }
-
     return roleMatches && regionMatches && searchMatches;
   });
-
-  console.warn("🧾 Tous les joueurs finaux affichés :", filteredPlayers.map(p => p.name));
 
   const handleSearch = (query: string) => {
     setSearchTerm(query);
@@ -170,7 +167,10 @@ const Players = () => {
           subRegions={subRegions}
         />
 
-        <PlayersList players={filteredPlayers} loading={loading} />
+        <PlayersList 
+          players={filteredPlayers}
+          loading={loading}
+        />
       </main>
     </div>
   );
