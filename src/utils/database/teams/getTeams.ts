@@ -19,22 +19,22 @@ export const getTeams = async (): Promise<Team[]> => {
       throw teamsError;
     }
 
+    // 🧪 Ajout de limit(2000) pour éviter la limite de 1000 joueurs
     let { data: allPlayersData, error: playersError } = await supabase
       .from("players")
       .select("*")
-      .limit(2000); // 🔥 assure-toi que tous les joueurs sont récupérés
+      .limit(2000);
 
     if (playersError || !allPlayersData) {
       console.error("❌ Erreur lors du chargement des joueurs :", playersError);
       throw playersError;
     }
 
-    console.log("📊 [DEBUG] Nombre total de joueurs récupérés :", allPlayersData.length);
+    console.log("📊 Nombre total de joueurs récupérés :", allPlayersData.length);
     console.log("👥 [DEBUG] Liste brute des joueurs :", allPlayersData.map(p => p.name));
 
     // 🧪 Vérification ciblée : River
     const river = allPlayersData.find(p => p.name?.toLowerCase() === "river");
-
     if (!river) {
       console.error("❌ RIVER totalement absent de allPlayersData (DB)");
     } else {
@@ -48,7 +48,7 @@ export const getTeams = async (): Promise<Team[]> => {
       });
     }
 
-    // 🧩 Regroupement des joueurs par team_id
+    // 🧩 Regroupement par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       const teamId = player.team_id?.trim();
       if (!teamId) return acc;
@@ -57,7 +57,7 @@ export const getTeams = async (): Promise<Team[]> => {
       return acc;
     }, {} as Record<string, any[]>);
 
-    // 📦 Création des équipes avec joueurs
+    // 📦 Construction des équipes avec joueurs
     const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
@@ -94,7 +94,7 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    // 🩹 Injection automatique des joueurs absents
+    // 🔁 Injection automatique des joueurs orphelins
     const allTeamPlayerIds = new Set(teams.flatMap(t => t.players || []).map(p => p.id));
     const missingPlayers = allPlayersData.filter(p => p.team_id && !allTeamPlayerIds.has(p.id));
     const injectedLog: { name: string; team: string }[] = [];
@@ -145,7 +145,7 @@ export const getTeams = async (): Promise<Team[]> => {
       console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
     }
 
-    // 🔍 Dernière vérification
+    // 🔍 Dernière vérif
     const stillMissing = allPlayersData.filter(p => {
       return !teams.some(t => t.players?.some(pl => pl.id === p.id));
     });
