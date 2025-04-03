@@ -111,7 +111,7 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
               </div>
             </div>
             
-            {/* Floating elements */}
+            {/* Floating elements - Repositioned to avoid overlap */}
             <div className="absolute -right-4 -top-4 transform rotate-6 animate-float">
               <div className="glass-card rounded-lg p-3 shadow-subtle">
                 <div className="flex items-center gap-2">
@@ -126,7 +126,8 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
               </div>
             </div>
             
-            <div className="absolute -left-4 -bottom-4 transform -rotate-6 animate-float" style={{ animationDelay: "1s" }}>
+            {/* Repositioned Red Side Win Rate card to bottom-left instead of overlapping with Key Insight */}
+            <div className="absolute -left-4 -bottom-20 transform -rotate-6 animate-float" style={{ animationDelay: "1s" }}>
               <div className="glass-card rounded-lg p-3 shadow-subtle">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-lol-red/10 rounded-full flex items-center justify-center">
