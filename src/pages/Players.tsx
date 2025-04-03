@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
-import { clearTeamsCache } from "@/utils/database/teamsService";
+import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
@@ -21,11 +20,11 @@ const Players = () => {
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
-    All: ["All"],
+    "All": ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
-    ERL: ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
     "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
-    Autres: ["LCP", "LJL", "LTA N", "PCS", "VCS"]
+    "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
   };
 
   const subRegions = {
@@ -43,58 +42,42 @@ const Players = () => {
   const fetchPlayers = async () => {
     try {
       setIsLoading(true);
-      
-      // 🧹 Vide le cache pour éviter d'avoir des données périmées
+
+      // 🔁 Force clean fetch
       clearTeamsCache();
       const teams = await getTeams();
-      const genGTeam = teams.find(t => t.name.toLowerCase().includes("gen.g"));
-console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
-  id: genGTeam?.id,
-  playersCount: genGTeam?.players?.length,
-  players: genGTeam?.players?.map(p => p.name)
-});
 
-      
-      // 🔍 Log détaillé de Gen.G dans Players.tsx
-      teams
-        .filter(t => t.name.toLowerCase().includes("gen.g"))
-        .forEach(t => {
-          console.warn("🔍 Gen.G dans Players.tsx :", {
-            id: t.id,
-            playersCount: t.players?.length,
-            playerNames: t.players?.map(p => p.name)
-          });
-        });
+      // 🔍 Debug log Gen.G reçu
+      const genG = teams.find(t => t.name.toLowerCase().includes("gen.g"));
+      console.warn("📥 Players.tsx reçoit Gen.G avec :", {
+        id: genG?.id,
+        playersCount: genG?.players?.length,
+        players: genG?.players?.map(p => p.name)
+      });
 
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
       teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
-        
-        if (team.name.toLowerCase().includes("gen.g")) {
-          console.warn(`🧪 Gen.G team.id = ${team.id}`);
-          team.players?.forEach((p) => {
-            console.warn("➡️ Player in Gen.G (raw):", p);
-          });
-        }
 
-        team.players.forEach((player, playerIndex) => {
+        team.players.forEach(player => {
           if (!player.id || !player.name) {
-            console.warn(`⚠️ Joueur ignoré dans ${team.name} :`, player);
+            console.warn(`⚠️ Joueur ignoré (ID ou nom manquant) dans ${team.name}`, player);
             return;
           }
 
-          console.log(`✅ Ajout du joueur ${player.name} (ID: ${player.id}) depuis ${team.name}`);
+          console.log(`✅ Ajout du joueur ${player.name} dans ${team.name}`);
 
           playersWithTeamInfo.push({
             ...player,
             teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown",
+            teamRegion: team.region || "Unknown"
           });
         });
       });
 
       setAllPlayers(playersWithTeamInfo);
+
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
       setAvailableRegions(uniqueRegions);
 
@@ -103,7 +86,7 @@ console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
       }
     } catch (error) {
       console.error("❌ Erreur lors du chargement des données :", error);
-      toast.error("Erreur lors du chargement des données des joueurs");
+      toast.error("Erreur lors du chargement des joueurs");
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +96,7 @@ console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
     let regionMatches = true;
+
     if (selectedCategory !== "All") {
       if (selectedRegion === "All") {
         const regionsInCategory = regionCategories[selectedCategory] || [];
@@ -125,9 +109,11 @@ console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
     }
 
     if (selectedRegion === "LTA") {
-      regionMatches = selectedSubRegion === "All"
-        ? player.teamRegion?.startsWith("LTA") || false
-        : player.teamRegion === selectedSubRegion;
+      if (selectedSubRegion === "All") {
+        regionMatches = player.teamRegion?.startsWith("LTA") || false;
+      } else {
+        regionMatches = player.teamRegion === selectedSubRegion;
+      }
     }
 
     const searchMatches =
@@ -147,7 +133,9 @@ console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Players</h1>
-          <p className="text-gray-600">Browse and analyze professional League of Legends players</p>
+          <p className="text-gray-600">
+            Browse and analyze professional League of Legends players
+          </p>
         </div>
 
         <div className="mb-8">
@@ -168,7 +156,10 @@ console.warn("🧪 Players.tsx reçoit Gen.G avec :", {
           subRegions={subRegions}
         />
 
-        <PlayersList players={filteredPlayers} loading={loading} />
+        <PlayersList 
+          players={filteredPlayers}
+          loading={loading}
+        />
       </main>
     </div>
   );

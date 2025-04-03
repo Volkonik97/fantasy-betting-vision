@@ -8,35 +8,53 @@ const BUCKET_NAME = "team-logos";
 
 export const getTeams = async (): Promise<Team[]> => {
   try {
-    console.log("Fetching teams from Supabase directly (skipping cache)");
+    console.log("🔁 Fetching teams from Supabase...");
 
     const { data: teamsData, error: teamsError } = await supabase
       .from('teams')
       .select('*');
 
-    if (teamsError) throw teamsError;
-    if (!teamsData || teamsData.length === 0) return mockTeams;
+    if (teamsError) {
+      console.error("❌ Error retrieving teams:", teamsError);
+      throw teamsError;
+    }
+
+    if (!teamsData || teamsData.length === 0) {
+      console.warn("⚠️ No teams found, fallback to mock data");
+      return mockTeams;
+    }
 
     const { data: allPlayersData, error: playersError } = await supabase
       .from('players')
       .select('*');
 
     if (playersError) {
-      console.error("Error retrieving players:", playersError);
+      console.error("❌ Error retrieving players:", playersError);
     }
 
+    const playersByTeamId = allPlayersData
+      ? allPlayersData.reduce((acc, player) => {
+          if (!player.team_id) return acc;
+          if (!acc[player.team_id]) acc[player.team_id] = [];
+          acc[player.team_id].push(player);
+          return acc;
+        }, {} as Record<string, any[]>)
+      : {};
+
     const teams: Team[] = teamsData.map(team => {
-      let logoUrl = team.logo as string;
+      let logoUrl = team.logo;
       if (logoUrl && !logoUrl.includes(BUCKET_NAME)) {
-        const { data: { publicUrl } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(`${team.id}.png`);
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(`${team.id}.png`);
         if (publicUrl) logoUrl = publicUrl;
       }
 
       return {
-        id: team.id as string,
-        name: team.name as string,
+        id: team.id,
+        name: team.name,
         logo: logoUrl,
-        region: team.region as string,
+        region: team.region,
         winRate: Number(team.win_rate) || 0,
         blueWinRate: Number(team.blue_win_rate) || 0,
         redWinRate: Number(team.red_win_rate) || 0,
@@ -45,47 +63,35 @@ export const getTeams = async (): Promise<Team[]> => {
       };
     });
 
-    const playersByTeamId = allPlayersData
-      ? allPlayersData.reduce((acc, player) => {
-          if (!player.team_id) return acc;
-
-          const teamId = player.team_id;
-          if (!acc[teamId]) acc[teamId] = [];
-          acc[teamId].push(player);
-          return acc;
-        }, {} as Record<string, any[]>)
-      : {};
-
     teams.forEach(team => {
       const teamPlayers = playersByTeamId[team.id] || [];
-      team.players = teamPlayers.map(player => {
-        const normalizedRole = normalizeRoleName(player.role) || 'Unknown';
-        return {
-          id: player.id as string,
-          name: player.name as string,
-          role: normalizedRole,
-          image: player.image as string,
-          team: team.id,
-          teamName: team.name,
-          teamRegion: team.region,
-          kda: Number(player.kda) || 0,
-          csPerMin: Number(player.cs_per_min) || 0,
-          damageShare: Number(player.damage_share) || 0,
-          championPool: player.champion_pool as string[] || []
-        };
-      });
+
+      team.players = teamPlayers.map(player => ({
+        id: player.id,
+        name: player.name,
+        role: normalizeRoleName(player.role),
+        image: player.image,
+        team: team.id,
+        teamName: team.name,
+        teamRegion: team.region,
+        kda: Number(player.kda) || 0,
+        csPerMin: Number(player.cs_per_min) || 0,
+        damageShare: Number(player.damage_share) || 0,
+        championPool: player.champion_pool || []
+      }));
     });
+
     const genGTeam = teams.find(t => t.name.toLowerCase().includes("gen.g"));
-console.warn("🧩 getTeams.ts retourne Gen.G avec :", {
-  id: genGTeam?.id,
-  playersCount: genGTeam?.players?.length,
-  players: genGTeam?.players?.map(p => p.name)
-});
+    console.warn("📤 getTeams.ts retourne Gen.G avec :", {
+      id: genGTeam?.id,
+      playersCount: genGTeam?.players?.length,
+      players: genGTeam?.players?.map(p => p.name)
+    });
 
     return teams;
   } catch (error) {
-    console.error("Error retrieving teams:", error);
-    toast.error("Échec du chargement des données d'équipe");
+    console.error("❌ getTeams.ts global error:", error);
+    toast.error("Échec du chargement des équipes");
     return mockTeams;
   }
 };
