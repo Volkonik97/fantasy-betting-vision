@@ -31,7 +31,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
 
     const { data: playerMatchStats, error: playerError } = await supabase
       .from('player_match_stats')
-      .select('match_id, team_id, is_blue_side, first_blood_kill')
+      .select('match_id, team_id, side, first_blood_kill')
       .eq('team_id', teamId);
 
     if (statsError) console.error('[sideStatistics] Error fetching team match stats:', statsError);
@@ -91,7 +91,7 @@ function calculateSideStatistics(
 
   for (const stat of playerMatchStats || []) {
     const matchId = stat.match_id;
-    const isBlue = stat.is_blue_side;
+    const isBlue = stat.side?.toLowerCase() === 'blue';
 
     if (isBlue) blueSideGames.add(matchId);
     else redSideGames.add(matchId);
