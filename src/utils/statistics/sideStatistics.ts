@@ -37,6 +37,13 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     if (statsError) console.error('[sideStatistics] Error fetching team match stats:', statsError);
     if (playerError) console.error('[sideStatistics] Error fetching player match stats:', playerError);
 
+    console.log('[sideStatistics] playerMatchStats loaded:', playerMatchStats?.length);
+    if (playerMatchStats && playerMatchStats.length > 0) {
+      console.log('[sideStatistics] First 5:', playerMatchStats.slice(0, 5));
+    } else {
+      console.warn('[sideStatistics] ⚠️ No player match stats found for team:', teamId);
+    }
+
     const stats = calculateSideStatistics(
       teamId,
       allMatches,
@@ -90,6 +97,7 @@ function calculateSideStatistics(
     else redSideGames.add(matchId);
 
     if (stat.first_blood_kill === true) {
+      console.log(`[sideStatistics] FB kill found! match=${matchId} blue=${isBlue}`);
       if (isBlue) blueFBGames.add(matchId);
       else redFBGames.add(matchId);
     }
@@ -102,6 +110,15 @@ function calculateSideStatistics(
   const redFirstBlood = redSideGames.size > 0
     ? Math.round((redFBGames.size / redSideGames.size) * 100)
     : 0;
+
+  console.log('[sideStatistics] FB ratios:', {
+    blueFirstBlood,
+    redFirstBlood,
+    blueSideGames: blueSideGames.size,
+    redSideGames: redSideGames.size,
+    blueFBGames: blueFBGames.size,
+    redFBGames: redFBGames.size,
+  });
 
   const blueTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === true);
   const redTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === false);
