@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Team, Player } from "../../models/types";
+import { Team } from "../../models/types";
 import { toast } from "sonner";
 import { teams as mockTeams } from "../../models/mockTeams";
 import { normalizeRoleName } from "../../leagueData/assembler/modelConverter";
@@ -8,28 +8,49 @@ const BUCKET_NAME = "team-logos";
 
 export const getTeams = async (): Promise<Team[]> => {
   try {
-    console.log("🔁 Fetching teams and players from Supabase...");
+    console.log("🔁 [getTeams] Récupération des équipes et joueurs depuis Supabase...");
 
     const { data: teamsData, error: teamsError } = await supabase
       .from("teams")
       .select("*");
 
     if (teamsError || !teamsData) {
-      console.error("❌ Error retrieving teams:", teamsError);
+      console.error("❌ Erreur lors du chargement des équipes :", teamsError);
       throw teamsError;
     }
 
-    const { data: allPlayersData, error: playersError } = await supabase
+    let { data: allPlayersData, error: playersError } = await supabase
       .from("players")
       .select("*");
 
     if (playersError || !allPlayersData) {
-      console.error("❌ Error retrieving players:", playersError);
+      console.error("❌ Erreur lors du chargement des joueurs :", playersError);
       throw playersError;
     }
 
-    console.log(`✅ ${teamsData.length} teams & ${allPlayersData.length} players loaded.`);
+    console.log(`✅ ${teamsData.length} équipes chargées`);
+    console.log(`✅ ${allPlayersData.length} joueurs chargés`);
 
+    // 🔍 Check si Kiin est là
+    const kiinDirect = allPlayersData.find(p => p.name?.toLowerCase() === "kiin");
+
+    if (!kiinDirect) {
+      console.warn("🚫 Kiin absent — tentative de récupération via RPC");
+
+      const { data: kiinByQuery, error: kiinQueryError } = await supabase
+        .rpc("get_kiin_debug");
+
+      if (kiinQueryError) {
+        console.error("❌ Erreur lors du fallback RPC pour Kiin :", kiinQueryError);
+      } else if (kiinByQuery?.length > 0) {
+        console.warn("🐛 Kiin récupéré via bypass SQL RPC :", kiinByQuery[0]);
+        allPlayersData.push(kiinByQuery[0]);
+      } else {
+        console.warn("❌ Aucun résultat pour Kiin même via fallback");
+      }
+    }
+
+    // 🧩 Regroupement des joueurs par team_id
     const playersByTeamId = allPlayersData.reduce((acc, player) => {
       if (!player.team_id) return acc;
       if (!acc[player.team_id]) acc[player.team_id] = [];
@@ -37,6 +58,7 @@ export const getTeams = async (): Promise<Team[]> => {
       return acc;
     }, {} as Record<string, any[]>);
 
+    // 🏗️ Construction des équipes enrichies
     const teams: Team[] = teamsData.map((team) => {
       let logoUrl = team.logo;
 
@@ -47,21 +69,7 @@ export const getTeams = async (): Promise<Team[]> => {
         if (publicUrl) logoUrl = publicUrl;
       }
 
-      const rawPlayers = playersByTeamId[team.id] || [];
-
-      const enrichedPlayers = rawPlayers.map((player) => ({
-        id: player.id,
-        name: player.name,
-        role: normalizeRoleName(player.role),
-        image: player.image,
-        team: team.id,
-        teamName: team.name,
-        teamRegion: team.region,
-        kda: Number(player.kda) || 0,
-        csPerMin: Number(player.cs_per_min) || 0,
-        damageShare: Number(player.damage_share) || 0,
-        championPool: player.champion_pool || [],
-      }));
+      const teamPlayers = playersByTeamId[team.id] || [];
 
       return {
         id: team.id,
@@ -72,65 +80,75 @@ export const getTeams = async (): Promise<Team[]> => {
         blueWinRate: Number(team.blue_win_rate) || 0,
         redWinRate: Number(team.red_win_rate) || 0,
         averageGameTime: Number(team.average_game_time) || 0,
-        players: enrichedPlayers,
+        players: teamPlayers.map((player) => ({
+          id: player.id,
+          name: player.name,
+          role: normalizeRoleName(player.role),
+          image: player.image,
+          team: team.id,
+          teamName: team.name,
+          teamRegion: team.region,
+          kda: Number(player.kda) || 0,
+          csPerMin: Number(player.cs_per_min) || 0,
+          damageShare: Number(player.damage_share) || 0,
+          championPool: player.champion_pool || [],
+        })),
       };
     });
 
-    // ✅ Injection automatique des joueurs non affectés
+    // 🛠️ Injection automatique des joueurs fantômes (présents mais non assignés)
     const allTeamPlayerIds = new Set(
-      teams.flatMap((team) => team.players?.map((p) => p.id) || [])
+      teams.flatMap(t => t.players || []).map(p => p.id)
     );
 
     const missingPlayers = allPlayersData.filter(
-      (player) => player.team_id && !allTeamPlayerIds.has(player.id)
+      (p) => p.team_id && !allTeamPlayerIds.has(p.id)
     );
 
-    const injectedPlayersLog: { name: string; team: string }[] = [];
+    const injectedLog: { name: string; team: string }[] = [];
 
-    if (missingPlayers.length > 0) {
-      console.warn("🧩 Début de l'injection automatique de joueurs fantômes :", missingPlayers.map(p => p.name));
-
-      for (const ghost of missingPlayers) {
-        const team = teams.find((t) => t.id === ghost.team_id);
-        if (team) {
-          const enrichedGhost = {
-            id: ghost.id,
-            name: ghost.name,
-            role: normalizeRoleName(ghost.role),
-            image: ghost.image,
-            team: team.id,
-            teamName: team.name,
-            teamRegion: team.region,
-            kda: Number(ghost.kda) || 0,
-            csPerMin: Number(ghost.cs_per_min) || 0,
-            damageShare: Number(ghost.damage_share) || 0,
-            championPool: ghost.champion_pool || [],
-          };
-
-          team.players?.push(enrichedGhost);
-          injectedPlayersLog.push({ name: ghost.name, team: team.name });
-        } else {
-          console.warn(`⚠️ ${ghost.name} a un team_id inexistant :`, ghost.team_id);
-        }
+    for (const ghost of missingPlayers) {
+      const targetTeam = teams.find(t => t.id === ghost.team_id);
+      if (!targetTeam) {
+        console.warn(`⚠️ ${ghost.name} a un team_id invalide : ${ghost.team_id}`);
+        continue;
       }
 
-      console.log(`✅ ${injectedPlayersLog.length} joueur(s) ont été automatiquement injectés :`);
-      injectedPlayersLog.forEach(p => {
-        console.log(`   - ${p.name} ajouté à ${p.team}`);
+      targetTeam.players?.push({
+        id: ghost.id,
+        name: ghost.name,
+        role: normalizeRoleName(ghost.role),
+        image: ghost.image,
+        team: ghost.team_id,
+        teamName: targetTeam.name,
+        teamRegion: targetTeam.region,
+        kda: Number(ghost.kda) || 0,
+        csPerMin: Number(ghost.cs_per_min) || 0,
+        damageShare: Number(ghost.damage_share) || 0,
+        championPool: ghost.champion_pool || [],
       });
-    } else {
-      console.log("✅ Aucun joueur fantôme détecté.");
+
+      injectedLog.push({ name: ghost.name, team: targetTeam.name });
     }
 
-    // Vérification finale (ex: Kiin)
+    if (injectedLog.length > 0) {
+      console.warn(`✨ ${injectedLog.length} joueur(s) injectés automatiquement :`);
+      injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
+    } else {
+      console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
+    }
+
+    // ✅ Check finale pour Kiin
     const kiinCheck = teams.flatMap(t => t.players || []).find(p => p.name?.toLowerCase() === "kiin");
     if (kiinCheck) {
-      console.log("🧪 Vérif finale : Kiin est bien présent :", kiinCheck);
+      console.log("🧪 Vérification finale : Kiin est bien présent dans teams :", kiinCheck);
+    } else {
+      console.error("❌ Kiin toujours absent malgré fallback + auto-injection");
     }
 
     return teams;
   } catch (error) {
-    console.error("❌ getTeams global error:", error);
+    console.error("❌ Erreur globale dans getTeams :", error);
     toast.error("Erreur lors du chargement des équipes");
     return mockTeams;
   }
