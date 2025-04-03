@@ -17,6 +17,9 @@ const Players = () => {
   const [loading, setIsLoading] = useState(true);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
 
+  const playersPerPage = 100;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
@@ -39,6 +42,10 @@ const Players = () => {
     setSelectedSubRegion("All");
   }, [selectedRegion]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedRole, selectedRegion, selectedSubRegion, selectedCategory]);
+
   const fetchPlayers = async () => {
     try {
       setIsLoading(true);
@@ -60,7 +67,6 @@ const Players = () => {
 
       console.log("📦 [Players.tsx] Nombre total de joueurs injectés :", playersWithTeamInfo.length);
 
-      // 🔍 Vérifie si des joueurs sont absents de la récupération brute initiale
       const dbPlayerIds = new Set(playersWithTeamInfo.map(p => p.id));
       const allTeamPlayers = teams.flatMap(team => team.players || []);
       const missingPlayersFromTeams = allTeamPlayers.filter(p => !dbPlayerIds.has(p.id));
@@ -74,17 +80,6 @@ const Players = () => {
       } else {
         console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
       }
-
-      // Test de présence spécifique
-      const debugNames = ["kiin", "river"];
-      debugNames.forEach(name => {
-        const found = playersWithTeamInfo.find(p => p.name.toLowerCase() === name);
-        if (!found) {
-          console.error(`❌ ${name.toUpperCase()} absent de allPlayers (Players.tsx)`);
-        } else {
-          console.log(`✅ ${name} trouvé dans allPlayers :`, found);
-        }
-      });
 
       setAllPlayers(playersWithTeamInfo);
 
@@ -133,6 +128,11 @@ const Players = () => {
     return roleMatches && regionMatches && searchMatches;
   });
 
+  const paginatedPlayers = filteredPlayers.slice(
+    (currentPage - 1) * playersPerPage,
+    currentPage * playersPerPage
+  );
+
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
@@ -167,10 +167,30 @@ const Players = () => {
           subRegions={subRegions}
         />
 
-        <PlayersList 
-          players={filteredPlayers}
-          loading={loading}
-        />
+        <PlayersList players={paginatedPlayers} loading={loading} />
+
+        {/* Pagination Controls */}
+        <div className="flex justify-center items-center mt-6 gap-4">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+          >
+            ◀ Page précédente
+          </button>
+
+          <span className="text-sm text-gray-700">
+            Page {currentPage} sur {Math.ceil(filteredPlayers.length / playersPerPage)}
+          </span>
+
+          <button
+            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={currentPage * playersPerPage >= filteredPlayers.length}
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+          >
+            Page suivante ▶
+          </button>
+        </div>
       </main>
     </div>
   );
