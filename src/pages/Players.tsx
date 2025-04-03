@@ -20,11 +20,11 @@ const Players = () => {
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
-    "All": ["All"],
+    All: ["All"],
     "Ligues Majeures": ["LCK", "LPL", "LTA N", "LEC"],
-    "ERL": ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
+    ERL: ["LFL", "PRM", "LVP SL", "NLC", "LIT", "AL", "TCL", "RL", "HLL", "LPLOL", "HW", "EBL", "ROL"],
     "Division 2": ["LCKC", "LFL2", "LRS", "LRN", "NEXO", "CD"],
-    "Autres": ["LCP", "LJL", "LTA N", "PCS", "VCS"]
+    Autres: ["LCP", "LJL", "LTA N", "PCS", "VCS"]
   };
 
   const subRegions = {
@@ -42,29 +42,14 @@ const Players = () => {
   const fetchPlayers = async () => {
     try {
       setIsLoading(true);
-
       const teams = await getTeams();
-      teams.forEach(team => {
-  team.players?.forEach(player => {
-    if (player.name?.toLowerCase() === "kiin") {
-      console.warn("🔥 Kiin trouvé dans getTeams() :", player);
-    }
-  });
-});
-
-
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
-      teams.forEach((team, teamIndex) => {
+      teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
 
-        team.players.forEach((player, playerIndex) => {
-          console.warn(`🧩 Tentative d'ajout du joueur ${player.name} (${player.id}) dans ${team.name}`);
-         if (!player.id || !player.name) {
-  console.warn(`⚠️ Joueur incomplet (id ou name manquant) dans ${team.name}`, player);
-  // Pas de return ici — on log mais on continue
-}
-
+        team.players.forEach(player => {
+          if (!player.name) return;
 
           playersWithTeamInfo.push({
             ...player,
@@ -74,26 +59,7 @@ const Players = () => {
         });
       });
 
-console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length}`);
-
-
-      // 🧾 Log tous les joueurs collectés avant filtrage
-      console.log("🧾 Liste brute des joueurs récupérés :");
-      playersWithTeamInfo.forEach(p => {
-        console.log(`- ${p.name} (${p.teamName}) — region: ${p.teamRegion} — id: ${p.id}`);
-      });
-
-      // 🔍 Dump ciblé pour l'équipe Gen.G
-      const debugTeam = teams.find(t => t.name.trim().toLowerCase() === "gen.g");
-      if (debugTeam) {
-        console.log("🔎 Équipe ciblée : Gen.G");
-        console.log(JSON.stringify(debugTeam, null, 2));
-      } else {
-        console.warn("❌ Aucune équipe Gen.G trouvée dans getTeams()");
-      }
-
       setAllPlayers(playersWithTeamInfo);
-
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
       setAvailableRegions(uniqueRegions);
 
@@ -112,7 +78,6 @@ console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
     let regionMatches = true;
-
     if (selectedCategory !== "All") {
       if (selectedRegion === "All") {
         const regionsInCategory = regionCategories[selectedCategory] || [];
@@ -125,37 +90,18 @@ console.warn(`✅ Total joueurs enrichis ajoutés : ${playersWithTeamInfo.length
     }
 
     if (selectedRegion === "LTA") {
-      if (selectedSubRegion === "All") {
-        regionMatches = player.teamRegion?.startsWith("LTA") || false;
-      } else {
-        regionMatches = player.teamRegion === selectedSubRegion;
-      }
+      regionMatches = selectedSubRegion === "All"
+        ? player.teamRegion?.startsWith("LTA") || false
+        : player.teamRegion === selectedSubRegion;
     }
 
     const searchMatches =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    console.log("🧪 Filter debug →", {
-      name: player.name,
-      role: player.role,
-      teamRegion: player.teamRegion,
-      selectedCategory,
-      selectedRegion,
-      selectedSubRegion,
-      searchTerm,
-      regionMatches,
-      roleMatches,
-      searchMatches,
-      included: roleMatches && regionMatches && searchMatches
-    });
-
     return roleMatches && regionMatches && searchMatches;
   });
 
-console.warn("🔎 Tous les joueurs bruts (allPlayers):", allPlayers.map(p => p.name));
-console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p => p.name));
-  
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
@@ -163,13 +109,10 @@ console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p =
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Players</h1>
-          <p className="text-gray-600">
-            Browse and analyze professional League of Legends players
-          </p>
+          <p className="text-gray-600">Browse and analyze professional League of Legends players</p>
         </div>
 
         <div className="mb-8">
@@ -190,10 +133,7 @@ console.warn("🔍 Joueurs filtrés (filteredPlayers):", filteredPlayers.map(p =
           subRegions={subRegions}
         />
 
-        <PlayersList 
-          players={filteredPlayers}
-          loading={loading}
-        />
+        <PlayersList players={filteredPlayers} loading={loading} />
       </main>
     </div>
   );
