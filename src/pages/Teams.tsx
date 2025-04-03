@@ -35,6 +35,17 @@ const Teams = () => {
       clearTeamsCache();
       
       const loadedTeams = await getTeams();
+      // 🔍 Log détaillé de Gen.G dans Teams.tsx
+loadedTeams
+  .filter(t => t.name.toLowerCase().includes("gen.g"))
+  .forEach(t => {
+    console.warn("🧪 Gen.G dans Teams.tsx :", {
+      id: t.id,
+      playersCount: t.players?.length,
+      playerNames: t.players?.map(p => p.name)
+    });
+  });
+
       
       if (Array.isArray(loadedTeams) && loadedTeams.length > 0) {
         console.log("Successfully loaded teams:", loadedTeams.length);
