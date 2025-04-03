@@ -142,4 +142,25 @@ export const getTeams = async (): Promise<Team[]> => {
       console.warn(`✨ ${injectedLog.length} joueur(s) injecté(s) automatiquement :`);
       injectedLog.forEach(p => console.log(`   - ${p.name} → ${p.team}`));
     } else {
-      console.log("✅ Aucun joueur fantôme détecté ou à
+      console.log("✅ Aucun joueur fantôme détecté ou à injecter.");
+    }
+
+    // 🔍 Dernière vérification
+    const stillMissing = allPlayersData.filter(p => {
+      return !teams.some(t => t.players?.some(pl => pl.id === p.id));
+    });
+
+    if (stillMissing.length > 0) {
+      console.warn("⚠️ Certains joueurs sont encore manquants dans teams[].players[] :");
+      stillMissing.forEach(p => console.warn(`❌ Manquant : ${p.name} (${p.team_id})`));
+    } else {
+      console.log("✅ Tous les joueurs DB sont bien présents dans teams[].players.");
+    }
+
+    return teams;
+  } catch (error) {
+    console.error("❌ Erreur globale dans getTeams.ts :", error);
+    toast.error("Erreur lors du chargement des équipes");
+    return mockTeams;
+  }
+};
