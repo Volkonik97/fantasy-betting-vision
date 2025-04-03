@@ -89,7 +89,7 @@ function calculateSideStatistics(
     if (isBlue) blueSideGames.add(matchId);
     else redSideGames.add(matchId);
 
-    if (stat.first_blood_kill) {
+    if (stat.first_blood_kill === true) {
       if (isBlue) blueFBGames.add(matchId);
       else redFBGames.add(matchId);
     }
