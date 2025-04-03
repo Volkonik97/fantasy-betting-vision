@@ -47,6 +47,12 @@ const Players = () => {
 
       teams.forEach(team => {
         if (!Array.isArray(team.players) || team.players.length === 0) return;
+        if (team.name.toLowerCase().includes("gen.g")) {
+  console.warn(`🧪 Gen.G team.id = ${team.id}`);
+  team.players?.forEach((p) => {
+    console.warn("➡️ Player in Gen.G (raw):", p);
+  });
+}
 
         team.players.forEach(player => {
           if (!player.name) return;
