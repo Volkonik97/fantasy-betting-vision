@@ -88,30 +88,6 @@ const Players = () => {
     }
   };
 
-  // 🔍 Debug détaillé de chaque joueur avant filtrage
-  allPlayers.forEach(player => {
-    const roleMatches = selectedRole === "All" || player.role === selectedRole;
-    const regionMatches = selectedRegion === "All" || player.teamRegion === selectedRegion;
-    const searchMatches =
-      player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (player.teamName && player.teamName.toLowerCase().includes(searchTerm.toLowerCase()));
-    const included = roleMatches && regionMatches && searchMatches;
-
-    if (player.name.toLowerCase() === "kiin") {
-      console.warn(`🧪 [Kiin] Filtrage détaillé`, {
-        role: player.role,
-        selectedRole,
-        region: player.teamRegion,
-        selectedRegion,
-        searchTerm,
-        roleMatches,
-        regionMatches,
-        searchMatches,
-        included
-      });
-    }
-  });
-
   const filteredPlayers = allPlayers.filter(player => {
     const roleMatches = selectedRole === "All" || player.role === selectedRole;
 
@@ -148,6 +124,16 @@ const Players = () => {
   const handleSearch = (query: string) => {
     setSearchTerm(query);
   };
+
+  // 🔍 🔥 Vérifie si Kiin est bien dans l'état allPlayers
+  useEffect(() => {
+    const kiin = allPlayers.find(p => p.name?.toLowerCase() === "kiin");
+    if (kiin) {
+      console.warn("🔥 Kiin détecté dans useEffect allPlayers :", kiin);
+    } else {
+      console.warn("❌ Kiin introuvable dans allPlayers");
+    }
+  }, [allPlayers]);
 
   return (
     <div className="min-h-screen bg-gray-50">
