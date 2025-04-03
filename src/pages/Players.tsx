@@ -69,16 +69,21 @@ const Players = () => {
           });
         }
 
-        team.players.forEach(player => {
-          if (!player.name) return;
+        team.players.forEach((player, playerIndex) => {
+  if (!player.id || !player.name) {
+    console.warn(`⚠️ Joueur ignoré dans ${team.name} :`, player);
+    return;
+  }
 
-          playersWithTeamInfo.push({
-            ...player,
-            teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown"
-          });
-        });
-      });
+  console.log(`✅ Ajout du joueur ${player.name} (ID: ${player.id}) depuis ${team.name}`);
+
+  playersWithTeamInfo.push({
+    ...player,
+    teamName: team.name || "Unknown",
+    teamRegion: team.region || "Unknown",
+  });
+});
+
 
       setAllPlayers(playersWithTeamInfo);
       const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
