@@ -18,12 +18,18 @@ const TeamLogo: React.FC<TeamLogoProps> = ({ logoUrl, teamName, onError, hasErro
     .substring(0, 2)
     .toUpperCase();
 
+  // Special case for Gen.G logo
+  const isGenG = teamName.toLowerCase().includes('gen.g') || teamName.toLowerCase() === 'geng';
+  const finalLogoUrl = isGenG && (!logoUrl || hasError) 
+    ? "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png" 
+    : logoUrl;
+
   return (
     <div className="w-12 h-12 bg-gray-50 rounded-full p-1 flex items-center justify-center overflow-hidden flex-shrink-0">
       <Avatar className="w-10 h-10">
-        {!hasError && logoUrl ? (
+        {!hasError && finalLogoUrl ? (
           <AvatarImage 
-            src={logoUrl} 
+            src={finalLogoUrl} 
             alt={teamName} 
             className="object-contain"
             onError={onError}

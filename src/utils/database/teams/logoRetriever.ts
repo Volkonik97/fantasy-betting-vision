@@ -11,10 +11,16 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
   if (!teamId) return null;
   
   try {
-    // Special handling for Team Valiant - use the hardcoded logo path
+    // Handle known problematic logos with direct fallbacks
     if (teamId === TEAM_VALIANT_ID || teamId.toLowerCase().includes("valiant")) {
       console.log("Team Valiant detected - using hardcoded logo path");
       return VALIANT_LOGO_PATH;
+    }
+    
+    // Special case for Gen.G which often has issues
+    if (teamId === "GENG" || teamId.toLowerCase() === "geng" || teamId.toLowerCase().includes("gen.g")) {
+      console.log("Gen.G detected - using hardcoded logo path");
+      return "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png";
     }
     
     // First, try to get the file directly using the team ID and common extensions

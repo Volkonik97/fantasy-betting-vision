@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 
@@ -8,7 +8,12 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
-  // Backup image for Gen.G logo
+  // State to track image loading errors
+  const [t1LogoError, setT1LogoError] = useState(false);
+  const [genGLogoError, setGenGLogoError] = useState(false);
+  
+  // Backup images for logos
+  const t1FallbackImage = "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/78/T1logo_profile.png";
   const genGFallbackImage = "https://upload.wikimedia.org/wikipedia/en/2/22/Gen.G_logo.png";
   
   return (
@@ -67,9 +72,10 @@ const HeroSection = ({ onStartAnalysis }: HeroSectionProps) => {
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto bg-white rounded-full shadow-subtle p-2 mb-2">
                     <img
-                      src="https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/78/T1logo_profile.png"
+                      src={t1LogoError ? t1FallbackImage : "https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/7/78/T1logo_profile.png"}
                       alt="T1"
                       className="w-full h-full object-contain"
+                      onError={() => setT1LogoError(true)}
                     />
                   </div>
                   <span className="font-medium text-sm">T1</span>
