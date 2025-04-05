@@ -18,11 +18,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+ 	run: npm install
+  	working-directory: ./scripts
 
-      - name: Run update script
-        run: node updateSupabase.js
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
+- name: Run update script
+  run: node updateSupabase.js
+  working-directory: ./scripts
+

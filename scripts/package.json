@@ -1,0 +1,10 @@
+{
+  "name": "supabase-import-script",
+  "type": "module",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.6",
+    "axios": "^1.6.7",
+    "papaparse": "^5.4.1"
+  }
+}
