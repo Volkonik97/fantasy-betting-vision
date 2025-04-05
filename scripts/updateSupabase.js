@@ -1,9 +1,16 @@
-
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-// Chargement des variables d'environnement
+// 🔍 DEBUG des variables d’environnement (fournies par GitHub Actions)
+console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
+console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+  throw new Error("❌ Variables d'environnement manquantes !");
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const FILE_ID = process.env.GOOGLE_FILE_ID;
