@@ -2,7 +2,7 @@ name: Daily Supabase Update
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'  # Tous les jours à 6h UTC
   workflow_dispatch:
 
 jobs:
@@ -25,3 +25,7 @@ jobs:
       - name: Run update script
         run: node updateSupabase.js
         working-directory: ./scripts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
