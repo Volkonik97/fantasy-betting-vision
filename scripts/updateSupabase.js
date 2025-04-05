@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-// 🔍 DEBUG des variables d’environnement (fournies par GitHub Actions)
+// 🔐 Debug affichage des secrets
 console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
 console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
@@ -96,7 +96,7 @@ const insertMatch = async (match) => {
     playoffs: match.playoffs === 'TRUE',
   };
 
-  await supabase.from('matches').upsert(dataToInsert);
+  await supabase.from('matches').insert(dataToInsert);
 };
 
 const insertTeamStats = async (match) => {
@@ -115,7 +115,7 @@ const insertTeamStats = async (match) => {
 
   for (const t of teams) {
     const team_id = await getTeamId(t.tag);
-    await supabase.from('team_match_stats').upsert({
+    await supabase.from('team_match_stats').insert({
       match_id: match.gameid,
       team_id,
       is_blue_side: t.is_blue_side,
@@ -139,15 +139,35 @@ const insertTeamStats = async (match) => {
 
 const importAll = async () => {
   const matches = await parseCsv();
+  console.log(`🔍 Total dans le CSV : ${matches.length}`);
 
-  for (const match of matches) {
+  // 1. Obtenir tous les match IDs existants
+  const { data: existing, error } = await supabase
+    .from('matches')
+    .select('id');
+
+  if (error) {
+    console.error("❌ Erreur récupération matchs existants :", error.message);
+    return;
+  }
+
+  const existingIds = new Set(existing.map((m) => m.id));
+  const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
+  console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
+
+  // 2. Insérer uniquement les nouveaux
+  for (const match of newMatches) {
     try {
       await insertMatch(match);
       await insertTeamStats(match);
-      console.log(`✅ Import match ${match.gameid}`);
+      console.log(`✅ Importé : ${match.gameid}`);
     } catch (err) {
-      console.error(`❌ Erreur pour ${match.gameid}`, err.message);
+      console.error(`❌ Erreur pour ${match.gameid}:`, err.message);
     }
+  }
+
+  if (newMatches.length === 0) {
+    console.log("🎉 Aucun nouveau match à importer aujourd'hui.");
   }
 };
 
