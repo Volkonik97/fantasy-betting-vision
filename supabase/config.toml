@@ -2,4 +2,4 @@
 project_id = "dtddoxxazhmfudrvpszu"
 
 [functions.update-database]
-verify_jwt = true
+verify_jwt = false
