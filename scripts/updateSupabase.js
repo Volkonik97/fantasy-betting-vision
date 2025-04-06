@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-// 🔐 Vérification des secrets
 console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
 console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
@@ -17,14 +16,12 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 📥 Téléchargement CSV
 const downloadCsv = async () => {
   const url = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
   const res = await axios.get(url);
   return res.data;
 };
 
-// 📊 Parsing CSV
 const parseCsv = async () => {
   const csv = await downloadCsv();
   return new Promise((resolve, reject) => {
@@ -37,7 +34,34 @@ const parseCsv = async () => {
   });
 };
 
-// 📌 Gestion d'équipe
+const getAllMatchIdsFromSupabase = async () => {
+  const pageSize = 1000;
+  let all = [];
+  let page = 0;
+  let done = false;
+
+  while (!done) {
+    const { data, error } = await supabase
+      .from('matches')
+      .select('id')
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) {
+      console.error("❌ Erreur pagination Supabase :", error.message);
+      break;
+    }
+
+    if (data.length < pageSize) {
+      done = true;
+    }
+
+    all = [...all, ...data];
+    page++;
+  }
+
+  return all;
+};
+
 const getTeamId = async (teamTag) => {
   const { data, error } = await supabase
     .from('teams')
@@ -56,9 +80,8 @@ const getTeamId = async (teamTag) => {
   return teamTag;
 };
 
-// ✅ Insertion du match principal
 const insertMatch = async (match) => {
-  const match_id = match.gameid;
+  const match_id = match.gameid.trim();
   const team_blue = await getTeamId(match.blueTeamTag);
   const team_red = await getTeamId(match.redTeamTag);
 
@@ -103,7 +126,6 @@ const insertMatch = async (match) => {
   await supabase.from('matches').insert(dataToInsert);
 };
 
-// ✅ Insertion des stats par équipe
 const insertTeamStats = async (match) => {
   const teams = [
     {
@@ -121,7 +143,7 @@ const insertTeamStats = async (match) => {
   for (const t of teams) {
     const team_id = await getTeamId(t.tag);
     await supabase.from('team_match_stats').insert({
-      match_id: match.gameid,
+      match_id: match.gameid.trim(),
       team_id,
       is_blue_side: t.is_blue_side,
       kills: Number(match[`${t.prefix}Kills`]),
@@ -142,36 +164,29 @@ const insertTeamStats = async (match) => {
   }
 };
 
-// 🧠 Fonction principale
 const importAll = async () => {
   const allRows = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${allRows.length}`);
 
-  // ✅ Ne garder qu’une seule ligne par match (évite doublons)
+  const emptyIds = allRows.filter(r => !r.gameid || !r.gameid.trim()).length;
+  console.log(`🛑 Lignes ignorées sans gameid : ${emptyIds}`);
+
   const matches = Object.values(
     allRows.reduce((acc, row) => {
-      acc[row.gameid] = row;
+      const id = row.gameid?.trim();
+      if (!id) return acc;
+      acc[id] = row;
       return acc;
     }, {})
   );
 
   console.log(`🧩 Matchs uniques trouvés : ${matches.length}`);
 
-  // 🔁 Récupération des matchs déjà présents (range = fiable)
-  const { data: existing, count, error } = await supabase
-    .from('matches')
-    .select('id', { count: 'exact' })
-    .range(0, 9999); // augmente si tu penses dépasser 10k
-
-  if (error) {
-    console.error("❌ Erreur récupération matchs existants :", error.message);
-    return;
-  }
-
+  const existing = await getAllMatchIdsFromSupabase();
   const existingIds = new Set(existing.map((m) => m.id));
-  console.log(`🧠 Matchs trouvés dans Supabase : ${existing.length} / total estimé : ${count}`);
+  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existing.length}`);
 
-  const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
+  const newMatches = matches.filter((m) => !existingIds.has(m.gameid.trim()));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
   for (const match of newMatches) {
