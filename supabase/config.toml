@@ -1,1 +1,5 @@
+
 project_id = "dtddoxxazhmfudrvpszu"
+
+[functions.update-database]
+verify_jwt = true
