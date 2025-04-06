@@ -16,8 +16,9 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Define the Google Sheets URL to fetch data from - using a smaller subset for testing
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/17G8ainh2efXGPAlPYQKj0NCji4hh9qhj41A8LbrlzuE/export?format=csv&gid=0";
+// Define a valid and publicly accessible Google Sheets URL for testing
+// This is a sample URL - replace with a real, public Google Sheet for production
+const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRsb4OQeyJBX2LW89qnvYTMfI3J7ZEH8L6EWg9xzICaSiNmvPKoZu5xOXFP6ckJwPRIKl9QT6oODZ3L/pub?gid=1369291277&single=true&output=csv";
 
 // Flag to track if the function is currently processing
 let isProcessing = false;
@@ -59,54 +60,73 @@ async function updateDatabase() {
       // Instead of processing everything in one go, we'll start by fetching a small sample
       // This is a simplified version for testing resource limits
       console.log(`Fetching data from: ${GOOGLE_SHEET_URL}`);
-      const response = await fetch(GOOGLE_SHEET_URL, {
-        headers: {
-          'User-Agent': 'Supabase Edge Function',
-          'Accept': 'text/csv',
-        },
-      });
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}`);
-      }
-      
-      const csvData = await response.text();
-      console.log(`Fetched CSV data (${csvData.length} bytes)`);
-      
-      // Process a smaller batch of data
-      const rows = parseCsv(csvData);
-      
-      // Process only the first 100 rows for testing
-      const limitedRows = rows.slice(0, 100);
-      console.log(`Processing limited dataset of ${limitedRows.length} rows`);
-      
-      // For now, we'll just insert some test data to verify the function works
-      const teams = new Map();
-      const players = new Map();
-      const matches = new Map();
-      
-      // Extract entities from the limited dataset
-      processEntities(limitedRows, teams, players, matches);
-      
-      // Save a few entities
-      const teamsSaved = await saveTeams(Array.from(teams.values()).slice(0, 10));
-      const playersSaved = await savePlayers(Array.from(players.values()).slice(0, 10));
-      const matchesSaved = await saveMatches(Array.from(matches.values()).slice(0, 10));
-      
-      message = `Successfully processed test data with ${teamsSaved} teams, ${playersSaved} players, ${matchesSaved} matches`;
-      console.log(message);
-      
-      statusData = {
-        success: true,
-        message: message,
-        stats: {
-          teams: teamsSaved,
-          players: playersSaved, 
-          matches: matchesSaved
+      try {
+        const response = await fetch(GOOGLE_SHEET_URL, {
+          headers: {
+            'User-Agent': 'Supabase Edge Function',
+            'Accept': 'text/csv',
+          },
+        });
+        
+        if (!response.ok) {
+          // More detailed error message
+          const errorText = await response.text().catch(() => 'Unknown error content');
+          console.error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}. Details: ${errorText}`);
+          throw new Error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}. Please check if the sheet is publicly accessible.`);
         }
-      };
-      
-      return statusData;
+        
+        const csvData = await response.text();
+        console.log(`Fetched CSV data (${csvData.length} bytes)`);
+        
+        if (!csvData || csvData.trim().length === 0) {
+          throw new Error("Received empty data from Google Sheets. Please check if the sheet is accessible and contains data.");
+        }
+        
+        // Process a smaller batch of data
+        const rows = parseCsv(csvData);
+        
+        if (!rows || rows.length === 0) {
+          throw new Error("Failed to parse CSV data. No valid rows found.");
+        }
+        
+        console.log(`Successfully parsed ${rows.length} rows from CSV`);
+        
+        // Process only the first 100 rows for testing
+        const limitedRows = rows.slice(0, 100);
+        console.log(`Processing limited dataset of ${limitedRows.length} rows`);
+        
+        // For now, we'll just insert some test data to verify the function works
+        const teams = new Map();
+        const players = new Map();
+        const matches = new Map();
+        
+        // Extract entities from the limited dataset
+        processEntities(limitedRows, teams, players, matches);
+        
+        // Save a few entities
+        const teamsSaved = await saveTeams(Array.from(teams.values()).slice(0, 10));
+        const playersSaved = await savePlayers(Array.from(players.values()).slice(0, 10));
+        const matchesSaved = await saveMatches(Array.from(matches.values()).slice(0, 10));
+        
+        message = `Successfully processed test data with ${teamsSaved} teams, ${playersSaved} players, ${matchesSaved} matches`;
+        console.log(message);
+        
+        statusData = {
+          success: true,
+          message: message,
+          stats: {
+            teams: teamsSaved,
+            players: playersSaved, 
+            matches: matchesSaved
+          }
+        };
+        
+        return statusData;
+      } catch (fetchError) {
+        console.error("Error fetching or processing Google Sheet:", fetchError);
+        throw new Error(`Error processing Google Sheet: ${fetchError.message}`);
+      }
     } catch (error) {
       message = `Error: ${error.message}`;
       console.error("Error updating database:", error);
@@ -198,26 +218,40 @@ function processEntities(rows, teams, players, matches) {
 
 // Simple CSV parser function for Deno
 function parseCsv(csvText) {
-  const lines = csvText.split('\n');
-  if (lines.length === 0) {
+  try {
+    if (!csvText || typeof csvText !== 'string') {
+      console.error("Invalid CSV data received:", typeof csvText);
+      return [];
+    }
+    
+    const lines = csvText.split('\n');
+    if (lines.length === 0) {
+      console.error("CSV has no lines");
+      return [];
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim());
+    if (headers.length === 0) {
+      console.error("CSV has no headers");
+      return [];
+    }
+    
+    console.log(`Parsed ${lines.length - 1} rows from CSV`);
+    
+    return lines.slice(1).map(line => {
+      const values = line.split(',');
+      const row = {};
+      
+      headers.forEach((header, i) => {
+        row[header] = values[i] ? values[i].trim() : '';
+      });
+      
+      return row;
+    }).filter(row => Object.values(row).some(val => val)); // Filter out empty rows
+  } catch (parseError) {
+    console.error("Error parsing CSV:", parseError);
     return [];
   }
-  
-  const headers = lines[0].split(',').map(h => h.trim());
-  if (headers.length === 0) {
-    return [];
-  }
-  
-  return lines.slice(1).map(line => {
-    const values = line.split(',');
-    const row = {};
-    
-    headers.forEach((header, i) => {
-      row[header] = values[i] ? values[i].trim() : '';
-    });
-    
-    return row;
-  }).filter(row => Object.values(row).some(val => val)); // Filter out empty rows
 }
 
 // Save teams with handling for timeouts

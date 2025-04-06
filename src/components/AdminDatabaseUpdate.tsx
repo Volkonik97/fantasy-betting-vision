@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 
 const AdminDatabaseUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -101,9 +101,22 @@ const AdminDatabaseUpdate = () => {
             throw new Error(`HTTP error! status: ${statusCode}. The Edge Function has reached resource limits. Try again with a smaller dataset.`);
           }
           
-          throw new Error(`HTTP error! status: ${statusCode}. ${errorText}`);
+          // Check if the error response is JSON formatted
+          let parsedError = null;
+          try {
+            parsedError = JSON.parse(errorText);
+          } catch (e) {
+            // Not JSON, use raw text
+          }
+          
+          if (parsedError && parsedError.message) {
+            throw new Error(`HTTP error! status: ${statusCode}. ${parsedError.message}`);
+          } else {
+            throw new Error(`HTTP error! status: ${statusCode}. ${errorText}`);
+          }
         }
         
+        // Parse the response
         const data = await response.json();
         
         if (data && data.success) {
@@ -163,10 +176,16 @@ const AdminDatabaseUpdate = () => {
     
     // Check for specific error types and provide more helpful messages
     if (errorMessage.includes('546')) {
-      errorMessage = 'The Edge Function has reached CPU or memory limits. We\'ve updated the function to use less resources. Please try again.';
+      errorMessage = 'The Edge Function has reached CPU or memory limits. The function is configured to process only small batches of data. Please try again.';
       addLog('Error: Edge Function reached resource limits.');
-      addLog('The function has been optimized to use fewer resources.');
+      addLog('The function is configured to process small batches of data.');
       addLog('Please try again in a moment.');
+    } else if (errorMessage.includes('400 Bad Request') && errorMessage.includes('Google Sheet')) {
+      errorMessage = 'Failed to fetch Google Sheet: The sheet might not be publicly accessible or the URL is incorrect.';
+      addLog('Error: Failed to access Google Sheet. Please check:');
+      addLog('1. The Google Sheet exists and is publicly accessible');
+      addLog('2. The URL in the Edge Function is correct');
+      addLog('3. The sheet has the correct data format (Oracle\'s Elixir format)');
     } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       errorMessage = 'Failed to connect to the update service. The Edge Function may not be deployed correctly or might be offline.';
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
@@ -179,7 +198,7 @@ const AdminDatabaseUpdate = () => {
       addLog('Error: Edge Function request timed out. The function may be taking too long to process.');
       addLog('Possible solutions:');
       addLog('1. Check server load on your Supabase project');
-      addLog('2. Optimize the Edge Function for better performance');
+      addLog('2. The Edge Function has been configured to process smaller batches of data');
     } else {
       addLog(`Exception: ${errorMessage}`);
     }
@@ -202,6 +221,19 @@ const AdminDatabaseUpdate = () => {
               ? new Date(lastUpdateTime).toLocaleString() 
               : 'Never updated'}
           </p>
+          
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="text-amber-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-800 font-medium">Google Sheet Configuration</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  The Edge Function is currently set up to read from a specific Google Sheet. 
+                  If you need to change the data source, update the GOOGLE_SHEET_URL in the Edge Function.
+                </p>
+              </div>
+            </div>
+          </div>
           
           <Button 
             onClick={triggerDatabaseUpdate} 
@@ -244,7 +276,7 @@ const AdminDatabaseUpdate = () => {
               <AlertCircle className="text-amber-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-amber-800 dark:text-amber-200">
                 <p className="font-medium">Update failed after multiple attempts</p>
-                <p className="mt-1">The Edge Function has been optimized to handle smaller batches of data. Please try again.</p>
+                <p className="mt-1">The Edge Function has been optimized to handle smaller batches of data. Please try again later.</p>
               </div>
             </div>
           )}
