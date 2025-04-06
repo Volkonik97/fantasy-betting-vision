@@ -1,0 +1,27 @@
+name: Daily CSV Import
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # Tous les jours à 5h du matin UTC
+  workflow_dispatch:    # Pour déclencher manuellement
+
+jobs:
+  daily-import:
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install axios papaparse @supabase/supabase-js dotenv
+
+      - name: Run Import Script
+        run: node scripts/updateSupabase.js
