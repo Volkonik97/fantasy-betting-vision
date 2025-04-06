@@ -18,8 +18,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install required script dependencies
-        run: npm install node-fetch@2 csv-parser @supabase/supabase-js
+      - name: Install required script dependencies (force legacy peer deps)
+        run: npm install node-fetch@2 csv-parser @supabase/supabase-js --legacy-peer-deps
 
       - name: Run Supabase update script
         env:
