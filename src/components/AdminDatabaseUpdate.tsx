@@ -65,29 +65,32 @@ const AdminDatabaseUpdate = () => {
     try {
       addLog('Connecting to update-database Edge Function...');
       
-      // Use the full URL to ensure proper connection
-      const projectId = 'dtddoxxazhmfudrvpszu';
-      addLog('Invoking Edge Function with explicit timeout...');
+      // Use explicit endpoint URL with full project ID
+      const functionUrl = 'https://dtddoxxazhmfudrvpszu.supabase.co/functions/v1/update-database';
+      addLog('Invoking Edge Function with direct URL and explicit timeout...');
       
       // Using a promise with timeout to handle potential network issues
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Edge Function request timed out after 20 seconds')), 20000);
+        setTimeout(() => reject(new Error('Edge Function request timed out after 30 seconds')), 30000);
       });
       
-      const functionPromise = supabase.functions.invoke('update-database', {
+      // Use fetch directly instead of supabase.functions.invoke for more direct control
+      const functionPromise = fetch(functionUrl, {
         method: 'POST',
-        body: {},
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.getSession()?.data?.session?.access_token || ''}`,
         },
+        body: JSON.stringify({}),
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
       });
       
       // Race between function call and timeout
-      const { data, error } = await Promise.race([functionPromise, timeoutPromise]) as any;
-      
-      if (error) {
-        throw error;
-      }
+      const data = await Promise.race([functionPromise, timeoutPromise]) as any;
       
       if (data && data.success) {
         addLog(`Success: ${data.message}`);
@@ -122,7 +125,7 @@ const AdminDatabaseUpdate = () => {
     addLog(`Error: ${errorMessage}. Retrying (${nextRetryCount}/${maxRetries})...`);
     
     // Exponential backoff: Wait longer with each retry
-    const waitTime = 2000 * Math.pow(2, nextRetryCount - 1);
+    const waitTime = 3000 * Math.pow(2, nextRetryCount - 1);
     addLog(`Waiting ${waitTime / 1000} seconds before retry...`);
     
     await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -138,7 +141,7 @@ const AdminDatabaseUpdate = () => {
     }
     
     // Check for specific error types and provide more helpful messages
-    if (errorMessage.includes('Failed to send a request to the Edge Function')) {
+    if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       errorMessage = 'Failed to connect to the update service. The Edge Function may not be deployed correctly or might be offline.';
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
       addLog('Possible solutions:');

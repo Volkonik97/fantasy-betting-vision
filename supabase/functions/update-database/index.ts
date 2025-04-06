@@ -1,12 +1,13 @@
-
 // This function will handle automated database updates from Google Sheets
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Define CORS headers for the function
+// Define CORS headers for the function with permissive settings
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 // Create a Supabase client
@@ -264,11 +265,11 @@ async function processAndSaveData(rows) {
   };
 }
 
-// Handle HTTP requests
+// Handle HTTP requests with improved error handling and logging
 serve(async (req) => {
-  console.log(`Received ${req.method} request to update-database function`);
+  console.log(`Received ${req.method} request to update-database function from ${req.headers.get("origin") || "unknown origin"}`);
   
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests with expanded headers
   if (req.method === "OPTIONS") {
     console.log("Handling CORS preflight request");
     return new Response(null, { 
