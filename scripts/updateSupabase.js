@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { google } from 'googleapis';
 import fs from 'fs';
+import https from 'https';
 import path from 'path';
 import csv from 'csv-parser';
 
@@ -8,29 +8,20 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const FILE_ID = process.env.FILE_ID;
 
-console.log(`🔒 SUPABASE_URL: ${SUPABASE_URL ? '***' : 'undefined'}`);
-console.log(`🔒 SUPABASE_KEY: ${SUPABASE_KEY ? '***' : 'undefined'}`);
-console.log(`🔒 FILE_ID: ${FILE_ID ? '***' : 'undefined'}`);
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const CSV_URL = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
+const CSV_PATH = path.join('/tmp', 'oracles_elixir.csv');
 
-// Téléchargement CSV depuis Google Drive
-async function downloadCSV(fileId, destPath) {
-  const auth = new google.auth.GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-  });
-  const drive = google.drive({ version: 'v3', auth: await auth.getClient() });
-
-  const res = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+function downloadCSV(url, destPath) {
   return new Promise((resolve, reject) => {
-    const dest = fs.createWriteStream(destPath);
-    res.data.pipe(dest);
-    dest.on('finish', resolve);
-    dest.on('error', reject);
+    const file = fs.createWriteStream(destPath);
+    https.get(url, (response) => {
+      response.pipe(file);
+      file.on('finish', () => file.close(resolve));
+    }).on('error', reject);
   });
 }
 
-// Parse CSV
 async function parseCSV(filePath) {
   return new Promise((resolve) => {
     const results = [];
@@ -41,30 +32,37 @@ async function parseCSV(filePath) {
   });
 }
 
-// Crée l'équipe si absente
-const getTeamId = async (teamId, teamName) => {
-  const { data, error } = await supabase
-    .from('teams')
-    .select('id')
-    .eq('id', teamId)
-    .single();
+function isValidMatch(row) {
+  return (
+    row.gameid &&
+    row.teamname !== 'Unknown Team' &&
+    row.opp_teamname !== 'Unknown Team'
+  );
+}
 
-  if (!data && !error) {
-    await supabase.from('teams').insert({
-      id: teamId,
-      name: teamName,
-      region: 'unknown',
-    });
-    console.log(`🏗️ Team créée automatiquement : ${teamName} (${teamId})`);
+function buildMatch(row1, row2) {
+  const isBlue1 = row1.side === 'Blue';
+  return {
+    ...row1,
+    teamid_blue: isBlue1 ? row1.teamid : row2.teamid,
+    teamname_blue: isBlue1 ? row1.teamname : row2.teamname,
+    teamid_red: isBlue1 ? row2.teamid : row1.teamid,
+    teamname_red: isBlue1 ? row2.teamname : row1.teamname,
+  };
+}
+
+async function getOrCreateTeam(teamid, name) {
+  const { data } = await supabase.from('teams').select('id').eq('id', teamid).maybeSingle();
+  if (!data) {
+    await supabase.from('teams').insert({ id: teamid, name, region: 'unknown' });
+    console.log(`🏗️ Équipe ajoutée : ${teamid} (${name})`);
   }
+  return teamid;
+}
 
-  return teamId;
-};
-
-// Insère un match dans Supabase
-const insertMatch = async (match) => {
-  const team_blue_id = await getTeamId(match.teamid_blue, match.teamname_blue);
-  const team_red_id = await getTeamId(match.teamid_red, match.teamname_red);
+async function insertMatch(match) {
+  const team_blue_id = await getOrCreateTeam(match.teamid_blue, match.teamname_blue);
+  const team_red_id = await getOrCreateTeam(match.teamid_red, match.teamname_red);
   const winner_team_id = match.blueWins === '1' ? team_blue_id : team_red_id;
 
   const matchData = {
@@ -105,66 +103,34 @@ const insertMatch = async (match) => {
     playoffs: match.playoffs === 'TRUE',
   };
 
-  console.log(`📦 Données match ${match.gameid}:`, matchData);
-
   const { error } = await supabase.from('matches').insert(matchData);
   if (error) {
-    console.error(`❌ Erreur insertion match ${match.gameid}:`, error.message);
+    console.error(`❌ Erreur lors de l'insertion du match ${match.gameid}: ${error.message}`);
   }
-};
+}
 
-// Script principal
 async function run() {
-  const tmpPath = path.join('/tmp', 'match_data.csv');
-  await downloadCSV(FILE_ID, tmpPath);
-  const data = await parseCSV(tmpPath);
+  await downloadCSV(CSV_URL, CSV_PATH);
+  const rows = await parseCSV(CSV_PATH);
 
-  console.log(`🔍 Total dans le CSV : ${data.length}`);
+  console.log(`🔍 Total lignes CSV : ${rows.length}`);
 
-  const filtered = data.filter(
-    (row) =>
-      row.gameid &&
-      row.teamname !== 'Unknown Team' &&
-      row.opp_teamname !== 'Unknown Team'
-  );
+  const valid = rows.filter(isValidMatch);
+  const grouped = Object.values(valid.reduce((acc, row) => {
+    if (!acc[row.gameid]) acc[row.gameid] = [];
+    acc[row.gameid].push(row);
+    return acc;
+  }, {}));
 
-  const grouped = Object.values(
-    filtered.reduce((acc, row) => {
-      const id = row.gameid;
-      if (!acc[id]) acc[id] = [];
-      acc[id].push(row);
-      return acc;
-    }, {})
-  );
+  const matches = grouped.map((rows) => buildMatch(rows[0], rows[1]));
+  console.log(`🧩 Matchs valides trouvés : ${matches.length}`);
 
-  const matches = grouped.map((rows) => {
-    const base = rows[0];
-    const team1 = rows[0];
-    const team2 = rows[1];
+  const { data: existing } = await supabase.from('matches').select('id');
+  const existingIds = new Set(existing.map((m) => m.id));
 
-    return {
-      ...base,
-      teamid_blue: team1.side === 'Blue' ? team1.teamid : team2.teamid,
-      teamname_blue: team1.side === 'Blue' ? team1.teamname : team2.teamname,
-      teamid_red: team1.side === 'Red' ? team1.teamid : team2.teamid,
-      teamname_red: team1.side === 'Red' ? team1.teamname : team2.teamname,
-    };
-  });
-
-  console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
-
-  const { data: existingMatches } = await supabase.from('matches').select('id');
-  const existingIds = new Set(existingMatches.map((m) => m.id));
-
-  const newMatches = matches.filter((match) => !existingIds.has(match.gameid));
-
-  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
+  const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
-
-  if (newMatches.length > 0) {
-    console.log('🧾 Liste des gameid considérés comme nouveaux :');
-    newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
-  }
+  newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
 
   for (const match of newMatches) {
     await insertMatch(match);
@@ -172,7 +138,7 @@ async function run() {
   }
 }
 
-run().catch((e) => {
-  console.error('❌ Erreur générale :', e);
+run().catch((err) => {
+  console.error('❌ Erreur fatale :', err);
   process.exit(1);
 });
