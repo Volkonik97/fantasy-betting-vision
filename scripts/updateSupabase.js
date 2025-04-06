@@ -1,18 +1,15 @@
+// ... imports inchangés ...
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
-console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
-
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY || !process.env.GOOGLE_FILE_ID) {
-  throw new Error("❌ Variables d'environnement manquantes !");
-}
-
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const FILE_ID = process.env.GOOGLE_FILE_ID;
+
+if (!SUPABASE_URL || !SUPABASE_KEY || !FILE_ID) {
+  throw new Error("❌ Variables d'environnement manquantes !");
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -59,14 +56,11 @@ const getAllMatchIdsFromSupabase = async () => {
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) {
-      console.error("❌ Erreur pagination Supabase :", error.message);
+      console.error("❌ Erreur récupération Supabase :", error.message);
       break;
     }
 
-    if (data.length < pageSize) {
-      done = true;
-    }
-
+    if (data.length < pageSize) done = true;
     all = [...all, ...data];
     page++;
   }
@@ -135,28 +129,23 @@ const insertMatch = async (match) => {
     playoffs: match.playoffs === 'TRUE',
   };
 
-  await supabase.from('matches').insert(dataToInsert);
+  console.log(`📦 Données match ${match_id}:`, dataToInsert);
+  const { error } = await supabase.from('matches').insert(dataToInsert);
+  if (error) {
+    console.error(`❌ Erreur insertion match ${match_id}:`, error.message);
+  }
 };
 
 const insertTeamStats = async (match) => {
   const match_id = normalizeGameId(match.gameid);
-
   const teams = [
-    {
-      tag: match.team_blue,
-      is_blue_side: true,
-      prefix: 'blue',
-    },
-    {
-      tag: match.team_red,
-      is_blue_side: false,
-      prefix: 'red',
-    },
+    { tag: match.team_blue, is_blue_side: true, prefix: 'blue' },
+    { tag: match.team_red, is_blue_side: false, prefix: 'red' },
   ];
 
   for (const t of teams) {
     const team_id = await getTeamId(t.tag);
-    await supabase.from('team_match_stats').insert({
+    const data = {
       match_id,
       team_id,
       is_blue_side: t.is_blue_side,
@@ -174,7 +163,12 @@ const insertTeamStats = async (match) => {
       first_tower: match.firsttower === t.prefix,
       first_mid_tower: match.firstmidtower === t.prefix,
       first_three_towers: match.firstthreetowers === t.prefix,
-    });
+    };
+
+    const { error } = await supabase.from('team_match_stats').insert(data);
+    if (error) {
+      console.error(`❌ Erreur insertion team stats (${match_id}, ${team_id}):`, error.message);
+    }
   }
 };
 
@@ -182,7 +176,6 @@ const importAll = async () => {
   const allRows = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${allRows.length}`);
 
-  // 🧠 Grouper les lignes par gameid
   const grouped = allRows.reduce((acc, row) => {
     const id = normalizeGameId(row.gameid);
     if (!id) return acc;
@@ -193,12 +186,8 @@ const importAll = async () => {
 
   const matches = Object.entries(grouped)
     .filter(([id, rows]) => {
-      const teamNames = new Set(rows.map(r =>
-        r.teamname?.trim().toLowerCase()
-      ));
-      const hasUnknown = [...teamNames].some(name =>
-        name.includes("unknown")
-      );
+      const teamNames = new Set(rows.map(r => r.teamname?.trim().toLowerCase()));
+      const hasUnknown = [...teamNames].some(name => name.includes("unknown"));
       if (hasUnknown) {
         console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
       }
@@ -235,7 +224,7 @@ const importAll = async () => {
       await insertTeamStats(match);
       console.log(`✅ Importé : ${match.gameid}`);
     } catch (err) {
-      console.error(`❌ Erreur pour ${match.gameid}:`, err.message);
+      console.error(`❌ Erreur inattendue ${match.gameid}:`, err.message);
     }
   }
 
