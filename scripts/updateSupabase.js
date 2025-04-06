@@ -1,11 +1,12 @@
 import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
-import { parse } from 'csv-parse/sync';
-import fs from 'fs';
-import https from 'https';
-import path from 'path';
+import { parse } from 'csv-parse';
+import { createWriteStream, readFileSync } from 'fs';
+import { pipeline } from 'stream/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 
-// 🔒 Secrets via GitHub Actions
+// ✅ Récupération des variables d’environnement
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const GOOGLE_FILE_ID = process.env.GOOGLE_FILE_ID;
@@ -21,88 +22,81 @@ if (!SUPABASE_URL || !SUPABASE_KEY || !GOOGLE_FILE_ID) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function downloadCSV(fileId) {
-  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
-  const dest = path.join('/tmp', 'oracles.csv');
+async function downloadCSVFile(fileId) {
+  const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  const tmpFile = join(tmpdir(), 'matches.csv');
 
+  console.log('📥 Téléchargement du fichier CSV...');
+
+  const response = await fetch(downloadUrl, { redirect: 'follow' });
+  if (!response.ok) {
+    throw new Error(`❌ Erreur téléchargement: ${response.status}`);
+  }
+
+  const fileStream = createWriteStream(tmpFile);
+  await pipeline(response.body, fileStream);
+
+  console.log('📥 Fichier CSV téléchargé');
+  return tmpFile;
+}
+
+async function parseCSV(path) {
+  const csvContent = readFileSync(path);
   return new Promise((resolve, reject) => {
-    console.log('📥 Téléchargement du fichier CSV...');
-    const file = fs.createWriteStream(dest);
-    https.get(url, response => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`❌ Erreur téléchargement: ${response.statusCode}`));
-        return;
-      }
-
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close(() => {
-          console.log('📥 Fichier CSV téléchargé');
-          resolve(dest);
-        });
-      });
-    }).on('error', reject);
+    const records = [];
+    parse(csvContent, {
+      columns: true,
+      skip_empty_lines: true,
+    })
+      .on('data', (row) => records.push(row))
+      .on('end', () => resolve(records))
+      .on('error', (err) => reject(err));
   });
 }
 
-function extractUniqueValidMatches(csvData) {
-  const records = parse(csvData, {
-    columns: true,
-    skip_empty_lines: true
-  });
-
-  const groupedByGameId = new Map();
-  let ignoredCount = 0;
-
-  for (const row of records) {
-    const gameid = row['gameid'];
-    const teamname = row['teamname'];
-
-    if (!gameid) continue;
-
-    if (!groupedByGameId.has(gameid)) {
-      groupedByGameId.set(gameid, []);
-    }
-
-    groupedByGameId.get(gameid).push(teamname);
-  }
-
-  const validMatches = [];
-
-  for (const [gameid, teamnames] of groupedByGameId.entries()) {
-    const hasUnknown = teamnames.some(name => name === 'Unknown Team');
-
-    if (hasUnknown || teamnames.length < 2) {
-      console.log(`🚫 Ignoré ${gameid} (Unknown Team détectée)`);
-      ignoredCount++;
-    } else {
-      validMatches.push({ gameid });
-    }
-  }
-
-  return {
-    matches: validMatches,
-    ignored: ignoredCount,
-    total: records.length
-  };
+function isUnknownTeam(row) {
+  return (
+    row.teamname === 'Unknown Team' ||
+    row.teamname_1 === 'Unknown Team' ||
+    row.teamname_2 === 'Unknown Team'
+  );
 }
 
-async function fetchExistingGameIds() {
+function getUniqueMatches(rows) {
+  const matches = new Map();
+  for (const row of rows) {
+    const id = row.gameid;
+    if (!id || isUnknownTeam(row)) {
+      console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
+      continue;
+    }
+    if (!matches.has(id)) {
+      matches.set(id, row);
+    }
+  }
+  return matches;
+}
+
+async function getAllExistingMatchIds() {
   let all = [];
   let from = 0;
-  const limit = 1000;
+  const size = 1000;
 
   while (true) {
     const { data, error } = await supabase
       .from('matches')
       .select('id')
-      .range(from, from + limit - 1);
+      .range(from, from + size - 1);
 
-    if (error) throw error;
-    if (!data.length) break;
+    if (error) {
+      console.error('❌ Erreur Supabase :', error.message);
+      break;
+    }
 
-    all = all.concat(data.map(d => d.id));
-    from += limit;
+    if (data.length === 0) break;
+
+    all = all.concat(data.map((d) => d.id));
+    from += size;
   }
 
   return new Set(all);
@@ -110,27 +104,26 @@ async function fetchExistingGameIds() {
 
 async function main() {
   try {
-    const csvPath = await downloadCSV(GOOGLE_FILE_ID);
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    const csvPath = await downloadCSVFile(GOOGLE_FILE_ID);
+    const rows = await parseCSV(csvPath);
 
-    const { matches, ignored, total } = extractUniqueValidMatches(csvContent);
-    console.log(`🔍 Total lignes CSV : ${total}`);
-    console.log(`🛑 Lignes ignorées avec Unknown Team : ${ignored}`);
-    console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
+    console.log(`🔍 Total lignes CSV : ${rows.length}`);
 
-    const existingIds = await fetchExistingGameIds();
+    const matches = getUniqueMatches(rows);
+    console.log(`🧩 Matchs uniques valides trouvés : ${matches.size}`);
+
+    const existingIds = await getAllExistingMatchIds();
     console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
 
-    const newMatches = matches.filter(m => !existingIds.has(m.gameid));
+    const newMatches = [...matches.entries()].filter(([id]) => !existingIds.has(id));
     console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
-    for (const match of newMatches) {
-      console.log(`✅ À importer : ${match.gameid}`);
-      // Ajoute ici l'insertion réelle si besoin
+    for (const [id, row] of newMatches) {
+      console.log(`✅ À insérer : ${id}`);
+      // ⚠️ Ici tu peux ajouter l’appel à Supabase pour insérer les données
     }
-
   } catch (err) {
-    console.error(`❌ Erreur générale : ${err.message}`);
+    console.error('❌ Erreur générale :', err.message);
     process.exit(1);
   }
 }
