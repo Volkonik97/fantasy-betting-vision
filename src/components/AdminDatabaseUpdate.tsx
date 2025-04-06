@@ -65,13 +65,13 @@ const AdminDatabaseUpdate = () => {
     try {
       addLog('Connecting to update-database Edge Function...');
       
-      // Don't access protected supabaseUrl property directly
-      // Instead, add a debug message without the URL
+      // Use the full URL to ensure proper connection
+      const projectId = 'dtddoxxazhmfudrvpszu';
       addLog('Invoking Edge Function with explicit timeout...');
       
       // Using a promise with timeout to handle potential network issues
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Edge Function request timed out after 15 seconds')), 15000);
+        setTimeout(() => reject(new Error('Edge Function request timed out after 20 seconds')), 20000);
       });
       
       const functionPromise = supabase.functions.invoke('update-database', {
@@ -122,7 +122,7 @@ const AdminDatabaseUpdate = () => {
     addLog(`Error: ${errorMessage}. Retrying (${nextRetryCount}/${maxRetries})...`);
     
     // Exponential backoff: Wait longer with each retry
-    const waitTime = 1000 * Math.pow(2, nextRetryCount - 1);
+    const waitTime = 2000 * Math.pow(2, nextRetryCount - 1);
     addLog(`Waiting ${waitTime / 1000} seconds before retry...`);
     
     await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -143,8 +143,8 @@ const AdminDatabaseUpdate = () => {
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
       addLog('Possible solutions:');
       addLog('1. Verify the Edge Function is deployed correctly in the Supabase Dashboard');
-      addLog('2. Check if the function URL is correct');
-      addLog('3. Ensure CORS settings are properly configured');
+      addLog('2. Check if CORS is properly configured in the Edge Function');
+      addLog('3. Ensure the Edge Function is not timing out during execution');
       addLog('4. Check network connectivity and firewall settings');
     } else if (errorMessage.includes('timed out')) {
       addLog('Error: Edge Function request timed out. The function may be taking too long to process.');
