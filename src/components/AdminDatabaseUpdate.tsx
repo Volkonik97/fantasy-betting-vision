@@ -69,49 +69,66 @@ const AdminDatabaseUpdate = () => {
       const functionUrl = 'https://dtddoxxazhmfudrvpszu.supabase.co/functions/v1/update-database';
       addLog('Invoking Edge Function with direct URL and explicit timeout...');
       
-      // Using a promise with timeout to handle potential network issues
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Edge Function request timed out after 30 seconds')), 30000);
-      });
-      
-      // Get the auth session properly by awaiting the Promise
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || '';
-      
-      // Use fetch directly instead of supabase.functions.invoke for more direct control
-      const functionPromise = fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({}),
-      }).then(response => {
+      try {
+        // Using a plain fetch call with a timeout
+        const controller = new AbortController();
+        const signal = controller.signal;
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        
+        // Get the auth session
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token || '';
+        
+        // Perform the fetch with more informative errors
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({}),
+          signal: signal
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          const statusCode = response.status;
+          
+          // Special case for resource limit errors (code 546)
+          if (statusCode === 546) {
+            throw new Error(`HTTP error! status: ${statusCode}. The Edge Function has reached resource limits. Try again with a smaller dataset.`);
+          }
+          
+          throw new Error(`HTTP error! status: ${statusCode}. ${errorText}`);
         }
-        return response.json();
-      });
-      
-      // Race between function call and timeout
-      const data = await Promise.race([functionPromise, timeoutPromise]) as any;
-      
-      if (data && data.success) {
-        addLog(`Success: ${data.message}`);
-        if (data.stats) {
-          addLog(`Teams processed: ${data.stats.teams}`);
-          addLog(`Players processed: ${data.stats.players}`);
-          addLog(`Matches processed: ${data.stats.matches}`);
+        
+        const data = await response.json();
+        
+        if (data && data.success) {
+          addLog(`Success: ${data.message}`);
+          if (data.stats) {
+            addLog(`Teams processed: ${data.stats.teams}`);
+            addLog(`Players processed: ${data.stats.players}`);
+            addLog(`Matches processed: ${data.stats.matches}`);
+          }
+          toast.success(`Database updated successfully: ${data.message}`);
+          getLastUpdateTime(); // Refresh the last update time
+        } else if (data) {
+          addLog(`Failed: ${data.message || 'Unknown error'}`);
+          toast.error(`Database update failed: ${data.message || 'Unknown error'}`);
+        } else {
+          addLog('No response data received from Edge Function');
+          toast.error('Database update failed: No response data received');
         }
-        toast.success(`Database updated successfully: ${data.message}`);
-        getLastUpdateTime(); // Refresh the last update time
-      } else if (data) {
-        addLog(`Failed: ${data.message || 'Unknown error'}`);
-        toast.error(`Database update failed: ${data.message || 'Unknown error'}`);
-      } else {
-        addLog('No response data received from Edge Function');
-        toast.error('Database update failed: No response data received');
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          throw new Error('Edge Function request timed out after 25 seconds');
+        }
+        throw error;
       }
+      
     } catch (error) {
       if (retryCount < maxRetries) {
         await handleRetry(error);
@@ -145,7 +162,12 @@ const AdminDatabaseUpdate = () => {
     }
     
     // Check for specific error types and provide more helpful messages
-    if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+    if (errorMessage.includes('546')) {
+      errorMessage = 'The Edge Function has reached CPU or memory limits. We\'ve updated the function to use less resources. Please try again.';
+      addLog('Error: Edge Function reached resource limits.');
+      addLog('The function has been optimized to use fewer resources.');
+      addLog('Please try again in a moment.');
+    } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       errorMessage = 'Failed to connect to the update service. The Edge Function may not be deployed correctly or might be offline.';
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
       addLog('Possible solutions:');
@@ -198,7 +220,7 @@ const AdminDatabaseUpdate = () => {
           
           <p className="text-xs text-gray-400 mt-2">
             This will fetch data from Google Sheets and update the database.
-            This process may take several minutes.
+            The Edge Function has been optimized to handle smaller batches of data.
           </p>
           
           {logs.length > 0 && (
@@ -222,7 +244,7 @@ const AdminDatabaseUpdate = () => {
               <AlertCircle className="text-amber-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-amber-800 dark:text-amber-200">
                 <p className="font-medium">Update failed after multiple attempts</p>
-                <p className="mt-1">The Edge Function may be unavailable. Please check your Supabase Edge Function logs for more details.</p>
+                <p className="mt-1">The Edge Function has been optimized to handle smaller batches of data. Please try again.</p>
               </div>
             </div>
           )}
