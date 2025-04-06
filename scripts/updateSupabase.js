@@ -7,7 +7,7 @@ import path from 'path';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const FILE_ID = process.env.FILE_ID;
+const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 console.log(`🔒 SUPABASE_URL: ${SUPABASE_URL ? '✅' : '❌'}`);
 console.log(`🔒 SUPABASE_KEY: ${SUPABASE_KEY ? '✅' : '❌'}`);
