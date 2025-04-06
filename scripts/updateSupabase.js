@@ -16,6 +16,20 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 🔧 Fonction de nettoyage identique à l’import manuel
+function normalizeGameId(rawId) {
+  if (!rawId) return null;
+
+  return rawId
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, '')       // supprime les caractères spéciaux
+    .replace(/[\s\-]+/g, '_')          // remplace tirets/espaces par "_"
+    .replace(/__+/g, '_')              // évite plusieurs "_"
+    .replace(/^_+|_+$/g, '');          // nettoie début/fin
+}
+
 const downloadCsv = async () => {
   const url = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
   const res = await axios.get(url);
@@ -81,7 +95,7 @@ const getTeamId = async (teamTag) => {
 };
 
 const insertMatch = async (match) => {
-  const match_id = match.gameid.trim();
+  const match_id = normalizeGameId(match.gameid);
   const team_blue = await getTeamId(match.blueTeamTag);
   const team_red = await getTeamId(match.redTeamTag);
 
@@ -127,6 +141,8 @@ const insertMatch = async (match) => {
 };
 
 const insertTeamStats = async (match) => {
+  const match_id = normalizeGameId(match.gameid);
+
   const teams = [
     {
       tag: match.blueTeamTag,
@@ -143,7 +159,7 @@ const insertTeamStats = async (match) => {
   for (const t of teams) {
     const team_id = await getTeamId(t.tag);
     await supabase.from('team_match_stats').insert({
-      match_id: match.gameid.trim(),
+      match_id,
       team_id,
       is_blue_side: t.is_blue_side,
       kills: Number(match[`${t.prefix}Kills`]),
@@ -168,14 +184,14 @@ const importAll = async () => {
   const allRows = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${allRows.length}`);
 
-  const emptyIds = allRows.filter(r => !r.gameid || !r.gameid.trim()).length;
-  console.log(`🛑 Lignes ignorées sans gameid : ${emptyIds}`);
+  const emptyIds = allRows.filter(r => !r.gameid || !normalizeGameId(r.gameid)).length;
+  console.log(`🛑 Lignes ignorées sans gameid valide : ${emptyIds}`);
 
   const matches = Object.values(
     allRows.reduce((acc, row) => {
-      const id = row.gameid?.trim();
+      const id = normalizeGameId(row.gameid);
       if (!id) return acc;
-      acc[id] = row;
+      acc[id] = { ...row, gameid: id }; // remplace le gameid nettoyé
       return acc;
     }, {})
   );
@@ -183,10 +199,10 @@ const importAll = async () => {
   console.log(`🧩 Matchs uniques trouvés : ${matches.length}`);
 
   const existing = await getAllMatchIdsFromSupabase();
-  const existingIds = new Set(existing.map((m) => m.id));
-  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existing.length}`);
+  const existingIds = new Set(existing.map((m) => normalizeGameId(m.id)));
+  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
 
-  const newMatches = matches.filter((m) => !existingIds.has(m.gameid.trim()));
+  const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
   for (const match of newMatches) {
