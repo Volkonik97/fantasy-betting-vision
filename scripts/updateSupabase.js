@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
-// 🔐 Debug affichage des secrets
 console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
 console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
@@ -141,10 +140,11 @@ const importAll = async () => {
   const matches = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${matches.length}`);
 
-  // 1. Obtenir tous les match IDs existants
+  // ⚠️ Fix : récupération complète des IDs (plus de 1000)
   const { data: existing, error } = await supabase
     .from('matches')
-    .select('id');
+    .select('id')
+    .range(0, 3000); // adapte selon le volume max attendu
 
   if (error) {
     console.error("❌ Erreur récupération matchs existants :", error.message);
@@ -152,10 +152,11 @@ const importAll = async () => {
   }
 
   const existingIds = new Set(existing.map((m) => m.id));
+  console.log(`🧠 Matchs trouvés dans Supabase : ${existingIds.size}`);
+
   const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
-  // 2. Insérer uniquement les nouveaux
   for (const match of newMatches) {
     try {
       await insertMatch(match);
