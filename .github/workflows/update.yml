@@ -25,5 +25,5 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          FILE_ID: ${{ secrets.FILE_ID }}
+          FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
         run: node scripts/updateSupabase.js
