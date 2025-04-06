@@ -2,30 +2,28 @@ name: Daily Supabase Update
 
 on:
   schedule:
-    - cron: '0 6 * * *' # Chaque jour à 6h UTC
+    - cron: '0 4 * * *' # Tous les jours à 4h UTC
   workflow_dispatch:
 
 jobs:
   update-supabase:
     runs-on: ubuntu-latest
 
-    env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-      GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
-
     steps:
-      - name: Checkout repository
+      - name: ⬇️ Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: 🟢 Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Install dependencies
-        run: |
-          npm install node-fetch@2 csv-parser csv-parse @supabase/supabase-js --legacy-peer-deps
+      - name: 🧩 Install dependencies
+        run: npm install node-fetch@2 csv-parser csv-parse @supabase/supabase-js --legacy-peer-deps
 
-      - name: Run update script
+      - name: 🔄 Run update script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
         run: node scripts/updateSupabase.js
