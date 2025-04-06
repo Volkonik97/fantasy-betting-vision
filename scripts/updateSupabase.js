@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import Papa from 'papaparse';
 
+// 🔐 Vérification des secrets
 console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
 console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
@@ -16,12 +17,14 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 📥 Téléchargement CSV
 const downloadCsv = async () => {
   const url = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
   const res = await axios.get(url);
   return res.data;
 };
 
+// 📊 Parsing CSV
 const parseCsv = async () => {
   const csv = await downloadCsv();
   return new Promise((resolve, reject) => {
@@ -34,6 +37,7 @@ const parseCsv = async () => {
   });
 };
 
+// 📌 Gestion d'équipe
 const getTeamId = async (teamTag) => {
   const { data, error } = await supabase
     .from('teams')
@@ -52,6 +56,7 @@ const getTeamId = async (teamTag) => {
   return teamTag;
 };
 
+// ✅ Insertion du match principal
 const insertMatch = async (match) => {
   const match_id = match.gameid;
   const team_blue = await getTeamId(match.blueTeamTag);
@@ -98,6 +103,7 @@ const insertMatch = async (match) => {
   await supabase.from('matches').insert(dataToInsert);
 };
 
+// ✅ Insertion des stats par équipe
 const insertTeamStats = async (match) => {
   const teams = [
     {
@@ -136,15 +142,26 @@ const insertTeamStats = async (match) => {
   }
 };
 
+// 🧠 Fonction principale
 const importAll = async () => {
-  const matches = await parseCsv();
-  console.log(`🔍 Total dans le CSV : ${matches.length}`);
+  const allRows = await parseCsv();
+  console.log(`🔍 Total dans le CSV : ${allRows.length}`);
 
-  // 🔥 Fix : récupérer + de 1000 matchs en base
+  // ✅ Ne garder qu’une seule ligne par match (évite doublons)
+  const matches = Object.values(
+    allRows.reduce((acc, row) => {
+      acc[row.gameid] = row;
+      return acc;
+    }, {})
+  );
+
+  console.log(`🧩 Matchs uniques trouvés : ${matches.length}`);
+
+  // 🔁 Récupération des matchs déjà présents (range = fiable)
   const { data: existing, count, error } = await supabase
     .from('matches')
     .select('id', { count: 'exact' })
-    .limit(10000); // augmente si nécessaire
+    .range(0, 9999); // augmente si tu penses dépasser 10k
 
   if (error) {
     console.error("❌ Erreur récupération matchs existants :", error.message);
