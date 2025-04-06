@@ -4,7 +4,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { AlertCircle, RefreshCw, AlertTriangle, Info } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const AdminDatabaseUpdate = () => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -73,7 +74,7 @@ const AdminDatabaseUpdate = () => {
         // Using a plain fetch call with a timeout
         const controller = new AbortController();
         const signal = controller.signal;
-        const timeoutId = setTimeout(() => controller.abort(), 25000);
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // Reduced from 25 to 20 seconds
         
         // Get the auth session
         const { data: sessionData } = await supabase.auth.getSession();
@@ -93,7 +94,6 @@ const AdminDatabaseUpdate = () => {
         clearTimeout(timeoutId);
         
         if (!response.ok) {
-          const errorText = await response.text().catch(() => 'Unknown error');
           const statusCode = response.status;
           
           // Special case for resource limit errors (code 546)
@@ -101,19 +101,18 @@ const AdminDatabaseUpdate = () => {
             throw new Error(`HTTP error! status: ${statusCode}. The Edge Function has reached resource limits. Try again with a smaller dataset.`);
           }
           
-          // Check if the error response is JSON formatted
-          let parsedError = null;
+          // Try to parse error response
+          const errorText = await response.text().catch(() => 'Unknown error');
+          let errorMessage = `HTTP error! status: ${statusCode}. `;
+          
           try {
-            parsedError = JSON.parse(errorText);
+            const errorObj = JSON.parse(errorText);
+            errorMessage += errorObj.message || errorObj.error || errorText;
           } catch (e) {
-            // Not JSON, use raw text
+            errorMessage += errorText;
           }
           
-          if (parsedError && parsedError.message) {
-            throw new Error(`HTTP error! status: ${statusCode}. ${parsedError.message}`);
-          } else {
-            throw new Error(`HTTP error! status: ${statusCode}. ${errorText}`);
-          }
+          throw new Error(errorMessage);
         }
         
         // Parse the response
@@ -137,7 +136,7 @@ const AdminDatabaseUpdate = () => {
         }
       } catch (error) {
         if (error.name === 'AbortError') {
-          throw new Error('Edge Function request timed out after 25 seconds');
+          throw new Error('Edge Function request timed out after 20 seconds');
         }
         throw error;
       }
@@ -199,6 +198,7 @@ const AdminDatabaseUpdate = () => {
       addLog('Possible solutions:');
       addLog('1. Check server load on your Supabase project');
       addLog('2. The Edge Function has been configured to process smaller batches of data');
+      addLog('3. Try again later when the server is less busy');
     } else {
       addLog(`Exception: ${errorMessage}`);
     }
@@ -222,14 +222,24 @@ const AdminDatabaseUpdate = () => {
               : 'Never updated'}
           </p>
           
+          <Alert className="bg-blue-50 border-blue-200 mb-4">
+            <Info className="text-blue-500 h-5 w-5 mr-2" />
+            <AlertTitle>Demo Mode Active</AlertTitle>
+            <AlertDescription className="text-blue-700 text-sm">
+              The Edge Function is currently set to process a very small subset of data (only {20} rows) 
+              to avoid resource limits. This is perfect for testing but will not load the full dataset. 
+              For production, this would need to be expanded to handle larger batches or implement a chunking mechanism.
+            </AlertDescription>
+          </Alert>
+          
           <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
             <div className="flex items-start">
               <AlertTriangle className="text-amber-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm text-amber-800 font-medium">Google Sheet Configuration</p>
                 <p className="text-xs text-amber-700 mt-1">
-                  The Edge Function is currently set up to read from a specific Google Sheet. 
-                  If you need to change the data source, update the GOOGLE_SHEET_URL in the Edge Function.
+                  The Edge Function is using a small demo dataset for testing purposes.
+                  If you need to use your own data source, update the GOOGLE_SHEET_URL in the Edge Function.
                 </p>
               </div>
             </div>
@@ -252,7 +262,7 @@ const AdminDatabaseUpdate = () => {
           
           <p className="text-xs text-gray-400 mt-2">
             This will fetch data from Google Sheets and update the database.
-            The Edge Function has been optimized to handle smaller batches of data.
+            The Edge Function has been optimized to handle only small batches of data.
           </p>
           
           {logs.length > 0 && (
