@@ -65,8 +65,8 @@ const AdminDatabaseUpdate = () => {
     try {
       addLog('Connecting to update-database Edge Function...');
       
-      // Adding debug info to the logs
-      addLog(`Supabase URL: ${supabase.supabaseUrl}`);
+      // Don't access protected supabaseUrl property directly
+      // Instead, add a debug message without the URL
       addLog('Invoking Edge Function with explicit timeout...');
       
       // Using a promise with timeout to handle potential network issues
