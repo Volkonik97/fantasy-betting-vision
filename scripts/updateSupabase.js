@@ -16,10 +16,9 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔧 Fonction de nettoyage des gameid
+// 🔧 Nettoyage des gameid
 function normalizeGameId(rawId) {
   if (!rawId) return null;
-
   return rawId
     .toString()
     .trim()
@@ -28,6 +27,11 @@ function normalizeGameId(rawId) {
     .replace(/[\s\-]+/g, '_')
     .replace(/__+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+// 🔧 Normalisation de nom d’équipe
+function normalizeTeamName(name) {
+  return name?.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '') || '';
 }
 
 const downloadCsv = async () => {
@@ -190,9 +194,9 @@ const importAll = async () => {
   const matches = Object.values(
     allRows.reduce((acc, row) => {
       const id = normalizeGameId(row.gameid);
-      const isUnknown =
-        row.blueTeamTag?.toLowerCase().includes('unknown') ||
-        row.redTeamTag?.toLowerCase().includes('unknown');
+      const blue = normalizeTeamName(row.blueTeamTag);
+      const red = normalizeTeamName(row.redTeamTag);
+      const isUnknown = blue.includes('unknown') || red.includes('unknown');
 
       if (!id || isUnknown) return acc;
       acc[id] = { ...row, gameid: id };
