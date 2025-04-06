@@ -1,9 +1,9 @@
 name: Daily Supabase Update
 
 on:
-  schedule:
-    - cron: '0 6 * * *'  # Tous les jours à 6h UTC
   workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *' # tous les jours à 7h UTC
 
 jobs:
   update:
@@ -13,19 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
       - name: Install dependencies
         run: npm install
-        working-directory: ./scripts
 
-      - name: Run update script
-        run: node updateSupabase.js
-        working-directory: ./scripts
+      - name: Run import script
+        run: node scripts/updateSupabase.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
+          FILE_ID: ${{ secrets.FILE_ID }}
