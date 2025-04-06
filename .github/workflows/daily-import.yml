@@ -1,9 +1,10 @@
+
 name: Daily CSV Import
 
 on:
   schedule:
-    - cron: '0 5 * * *'
-  workflow_dispatch:
+    - cron: '0 5 * * *'  # Exécution tous les jours à 5h UTC
+  workflow_dispatch:     # Permet l'exécution manuelle depuis l'interface GitHub
 
 jobs:
   daily-import:
@@ -25,5 +26,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
+          GOOGLE_FILE_ID: '17G8ainh2efXGPAlPYQKj0NCji4hh9qhj41A8LbrlzuE'
         run: node scripts/updateSupabase.js
+
+      - name: Notify Success
+        if: success()
+        run: echo "Import automatique des données réussi"
+
+      - name: Notify Failure
+        if: failure()
+        run: echo "Échec de l'import automatique des données"
