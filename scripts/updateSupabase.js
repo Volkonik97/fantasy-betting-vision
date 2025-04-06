@@ -1,236 +1,178 @@
-// ... imports inchangés ...
 import { createClient } from '@supabase/supabase-js';
-import axios from 'axios';
-import Papa from 'papaparse';
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
+import csv from 'csv-parser';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const FILE_ID = process.env.GOOGLE_FILE_ID;
+const FILE_ID = process.env.FILE_ID;
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !FILE_ID) {
-  throw new Error("❌ Variables d'environnement manquantes !");
-}
+console.log(`🔒 SUPABASE_URL: ${SUPABASE_URL ? '***' : 'undefined'}`);
+console.log(`🔒 SUPABASE_KEY: ${SUPABASE_KEY ? '***' : 'undefined'}`);
+console.log(`🔒 FILE_ID: ${FILE_ID ? '***' : 'undefined'}`);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function normalizeGameId(rawId) {
-  if (!rawId) return null;
-  return rawId
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '')
-    .replace(/[\s\-]+/g, '_')
-    .replace(/__+/g, '_')
-    .replace(/^_+|_+$/g, '');
+// Téléchargement CSV depuis Google Drive
+async function downloadCSV(fileId, destPath) {
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+  });
+  const drive = google.drive({ version: 'v3', auth: await auth.getClient() });
+
+  const res = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+  return new Promise((resolve, reject) => {
+    const dest = fs.createWriteStream(destPath);
+    res.data.pipe(dest);
+    dest.on('finish', resolve);
+    dest.on('error', reject);
+  });
 }
 
-const downloadCsv = async () => {
-  const url = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
-  const res = await axios.get(url);
-  return res.data;
-};
-
-const parseCsv = async () => {
-  const csv = await downloadCsv();
-  return new Promise((resolve, reject) => {
-    Papa.parse(csv, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => resolve(results.data),
-      error: reject,
-    });
+// Parse CSV
+async function parseCSV(filePath) {
+  return new Promise((resolve) => {
+    const results = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results));
   });
-};
+}
 
-const getAllMatchIdsFromSupabase = async () => {
-  const pageSize = 1000;
-  let all = [];
-  let page = 0;
-  let done = false;
-
-  while (!done) {
-    const { data, error } = await supabase
-      .from('matches')
-      .select('id')
-      .range(page * pageSize, (page + 1) * pageSize - 1);
-
-    if (error) {
-      console.error("❌ Erreur récupération Supabase :", error.message);
-      break;
-    }
-
-    if (data.length < pageSize) done = true;
-    all = [...all, ...data];
-    page++;
-  }
-
-  return all;
-};
-
-const getTeamId = async (teamTag) => {
+// Crée l'équipe si absente
+const getTeamId = async (teamId, teamName) => {
   const { data, error } = await supabase
     .from('teams')
     .select('id')
-    .eq('id', teamTag)
+    .eq('id', teamId)
     .single();
 
   if (!data && !error) {
     await supabase.from('teams').insert({
-      id: teamTag,
-      name: teamTag,
+      id: teamId,
+      name: teamName,
       region: 'unknown',
     });
+    console.log(`🏗️ Team créée automatiquement : ${teamName} (${teamId})`);
   }
 
-  return teamTag;
+  return teamId;
 };
 
+// Insère un match dans Supabase
 const insertMatch = async (match) => {
-  const match_id = normalizeGameId(match.gameid);
-  const team_blue = await getTeamId(match.team_blue);
-  const team_red = await getTeamId(match.team_red);
+  const team_blue_id = await getTeamId(match.teamid_blue, match.teamname_blue);
+  const team_red_id = await getTeamId(match.teamid_red, match.teamname_red);
+  const winner_team_id = match.blueWins === '1' ? team_blue_id : team_red_id;
 
-  const dataToInsert = {
-    id: match_id,
+  const matchData = {
+    id: match.gameid,
     tournament: match.league,
     date: match.date,
-    team_blue_id: team_blue,
-    team_red_id: team_red,
+    team_blue_id,
+    team_red_id,
     patch: match.patch,
     duration: match.gamelength,
-    score_blue: Number(match.blueKills),
-    score_red: Number(match.redKills),
-    winner_team_id: match.blueWins === '1' ? team_blue : team_red,
+    score_blue: parseInt(match.teamkills),
+    score_red: parseInt(match.oppkills),
+    winner_team_id,
     first_blood: match.firstblood,
     first_dragon: match.firstdragon,
     first_baron: match.firstbaron,
     first_herald: match.firstherald,
     first_tower: match.firsttower,
     first_mid_tower: match.firstmidtower,
-    first_three_towers: match.firstthreetowers,
-    dragons: Number(match.blueDragons),
-    opp_dragons: Number(match.redDragons),
-    barons: Number(match.blueBarons),
-    opp_barons: Number(match.redBarons),
-    heralds: Number(match.blueHeralds),
-    opp_heralds: Number(match.redHeralds),
-    towers: Number(match.blueTowers),
-    opp_towers: Number(match.redTowers),
-    inhibitors: Number(match.blueInhibitors),
-    opp_inhibitors: Number(match.redInhibitors),
-    team_kills: Number(match.blueKills),
-    team_deaths: Number(match.blueDeaths),
-    team_kpm: Number(match.teamkpm),
-    ckpm: Number(match.ckpm),
+    first_three_towers: match.first3towers,
+    dragons: parseInt(match.dragons),
+    opp_dragons: parseInt(match.opp_dragons),
+    barons: parseInt(match.barons),
+    opp_barons: parseInt(match.opp_barons),
+    heralds: parseInt(match.heralds),
+    opp_heralds: parseInt(match.opp_heralds),
+    towers: parseInt(match.towers),
+    opp_towers: parseInt(match.opp_towers),
+    inhibitors: parseInt(match.inhibitors),
+    opp_inhibitors: parseInt(match.opp_inhibitors),
+    team_kills: parseInt(match.teamkills),
+    team_deaths: parseInt(match.oppkills),
+    team_kpm: parseFloat(match.kpm),
+    ckpm: parseFloat(match.ckpm),
     year: match.year,
     split: match.split,
-    game_completeness: match.datacompleteness,
+    game_completeness: 'complete',
     playoffs: match.playoffs === 'TRUE',
   };
 
-  console.log(`📦 Données match ${match_id}:`, dataToInsert);
-  const { error } = await supabase.from('matches').insert(dataToInsert);
+  console.log(`📦 Données match ${match.gameid}:`, matchData);
+
+  const { error } = await supabase.from('matches').insert(matchData);
   if (error) {
-    console.error(`❌ Erreur insertion match ${match_id}:`, error.message);
+    console.error(`❌ Erreur insertion match ${match.gameid}:`, error.message);
   }
 };
 
-const insertTeamStats = async (match) => {
-  const match_id = normalizeGameId(match.gameid);
-  const teams = [
-    { tag: match.team_blue, is_blue_side: true, prefix: 'blue' },
-    { tag: match.team_red, is_blue_side: false, prefix: 'red' },
-  ];
+// Script principal
+async function run() {
+  const tmpPath = path.join('/tmp', 'match_data.csv');
+  await downloadCSV(FILE_ID, tmpPath);
+  const data = await parseCSV(tmpPath);
 
-  for (const t of teams) {
-    const team_id = await getTeamId(t.tag);
-    const data = {
-      match_id,
-      team_id,
-      is_blue_side: t.is_blue_side,
-      kills: Number(match[`${t.prefix}Kills`]),
-      deaths: Number(match[`${t.prefix}Deaths`]),
-      dragons: Number(match[`${t.prefix}Dragons`]),
-      barons: Number(match[`${t.prefix}Barons`]),
-      heralds: Number(match[`${t.prefix}Heralds`]),
-      towers: Number(match[`${t.prefix}Towers`]),
-      inhibitors: Number(match[`${t.prefix}Inhibitors`]),
-      first_blood: match.firstblood === t.prefix,
-      first_dragon: match.firstdragon === t.prefix,
-      first_baron: match.firstbaron === t.prefix,
-      first_herald: match.firstherald === t.prefix,
-      first_tower: match.firsttower === t.prefix,
-      first_mid_tower: match.firstmidtower === t.prefix,
-      first_three_towers: match.firstthreetowers === t.prefix,
+  console.log(`🔍 Total dans le CSV : ${data.length}`);
+
+  const filtered = data.filter(
+    (row) =>
+      row.gameid &&
+      row.teamname !== 'Unknown Team' &&
+      row.opp_teamname !== 'Unknown Team'
+  );
+
+  const grouped = Object.values(
+    filtered.reduce((acc, row) => {
+      const id = row.gameid;
+      if (!acc[id]) acc[id] = [];
+      acc[id].push(row);
+      return acc;
+    }, {})
+  );
+
+  const matches = grouped.map((rows) => {
+    const base = rows[0];
+    const team1 = rows[0];
+    const team2 = rows[1];
+
+    return {
+      ...base,
+      teamid_blue: team1.side === 'Blue' ? team1.teamid : team2.teamid,
+      teamname_blue: team1.side === 'Blue' ? team1.teamname : team2.teamname,
+      teamid_red: team1.side === 'Red' ? team1.teamid : team2.teamid,
+      teamname_red: team1.side === 'Red' ? team1.teamname : team2.teamname,
     };
-
-    const { error } = await supabase.from('team_match_stats').insert(data);
-    if (error) {
-      console.error(`❌ Erreur insertion team stats (${match_id}, ${team_id}):`, error.message);
-    }
-  }
-};
-
-const importAll = async () => {
-  const allRows = await parseCsv();
-  console.log(`🔍 Total dans le CSV : ${allRows.length}`);
-
-  const grouped = allRows.reduce((acc, row) => {
-    const id = normalizeGameId(row.gameid);
-    if (!id) return acc;
-    if (!acc[id]) acc[id] = [];
-    acc[id].push(row);
-    return acc;
-  }, {});
-
-  const matches = Object.entries(grouped)
-    .filter(([id, rows]) => {
-      const teamNames = new Set(rows.map(r => r.teamname?.trim().toLowerCase()));
-      const hasUnknown = [...teamNames].some(name => name.includes("unknown"));
-      if (hasUnknown) {
-        console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
-      }
-      return !hasUnknown;
-    })
-    .map(([id, rows]) => {
-      const base = rows[0];
-      const teams = [...new Set(rows.map(r => r.teamname))];
-      return {
-        ...base,
-        gameid: id,
-        team_blue: teams[0],
-        team_red: teams[1],
-      };
-    });
+  });
 
   console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
 
-  const existing = await getAllMatchIdsFromSupabase();
-  const existingIds = new Set(existing.map((m) => normalizeGameId(m.id)));
-  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
+  const { data: existingMatches } = await supabase.from('matches').select('id');
+  const existingIds = new Set(existingMatches.map((m) => m.id));
 
-  const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
+  const newMatches = matches.filter((match) => !existingIds.has(match.gameid));
+
+  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
   if (newMatches.length > 0) {
-    console.log("🧾 Liste des gameid considérés comme nouveaux :");
+    console.log('🧾 Liste des gameid considérés comme nouveaux :');
     newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
   }
 
   for (const match of newMatches) {
-    try {
-      await insertMatch(match);
-      await insertTeamStats(match);
-      console.log(`✅ Importé : ${match.gameid}`);
-    } catch (err) {
-      console.error(`❌ Erreur inattendue ${match.gameid}:`, err.message);
-    }
+    await insertMatch(match);
+    console.log(`✅ Importé : ${match.gameid}`);
   }
+}
 
-  if (newMatches.length === 0) {
-    console.log("🎉 Aucun nouveau match à importer aujourd'hui.");
-  }
-};
-
-importAll();
+run().catch((e) => {
+  console.error('❌ Erreur générale :', e);
+  process.exit(1);
+});
