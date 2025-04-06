@@ -204,6 +204,11 @@ const importAll = async () => {
 
   const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
+  if (newMatches.length > 0) {
+  	console.log("🧾 Liste des gameid considérés comme nouveaux :");
+  	newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
+  }
+
 
   for (const match of newMatches) {
     try {
