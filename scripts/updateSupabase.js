@@ -1,4 +1,4 @@
-import { parseCSVFile } from '../utils/parseOracleCSV.js';
+import { parseCSV } from '../utils/parseOracleCSV.js'; // Si tu es dans le dossier 'scripts'
 import { supabase } from '../utils/supabaseClient.js';
 import { log, logError, logMatchIgnored, logMatchImported } from '../utils/logger.js';
 
