@@ -74,12 +74,16 @@ const AdminDatabaseUpdate = () => {
         setTimeout(() => reject(new Error('Edge Function request timed out after 30 seconds')), 30000);
       });
       
+      // Get the auth session properly by awaiting the Promise
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || '';
+      
       // Use fetch directly instead of supabase.functions.invoke for more direct control
       const functionPromise = fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.getSession()?.data?.session?.access_token || ''}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({}),
       }).then(response => {
