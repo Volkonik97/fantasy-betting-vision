@@ -140,11 +140,11 @@ const importAll = async () => {
   const matches = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${matches.length}`);
 
-  // ⚠️ Fix : récupération complète des IDs (plus de 1000)
-  const { data: existing, error } = await supabase
+  // 🔥 Fix : récupérer + de 1000 matchs en base
+  const { data: existing, count, error } = await supabase
     .from('matches')
-    .select('id')
-    .range(0, 3000); // adapte selon le volume max attendu
+    .select('id', { count: 'exact' })
+    .limit(10000); // augmente si nécessaire
 
   if (error) {
     console.error("❌ Erreur récupération matchs existants :", error.message);
@@ -152,7 +152,7 @@ const importAll = async () => {
   }
 
   const existingIds = new Set(existing.map((m) => m.id));
-  console.log(`🧠 Matchs trouvés dans Supabase : ${existingIds.size}`);
+  console.log(`🧠 Matchs trouvés dans Supabase : ${existing.length} / total estimé : ${count}`);
 
   const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
