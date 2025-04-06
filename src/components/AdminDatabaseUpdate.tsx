@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, RefreshCw, AlertTriangle, Info } from 'lucide-react';
+import { AlertCircle, RefreshCw, AlertTriangle, Info, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const AdminDatabaseUpdate = () => {
@@ -74,7 +74,7 @@ const AdminDatabaseUpdate = () => {
         // Using a plain fetch call with a timeout
         const controller = new AbortController();
         const signal = controller.signal;
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // Reduced from 25 to 20 seconds
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
         
         // Get the auth session
         const { data: sessionData } = await supabase.auth.getSession();
@@ -185,6 +185,11 @@ const AdminDatabaseUpdate = () => {
       addLog('1. The Google Sheet exists and is publicly accessible');
       addLog('2. The URL in the Edge Function is correct');
       addLog('3. The sheet has the correct data format (Oracle\'s Elixir format)');
+    } else if (errorMessage.includes('404 Not Found')) {
+      errorMessage = 'The Google Sheet could not be found. The URL might be incorrect or the sheet no longer exists.';
+      addLog('Error: Google Sheet not found (404 error).');
+      addLog('The Edge Function is now configured to use a sample sheet.');
+      addLog('Please try again or contact the administrator.');
     } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
       errorMessage = 'Failed to connect to the update service. The Edge Function may not be deployed correctly or might be offline.';
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
@@ -238,8 +243,8 @@ const AdminDatabaseUpdate = () => {
               <div>
                 <p className="text-sm text-amber-800 font-medium">Google Sheet Configuration</p>
                 <p className="text-xs text-amber-700 mt-1">
-                  The Edge Function is using a small demo dataset for testing purposes.
-                  If you need to use your own data source, update the GOOGLE_SHEET_URL in the Edge Function.
+                  The Edge Function is now using a stable, publicly available sample dataset.
+                  No configuration needed - just click the update button below.
                 </p>
               </div>
             </div>
@@ -261,7 +266,7 @@ const AdminDatabaseUpdate = () => {
           </Button>
           
           <p className="text-xs text-gray-400 mt-2">
-            This will fetch data from Google Sheets and update the database.
+            This will fetch data from a sample Google Sheet and update the database.
             The Edge Function has been optimized to handle only small batches of data.
           </p>
           
@@ -290,6 +295,26 @@ const AdminDatabaseUpdate = () => {
               </div>
             </div>
           )}
+
+          <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-md">
+            <div className="flex items-start">
+              <Info className="text-gray-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-700 font-medium">Resources</p>
+                <div className="mt-2 text-xs text-gray-600">
+                  <a 
+                    href="https://www.kaggle.com/datasets/jasperan/league-of-legends-esports-dataset?resource=download" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center hover:text-blue-600 transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Oracle's Elixir LoL Dataset on Kaggle
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

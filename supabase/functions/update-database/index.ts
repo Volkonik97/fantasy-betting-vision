@@ -16,15 +16,15 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Define a valid and publicly accessible Google Sheets URL
-// This should be a demo dataset that is small enough for testing
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRXbSQh9fLEv2Wdlsph9-ids7nzNHqJH4PSmrQsv-CA6BVzW7qB4o6jmZJ5UNM6iJkqlQVprVvBMJ0j/pub?gid=0&single=true&output=csv";
+// Define a valid and publicly accessible Google Sheets URL for sample data
+// This is a publicly shared Oracle's Elixir format sample dataset
+const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1qXhLhVPmUk0L2W9pDv7FJJuAIWJN8z-qSMBvBJZaXGA/pub?gid=0&single=true&output=csv";
 
 // Flag to track if the function is currently processing
 let isProcessing = false;
 
 // Maximum number of items to process in a single run
-const MAX_ITEMS_TO_PROCESS = 20; // Reduced from 100 to 20 for even smaller batches
+const MAX_ITEMS_TO_PROCESS = 20; // Small batch size to avoid resource limits
 
 async function updateDatabase() {
   if (isProcessing) {
@@ -369,7 +369,7 @@ serve(async (req) => {
     console.log("Starting database update process");
     // Execute the database update with a timeout
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000); // Reduced from 25 to 15 seconds
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
     
     try {
       // Execute the database update with the abort controller
