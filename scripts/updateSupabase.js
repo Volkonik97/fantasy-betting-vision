@@ -29,7 +29,7 @@ function normalizeGameId(rawId) {
     .replace(/^_+|_+$/g, '');
 }
 
-// 🔧 Normalisation de nom d’équipe
+// 🔧 Nettoyage des noms d'équipes
 function normalizeTeamName(name) {
   return name?.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '') || '';
 }
@@ -196,7 +196,9 @@ const importAll = async () => {
       const id = normalizeGameId(row.gameid);
       const blue = normalizeTeamName(row.blueTeamTag);
       const red = normalizeTeamName(row.redTeamTag);
-      const isUnknown = blue.includes('unknown') || red.includes('unknown');
+      const isUnknown =
+        ['unknownteam', 'unknown'].includes(blue) ||
+        ['unknownteam', 'unknown'].includes(red);
 
       if (!id || isUnknown) return acc;
       acc[id] = { ...row, gameid: id };
