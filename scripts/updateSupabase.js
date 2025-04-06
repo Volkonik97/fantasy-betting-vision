@@ -6,7 +6,7 @@ console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY?.slice(0, 10) + '...');
 console.log("🔒 FILE_ID:", process.env.GOOGLE_FILE_ID);
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY || !process.env.GOOGLE_FILE_ID) {
   throw new Error("❌ Variables d'environnement manquantes !");
 }
 
@@ -16,7 +16,6 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔧 Nettoyage des gameid
 function normalizeGameId(rawId) {
   if (!rawId) return null;
   return rawId
@@ -27,11 +26,6 @@ function normalizeGameId(rawId) {
     .replace(/[\s\-]+/g, '_')
     .replace(/__+/g, '_')
     .replace(/^_+|_+$/g, '');
-}
-
-// 🔧 Nettoyage des noms d'équipes
-function normalizeTeamName(name) {
-  return name?.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '') || '';
 }
 
 const downloadCsv = async () => {
@@ -100,8 +94,8 @@ const getTeamId = async (teamTag) => {
 
 const insertMatch = async (match) => {
   const match_id = normalizeGameId(match.gameid);
-  const team_blue = await getTeamId(match.blueTeamTag);
-  const team_red = await getTeamId(match.redTeamTag);
+  const team_blue = await getTeamId(match.team_blue);
+  const team_red = await getTeamId(match.team_red);
 
   const dataToInsert = {
     id: match_id,
@@ -149,12 +143,12 @@ const insertTeamStats = async (match) => {
 
   const teams = [
     {
-      tag: match.blueTeamTag,
+      tag: match.team_blue,
       is_blue_side: true,
       prefix: 'blue',
     },
     {
-      tag: match.redTeamTag,
+      tag: match.team_red,
       is_blue_side: false,
       prefix: 'red',
     },
@@ -188,42 +182,38 @@ const importAll = async () => {
   const allRows = await parseCsv();
   console.log(`🔍 Total dans le CSV : ${allRows.length}`);
 
-  const emptyIds = allRows.filter(r => !r.gameid || !normalizeGameId(r.gameid)).length;
-  console.log(`🛑 Lignes ignorées sans gameid valide : ${emptyIds}`);
+  // 🧠 Grouper les lignes par gameid
+  const grouped = allRows.reduce((acc, row) => {
+    const id = normalizeGameId(row.gameid);
+    if (!id) return acc;
+    if (!acc[id]) acc[id] = [];
+    acc[id].push(row);
+    return acc;
+  }, {});
 
-  const matches = Object.values(
-    allRows.reduce((acc, row) => {
-      const id = normalizeGameId(row.gameid);
-      const blue = normalizeTeamName(row.blueTeamTag);
-      const red = normalizeTeamName(row.redTeamTag);
-
-      const isUnknown =
-        ['unknownteam', 'unknown'].includes(blue) ||
-        ['unknownteam', 'unknown'].includes(red);
-
-      if (isUnknown) {
-        console.log(`🚫 Match ignoré (Unknown Team détecté) : ${id}`);
-        console.log(`   ↳ blueTeamTag: "${row.blueTeamTag}"`);
-        console.log(`   ↳ redTeamTag:  "${row.redTeamTag}"`);
+  const matches = Object.entries(grouped)
+    .filter(([id, rows]) => {
+      const teamNames = new Set(rows.map(r =>
+        r.teamname?.trim().toLowerCase()
+      ));
+      const hasUnknown = [...teamNames].some(name =>
+        name.includes("unknown")
+      );
+      if (hasUnknown) {
+        console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
       }
-
-      if (!id || isUnknown) return acc;
-
-      acc[id] = { ...row, gameid: id };
-
-      // Log si un "unknown" passe quand même (défaut du filtre)
-      if (
-        normalizeTeamName(row.blueTeamTag).includes('unknown') ||
-        normalizeTeamName(row.redTeamTag).includes('unknown')
-      ) {
-        console.log(`⚠️ MATCH NON FILTRÉ (mais contient "unknown") : ${id}`);
-        console.log(`   blueTeamTag: "${row.blueTeamTag}"`);
-        console.log(`   redTeamTag:  "${row.redTeamTag}"`);
-      }
-
-      return acc;
-    }, {})
-  );
+      return !hasUnknown;
+    })
+    .map(([id, rows]) => {
+      const base = rows[0];
+      const teams = [...new Set(rows.map(r => r.teamname))];
+      return {
+        ...base,
+        gameid: id,
+        team_blue: teams[0],
+        team_red: teams[1],
+      };
+    });
 
   console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
 
