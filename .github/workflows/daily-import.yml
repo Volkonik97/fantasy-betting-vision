@@ -2,8 +2,8 @@ name: Daily CSV Import
 
 on:
   schedule:
-    - cron: '0 5 * * *' # Tous les jours à 5h UTC
-  workflow_dispatch:    # Déclenchement manuel possible
+    - cron: '0 5 * * *'
+  workflow_dispatch:
 
 jobs:
   daily-import:
@@ -19,7 +19,7 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: npm install axios papaparse @supabase/supabase-js dotenv --legacy-peer-deps
 
       - name: Run Import Script
         env:
