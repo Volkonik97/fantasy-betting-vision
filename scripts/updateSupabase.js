@@ -1,126 +1,182 @@
 import fs from 'fs';
+import path from 'path';
 import fetch from 'node-fetch';
 import csv from 'csv-parser';
 import { createClient } from '@supabase/supabase-js';
-import path from 'path';
-import os from 'os';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const fileId = process.env.GOOGLE_FILE_ID;
+// ✅ Chargement des variables d’environnement
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const FILE_ID = process.env.GOOGLE_FILE_ID;
 
-console.log(`🔒 SUPABASE_URL: ${supabaseUrl ? '✅' : '❌'}`);
-console.log(`🔒 SUPABASE_KEY: ${supabaseKey ? '✅' : '❌'}`);
-console.log(`🔒 GOOGLE_FILE_ID: ${fileId ? '✅' : '❌'}`);
+console.log(`🔒 SUPABASE_URL: ${SUPABASE_URL ? '✅' : '❌'}`);
+console.log(`🔒 SUPABASE_KEY: ${SUPABASE_KEY ? '✅' : '❌'}`);
+console.log(`🔒 GOOGLE_FILE_ID: ${FILE_ID ? '✅' : '❌'}`);
 
-if (!supabaseUrl || !supabaseKey || !fileId) {
+if (!SUPABASE_URL || !SUPABASE_KEY || !FILE_ID) {
   console.error('❌ Erreur : un ou plusieurs secrets manquent.');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const csvUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-const tmpPath = path.join(os.tmpdir(), 'oracle_matches.csv');
-
-async function downloadCSV() {
-  const response = await fetch(csvUrl);
-  const stream = fs.createWriteStream(tmpPath);
-  return new Promise((resolve, reject) => {
-    response.body.pipe(stream);
-    response.body.on('error', reject);
-    stream.on('finish', resolve);
-  });
+async function downloadCSV(fileId) {
+  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Erreur téléchargement : ${response.statusText}`);
+  return await response.text();
 }
 
-function parseCSV() {
+function parseCSV(content) {
   return new Promise((resolve, reject) => {
     const results = [];
-    fs.createReadStream(tmpPath)
+    const stream = require('stream');
+    const buffer = Buffer.from(content);
+    const readable = new stream.Readable();
+    readable._read = () => {};
+    readable.push(buffer);
+    readable.push(null);
+    readable
       .pipe(csv())
-      .on('data', (data) => results.push(data))
+      .on('data', data => results.push(data))
       .on('end', () => resolve(results))
-      .on('error', reject);
+      .on('error', err => reject(err));
   });
 }
 
-async function getExistingGameIds() {
-  const { data, error } = await supabase
-    .from('matches')
-    .select('id');
-  if (error) throw error;
-  return new Set(data.map((row) => row.id));
+async function getAllGameIdsFromSupabase() {
+  const allIds = new Set();
+  let from = 0;
+  const step = 1000;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('matches')
+      .select('id')
+      .range(from, from + step - 1);
+
+    if (error) {
+      console.error('❌ Erreur récupération matchs Supabase :', error.message);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+
+    for (const match of data) {
+      allIds.add(match.id);
+    }
+
+    from += step;
+  }
+
+  return allIds;
 }
 
-function isValidMatch(match) {
+function isValidRow(row) {
   return (
-    match.gameid &&
-    match.teamname &&
-    match.side &&
-    match.teamname !== 'Unknown Team'
+    row.gameid &&
+    row.teamname &&
+    row.teamname !== 'unknown team' &&
+    row.side &&
+    row.result
   );
 }
 
 async function main() {
-  console.log('📥 Téléchargement du CSV...');
-  await downloadCSV();
-  console.log('📄 Parsing CSV...');
+  try {
+    console.log('📥 Téléchargement du fichier CSV...');
+    const csvText = await downloadCSV(FILE_ID);
+    console.log('📥 Fichier CSV téléchargé');
 
-  const rows = await parseCSV();
-  console.log(`🔍 Total lignes CSV : ${rows.length}`);
+    const rows = await parseCSV(csvText);
+    console.log(`🔍 Total lignes CSV : ${rows.length}`);
 
-  const matchesMap = new Map();
-  const ignored = new Set();
+    const matchesById = {};
+    let unknownTeamRows = 0;
 
-  for (const row of rows) {
-    const gameId = row.gameid;
-    if (!gameId) continue;
+    for (const row of rows) {
+      if (!isValidRow(row)) continue;
 
-    const key = gameId;
-    if (!matchesMap.has(key)) {
-      matchesMap.set(key, []);
+      const id = row.gameid;
+      if (!matchesById[id]) matchesById[id] = [];
+
+      matchesById[id].push(row);
     }
-    matchesMap.get(key).push(row);
-  }
 
-  const existingGameIds = await getExistingGameIds();
-  const newMatches = [];
-
-  for (const [gameId, entries] of matchesMap) {
-    const hasUnknown = entries.some((e) => e.teamname === 'Unknown Team');
-    if (hasUnknown) {
-      ignored.add(gameId);
-      continue;
+    // Filtrage des matchs avec "unknown team"
+    for (const [id, matchRows] of Object.entries(matchesById)) {
+      const hasUnknown = matchRows.some(r => r.teamname === 'unknown team');
+      if (hasUnknown) {
+        unknownTeamRows++;
+        delete matchesById[id];
+        console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
+      }
     }
-    if (!existingGameIds.has(gameId)) {
-      newMatches.push({ gameId, entries });
+
+    console.log(`🛑 Lignes ignorées avec Unknown Team : ${unknownTeamRows}`);
+    const validMatchIds = Object.keys(matchesById);
+    console.log(`🧩 Matchs uniques valides trouvés : ${validMatchIds.length}`);
+
+    const existingIds = await getAllGameIdsFromSupabase();
+    console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
+
+    const newMatches = validMatchIds.filter(id => !existingIds.has(id));
+    console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
+
+    if (newMatches.length > 0) {
+      console.log('🧾 Liste des gameid considérés comme nouveaux :');
+      newMatches.forEach(id => console.log(`➡️ ${id}`));
     }
-  }
 
-  console.log(`🛑 Lignes ignorées avec Unknown Team : ${ignored.size}`);
-  console.log(`🧩 Matchs uniques valides trouvés : ${matchesMap.size - ignored.size}`);
-  console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingGameIds.size}`);
-  console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
+    for (const id of newMatches) {
+      const rows = matchesById[id];
+      if (!rows || rows.length !== 2) {
+        console.warn(`⚠️ Skipped ${id}, données incomplètes`);
+        continue;
+      }
 
-  if (newMatches.length > 0) {
-    console.log('🧾 Liste des gameid considérés comme nouveaux :');
-    newMatches.forEach(({ gameId }) => console.log(`➡️ ${gameId}`));
-  }
+      const blueRow = rows.find(r => r.side === 'Blue');
+      const redRow = rows.find(r => r.side === 'Red');
 
-  // Exemple d'insertion simplifiée (à adapter)
-  for (const { gameId } of newMatches) {
-    const { error } = await supabase
-      .from('matches')
-      .insert({ id: gameId });
-    if (error) {
-      console.error(`❌ Erreur insertion match ${gameId}:`, error.message);
-    } else {
-      console.log(`✅ Importé : ${gameId}`);
+      if (!blueRow || !redRow) {
+        console.warn(`⚠️ Données manquantes pour ${id}`);
+        continue;
+      }
+
+      const matchData = {
+        id: id,
+        tournament: blueRow.league,
+        date: blueRow.datacompleteness === 'complete' ? blueRow.date : null,
+        team_blue_id: blueRow.teamid,
+        team_red_id: redRow.teamid,
+        patch: blueRow.patch,
+        duration: blueRow.gamelength,
+        score_blue: parseInt(blueRow.result),
+        score_red: parseInt(redRow.result),
+        winner_team_id: blueRow.result === '1' ? blueRow.teamid : redRow.teamid,
+        first_blood: blueRow.firstblood === '1' ? 'Blue' : 'Red',
+        first_dragon: blueRow.firstdragon === '1' ? 'Blue' : redRow.firstdragon === '1' ? 'Red' : null,
+        first_baron: blueRow.firstbaron === '1' ? 'Blue' : redRow.firstbaron === '1' ? 'Red' : null,
+        first_herald: blueRow.firstherald === '1' ? 'Blue' : redRow.firstherald === '1' ? 'Red' : null,
+        first_tower: blueRow.firsttower === '1' ? 'Blue' : redRow.firsttower === '1' ? 'Red' : null,
+        year: blueRow.split.split(' ')[0],
+        split: blueRow.split.split(' ')[1],
+        game_completeness: blueRow.datacompleteness,
+        playoffs: blueRow.playoffs === '1',
+      };
+
+      const { error: insertError } = await supabase.from('matches').insert(matchData);
+      if (insertError) {
+        console.error(`❌ Erreur insertion match ${id}:`, insertError.message);
+        continue;
+      }
+
+      console.log(`✅ Importé : ${id}`);
     }
+  } catch (err) {
+    console.error('❌ Erreur générale :', err);
+    process.exit(1);
   }
 }
 
-main().catch((err) => {
-  console.error('❌ Erreur globale :', err);
-  process.exit(1);
-});
+main();
