@@ -196,12 +196,31 @@ const importAll = async () => {
       const id = normalizeGameId(row.gameid);
       const blue = normalizeTeamName(row.blueTeamTag);
       const red = normalizeTeamName(row.redTeamTag);
+
       const isUnknown =
         ['unknownteam', 'unknown'].includes(blue) ||
         ['unknownteam', 'unknown'].includes(red);
 
+      if (isUnknown) {
+        console.log(`🚫 Match ignoré (Unknown Team détecté) : ${id}`);
+        console.log(`   ↳ blueTeamTag: "${row.blueTeamTag}"`);
+        console.log(`   ↳ redTeamTag:  "${row.redTeamTag}"`);
+      }
+
       if (!id || isUnknown) return acc;
+
       acc[id] = { ...row, gameid: id };
+
+      // Log si un "unknown" passe quand même (défaut du filtre)
+      if (
+        normalizeTeamName(row.blueTeamTag).includes('unknown') ||
+        normalizeTeamName(row.redTeamTag).includes('unknown')
+      ) {
+        console.log(`⚠️ MATCH NON FILTRÉ (mais contient "unknown") : ${id}`);
+        console.log(`   blueTeamTag: "${row.blueTeamTag}"`);
+        console.log(`   redTeamTag:  "${row.redTeamTag}"`);
+      }
+
       return acc;
     }, {})
   );
