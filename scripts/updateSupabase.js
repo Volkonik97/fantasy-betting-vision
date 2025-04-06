@@ -1,6 +1,6 @@
-const { supabase } = require('../utils/supabaseClient');
-const { downloadAndParseCSV } = require('../utils/parseCSV');
-const { log } = require('../utils/logger');
+import { supabase } from '../utils/supabaseClient.js';
+import { downloadAndParseCSV } from '../utils/parseCSV.js';
+import { log } from '../utils/logger.js';
 
 const FILE_ID = process.env.GOOGLE_FILE_ID;
 
