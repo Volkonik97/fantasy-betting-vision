@@ -16,7 +16,7 @@ const FILE_ID = process.env.GOOGLE_FILE_ID;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🔧 Fonction de nettoyage identique à l’import manuel
+// 🔧 Fonction de nettoyage des gameid
 function normalizeGameId(rawId) {
   if (!rawId) return null;
 
@@ -24,10 +24,10 @@ function normalizeGameId(rawId) {
     .toString()
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '')       // supprime les caractères spéciaux
-    .replace(/[\s\-]+/g, '_')          // remplace tirets/espaces par "_"
-    .replace(/__+/g, '_')              // évite plusieurs "_"
-    .replace(/^_+|_+$/g, '');          // nettoie début/fin
+    .replace(/[^a-z0-9_-]/g, '')
+    .replace(/[\s\-]+/g, '_')
+    .replace(/__+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 const downloadCsv = async () => {
@@ -190,13 +190,17 @@ const importAll = async () => {
   const matches = Object.values(
     allRows.reduce((acc, row) => {
       const id = normalizeGameId(row.gameid);
-      if (!id) return acc;
-      acc[id] = { ...row, gameid: id }; // remplace le gameid nettoyé
+      const isUnknown =
+        row.blueTeamTag?.toLowerCase().includes('unknown') ||
+        row.redTeamTag?.toLowerCase().includes('unknown');
+
+      if (!id || isUnknown) return acc;
+      acc[id] = { ...row, gameid: id };
       return acc;
     }, {})
   );
 
-  console.log(`🧩 Matchs uniques trouvés : ${matches.length}`);
+  console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
 
   const existing = await getAllMatchIdsFromSupabase();
   const existingIds = new Set(existing.map((m) => normalizeGameId(m.id)));
@@ -204,11 +208,11 @@ const importAll = async () => {
 
   const newMatches = matches.filter((m) => !existingIds.has(m.gameid));
   console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
-  if (newMatches.length > 0) {
-  	console.log("🧾 Liste des gameid considérés comme nouveaux :");
-  	newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
-  }
 
+  if (newMatches.length > 0) {
+    console.log("🧾 Liste des gameid considérés comme nouveaux :");
+    newMatches.forEach((m) => console.log(`➡️ ${m.gameid}`));
+  }
 
   for (const match of newMatches) {
     try {
