@@ -21,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install axios papaparse @supabase/supabase-js dotenv
+        run: npm install axios papaparse @supabase/supabase-js dotenv --legacy-peer-deps
 
       - name: Run Import Script
         run: node scripts/updateSupabase.js
