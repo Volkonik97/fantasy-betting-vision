@@ -65,16 +65,31 @@ const AdminDatabaseUpdate = () => {
     try {
       addLog('Connecting to update-database Edge Function...');
       
-      const { data, error } = await supabase.functions.invoke('update-database', {
+      // Adding debug info to the logs
+      addLog(`Supabase URL: ${supabase.supabaseUrl}`);
+      addLog('Invoking Edge Function with explicit timeout...');
+      
+      // Using a promise with timeout to handle potential network issues
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Edge Function request timed out after 15 seconds')), 15000);
+      });
+      
+      const functionPromise = supabase.functions.invoke('update-database', {
         method: 'POST',
         body: {},
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
+      // Race between function call and timeout
+      const { data, error } = await Promise.race([functionPromise, timeoutPromise]) as any;
       
       if (error) {
         throw error;
       }
       
-      if (data.success) {
+      if (data && data.success) {
         addLog(`Success: ${data.message}`);
         if (data.stats) {
           addLog(`Teams processed: ${data.stats.teams}`);
@@ -83,9 +98,12 @@ const AdminDatabaseUpdate = () => {
         }
         toast.success(`Database updated successfully: ${data.message}`);
         getLastUpdateTime(); // Refresh the last update time
+      } else if (data) {
+        addLog(`Failed: ${data.message || 'Unknown error'}`);
+        toast.error(`Database update failed: ${data.message || 'Unknown error'}`);
       } else {
-        addLog(`Failed: ${data.message}`);
-        toast.error(`Database update failed: ${data.message}`);
+        addLog('No response data received from Edge Function');
+        toast.error('Database update failed: No response data received');
       }
     } catch (error) {
       if (retryCount < maxRetries) {
@@ -103,8 +121,11 @@ const AdminDatabaseUpdate = () => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     addLog(`Error: ${errorMessage}. Retrying (${nextRetryCount}/${maxRetries})...`);
     
-    // Wait a moment before retrying
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Exponential backoff: Wait longer with each retry
+    const waitTime = 1000 * Math.pow(2, nextRetryCount - 1);
+    addLog(`Waiting ${waitTime / 1000} seconds before retry...`);
+    
+    await new Promise(resolve => setTimeout(resolve, waitTime));
     return executeDatabaseUpdate();
   };
   
@@ -121,9 +142,15 @@ const AdminDatabaseUpdate = () => {
       errorMessage = 'Failed to connect to the update service. The Edge Function may not be deployed correctly or might be offline.';
       addLog('Error: Failed to connect to Edge Function. Please check Supabase Edge Function logs.');
       addLog('Possible solutions:');
-      addLog('1. Make sure the function is deployed correctly');
-      addLog('2. Check JWT verification settings in supabase/config.toml');
-      addLog('3. Verify your authentication token is valid');
+      addLog('1. Verify the Edge Function is deployed correctly in the Supabase Dashboard');
+      addLog('2. Check if the function URL is correct');
+      addLog('3. Ensure CORS settings are properly configured');
+      addLog('4. Check network connectivity and firewall settings');
+    } else if (errorMessage.includes('timed out')) {
+      addLog('Error: Edge Function request timed out. The function may be taking too long to process.');
+      addLog('Possible solutions:');
+      addLog('1. Check server load on your Supabase project');
+      addLog('2. Optimize the Edge Function for better performance');
     } else {
       addLog(`Exception: ${errorMessage}`);
     }
@@ -132,11 +159,11 @@ const AdminDatabaseUpdate = () => {
   };
   
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Database Management</CardTitle>
+        <CardTitle>Database Update</CardTitle>
         <CardDescription>
-          Update the database from Google Sheets
+          Fetch and update database from Google Sheets
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -170,9 +197,12 @@ const AdminDatabaseUpdate = () => {
           {logs.length > 0 && (
             <div className="mt-4">
               <h3 className="text-sm font-medium mb-2">Update Logs:</h3>
-              <div className="bg-gray-50 border border-gray-200 rounded-md p-2 h-48 overflow-y-auto text-xs font-mono">
+              <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md p-2 h-64 overflow-y-auto text-xs font-mono">
                 {logs.map((log, index) => (
-                  <div key={index} className={`py-0.5 ${log.includes('Error') ? 'text-red-600' : ''}`}>
+                  <div key={index} className={`py-0.5 ${
+                    log.includes('Error') ? 'text-red-600 dark:text-red-400' : 
+                    log.includes('Success') ? 'text-green-600 dark:text-green-400' : ''
+                  }`}>
                     {log}
                   </div>
                 ))}
@@ -181,9 +211,9 @@ const AdminDatabaseUpdate = () => {
           )}
           
           {retryCount > 0 && retryCount >= maxRetries && (
-            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md flex items-start">
               <AlertCircle className="text-amber-500 h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-amber-800">
+              <div className="text-sm text-amber-800 dark:text-amber-200">
                 <p className="font-medium">Update failed after multiple attempts</p>
                 <p className="mt-1">The Edge Function may be unavailable. Please check your Supabase Edge Function logs for more details.</p>
               </div>

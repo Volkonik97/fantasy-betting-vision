@@ -22,8 +22,16 @@ async function updateDatabase() {
     console.log("Starting database update from Google Sheets");
     
     // Fetch the CSV data from Google Sheets
-    const response = await fetch(GOOGLE_SHEET_URL);
+    console.log(`Fetching data from: ${GOOGLE_SHEET_URL}`);
+    const response = await fetch(GOOGLE_SHEET_URL, {
+      headers: {
+        'User-Agent': 'Supabase Edge Function',
+        'Accept': 'text/csv',
+      },
+    });
+    
     if (!response.ok) {
+      console.error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}`);
       throw new Error(`Failed to fetch Google Sheet: ${response.status} ${response.statusText}`);
     }
     
@@ -31,7 +39,6 @@ async function updateDatabase() {
     console.log(`Fetched CSV data (${csvData.length} bytes)`);
     
     // Parse the CSV data
-    // We need to implement this in Deno since we can't use the existing functions
     const rows = parseCsv(csvData);
     console.log(`Parsed ${rows.length} rows from CSV`);
     
@@ -63,7 +70,14 @@ async function updateDatabase() {
 // Simple CSV parser function for Deno
 function parseCsv(csvText) {
   const lines = csvText.split('\n');
+  if (lines.length === 0) {
+    return [];
+  }
+  
   const headers = lines[0].split(',').map(h => h.trim());
+  if (headers.length === 0) {
+    return [];
+  }
   
   return lines.slice(1).map(line => {
     const values = line.split(',');
@@ -74,7 +88,7 @@ function parseCsv(csvText) {
     });
     
     return row;
-  });
+  }).filter(row => Object.values(row).some(val => val)); // Filter out empty rows
 }
 
 // Clear existing data
@@ -90,10 +104,16 @@ async function clearExistingData() {
   ];
   
   for (const table of tables) {
-    const { error } = await supabase.from(table).delete().not('id', 'is', null);
-    if (error) {
-      console.error(`Error clearing ${table}:`, error);
-      throw new Error(`Failed to clear ${table}: ${error.message}`);
+    try {
+      const { error } = await supabase.from(table).delete().not('id', 'is', null);
+      if (error) {
+        console.error(`Error clearing ${table}:`, error);
+        throw new Error(`Failed to clear ${table}: ${error.message}`);
+      }
+      console.log(`Successfully cleared ${table} table`);
+    } catch (e) {
+      console.error(`Exception clearing ${table}:`, e);
+      throw e;
     }
   }
   
@@ -177,50 +197,89 @@ async function processAndSaveData(rows) {
   
   // Save teams
   console.log(`Saving ${teams.size} teams...`);
+  let teamsSaved = 0;
   for (const team of teams.values()) {
-    const { error } = await supabase.from('teams').upsert(team);
-    if (error) {
-      console.error(`Error saving team ${team.id}:`, error);
+    try {
+      const { error } = await supabase.from('teams').upsert(team);
+      if (error) {
+        console.error(`Error saving team ${team.id}:`, error);
+      } else {
+        teamsSaved++;
+      }
+    } catch (e) {
+      console.error(`Exception saving team ${team.id}:`, e);
     }
   }
+  console.log(`Successfully saved ${teamsSaved}/${teams.size} teams`);
   
   // Save players
   console.log(`Saving ${players.size} players...`);
+  let playersSaved = 0;
   for (const player of players.values()) {
-    const { error } = await supabase.from('players').upsert(player);
-    if (error) {
-      console.error(`Error saving player ${player.id}:`, error);
+    try {
+      const { error } = await supabase.from('players').upsert(player);
+      if (error) {
+        console.error(`Error saving player ${player.id}:`, error);
+      } else {
+        playersSaved++;
+      }
+    } catch (e) {
+      console.error(`Exception saving player ${player.id}:`, e);
     }
   }
+  console.log(`Successfully saved ${playersSaved}/${players.size} players`);
   
   // Save matches
   console.log(`Saving ${matches.size} matches...`);
+  let matchesSaved = 0;
   for (const match of matches.values()) {
-    const { error } = await supabase.from('matches').upsert(match);
-    if (error) {
-      console.error(`Error saving match ${match.id}:`, error);
+    try {
+      const { error } = await supabase.from('matches').upsert(match);
+      if (error) {
+        console.error(`Error saving match ${match.id}:`, error);
+      } else {
+        matchesSaved++;
+      }
+    } catch (e) {
+      console.error(`Exception saving match ${match.id}:`, e);
     }
   }
+  console.log(`Successfully saved ${matchesSaved}/${matches.size} matches`);
   
   // Update timestamp
-  await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
+  try {
+    await supabase.from('data_updates').insert([{ updated_at: new Date().toISOString() }]);
+    console.log("Added update timestamp to data_updates table");
+  } catch (e) {
+    console.error("Error adding update timestamp:", e);
+  }
   
   return {
     teams: teams.size,
     players: players.size,
-    matches: matches.size
+    matches: matches.size,
+    teamsSaved,
+    playersSaved,
+    matchesSaved
   };
 }
 
 // Handle HTTP requests
 serve(async (req) => {
+  console.log(`Received ${req.method} request to update-database function`);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    console.log("Handling CORS preflight request");
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    });
   }
   
   // For security, only allow POST requests
   if (req.method !== "POST") {
+    console.log(`Method not allowed: ${req.method}`);
     return new Response(JSON.stringify({ error: "Method not allowed" }), { 
       status: 405,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -228,8 +287,11 @@ serve(async (req) => {
   }
   
   try {
+    console.log("Starting database update process");
     // Execute the database update
     const result = await updateDatabase();
+    
+    console.log("Database update completed", result);
     
     // Return the result
     return new Response(JSON.stringify(result), {
@@ -237,8 +299,12 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (error) {
-    console.error("Error processing request:", error);
-    return new Response(JSON.stringify({ error: String(error) }), {
+    console.error("Unhandled error processing request:", error);
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: String(error),
+      message: "An unexpected error occurred while processing the request" 
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
