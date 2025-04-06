@@ -1,7 +1,7 @@
-const axios = require("axios");
-const Papa = require("papaparse");
+import axios from "axios";
+import Papa from "papaparse";
 
-module.exports = async function parseCSV(fileUrl) {
+export default async function parseCSV(fileUrl) {
   const response = await axios.get(fileUrl, {
     responseType: "blob",
     headers: { Accept: "text/csv" },
@@ -12,10 +12,8 @@ module.exports = async function parseCSV(fileUrl) {
     Papa.parse(response.data, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        resolve(results.data);
-      },
+      complete: (results) => resolve(results.data),
       error: (err) => reject(err),
     });
   });
-};
+}

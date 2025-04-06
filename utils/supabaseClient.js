@@ -1,5 +1,5 @@
-const { createClient } = require("@supabase/supabase-js");
-const { log, error } = require("./logger");
+import { createClient } from "@supabase/supabase-js";
+import { log } from "./logger.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -12,12 +12,12 @@ async function fetchExistingGameIds() {
   const pageSize = 1000;
 
   while (true) {
-    const { data, error: fetchError } = await supabase
+    const { data, error } = await supabase
       .from("matches")
       .select("gameid")
       .range(from, from + pageSize - 1);
 
-    if (fetchError) throw fetchError;
+    if (error) throw error;
     if (!data || data.length === 0) break;
 
     allGameIds.push(...data.map((row) => row.gameid));
@@ -44,7 +44,7 @@ function cleanRow(row) {
   );
 }
 
-async function insertData(rows) {
+export async function insertData(rows) {
   const existingGameIds = await fetchExistingGameIds();
   const newRows = rows
     .filter((r) => !isUnknownTeam(r))
@@ -108,5 +108,3 @@ async function insertData(rows) {
 
   log(`✅ ${matches.length} matchs insérés.`);
 }
-
-module.exports = { insertData };
