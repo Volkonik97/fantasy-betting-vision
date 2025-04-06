@@ -2,26 +2,28 @@ name: Daily CSV Import
 
 on:
   schedule:
-    - cron: '0 5 * * *' # Tous les jours à 5h du matin UTC
-  workflow_dispatch:    # Pour déclencher manuellement
+    - cron: '0 5 * * *' # Tous les jours à 5h UTC
+  workflow_dispatch:    # Déclenchement manuel possible
 
 jobs:
   daily-import:
     runs-on: ubuntu-latest
 
-    env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
-
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install axios papaparse @supabase/supabase-js dotenv --legacy-peer-deps
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Run Import Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
         run: node scripts/updateSupabase.js
