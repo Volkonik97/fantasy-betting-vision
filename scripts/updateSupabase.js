@@ -1,34 +1,48 @@
 import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
 import { parse } from 'csv-parse/sync';
+import fs from 'fs';
+import https from 'https';
+import path from 'path';
 
+// 🔒 Secrets via GitHub Actions
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const FILE_ID = process.env.GOOGLE_FILE_ID;
+const GOOGLE_FILE_ID = process.env.GOOGLE_FILE_ID;
 
 console.log(`🔒 SUPABASE_URL: ${SUPABASE_URL ? '✅' : '❌'}`);
 console.log(`🔒 SUPABASE_KEY: ${SUPABASE_KEY ? '✅' : '❌'}`);
-console.log(`🔒 GOOGLE_FILE_ID: ${FILE_ID ? '✅' : '❌'}`);
+console.log(`🔒 GOOGLE_FILE_ID: ${GOOGLE_FILE_ID ? '✅' : '❌'}`);
 
-if (!SUPABASE_URL || !SUPABASE_KEY || !FILE_ID) {
+if (!SUPABASE_URL || !SUPABASE_KEY || !GOOGLE_FILE_ID) {
   console.error('❌ Erreur : un ou plusieurs secrets manquent.');
   process.exit(1);
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-async function downloadCSVFromDrive(fileId) {
-  const exportUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-  console.log('📥 Téléchargement du fichier CSV...');
-  const response = await fetch(exportUrl);
+async function downloadCSV(fileId) {
+  const url = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  const dest = path.join('/tmp', 'oracles.csv');
 
-  if (!response.ok) {
-    throw new Error(`❌ Erreur téléchargement CSV : ${response.statusText}`);
-  }
+  return new Promise((resolve, reject) => {
+    console.log('📥 Téléchargement du fichier CSV...');
+    const file = fs.createWriteStream(dest);
+    https.get(url, response => {
+      if (response.statusCode !== 200) {
+        reject(new Error(`❌ Erreur téléchargement: ${response.statusCode}`));
+        return;
+      }
 
-  const buffer = await response.arrayBuffer();
-  console.log('📥 Fichier CSV téléchargé');
-  return Buffer.from(buffer).toString('utf-8');
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close(() => {
+          console.log('📥 Fichier CSV téléchargé');
+          resolve(dest);
+        });
+      });
+    }).on('error', reject);
+  });
 }
 
 function extractUniqueValidMatches(csvData) {
@@ -37,71 +51,86 @@ function extractUniqueValidMatches(csvData) {
     skip_empty_lines: true
   });
 
-  const seenGameIds = new Set();
-  const matches = [];
-  let ignored = 0;
+  const groupedByGameId = new Map();
+  let ignoredCount = 0;
 
   for (const row of records) {
     const gameid = row['gameid'];
     const teamname = row['teamname'];
-    const side = row['side'];
 
-    if (!gameid || teamname === 'Unknown Team') {
-      ignored++;
-      continue;
+    if (!gameid) continue;
+
+    if (!groupedByGameId.has(gameid)) {
+      groupedByGameId.set(gameid, []);
     }
 
-    if (!seenGameIds.has(gameid)) {
-      seenGameIds.add(gameid);
-      matches.push({ gameid });
+    groupedByGameId.get(gameid).push(teamname);
+  }
+
+  const validMatches = [];
+
+  for (const [gameid, teamnames] of groupedByGameId.entries()) {
+    const hasUnknown = teamnames.some(name => name === 'Unknown Team');
+
+    if (hasUnknown || teamnames.length < 2) {
+      console.log(`🚫 Ignoré ${gameid} (Unknown Team détectée)`);
+      ignoredCount++;
+    } else {
+      validMatches.push({ gameid });
     }
   }
 
-  return { matches, ignored, total: records.length };
+  return {
+    matches: validMatches,
+    ignored: ignoredCount,
+    total: records.length
+  };
 }
 
-async function fetchAllMatchIdsFromSupabase() {
-  let allIds = [];
+async function fetchExistingGameIds() {
+  let all = [];
   let from = 0;
-  const chunk = 1000;
+  const limit = 1000;
 
   while (true) {
     const { data, error } = await supabase
       .from('matches')
       .select('id')
-      .range(from, from + chunk - 1);
+      .range(from, from + limit - 1);
 
-    if (error) throw new Error(`❌ Erreur Supabase : ${error.message}`);
+    if (error) throw error;
     if (!data.length) break;
 
-    allIds = [...allIds, ...data.map(d => d.id)];
-    from += chunk;
+    all = all.concat(data.map(d => d.id));
+    from += limit;
   }
 
-  return allIds;
+  return new Set(all);
 }
 
 async function main() {
   try {
-    const csv = await downloadCSVFromDrive(FILE_ID);
-    const { matches, ignored, total } = extractUniqueValidMatches(csv);
+    const csvPath = await downloadCSV(GOOGLE_FILE_ID);
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
 
+    const { matches, ignored, total } = extractUniqueValidMatches(csvContent);
     console.log(`🔍 Total lignes CSV : ${total}`);
     console.log(`🛑 Lignes ignorées avec Unknown Team : ${ignored}`);
     console.log(`🧩 Matchs uniques valides trouvés : ${matches.length}`);
 
-    const existingIds = await fetchAllMatchIdsFromSupabase();
-    console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.length}`);
+    const existingIds = await fetchExistingGameIds();
+    console.log(`🧠 Matchs trouvés dans Supabase (réels) : ${existingIds.size}`);
 
-    const newMatches = matches.filter(m => !existingIds.includes(m.gameid));
+    const newMatches = matches.filter(m => !existingIds.has(m.gameid));
     console.log(`🆕 Nouveaux matchs à importer : ${newMatches.length}`);
 
-    if (newMatches.length > 0) {
-      console.log('🧾 Liste des gameid considérés comme nouveaux :');
-      newMatches.forEach(m => console.log(`➡️ ${m.gameid}`));
+    for (const match of newMatches) {
+      console.log(`✅ À importer : ${match.gameid}`);
+      // Ajoute ici l'insertion réelle si besoin
     }
+
   } catch (err) {
-    console.error('❌ Erreur générale :', err.message);
+    console.error(`❌ Erreur générale : ${err.message}`);
     process.exit(1);
   }
 }
