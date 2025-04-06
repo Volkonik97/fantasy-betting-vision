@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -45,48 +46,23 @@ export const getPlayerStats = async (playerId: string) => {
   }
 };
 
+// Note: The following functions have been commented out because the tables they reference
+// don't exist in the current database schema. Uncomment and configure them when these tables are added.
+
 /**
- * Get team timeline stats for a specific match
+ * Get team timeline stats for a specific match - placeholder for future implementation
  */
 export const getTeamTimelineStats = async (matchId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('team_timeline_stats')
-      .select('*')
-      .eq('match_id', matchId);
-    
-    if (error) {
-      console.error('Error fetching team timeline stats:', error);
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching team timeline stats:', error);
-    return null;
-  }
+  console.log(`Team timeline stats for match ${matchId} are not available yet`);
+  return null;
 };
 
 /**
- * Get player timeline stats for a specific match
+ * Get player timeline stats for a specific match - placeholder for future implementation
  */
 export const getPlayerTimelineStats = async (matchId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('player_timeline_stats')
-      .select('*')
-      .eq('match_id', matchId);
-    
-    if (error) {
-      console.error('Error fetching player timeline stats:', error);
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error fetching player timeline stats:', error);
-    return null;
-  }
+  console.log(`Player timeline stats for match ${matchId} are not available yet`);
+  return null;
 };
 
 // Invalidate cache for player stats
