@@ -1,18 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
-import axios from 'axios';
+import fetch from 'node-fetch';
 import Papa from 'papaparse';
 
-console.log("🔒 SUPABASE_URL:", process.env.SUPABASE_URL ? "✅" : "❌");
-console.log("🔒 SUPABASE_KEY:", process.env.SUPABASE_KEY ? "✅" : "❌");
-console.log("🔒 GOOGLE_FILE_ID:", process.env.GOOGLE_FILE_ID ? "✅" : "❌");
-
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY || !process.env.GOOGLE_FILE_ID) {
-  throw new Error("❌ Erreur : un ou plusieurs secrets manquent.");
-}
-
+// 🌍 ENV
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const FILE_ID = process.env.GOOGLE_FILE_ID;
+
+console.log("🔒 SUPABASE_URL:", SUPABASE_URL ? "✅" : "❌");
+console.log("🔒 SUPABASE_KEY:", SUPABASE_KEY ? "✅" : "❌");
+console.log("🔒 GOOGLE_FILE_ID:", FILE_ID ? "✅" : "❌");
+
+if (!SUPABASE_URL || !SUPABASE_KEY || !FILE_ID) {
+  console.error("❌ Erreur : un ou plusieurs secrets manquent.");
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -28,31 +30,37 @@ function normalizeGameId(rawId) {
     .replace(/^_+|_+$/g, '');
 }
 
-async function downloadCsvFile() {
+const downloadCsv = async () => {
   const url = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
   console.log("📥 Téléchargement du fichier CSV...");
-  try {
-    const res = await axios.get(url);
-    console.log("📥 Fichier CSV téléchargé");
-    return res.data;
-  } catch (err) {
-    throw new Error("❌ Erreur téléchargement: " + err.message);
-  }
-}
+  const res = await fetch(url, {
+    headers: {
+      'Accept': 'text/csv',
+    },
+  });
 
-async function parseCsv() {
-  const csvContent = await downloadCsvFile();
+  if (!res.ok) {
+    throw new Error(`❌ Erreur téléchargement: ${res.status}`);
+  }
+
+  const data = await res.text();
+  console.log("📥 Fichier CSV téléchargé");
+  return data;
+};
+
+const parseCsv = async () => {
+  const csv = await downloadCsv();
   return new Promise((resolve, reject) => {
-    Papa.parse(csvContent, {
+    Papa.parse(csv, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => resolve(results.data),
-      error: reject
+      error: reject,
     });
   });
-}
+};
 
-async function getAllMatchIdsFromSupabase() {
+const getAllMatchIdsFromSupabase = async () => {
   const pageSize = 1000;
   let all = [];
   let page = 0;
@@ -70,22 +78,21 @@ async function getAllMatchIdsFromSupabase() {
     }
 
     if (data.length < pageSize) done = true;
-
     all = [...all, ...data];
     page++;
   }
 
   return all;
-}
+};
 
-async function getTeamId(teamTag) {
-  const { data, error } = await supabase
+const getTeamId = async (teamTag) => {
+  const { data } = await supabase
     .from('teams')
     .select('id')
     .eq('id', teamTag)
-    .single();
+    .maybeSingle();
 
-  if (!data && !error) {
+  if (!data) {
     await supabase.from('teams').insert({
       id: teamTag,
       name: teamTag,
@@ -94,9 +101,14 @@ async function getTeamId(teamTag) {
   }
 
   return teamTag;
-}
+};
 
-async function insertMatch(match) {
+const parseNumber = (value) => {
+  const num = Number(value);
+  return isNaN(num) ? null : num;
+};
+
+const insertMatch = async (match) => {
   const match_id = normalizeGameId(match.gameid);
   const team_blue = await getTeamId(match.team_blue);
   const team_red = await getTeamId(match.team_red);
@@ -109,8 +121,8 @@ async function insertMatch(match) {
     team_red_id: team_red,
     patch: match.patch,
     duration: match.gamelength,
-    score_blue: Number(match.blueKills),
-    score_red: Number(match.redKills),
+    score_blue: parseNumber(match.blueKills),
+    score_red: parseNumber(match.redKills),
     winner_team_id: match.blueWins === '1' ? team_blue : team_red,
     first_blood: match.firstblood,
     first_dragon: match.firstdragon,
@@ -119,20 +131,20 @@ async function insertMatch(match) {
     first_tower: match.firsttower,
     first_mid_tower: match.firstmidtower,
     first_three_towers: match.firstthreetowers,
-    dragons: Number(match.blueDragons),
-    opp_dragons: Number(match.redDragons),
-    barons: Number(match.blueBarons),
-    opp_barons: Number(match.redBarons),
-    heralds: Number(match.blueHeralds),
-    opp_heralds: Number(match.redHeralds),
-    towers: Number(match.blueTowers),
-    opp_towers: Number(match.redTowers),
-    inhibitors: Number(match.blueInhibitors),
-    opp_inhibitors: Number(match.redInhibitors),
-    team_kills: Number(match.blueKills),
-    team_deaths: Number(match.blueDeaths),
-    team_kpm: Number(match.teamkpm),
-    ckpm: Number(match.ckpm),
+    dragons: parseNumber(match.blueDragons),
+    opp_dragons: parseNumber(match.redDragons),
+    barons: parseNumber(match.blueBarons),
+    opp_barons: parseNumber(match.redBarons),
+    heralds: parseNumber(match.blueHeralds),
+    opp_heralds: parseNumber(match.redHeralds),
+    towers: parseNumber(match.blueTowers),
+    opp_towers: parseNumber(match.redTowers),
+    inhibitors: parseNumber(match.blueInhibitors),
+    opp_inhibitors: parseNumber(match.redInhibitors),
+    team_kills: parseNumber(match.blueKills),
+    team_deaths: parseNumber(match.blueDeaths),
+    team_kpm: parseNumber(match.teamkpm),
+    ckpm: parseNumber(match.ckpm),
     year: match.year,
     split: match.split,
     game_completeness: match.datacompleteness,
@@ -140,9 +152,9 @@ async function insertMatch(match) {
   };
 
   await supabase.from('matches').insert(dataToInsert);
-}
+};
 
-async function insertTeamStats(match) {
+const insertTeamStats = async (match) => {
   const match_id = normalizeGameId(match.gameid);
 
   const teams = [
@@ -156,13 +168,13 @@ async function insertTeamStats(match) {
       match_id,
       team_id,
       is_blue_side: t.is_blue_side,
-      kills: Number(match[`${t.prefix}Kills`]),
-      deaths: Number(match[`${t.prefix}Deaths`]),
-      dragons: Number(match[`${t.prefix}Dragons`]),
-      barons: Number(match[`${t.prefix}Barons`]),
-      heralds: Number(match[`${t.prefix}Heralds`]),
-      towers: Number(match[`${t.prefix}Towers`]),
-      inhibitors: Number(match[`${t.prefix}Inhibitors`]),
+      kills: parseNumber(match[`${t.prefix}Kills`]),
+      deaths: parseNumber(match[`${t.prefix}Deaths`]),
+      dragons: parseNumber(match[`${t.prefix}Dragons`]),
+      barons: parseNumber(match[`${t.prefix}Barons`]),
+      heralds: parseNumber(match[`${t.prefix}Heralds`]),
+      towers: parseNumber(match[`${t.prefix}Towers`]),
+      inhibitors: parseNumber(match[`${t.prefix}Inhibitors`]),
       first_blood: match.firstblood === t.prefix,
       first_dragon: match.firstdragon === t.prefix,
       first_baron: match.firstbaron === t.prefix,
@@ -172,14 +184,13 @@ async function insertTeamStats(match) {
       first_three_towers: match.firstthreetowers === t.prefix,
     });
   }
-}
+};
 
-async function main() {
+const importAll = async () => {
   try {
     const allRows = await parseCsv();
     console.log(`🔍 Total lignes CSV : ${allRows.length}`);
 
-    // Grouper les lignes par gameid
     const grouped = allRows.reduce((acc, row) => {
       const id = normalizeGameId(row.gameid);
       if (!id) return acc;
@@ -190,8 +201,12 @@ async function main() {
 
     const matches = Object.entries(grouped)
       .filter(([id, rows]) => {
-        const teamNames = new Set(rows.map(r => r.teamname?.trim().toLowerCase()));
-        const hasUnknown = [...teamNames].some(n => n.includes("unknown"));
+        const teamNames = new Set(rows.map(r =>
+          r.teamname?.trim().toLowerCase()
+        ));
+        const hasUnknown = [...teamNames].some(name =>
+          name.includes("unknown")
+        );
         if (hasUnknown) {
           console.log(`🚫 Ignoré ${id} (Unknown Team détectée)`);
         }
@@ -235,9 +250,10 @@ async function main() {
     if (newMatches.length === 0) {
       console.log("🎉 Aucun nouveau match à importer aujourd'hui.");
     }
-  } catch (err) {
-    console.error("❌ Erreur générale :", err.message);
+  } catch (e) {
+    console.error("❌ Erreur générale :", e.message);
+    process.exit(1);
   }
-}
+};
 
-main();
+importAll();
