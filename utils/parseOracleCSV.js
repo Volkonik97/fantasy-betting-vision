@@ -120,7 +120,7 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
         side: row.side,
         result: row.result === '1',
         heralds: parseIntOrNull(row.heralds),
-        opp_heralds: parseIntOrNull(row.opp_heralds),
+        // opp_heralds: parseIntOrNull(row.opp_heralds), // ❌ à commenter ou supprimer
       })
 
       playerStats.push({
