@@ -7,6 +7,7 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
     const response = await axios.get(url, {
       responseType: 'blob',
       maxRedirects: 5,
+      validateStatus: status => status >= 200 && status < 400,
     })
 
     const csv = response.data
@@ -36,14 +37,16 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
       const teamid_1 = row.teamid_1
       const teamid_2 = row.teamid_2
 
+      // Validation des champs essentiels
       if (!gameid || !teamid_1 || !teamid_2) continue
       if (!knownTeamIds.includes(teamid_1) || !knownTeamIds.includes(teamid_2)) continue
 
+      // Match info
       const match = {
         id: gameid,
         team_1_id: teamid_1,
         team_2_id: teamid_2,
-        // autres champs du match si besoin...
+        // Ajoute ici d'autres champs du match si nécessaire
       }
 
       if (gameid === 'LOLTMNT06_110171') {
@@ -56,12 +59,13 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
 
       matches.push(match)
 
+      // Statistiques d'équipe (team 1 et 2)
       const teamStat = {
         match_id: gameid,
         team_id: teamid_1,
         dragons: Number(row.dragons_1) || 0,
         barons: Number(row.barons_1) || 0,
-        // autres stats d'équipe...
+        // Ajoute d'autres stats d’équipe si nécessaires
       }
 
       const teamStat2 = {
@@ -69,23 +73,25 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
         team_id: teamid_2,
         dragons: Number(row.dragons_2) || 0,
         barons: Number(row.barons_2) || 0,
-        // autres stats d'équipe...
+        // Ajoute d'autres stats d’équipe si nécessaires
       }
 
       teamStats.push(teamStat, teamStat2)
 
+      // Statistiques de joueur
       const player = {
         gameid,
         player_id: row.playerid,
         kills: Number(row.kills) || 0,
         deaths: Number(row.deaths) || 0,
         assists: Number(row.assists) || 0,
-        // autres stats de joueur...
+        // Ajoute d'autres stats joueur si nécessaires
       }
 
       playerStats.push(player)
     }
 
+    // Vérification finale du match ciblé
     const matchExists = matches.find(m => m.id === 'LOLTMNT06_110171')
     if (matchExists) {
       logInfo('✅ Le match LOLTMNT06_110171 sera transmis à Supabase.')
