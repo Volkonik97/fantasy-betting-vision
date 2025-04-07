@@ -2,126 +2,105 @@ import axios from 'axios'
 import Papa from 'papaparse'
 import { logInfo, logError } from './logger.js'
 
-export const fetchCSVAndParse = async (csvUrl) => {
+export const fetchCSVAndParse = async (url) => {
   try {
-    logInfo(`🌍 URL utilisée : ${csvUrl}`)
-    logInfo(`⬇️ Téléchargement du CSV depuis : ${csvUrl}`)
+    logInfo(`⬇️ Téléchargement du CSV depuis : ${url}`)
 
-    const response = await axios.get(csvUrl, {
-      responseType: 'blob',
-      maxRedirects: 5
-    })
+    const response = await axios.get(url)
+    const csv = response.data
 
-    const csvText = response.data
-
-    const parsed = Papa.parse(csvText, {
+    const { data: rawData, errors } = Papa.parse(csv, {
       header: true,
       skipEmptyLines: true
     })
 
-    const rows = parsed.data
-    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${rows.length}`)
-
-    if (!rows[0].gameid) {
-      throw new Error('Le fichier CSV doit contenir la colonne : gameid')
+    if (errors.length > 0) {
+      throw new Error(`Erreurs lors du parsing CSV : ${JSON.stringify(errors)}`)
     }
 
-    const matchesMap = new Map()
-    const teamStatsMap = new Map()
-    const playerStats = []
-
-    for (const row of rows) {
-      const {
-        gameid,
-        teamid,
-        participantid,
-        side,
-        position,
-        playername,
-        champion,
-        kills,
-        deaths,
-        assists,
-        dragons,
-        barons,
-        towers,
-        heralds,
-        ...rest
-      } = row
-
-      if (!gameid || !teamid) continue
-
-      // --- MATCHES ---
-      if (!matchesMap.has(gameid)) {
-        matchesMap.set(gameid, {
-          id: gameid,
-          teamIds: new Set(),
-        })
-      }
-      matchesMap.get(gameid).teamIds.add(teamid)
-
-      // --- TEAM STATS ---
-      const teamKey = `${gameid}-${teamid}`
-      if (!teamStatsMap.has(teamKey)) {
-        teamStatsMap.set(teamKey, {
-          match_id: gameid,
-          team_id: teamid,
-          is_blue_side: side?.toLowerCase() === 'blue',
-          kills: 0,
-          deaths: 0,
-          dragons: parseInt(dragons) || 0,
-          barons: parseInt(barons) || 0,
-          towers: parseInt(towers) || 0,
-          heralds: parseInt(heralds) || 0
-        })
-      }
-
-      const teamStats = teamStatsMap.get(teamKey)
-      teamStats.kills += parseInt(kills) || 0
-      teamStats.deaths += parseInt(deaths) || 0
-
-      // --- PLAYER STATS ---
-      playerStats.push({
-        match_id: gameid,
-        team_id: teamid,
-        participant_id: participantid,
-        side,
-        position,
-        player_id: playername,
-        champion,
-        kills: parseInt(kills) || 0,
-        deaths: parseInt(deaths) || 0,
-        assists: parseInt(assists) || 0
-      })
-    }
+    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${rawData.length}`)
 
     const matches = []
-    for (const [gameid, match] of matchesMap.entries()) {
-      const teams = Array.from(match.teamIds)
-      if (teams.length !== 2) continue
+    const teamStats = []
+    const playerStats = []
+
+    const gamesMap = new Map()
+
+    for (const row of rawData) {
+      const gameId = row.gameid
+      const teamId = row.teamid
+      const playerId = row.playerid || null
+
+      if (!gameId || !teamId || teamId === 'Unknown Team') continue
+
+      // Enregistrer le match dans gamesMap
+      if (!gamesMap.has(gameId)) {
+        gamesMap.set(gameId, {
+          gameId,
+          teams: new Set(),
+          rows: [],
+        })
+      }
+
+      const game = gamesMap.get(gameId)
+      game.teams.add(teamId)
+      game.rows.push(row)
+
+      // Ajouter stats par joueur si playerId présent
+      if (playerId) {
+        playerStats.push({
+          match_id: gameId,
+          player_id: playerId,
+          team_id: teamId,
+          kills: parseInt(row.kills) || 0,
+          deaths: parseInt(row.deaths) || 0,
+          assists: parseInt(row.assists) || 0,
+          gold: parseInt(row.gold) || 0,
+          cs: parseInt(row.cs) || 0,
+          champion: row.champion || null,
+          role: row.role || null,
+          position: row.position || null
+        })
+      }
+
+      // Ajouter stats par équipe une seule fois par team/game combo
+      if (!teamStats.find(s => s.match_id === gameId && s.team_id === teamId)) {
+        teamStats.push({
+          match_id: gameId,
+          team_id: teamId,
+          dragons: parseInt(row.dragons) || 0,
+          barons: parseInt(row.barons) || 0,
+          heralds: parseInt(row.heralds) || 0,
+          towers: parseInt(row.towers) || 0,
+          inhibitors: parseInt(row.inhibitors) || 0,
+          first_blood: row.firstblood === '1',
+          first_tower: row.firsttower === '1',
+          first_dragon: row.firstdragon === '1',
+          first_baron: row.firstbaron === '1',
+        })
+      }
+    }
+
+    // Reconstruire les matchs à partir des paires de team par gameId
+    for (const [gameId, game] of gamesMap.entries()) {
+      const teamList = Array.from(game.teams)
+      if (teamList.length !== 2) continue // Skip si on n'a pas exactement 2 équipes
 
       matches.push({
-        id: gameid,
-        team_blue_id: teams[0],
-        team_red_id: teams[1],
-        date: null,
-        status: 'done'
+        id: gameId,
+        team_blue_id: teamList[0],
+        team_red_id: teamList[1],
+        date: null, // à remplir si dispo
+        patch: null, // à remplir si dispo
+        duration: null, // à remplir si dispo
+        winner: null // à remplir si dispo
       })
     }
 
-    const team_match_stats = Array.from(teamStatsMap.values())
+    return { matches, teamStats, playerStats }
 
-    logInfo(`📋 Total de matchs valides (équipes connues) : ${matches.length}`)
-    logInfo(`📈 Total de stats par équipe : ${team_match_stats.length}`)
-    logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
-
-    return {
-      matches,
-      team_match_stats,
-      player_match_stats: playerStats
-    }
-  } catch (err) {
-    logError('❌ Erreur lors du téléchargement ou parsing du CSV :', err.message)
-    throw err
+  } catch (error) {
+    logError('❌ Erreur lors du téléchargement ou parsing du CSV :', error.message)
+    throw error
   }
 }
