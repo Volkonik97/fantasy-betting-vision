@@ -113,7 +113,16 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
 
     matches.push(match)
 
+    // ✅ Corrigé ici : une seule ligne par équipe dans teamStats
+    const teamGrouped = {}
     for (const row of gameRows) {
+      const key = `${row.teamid}_${row.side}`
+      if (!teamGrouped[key]) {
+        teamGrouped[key] = row
+      }
+    }
+
+    for (const row of Object.values(teamGrouped)) {
       teamStats.push({
         match_id: row.gameid,
         team_id: row.teamid,
@@ -147,7 +156,9 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
         bans: JSON.stringify([row.ban1, row.ban2, row.ban3, row.ban4, row.ban5].filter(Boolean)),
         picks: JSON.stringify([row.pick1, row.pick2, row.pick3, row.pick4, row.pick5].filter(Boolean))
       })
+    }
 
+    for (const row of gameRows) {
       playerStats.push({
         match_id: row.gameid,
         player_id: row.playerid,
