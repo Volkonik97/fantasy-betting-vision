@@ -7,7 +7,6 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
     const response = await axios.get(url, {
       responseType: 'blob',
       maxRedirects: 5,
-      validateStatus: status => status >= 200 && status < 400,
     })
 
     const csv = response.data
@@ -31,73 +30,83 @@ export const parseOracleCSV = async (url, knownTeamIds) => {
     const matches = []
     const teamStats = []
     const playerStats = []
+    const seenMatchIds = new Set()
 
-    for (const row of rows) {
-      const gameid = row.gameid
-      const teamid_1 = row.teamid_1
-      const teamid_2 = row.teamid_2
+    // Group by gameid
+    const grouped = rows.reduce((acc, row) => {
+      if (!row.gameid) return acc
+      if (!acc[row.gameid]) acc[row.gameid] = []
+      acc[row.gameid].push(row)
+      return acc
+    }, {})
 
-      // Validation des champs essentiels
-      if (!gameid || !teamid_1 || !teamid_2) continue
-      if (!knownTeamIds.includes(teamid_1) || !knownTeamIds.includes(teamid_2)) continue
+    for (const [gameid, matchRows] of Object.entries(grouped)) {
+      const teams = [...new Set(matchRows.map(r => r.teamid).filter(Boolean))]
+      if (teams.length !== 2) {
+        logWarn(`❌ Match ${gameid} ignoré : ${teams.length} équipes détectées.`)
+        continue
+      }
 
-      // Match info
+      const [team_1_id, team_2_id] = teams
+
+      if (!knownTeamIds.includes(team_1_id) || !knownTeamIds.includes(team_2_id)) {
+        if (gameid === 'LOLTMNT06_110171') {
+          logWarn(`❌ Match ${gameid} ignoré : équipe inconnue.`)
+        }
+        continue
+      }
+
       const match = {
         id: gameid,
-        team_1_id: teamid_1,
-        team_2_id: teamid_2,
-        // Ajoute ici d'autres champs du match si nécessaire
+        team_1_id,
+        team_2_id,
+        // autres champs si besoin...
       }
 
-      if (gameid === 'LOLTMNT06_110171') {
-        logInfo(`🔧 Construction du match LOLTMNT06_110171`)
-        logInfo(`📎 teamid_1: ${teamid_1}, teamid_2: ${teamid_2}`)
-        logInfo(`✅ teamid_1 connu ? ${knownTeamIds.includes(teamid_1)}`)
-        logInfo(`✅ teamid_2 connu ? ${knownTeamIds.includes(teamid_2)}`)
-        logInfo(`📦 Objet match construit : ${JSON.stringify(match, null, 2)}`)
+      if (!seenMatchIds.has(gameid)) {
+        matches.push(match)
+        seenMatchIds.add(gameid)
       }
 
-      matches.push(match)
+      const groupedByTeam = matchRows.reduce((acc, row) => {
+        if (!acc[row.teamid]) acc[row.teamid] = []
+        acc[row.teamid].push(row)
+        return acc
+      }, {})
 
-      // Statistiques d'équipe (team 1 et 2)
-      const teamStat = {
-        match_id: gameid,
-        team_id: teamid_1,
-        dragons: Number(row.dragons_1) || 0,
-        barons: Number(row.barons_1) || 0,
-        // Ajoute d'autres stats d’équipe si nécessaires
+      for (const [teamId, teamRows] of Object.entries(groupedByTeam)) {
+        const exampleRow = teamRows[0] // prendre la première ligne comme base
+        teamStats.push({
+          match_id: gameid,
+          team_id: teamId,
+          dragons: Number(exampleRow.dragons) || 0,
+          barons: Number(exampleRow.barons) || 0,
+          // autres stats d'équipe si besoin...
+        })
       }
 
-      const teamStat2 = {
-        match_id: gameid,
-        team_id: teamid_2,
-        dragons: Number(row.dragons_2) || 0,
-        barons: Number(row.barons_2) || 0,
-        // Ajoute d'autres stats d’équipe si nécessaires
+      for (const row of matchRows) {
+        playerStats.push({
+          gameid,
+          player_id: row.playerid,
+          kills: Number(row.kills) || 0,
+          deaths: Number(row.deaths) || 0,
+          assists: Number(row.assists) || 0,
+          // autres stats de joueur...
+        })
       }
-
-      teamStats.push(teamStat, teamStat2)
-
-      // Statistiques de joueur
-      const player = {
-        gameid,
-        player_id: row.playerid,
-        kills: Number(row.kills) || 0,
-        deaths: Number(row.deaths) || 0,
-        assists: Number(row.assists) || 0,
-        // Ajoute d'autres stats joueur si nécessaires
-      }
-
-      playerStats.push(player)
     }
 
-    // Vérification finale du match ciblé
     const matchExists = matches.find(m => m.id === 'LOLTMNT06_110171')
     if (matchExists) {
       logInfo('✅ Le match LOLTMNT06_110171 sera transmis à Supabase.')
     } else {
       logWarn('⚠️ Le match LOLTMNT06_110171 a été filtré avant insertion.')
     }
+
+    logInfo(`📋 Total de matchs valides (équipes connues) : ${matches.length}`)
+    logInfo(`📈 Total de stats par équipe : ${teamStats.length}`)
+    logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
 
     return { matches, teamStats, playerStats }
   } catch (err) {
