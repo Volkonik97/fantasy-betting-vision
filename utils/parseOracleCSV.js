@@ -117,10 +117,35 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
       teamStats.push({
         match_id: row.gameid,
         team_id: row.teamid,
-        side: row.side,
-        result: row.result === '1',
+        is_blue_side: row.side === 'Blue',
+        kills: parseIntOrNull(row.teamkills),
+        deaths: parseIntOrNull(row.teamdeaths),
+        kpm: parseFloatOrNull(row['team kpm']),
+        dragons: parseIntOrNull(row.dragons),
+        elemental_drakes: parseIntOrNull(row.elementaldrakes),
+        infernals: parseIntOrNull(row.infernals),
+        mountains: parseIntOrNull(row.mountains),
+        clouds: parseIntOrNull(row.clouds),
+        oceans: parseIntOrNull(row.oceans),
+        chemtechs: parseIntOrNull(row.chemtechs),
+        hextechs: parseIntOrNull(row.hextechs),
+        drakes_unknown: parseIntOrNull(row['dragons (type unknown)']),
+        elders: parseIntOrNull(row.elders),
         heralds: parseIntOrNull(row.heralds),
-        // opp_heralds: parseIntOrNull(row.opp_heralds), // ❌ à commenter ou supprimer
+        barons: parseIntOrNull(row.barons),
+        void_grubs: parseIntOrNull(row.void_grubs),
+        towers: parseIntOrNull(row.towers),
+        turret_plates: parseIntOrNull(row.turretplates),
+        inhibitors: parseIntOrNull(row.inhibitors),
+        first_blood: row.firstblood === '1',
+        first_dragon: row.firstdragon === '1',
+        first_herald: row.firstherald === '1',
+        first_baron: row.firstbaron === '1',
+        first_tower: row.firsttower === '1',
+        first_mid_tower: row.firstmidtower === '1',
+        first_three_towers: row.firsttothreetowers === '1',
+        bans: JSON.stringify([row.ban1, row.ban2, row.ban3, row.ban4, row.ban5].filter(Boolean)),
+        picks: JSON.stringify([row.pick1, row.pick2, row.pick3, row.pick4, row.pick5].filter(Boolean))
       })
 
       playerStats.push({
