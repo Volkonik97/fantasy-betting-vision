@@ -1,7 +1,7 @@
-export function log(...args) {
-  console.log(`[LOG]`, ...args);
+export const logInfo = (...args) => {
+  console.log('[LOG]', ...args)
 }
 
-export function error(...args) {
-  console.error(`[ERROR]`, ...args);
+export const logError = (...args) => {
+  console.error('Error:', ...args)
 }

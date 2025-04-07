@@ -1,20 +1,19 @@
-import parseCSV from "./utils/parseOracleCSV.js";
-import { insertData } from "./utils/supabaseClient.js";
-import { log, error } from "./utils/logger.js";
+import { fetchCSVAndParse } from './utils/parseOracleCSV.js'
+import { insertDataToSupabase } from './utils/supabaseClient.js'
+import { logInfo, logError } from './utils/logger.js'
 
-try {
-  log("🟡 Démarrage de l'import automatique depuis Google Sheet...");
+const SHEET_URL = process.env.GOOGLE_SHEET_CSV_URL
 
-  const rows = await parseCSV(process.env.GOOGLE_FILE_URL);
-
-  if (!rows || rows.length === 0) {
-    throw new Error("Aucune donnée récupérée depuis le fichier Google Sheet.");
+const main = async () => {
+  try {
+    logInfo('🟡 Démarrage de l\'import automatique depuis Google Sheet...')
+    const data = await fetchCSVAndParse(SHEET_URL)
+    await insertDataToSupabase(data)
+    logInfo('✅ Import terminé avec succès.')
+  } catch (err) {
+    logError('❌ Erreur lors de l\'import :', err.message || err)
+    process.exit(1)
   }
-
-  await insertData(rows);
-
-  log("✅ Import terminé avec succès !");
-} catch (err) {
-  error("❌ Erreur lors de l'import :", err.message);
-  process.exit(1);
 }
+
+main()
