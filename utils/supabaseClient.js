@@ -1,28 +1,48 @@
-import { createClient } from '@supabase/supabase-js'
-import { logInfo, logError, logWarn } from './logger.js'
+// utils/supabaseClient.js
+import { createClient } from '@supabase/supabase-js';
+import { logInfo, logError, logWarn } from './logger.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+);
 
 export const getExistingMatchIds = async () => {
-  const allIds = []
+  logInfo('📡 Récupération des gameid existants depuis Supabase...')
+  let existingIds = []
   let from = 0
-  const step = 1000
+  const pageSize = 1000
+
   while (true) {
     const { data, error } = await supabase
       .from('matches')
-      .select('id', { count: 'exact' })
-      .range(from, from + step - 1)
+      .select('id')
+      .range(from, from + pageSize - 1)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      throw new Error(error.message)
+    }
+
     if (!data || data.length === 0) break
 
-    allIds.push(...data.map(match => match.id))
-    from += step
+    existingIds.push(...data.map(row => row.id))
+    from += pageSize
   }
-  return allIds
+
+  logInfo(`🧠 Nombre de gameid déjà présents en base : ${existingIds.length}`)
+  return new Set(existingIds)
+}
+
+export const getKnownTeamIds = async () => {
+  const { data, error } = await supabase
+    .from('teams')
+    .select('id')
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return new Set(data.map(team => team.id))
 }
 
 export const insertDataToSupabase = async ({ matches, teamStats, playerStats }) => {
@@ -31,50 +51,45 @@ export const insertDataToSupabase = async ({ matches, teamStats, playerStats }) 
     logInfo(`📈 Stats par équipe à insérer : ${teamStats.length}`)
     logInfo(`👤 Stats par joueur à insérer : ${playerStats.length}`)
 
-    // Vérifie existence des teams dans Supabase
-    const uniqueTeamIds = [...new Set(matches.flatMap(m => [m.team_blue_id, m.team_red_id]))]
-    const { data: existingTeams, error: teamErr } = await supabase
-      .from('teams')
-      .select('id')
-      .in('id', uniqueTeamIds)
+    const existingIds = await getExistingMatchIds()
+    const knownTeamIds = await getKnownTeamIds()
 
-    if (teamErr) throw new Error(`Erreur de vérification des teams : ${teamErr.message}`)
-
-    const existingTeamIds = new Set(existingTeams.map(t => t.id))
-
-    const validMatches = matches.filter(m => {
+    const newMatches = matches.filter(match => {
       const valid =
-        existingTeamIds.has(m.team_blue_id) &&
-        existingTeamIds.has(m.team_red_id)
+        !existingIds.has(match.id) &&
+        match.team_blue_id &&
+        match.team_red_id &&
+        knownTeamIds.has(match.team_blue_id) &&
+        knownTeamIds.has(match.team_red_id)
+
       if (!valid) {
-        logWarn(`⛔ Match ignoré (team inconnue) : ${m.id} - ${m.team_blue_id} vs ${m.team_red_id}`)
+        logWarn(`⛔ Match ignoré (team inconnue) : ${match.id} - ${match.team_blue_id || '?'} vs ${match.team_red_id || '?'}`)
       }
+
       return valid
     })
 
-    const existingMatchIds = await getExistingMatchIds()
-    const newMatches = validMatches.filter(m => !existingMatchIds.includes(m.id))
-    const newTeamStats = teamStats.filter(t => newMatches.find(m => m.id === t.match_id))
-    const newPlayerStats = playerStats.filter(p => newMatches.find(m => m.id === p.match_id))
+    const matchIdsToInsert = new Set(newMatches.map(m => m.id))
+    const newTeamStats = teamStats.filter(row => matchIdsToInsert.has(row.gameid))
+    const newPlayerStats = playerStats.filter(row => matchIdsToInsert.has(row.gameid))
 
-    logInfo(`🧠 Nombre de gameid déjà présents en base : ${existingMatchIds.length}`)
     logInfo(`🆕 Nouveaux matchs à insérer : ${newMatches.length}`)
     logInfo(`📈 Stats par équipe à insérer : ${newTeamStats.length}`)
     logInfo(`👤 Stats par joueur à insérer : ${newPlayerStats.length}`)
 
     if (newMatches.length > 0) {
-      const { error: matchErr } = await supabase.from('matches').insert(newMatches)
-      if (matchErr) throw new Error(`💥 Erreur lors de l'insertion des matchs : ${matchErr.message}`)
+      const { error: insertMatchError } = await supabase.from('matches').insert(newMatches)
+      if (insertMatchError) throw new Error(`💥 Erreur lors de l'insertion des matchs : ${insertMatchError.message}`)
     }
 
     if (newTeamStats.length > 0) {
-      const { error: teamStatsErr } = await supabase.from('team_match_stats').insert(newTeamStats)
-      if (teamStatsErr) throw new Error(`💥 Erreur insertion team stats : ${teamStatsErr.message}`)
+      const { error: insertTeamStatsError } = await supabase.from('team_match_stats').insert(newTeamStats)
+      if (insertTeamStatsError) throw new Error(`💥 Erreur lors de l'insertion des stats équipe : ${insertTeamStatsError.message}`)
     }
 
     if (newPlayerStats.length > 0) {
-      const { error: playerStatsErr } = await supabase.from('player_match_stats').insert(newPlayerStats)
-      if (playerStatsErr) throw new Error(`💥 Erreur insertion player stats : ${playerStatsErr.message}`)
+      const { error: insertPlayerStatsError } = await supabase.from('player_match_stats').insert(newPlayerStats)
+      if (insertPlayerStatsError) throw new Error(`💥 Erreur lors de l'insertion des stats joueur : ${insertPlayerStatsError.message}`)
     }
 
     logInfo('✅ Insertion terminée avec succès.')
