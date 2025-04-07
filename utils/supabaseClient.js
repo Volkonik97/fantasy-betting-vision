@@ -19,15 +19,29 @@ export const insertDataToSupabase = async ({ matches, teamStats, playerStats }) 
     const allCsvGameIds = matches.map(m => m.id)
     logInfo(`📦 Tous les gameid du CSV (valide): ${allCsvGameIds.join(', ')}`)
 
-    const newMatches = matches.filter(m => !existingGameIds.includes(m.id))
+    // 🔍 Récupération de tous les IDs d'équipes connues
+    const { data: knownTeams, error: teamErr } = await supabase.from('teams').select('id')
+    if (teamErr) throw new Error(`Erreur lors de la récupération des équipes : ${teamErr.message}`)
+    const knownTeamIds = knownTeams.map(t => t.id)
+
+    // 🎯 Filtrer les matchs avec équipes connues
+    const matchesWithKnownTeams = matches.filter(m => {
+      const isValid = knownTeamIds.includes(m.team_blue_id) && knownTeamIds.includes(m.team_red_id)
+      if (!isValid) {
+        logWarn(`⛔ Match ignoré (team inconnue) : ${m.id} - ${m.team_blue_id} vs ${m.team_red_id}`)
+      }
+      return isValid
+    })
+
+    const newMatches = matchesWithKnownTeams.filter(m => !existingGameIds.includes(m.id))
     const newGameIds = newMatches.map(m => m.id)
 
     logInfo(`🆕 Nouveaux gameid à insérer : ${newGameIds.join(', ')}`)
+    logInfo(`🆕 Nouveaux matchs à insérer : ${newMatches.length}`)
 
     const newTeamStats = teamStats.filter(s => newGameIds.includes(s.match_id))
     const newPlayerStats = playerStats.filter(s => newGameIds.includes(s.gameid))
 
-    logInfo(`🆕 Nouveaux matchs à insérer : ${newMatches.length}`)
     logInfo(`📈 Stats par équipe à insérer : ${newTeamStats.length}`)
     logInfo(`👤 Stats par joueur à insérer : ${newPlayerStats.length}`)
 
