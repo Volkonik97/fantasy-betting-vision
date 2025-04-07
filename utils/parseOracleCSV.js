@@ -1,21 +1,31 @@
 import Papa from 'papaparse'
 import axios from 'axios'
-import { logInfo, logError } from './logger.js'
+import { logInfo, logWarn } from './logger.js'
 
-export const fetchCSVAndParse = async (csvUrl) => {
-  logInfo(`🌍 URL utilisée : ${csvUrl}`)
-
+export const parseOracleCSV = async (url, knownTeamIds) => {
   try {
-    logInfo(`⬇️ Téléchargement du CSV depuis : ${csvUrl}`)
-    const response = await axios.get(csvUrl)
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      maxRedirects: 5,
+    })
 
-    const parsed = Papa.parse(response.data, {
+    const csv = response.data
+    const { data: rows, errors } = Papa.parse(csv, {
       header: true,
       skipEmptyLines: true,
     })
 
-    const rows = parsed.data
-    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${rows.length}`)
+    if (errors.length > 0) {
+      throw new Error(`Erreurs de parsing CSV : ${errors.map(e => e.message).join(', ')}`)
+    }
+
+    logInfo(`🔍 Recherche du match LOLTMNT06_110171 dans le CSV...`)
+    const targetRow = rows.find(r => r.gameid === 'LOLTMNT06_110171')
+    if (targetRow) {
+      logInfo(`✅ Ligne trouvée dans le CSV : ${JSON.stringify(targetRow, null, 2)}`)
+    } else {
+      logWarn('❌ Match LOLTMNT06_110171 non trouvé dans les lignes CSV.')
+    }
 
     const matches = []
     const teamStats = []
@@ -23,104 +33,68 @@ export const fetchCSVAndParse = async (csvUrl) => {
 
     for (const row of rows) {
       const gameid = row.gameid
-      const teamid = row.teamid
+      const teamid_1 = row.teamid_1
+      const teamid_2 = row.teamid_2
 
-      if (!gameid || !teamid) {
-        logInfo(`⛔ Ligne ignorée (gameid ou teamid manquant): ${JSON.stringify({ gameid, teamid })}`)
-        continue
-      }
-
-      // Matchs valides : si on a les deux équipes définies dans deux lignes avec le même gameid
-      const side = row.side
-      if (side !== 'Blue' && side !== 'Red') {
-        logInfo(`⛔ Ligne ignorée (side invalide): ${JSON.stringify({ gameid, teamid, side })}`)
-        continue
-      }
-
-      // On stocke temporairement dans une map les matchs pour recomposition
-      if (!row._matchCache) row._matchCache = {}
-      row._matchCache[`${gameid}_${side}`] = row
-    }
-
-    // Regroupe les matchs à partir des lignes par side
-    const matchCache = {}
-    for (const row of rows) {
-      const gameid = row.gameid
-      const side = row.side
-      if (!gameid || !side || (side !== 'Blue' && side !== 'Red')) continue
-
-      if (!matchCache[gameid]) matchCache[gameid] = {}
-      matchCache[gameid][side.toLowerCase()] = row
-    }
-
-    let validMatchCount = 0
-
-    for (const [gameid, sides] of Object.entries(matchCache)) {
-      const blue = sides.blue
-      const red = sides.red
-
-      if (!blue || !red) {
-        logInfo(`⛔ Match ignoré (manque une des deux sides): ${gameid}`)
-        continue
-      }
-
-      if (blue.teamid === 'Unknown Team' || red.teamid === 'Unknown Team') {
-        logInfo(`⛔ Match ignoré (Unknown Team): ${gameid}`)
-        continue
-      }
+      if (!gameid || !teamid_1 || !teamid_2) continue
+      if (!knownTeamIds.includes(teamid_1) || !knownTeamIds.includes(teamid_2)) continue
 
       const match = {
         id: gameid,
-        team_blue_id: blue.teamid,
-        team_red_id: red.teamid,
-        score_blue: parseInt(blue.result) || 0,
-        score_red: parseInt(red.result) || 0,
-        duration: blue.gamelength,
-        date: blue.date,
-        tournament: blue.tournament,
-        patch: blue.patch,
-        winner_team_id: blue.result === '1' ? blue.teamid : red.teamid,
+        team_1_id: teamid_1,
+        team_2_id: teamid_2,
+        // autres champs du match si besoin...
+      }
+
+      if (gameid === 'LOLTMNT06_110171') {
+        logInfo(`🔧 Construction du match LOLTMNT06_110171`)
+        logInfo(`📎 teamid_1: ${teamid_1}, teamid_2: ${teamid_2}`)
+        logInfo(`✅ teamid_1 connu ? ${knownTeamIds.includes(teamid_1)}`)
+        logInfo(`✅ teamid_2 connu ? ${knownTeamIds.includes(teamid_2)}`)
+        logInfo(`📦 Objet match construit : ${JSON.stringify(match, null, 2)}`)
       }
 
       matches.push(match)
-      validMatchCount++
+
+      const teamStat = {
+        match_id: gameid,
+        team_id: teamid_1,
+        dragons: Number(row.dragons_1) || 0,
+        barons: Number(row.barons_1) || 0,
+        // autres stats d'équipe...
+      }
+
+      const teamStat2 = {
+        match_id: gameid,
+        team_id: teamid_2,
+        dragons: Number(row.dragons_2) || 0,
+        barons: Number(row.barons_2) || 0,
+        // autres stats d'équipe...
+      }
+
+      teamStats.push(teamStat, teamStat2)
+
+      const player = {
+        gameid,
+        player_id: row.playerid,
+        kills: Number(row.kills) || 0,
+        deaths: Number(row.deaths) || 0,
+        assists: Number(row.assists) || 0,
+        // autres stats de joueur...
+      }
+
+      playerStats.push(player)
     }
 
-    logInfo(`📋 Total de matchs valides (équipes connues) : ${validMatchCount}`)
-
-    // Stats par équipe et par joueur
-    for (const row of rows) {
-      const gameid = row.gameid
-      const teamid = row.teamid
-      if (!gameid || !teamid || teamid === 'Unknown Team') continue
-
-      teamStats.push({
-        gameid,
-        teamid,
-        dragons: parseInt(row.dragons) || 0,
-        barons: parseInt(row.barons) || 0,
-        towers: parseInt(row.towers) || 0,
-        kills: parseInt(row.teamkills) || 0,
-        // ... ajoute d'autres champs ici si besoin
-      })
-
-      playerStats.push({
-        gameid,
-        playername: row.playername,
-        teamid,
-        champion: row.champion,
-        kills: parseInt(row.kills) || 0,
-        deaths: parseInt(row.deaths) || 0,
-        assists: parseInt(row.assists) || 0,
-        // ... ajoute d'autres champs ici si besoin
-      })
+    const matchExists = matches.find(m => m.id === 'LOLTMNT06_110171')
+    if (matchExists) {
+      logInfo('✅ Le match LOLTMNT06_110171 sera transmis à Supabase.')
+    } else {
+      logWarn('⚠️ Le match LOLTMNT06_110171 a été filtré avant insertion.')
     }
-
-    logInfo(`📈 Total de stats par équipe : ${teamStats.length}`)
-    logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
 
     return { matches, teamStats, playerStats }
   } catch (err) {
-    throw new Error(`❌ Erreur lors du téléchargement ou parsing du CSV : ${err.message}`)
+    throw new Error(`Erreur lors du parsing du CSV : ${err.message}`)
   }
 }
