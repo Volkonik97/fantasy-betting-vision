@@ -14,6 +14,9 @@ const parseFloatOrNull = (val) => {
 
 const parseBoolean = (val) => val === '1'
 
+const formatBanList = (row) => JSON.stringify([row.ban1, row.ban2, row.ban3, row.ban4, row.ban5].filter(Boolean))
+const formatPickList = (row) => JSON.stringify([row.pick1, row.pick2, row.pick3, row.pick4, row.pick5].filter(Boolean))
+
 export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
   const response = await axios.get(csvUrl)
   const csvData = response.data
@@ -33,7 +36,6 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
   for (const row of rows) {
     const gameId = row.gameid
     const teamId = row.teamid
-
     if (!gameId || !teamId) continue
 
     if (!groupedByGame[gameId]) groupedByGame[gameId] = []
@@ -46,21 +48,20 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
 
   for (const [gameId, gameRows] of Object.entries(groupedByGame)) {
     const teamsInGame = [...new Set(gameRows.map(r => r.teamid).filter(Boolean))]
-
     if (teamsInGame.length !== 2) {
       logWarn(`❌ Match ${gameId} ignoré : ${teamsInGame.length} équipes détectées.`)
       continue
     }
 
     const [team1, team2] = teamsInGame
-
     if (!knownTeamIds.includes(team1) || !knownTeamIds.includes(team2)) {
       logWarn(`❌ Match ${gameId} ignoré : équipe inconnue.`)
       continue
     }
 
     const gameMeta = gameRows[0]
-    const match = {
+
+    matches.push({
       id: gameId,
       date: gameMeta.date,
       team_blue_id: gameRows.find(r => r.side === 'Blue')?.teamid || null,
@@ -81,14 +82,12 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
       first_mid_tower: gameRows.find(r => r.firstmidtower === '1')?.teamid || null,
       first_three_towers: gameRows.find(r => r.firsttothreetowers === '1')?.teamid || null,
       duration: gameMeta.gamelength,
-      bans: JSON.stringify([gameMeta.ban1, gameMeta.ban2, gameMeta.ban3, gameMeta.ban4, gameMeta.ban5].filter(Boolean)),
-      picks: JSON.stringify([gameMeta.pick1, gameMeta.pick2, gameMeta.pick3, gameMeta.pick4, gameMeta.pick5].filter(Boolean)),
+      bans: formatBanList(gameMeta),
+      picks: formatPickList(gameMeta),
       team_kpm: parseFloatOrNull(gameMeta['team kpm']),
       ckpm: parseFloatOrNull(gameMeta.ckpm),
       dragons: parseIntOrNull(gameMeta.dragons),
-      opp_dragons: parseIntOrNull(gameMeta.opp_dragons),
       elemental_drakes: parseIntOrNull(gameMeta.elementaldrakes),
-      opp_elemental_drakes: parseIntOrNull(gameMeta.opp_elementaldrakes),
       infernals: parseIntOrNull(gameMeta.infernals),
       mountains: parseIntOrNull(gameMeta.mountains),
       clouds: parseIntOrNull(gameMeta.clouds),
@@ -97,29 +96,18 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
       hextechs: parseIntOrNull(gameMeta.hextechs),
       drakes_unknown: parseIntOrNull(gameMeta['dragons (type unknown)']),
       elders: parseIntOrNull(gameMeta.elders),
-      opp_elders: parseIntOrNull(gameMeta.opp_elders),
       void_grubs: parseIntOrNull(gameMeta.void_grubs),
-      opp_void_grubs: parseIntOrNull(gameMeta.opp_void_grubs),
       towers: parseIntOrNull(gameMeta.towers),
-      opp_towers: parseIntOrNull(gameMeta.opp_towers),
       turret_plates: parseIntOrNull(gameMeta.turretplates),
-      opp_turret_plates: parseIntOrNull(gameMeta.opp_turretplates),
       inhibitors: parseIntOrNull(gameMeta.inhibitors),
-      opp_inhibitors: parseIntOrNull(gameMeta.opp_inhibitors),
       barons: parseIntOrNull(gameMeta.barons),
-      opp_barons: parseIntOrNull(gameMeta.opp_barons),
-      team_kills: parseIntOrNull(gameMeta.teamkills),
-    }
+      team_kills: parseIntOrNull(gameMeta.teamkills)
+    })
 
-    matches.push(match)
-
-    // ✅ Corrigé ici : une seule ligne par équipe dans teamStats
     const teamGrouped = {}
     for (const row of gameRows) {
       const key = `${row.teamid}_${row.side}`
-      if (!teamGrouped[key]) {
-        teamGrouped[key] = row
-      }
+      if (!teamGrouped[key]) teamGrouped[key] = row
     }
 
     for (const row of Object.values(teamGrouped)) {
@@ -146,15 +134,15 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
         towers: parseIntOrNull(row.towers),
         turret_plates: parseIntOrNull(row.turretplates),
         inhibitors: parseIntOrNull(row.inhibitors),
-        first_blood: row.firstblood === '1',
-        first_dragon: row.firstdragon === '1',
-        first_herald: row.firstherald === '1',
-        first_baron: row.firstbaron === '1',
-        first_tower: row.firsttower === '1',
-        first_mid_tower: row.firstmidtower === '1',
-        first_three_towers: row.firsttothreetowers === '1',
-        bans: JSON.stringify([row.ban1, row.ban2, row.ban3, row.ban4, row.ban5].filter(Boolean)),
-        picks: JSON.stringify([row.pick1, row.pick2, row.pick3, row.pick4, row.pick5].filter(Boolean))
+        first_blood: parseBoolean(row.firstblood),
+        first_dragon: parseBoolean(row.firstdragon),
+        first_herald: parseBoolean(row.firstherald),
+        first_baron: parseBoolean(row.firstbaron),
+        first_tower: parseBoolean(row.firsttower),
+        first_mid_tower: parseBoolean(row.firstmidtower),
+        first_three_towers: parseBoolean(row.firsttothreetowers),
+        bans: formatBanList(row),
+        picks: formatPickList(row)
       })
     }
 
@@ -186,7 +174,7 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
         csat20: parseIntOrNull(row.csat20),
         goldat25: parseIntOrNull(row.goldat25),
         xpat25: parseIntOrNull(row.xpat25),
-        csat25: parseIntOrNull(row.csat25),
+        csat25: parseIntOrNull(row.csat25)
       })
     }
 
