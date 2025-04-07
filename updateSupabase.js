@@ -7,7 +7,7 @@ const csvUrl = process.env.GOOGLE_FILE_URL;
 const main = async () => {
   try {
     logInfo('🟡 Démarrage de l\'import automatique depuis Google Sheet...')
-    const data = await fetchCSVAndParse(SHEET_URL)
+    const data = await fetchCSVAndParse(csvUrl)
     await insertDataToSupabase(data)
     logInfo('✅ Import terminé avec succès.')
   } catch (err) {
