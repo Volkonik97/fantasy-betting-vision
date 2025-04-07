@@ -72,6 +72,7 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
       patch: gameMeta.patch,
       playoffs: parseBoolean(gameMeta.playoffs),
       game_completeness: gameMeta.datacompleteness,
+      tournament: gameMeta.league || null,
       first_blood: gameRows.find(r => r.firstblood === '1')?.teamid || null,
       first_dragon: gameRows.find(r => r.firstdragon === '1')?.teamid || null,
       first_baron: gameRows.find(r => r.firstbaron === '1')?.teamid || null,
