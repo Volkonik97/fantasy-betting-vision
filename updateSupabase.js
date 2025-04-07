@@ -2,7 +2,7 @@ import { fetchCSVAndParse } from './utils/parseOracleCSV.js'
 import { insertDataToSupabase } from './utils/supabaseClient.js'
 import { logInfo, logError } from './utils/logger.js'
 
-const SHEET_URL = process.env.GOOGLE_SHEET_CSV_URL
+const csvUrl = process.env.GOOGLE_FILE_URL;
 
 const main = async () => {
   try {
