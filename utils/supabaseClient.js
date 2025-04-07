@@ -45,7 +45,7 @@ export const insertDataToSupabase = async ({ matches, teamStats, playerStats }) 
 
     logInfo('✅ Insertion terminée avec succès.')
   } catch (err) {
-    logError('❌ Erreur lors de l'insertion dans Supabase :', err.message)
+    logError(`❌ Erreur lors de l'insertion dans Supabase : ${err.message}`)
     throw err
   }
 }
