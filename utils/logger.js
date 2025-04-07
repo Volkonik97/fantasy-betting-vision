@@ -5,3 +5,7 @@ export const logInfo = (...args) => {
 export const logError = (...args) => {
   console.error('Error:', ...args)
 }
+
+export const logWarn = (...args) => {
+  console.warn('[WARN]', ...args)
+}
