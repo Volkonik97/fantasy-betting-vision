@@ -1,4 +1,4 @@
-import { fetchCSVAndParse } from './utils/parseOracleCSV.js'
+import { parseOracleCSV } from './utils/parseOracleCSV.js'
 import { insertDataToSupabase, getExistingMatchIds } from './utils/supabaseClient.js'
 import { logInfo, logError } from './utils/logger.js'
 
@@ -9,7 +9,7 @@ const main = async () => {
     logInfo('🟡 Démarrage de l\'import automatique depuis Google Sheet...')
     logInfo(`🌍 URL utilisée : ${csvUrl}`)
 
-    const data = await fetchCSVAndParse(csvUrl)
+    const data = await parseOracleCSV(csvUrl)
 
     logInfo(`📋 Total de matchs valides (équipes connues) : ${data.matches.length}`)
     logInfo(`📈 Total de stats par équipe : ${data.teamStats.length}`)
