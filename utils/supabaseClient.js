@@ -12,19 +12,21 @@ export async function getExistingMatchIds() {
     let allIds = []
     let from = 0
     const step = 1000
+
     while (true) {
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('matches')
-        .select('id', { count: 'exact' })
+        .select('id')
         .range(from, from + step - 1)
 
-      if (error) {
-        throw error
-      }
-
-      if (data.length === 0) break
+      if (error) throw error
+      if (!data || data.length === 0) break
 
       allIds.push(...data.map(match => match.id))
+
+      // S'il y a moins que le step, fin de pagination
+      if (data.length < step) break
+
       from += step
     }
 
@@ -35,6 +37,7 @@ export async function getExistingMatchIds() {
     throw err
   }
 }
+
 
 export async function insertDataToSupabase({ matches, teamStats, playerStats }) {
   try {
