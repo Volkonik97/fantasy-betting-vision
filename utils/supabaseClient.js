@@ -68,7 +68,7 @@ export async function insertDataToSupabase(data) {
       first_baron: row.firstbaron,
       year: row.year,
       split: row.split,
-      playoff: row.playoffs === 'TRUE' || row.playoffs === true,
+      playoffs: row.playoffs === 'TRUE' || row.playoffs === true,
     }))
 
     // Insertion en base
