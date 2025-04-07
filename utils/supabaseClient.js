@@ -24,17 +24,6 @@ export const insertDataToSupabase = async ({ matches, teamStats, playerStats }) 
 
     logInfo(`🆕 Nouveaux gameid à insérer : ${newGameIds.join(', ')}`)
 
-    if (allCsvGameIds.includes('LOLTMNT06_110171')) {
-      logInfo('🔍 Match LOLTMNT06_110171 détecté dans les matchs valides du CSV.')
-      if (!newGameIds.includes('LOLTMNT06_110171')) {
-        logWarn('⚠️ Match LOLTMNT06_110171 déjà présent dans Supabase, pas réinséré.')
-      } else {
-        logInfo('🟢 Match LOLTMNT06_110171 est nouveau et sera inséré.')
-      }
-    } else {
-      logWarn('❓ Match LOLTMNT06_110171 NON présent dans les matchs valides du CSV.')
-    }
-
     const newTeamStats = teamStats.filter(s => newGameIds.includes(s.match_id))
     const newPlayerStats = playerStats.filter(s => newGameIds.includes(s.gameid))
 
