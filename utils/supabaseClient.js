@@ -74,3 +74,9 @@ export const getExistingMatchIds = async () => {
 
   return allIds
 }
+
+export const getKnownTeamIds = async () => {
+  const { data, error } = await supabase.from('teams').select('id')
+  if (error) throw new Error(`Erreur lors de la récupération des teams : ${error.message}`)
+  return data.map(t => t.id)
+}

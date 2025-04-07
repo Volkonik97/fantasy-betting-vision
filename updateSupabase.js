@@ -1,26 +1,29 @@
 import { parseOracleCSV } from './utils/parseOracleCSV.js'
-import { insertDataToSupabase, getExistingMatchIds } from './utils/supabaseClient.js'
-import { logInfo, logError } from './utils/logger.js'
+import { insertDataToSupabase, getExistingMatchIds, getKnownTeamIds } from './utils/supabaseClient.js'
+import { logInfo, logError, logWarn } from './utils/logger.js'
 
-const csvUrl = process.env.GOOGLE_FILE_URL;
+const CSV_URL = process.env.GOOGLE_CSV_URL
 
-const main = async () => {
+const run = async () => {
   try {
     logInfo('🟡 Démarrage de l\'import automatique depuis Google Sheet...')
-    logInfo(`🌍 URL utilisée : ${csvUrl}`)
+    logInfo(`🌍 URL utilisée : ${CSV_URL}`)
 
-    const data = await parseOracleCSV(csvUrl)
+    const knownTeamIds = await getKnownTeamIds()
+    logInfo(`📚 ${knownTeamIds.length} équipes connues récupérées depuis Supabase.`)
 
-    logInfo(`📋 Total de matchs valides (équipes connues) : ${data.matches.length}`)
-    logInfo(`📈 Total de stats par équipe : ${data.teamStats.length}`)
-    logInfo(`👤 Total de stats par joueur : ${data.playerStats.length}`)
+    const { matches, teamStats, playerStats } = await parseOracleCSV(CSV_URL, knownTeamIds)
 
-    await insertDataToSupabase(data)
+    logInfo(`📋 Total de matchs valides (équipes connues) : ${matches.length}`)
+    logInfo(`📈 Total de stats par équipe : ${teamStats.length}`)
+    logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
+
+    await insertDataToSupabase({ matches, teamStats, playerStats })
+
     logInfo('✅ Import terminé avec succès.')
   } catch (err) {
-    logError('❌ Erreur lors de l\'import :', err.message || err)
-    process.exit(1)
+    logError(`❌ Erreur lors de l'import : ${err.message}`)
   }
 }
 
-main()
+run()
