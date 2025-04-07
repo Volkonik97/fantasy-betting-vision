@@ -2,135 +2,125 @@ import Papa from 'papaparse'
 import axios from 'axios'
 import { logInfo, logError } from './logger.js'
 
-export async function fetchCSVAndParse(sheetUrl) {
-  try {
-    logInfo(`🌍 URL utilisée : ${sheetUrl}`)
-    logInfo(`⬇️ Téléchargement du CSV depuis : ${sheetUrl}`)
-    const response = await axios.get(sheetUrl)
+export const fetchCSVAndParse = async (csvUrl) => {
+  logInfo(`🌍 URL utilisée : ${csvUrl}`)
 
-    const csvData = Papa.parse(response.data, {
+  try {
+    logInfo(`⬇️ Téléchargement du CSV depuis : ${csvUrl}`)
+    const response = await axios.get(csvUrl)
+
+    const parsed = Papa.parse(response.data, {
       header: true,
       skipEmptyLines: true,
-    }).data
+    })
 
-    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${csvData.length}`)
+    const rows = parsed.data
+    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${rows.length}`)
 
     const matches = []
     const teamStats = []
     const playerStats = []
 
-    for (const row of csvData) {
-      // Filtrer les matchs valides avec deux équipes connues
-      if (row.teamid_1 && row.teamid_2 && row.teamid_1 !== 'Unknown Team' && row.teamid_2 !== 'Unknown Team') {
-        matches.push({
-          id: row.gameid,
-          date: row.date || null,
-          tournament: row.tournament || null,
-          team_blue_id: row.teamid_1,
-          team_red_id: row.teamid_2,
-          score_blue: row.result != null ? parseInt(row.result.split('-')[0]) : null,
-          score_red: row.result != null ? parseInt(row.result.split('-')[1]) : null,
-          duration: row.gamelength || null,
-          first_blood: row.firstblood || null,
-          first_dragon: row.firstdragon || null,
-          first_baron: row.firstbaron || null,
-          first_herald: row.firstherald || null,
-          first_tower: row.firsttower || null,
-          first_mid_tower: row.firstmidtower || null,
-          first_three_towers: row.firstthreetowers || null,
-          blue_win_odds: row.blue_odds ? parseFloat(row.blue_odds) : null,
-          red_win_odds: row.red_odds ? parseFloat(row.red_odds) : null,
-          predicted_winner: row.predictedwinner || null,
-          winner_team_id: row.winner_team_id || null,
-          game_number: row.gamenumber || null,
-          patch: row.patch || null,
-          mvp: row.mvp || null,
-          playoffs: row.playoffs === 'TRUE' || row.playoffs === true,
-          status: row.status || null,
-          game_completeness: row.game_completeness || null,
-          url: row.url || null,
-          year: row.year || null,
-          split: row.split || null,
-        })
+    for (const row of rows) {
+      const gameid = row.gameid
+      const teamid = row.teamid
+
+      if (!gameid || !teamid) {
+        logInfo(`⛔ Ligne ignorée (gameid ou teamid manquant): ${JSON.stringify({ gameid, teamid })}`)
+        continue
       }
 
-      // Stats par équipe (team_match_stats)
-      if (row.teamid) {
-        teamStats.push({
-          gameid: row.gameid,
-          teamid: row.teamid,
-          dragons: toInt(row.dragons),
-          barons: toInt(row.barons),
-          heralds: toInt(row.heralds),
-          towers: toInt(row.towers),
-          inhibitors: toInt(row.inhibitors),
-          turret_plates: toInt(row.turretplates),
-          void_grubs: toInt(row.voidgrubs),
-          elemental_drakes: toInt(row.elementaldrakes),
-          elders: toInt(row.elders),
-          infernals: toInt(row.infernals),
-          mountains: toInt(row.mountains),
-          clouds: toInt(row.clouds),
-          oceans: toInt(row.oceans),
-          chemtechs: toInt(row.chemtechs),
-          hextechs: toInt(row.hextechs),
-          drakes_unknown: toInt(row.drakes_unknown),
-          opp_dragons: toInt(row.opp_dragons),
-          opp_barons: toInt(row.opp_barons),
-          opp_heralds: toInt(row.opp_heralds),
-          opp_towers: toInt(row.opp_towers),
-          opp_inhibitors: toInt(row.opp_inhibitors),
-          opp_turret_plates: toInt(row.opp_turretplates),
-          opp_void_grubs: toInt(row.opp_voidgrubs),
-          opp_elemental_drakes: toInt(row.opp_elementaldrakes),
-          opp_elders: toInt(row.opp_elders),
-          team_kills: toInt(row.kills),
-          team_deaths: toInt(row.deaths),
-          team_kpm: toFloat(row.kpm),
-          ckpm: toFloat(row.ckpm),
-        })
+      // Matchs valides : si on a les deux équipes définies dans deux lignes avec le même gameid
+      const side = row.side
+      if (side !== 'Blue' && side !== 'Red') {
+        logInfo(`⛔ Ligne ignorée (side invalide): ${JSON.stringify({ gameid, teamid, side })}`)
+        continue
       }
 
-      // Stats par joueur (player_match_stats)
-      if (row.playername && row.gameid) {
-        playerStats.push({
-          gameid: row.gameid,
-          playername: row.playername,
-          teamid: row.teamid,
-          champion: row.champion || null,
-          kills: toInt(row.kills),
-          deaths: toInt(row.deaths),
-          assists: toInt(row.assists),
-          gold: toInt(row.gold),
-          cs: toInt(row.cs),
-          position: row.position || null,
-          dpm: toFloat(row.dpm),
-          earned_gpm: toFloat(row.earned_gpm),
-          kp: toFloat(row.kp),
-          golddiffat10: toInt(row.golddiffat10),
-          xpdiffat10: toInt(row.xpdiffat10),
-          csdiffat10: toInt(row.csdiffat10),
-        })
-      }
+      // On stocke temporairement dans une map les matchs pour recomposition
+      if (!row._matchCache) row._matchCache = {}
+      row._matchCache[`${gameid}_${side}`] = row
     }
 
-    logInfo(`📋 Total de matchs valides (équipes connues) : ${matches.length}`)
+    // Regroupe les matchs à partir des lignes par side
+    const matchCache = {}
+    for (const row of rows) {
+      const gameid = row.gameid
+      const side = row.side
+      if (!gameid || !side || (side !== 'Blue' && side !== 'Red')) continue
+
+      if (!matchCache[gameid]) matchCache[gameid] = {}
+      matchCache[gameid][side.toLowerCase()] = row
+    }
+
+    let validMatchCount = 0
+
+    for (const [gameid, sides] of Object.entries(matchCache)) {
+      const blue = sides.blue
+      const red = sides.red
+
+      if (!blue || !red) {
+        logInfo(`⛔ Match ignoré (manque une des deux sides): ${gameid}`)
+        continue
+      }
+
+      if (blue.teamid === 'Unknown Team' || red.teamid === 'Unknown Team') {
+        logInfo(`⛔ Match ignoré (Unknown Team): ${gameid}`)
+        continue
+      }
+
+      const match = {
+        id: gameid,
+        team_blue_id: blue.teamid,
+        team_red_id: red.teamid,
+        score_blue: parseInt(blue.result) || 0,
+        score_red: parseInt(red.result) || 0,
+        duration: blue.gamelength,
+        date: blue.date,
+        tournament: blue.tournament,
+        patch: blue.patch,
+        winner_team_id: blue.result === '1' ? blue.teamid : red.teamid,
+      }
+
+      matches.push(match)
+      validMatchCount++
+    }
+
+    logInfo(`📋 Total de matchs valides (équipes connues) : ${validMatchCount}`)
+
+    // Stats par équipe et par joueur
+    for (const row of rows) {
+      const gameid = row.gameid
+      const teamid = row.teamid
+      if (!gameid || !teamid || teamid === 'Unknown Team') continue
+
+      teamStats.push({
+        gameid,
+        teamid,
+        dragons: parseInt(row.dragons) || 0,
+        barons: parseInt(row.barons) || 0,
+        towers: parseInt(row.towers) || 0,
+        kills: parseInt(row.teamkills) || 0,
+        // ... ajoute d'autres champs ici si besoin
+      })
+
+      playerStats.push({
+        gameid,
+        playername: row.playername,
+        teamid,
+        champion: row.champion,
+        kills: parseInt(row.kills) || 0,
+        deaths: parseInt(row.deaths) || 0,
+        assists: parseInt(row.assists) || 0,
+        // ... ajoute d'autres champs ici si besoin
+      })
+    }
+
     logInfo(`📈 Total de stats par équipe : ${teamStats.length}`)
     logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
 
     return { matches, teamStats, playerStats }
   } catch (err) {
-    logError('❌ Erreur lors du téléchargement ou parsing du CSV :', err.message || err)
-    throw err
+    throw new Error(`❌ Erreur lors du téléchargement ou parsing du CSV : ${err.message}`)
   }
-}
-
-function toInt(value) {
-  const parsed = parseInt(value)
-  return isNaN(parsed) ? null : parsed
-}
-
-function toFloat(value) {
-  const parsed = parseFloat(value)
-  return isNaN(parsed) ? null : parsed
 }
