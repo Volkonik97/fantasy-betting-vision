@@ -1,119 +1,127 @@
-import Papa from 'papaparse'
 import axios from 'axios'
+import Papa from 'papaparse'
 import { logInfo, logError } from './logger.js'
 
-export async function fetchCSVAndParse(url) {
+export const fetchCSVAndParse = async (csvUrl) => {
   try {
-    logInfo(`⬇️ Téléchargement du CSV depuis : ${url}`)
-    const response = await axios.get(url)
-    const csvData = response.data
+    logInfo(`🌍 URL utilisée : ${csvUrl}`)
+    logInfo(`⬇️ Téléchargement du CSV depuis : ${csvUrl}`)
 
-    const { data, errors, meta } = Papa.parse(csvData, {
+    const response = await axios.get(csvUrl, {
+      responseType: 'blob',
+      maxRedirects: 5
+    })
+
+    const csvText = response.data
+
+    const parsed = Papa.parse(csvText, {
       header: true,
       skipEmptyLines: true
     })
 
-    if (errors.length) {
-      logError('Erreur lors du parsing CSV :', errors)
-      throw new Error('Erreur de parsing CSV')
-    }
+    const rows = parsed.data
+    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${rows.length}`)
 
-    if (!meta.fields.includes('gameid') || !meta.fields.includes('teamid_1') || !meta.fields.includes('teamid_2')) {
-      throw new Error('Le fichier CSV doit contenir les colonnes : gameid, teamid_1, teamid_2')
+    if (!rows[0].gameid) {
+      throw new Error('Le fichier CSV doit contenir la colonne : gameid')
     }
-
-    logInfo(`📊 Nombre de lignes extraites depuis le CSV : ${data.length}`)
 
     const matchesMap = new Map()
     const teamStatsMap = new Map()
     const playerStats = []
 
-    for (const row of data) {
+    for (const row of rows) {
       const {
         gameid,
         teamid,
-        teamid_1,
-        teamid_2,
-        side,
         participantid,
-        playerid,
+        side,
         position,
+        playername,
         champion,
         kills,
         deaths,
         assists,
         dragons,
         barons,
-        heralds,
         towers,
-        inhibitors,
-        firstbloodkill,
-        firstbloodassist,
-        firstbloodvictim,
-        // ... ajoute d'autres colonnes utiles ici
+        heralds,
+        ...rest
       } = row
 
-      if (!gameid || !teamid_1 || !teamid_2 || teamid_1 === 'Unknown Team' || teamid_2 === 'Unknown Team') {
-        continue
-      }
+      if (!gameid || !teamid) continue
 
-      // ===== MISE EN FORME DES MATCHS =====
+      // --- MATCHES ---
       if (!matchesMap.has(gameid)) {
         matchesMap.set(gameid, {
           id: gameid,
-          team_blue_id: teamid_1,
-          team_red_id: teamid_2,
-          status: 'completed'
+          teamIds: new Set(),
         })
       }
+      matchesMap.get(gameid).teamIds.add(teamid)
 
-      // ===== MISE EN FORME DES TEAM STATS =====
-      if (teamid) {
-        const key = `${gameid}_${teamid}`
-        if (!teamStatsMap.has(key)) {
-          teamStatsMap.set(key, {
-            match_id: gameid,
-            team_id: teamid,
-            is_blue_side: side === 'Blue',
-            dragons: parseInt(dragons) || 0,
-            barons: parseInt(barons) || 0,
-            heralds: parseInt(heralds) || 0,
-            towers: parseInt(towers) || 0,
-            inhibitors: parseInt(inhibitors) || 0,
-            first_blood: firstbloodkill === 'TRUE' || firstbloodassist === 'TRUE',
-            created_at: new Date().toISOString()
-          })
-        }
-      }
-
-      // ===== MISE EN FORME DES PLAYER STATS =====
-      if (playerid && participantid) {
-        playerStats.push({
+      // --- TEAM STATS ---
+      const teamKey = `${gameid}-${teamid}`
+      if (!teamStatsMap.has(teamKey)) {
+        teamStatsMap.set(teamKey, {
           match_id: gameid,
-          player_id: playerid,
           team_id: teamid,
-          side,
-          participant_id: participantid,
-          position,
-          champion,
-          kills: parseInt(kills) || 0,
-          deaths: parseInt(deaths) || 0,
-          assists: parseInt(assists) || 0,
-          first_blood_kill: firstbloodkill === 'TRUE',
-          first_blood_assist: firstbloodassist === 'TRUE',
-          first_blood_victim: firstbloodvictim === 'TRUE',
-          created_at: new Date().toISOString()
+          is_blue_side: side?.toLowerCase() === 'blue',
+          kills: 0,
+          deaths: 0,
+          dragons: parseInt(dragons) || 0,
+          barons: parseInt(barons) || 0,
+          towers: parseInt(towers) || 0,
+          heralds: parseInt(heralds) || 0
         })
       }
+
+      const teamStats = teamStatsMap.get(teamKey)
+      teamStats.kills += parseInt(kills) || 0
+      teamStats.deaths += parseInt(deaths) || 0
+
+      // --- PLAYER STATS ---
+      playerStats.push({
+        match_id: gameid,
+        team_id: teamid,
+        participant_id: participantid,
+        side,
+        position,
+        player_id: playername,
+        champion,
+        kills: parseInt(kills) || 0,
+        deaths: parseInt(deaths) || 0,
+        assists: parseInt(assists) || 0
+      })
     }
 
+    const matches = []
+    for (const [gameid, match] of matchesMap.entries()) {
+      const teams = Array.from(match.teamIds)
+      if (teams.length !== 2) continue
+
+      matches.push({
+        id: gameid,
+        team_blue_id: teams[0],
+        team_red_id: teams[1],
+        date: null,
+        status: 'done'
+      })
+    }
+
+    const team_match_stats = Array.from(teamStatsMap.values())
+
+    logInfo(`📋 Total de matchs valides (équipes connues) : ${matches.length}`)
+    logInfo(`📈 Total de stats par équipe : ${team_match_stats.length}`)
+    logInfo(`👤 Total de stats par joueur : ${playerStats.length}`)
+
     return {
-      matches: Array.from(matchesMap.values()),
-      team_match_stats: Array.from(teamStatsMap.values()),
+      matches,
+      team_match_stats,
       player_match_stats: playerStats
     }
   } catch (err) {
-    logError('❌ Erreur lors du téléchargement ou parsing du CSV :', err.message || err)
+    logError('❌ Erreur lors du téléchargement ou parsing du CSV :', err.message)
     throw err
   }
 }
