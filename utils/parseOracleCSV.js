@@ -62,7 +62,7 @@ export const parseOracleCSV = async (csvUrl, knownTeamIds) => {
     const gameMeta = gameRows[0]
 
     matches.push({
-      id: gameId,
+      gameid: gameId,
       date: gameMeta.date,
       team_blue_id: gameRows.find(r => r.side === 'Blue')?.teamid || null,
       team_red_id: gameRows.find(r => r.side === 'Red')?.teamid || null,

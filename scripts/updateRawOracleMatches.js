@@ -1,29 +1,31 @@
 // scripts/updateRawOracleMatches.js
-import { fetchAndParseCSV } from '../utils/parseOracleCSV.js';
-import { insertRawMatches, getKnownGameIds } from '../utils/supabaseClient.js';
-import { logInfo, logError } from '../utils/logger.js';
+import { parseOracleCSV } from '../utils/parseOracleCSV.js'
+import { insertRawMatches, getKnownGameIds } from '../utils/supabaseClient.js'
+import { logInfo, logError } from '../utils/logger.js'
+
+const ORACLE_CSV_URL = `https://drive.google.com/uc?export=download&id=${process.env.GOOGLE_FILE_ID}`
 
 const main = async () => {
   try {
-    const parsedRows = await fetchAndParseCSV();
-    if (!parsedRows.length) {
-      logInfo('Aucune ligne trouvée dans le fichier CSV.');
-      return;
+    logInfo('[updateRawOracleMatches] Lecture de la liste des gameids connus...')
+    const existingGameIds = await getKnownGameIds()
+
+    logInfo('[updateRawOracleMatches] Téléchargement et parsing du CSV Oracle...')
+    const { matches } = await parseOracleCSV(ORACLE_CSV_URL, Array.from(existingGameIds))
+
+    const newMatches = matches.filter(match => !existingGameIds.has(match.id))
+
+    if (!newMatches.length) {
+      logInfo('✅ Aucun nouveau match à importer.')
+      return
     }
 
-    const existingGameIds = await getKnownGameIds();
-    const newRows = parsedRows.filter(row => !existingGameIds.has(row.gameid));
-
-    if (!newRows.length) {
-      logInfo('Aucun nouveau match à importer.');
-      return;
-    }
-
-    await insertRawMatches(newRows);
-    logInfo(`${newRows.length} nouveaux matchs ajoutés à raw_oracle_matches.`);
+    await insertRawMatches(newMatches)
+    logInfo(`✅ ${newMatches.length} nouveaux matchs insérés dans raw_oracle_matches.`)
   } catch (err) {
-    logError('Erreur lors de l’importation des matchs Oracle:', err);
+    logError('❌ Erreur dans updateRawOracleMatches :', err)
+    process.exit(1)
   }
-};
+}
 
-main();
+main()
