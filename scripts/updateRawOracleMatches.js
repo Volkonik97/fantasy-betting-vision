@@ -4,7 +4,9 @@ import axios from 'axios'
 import Papa from 'papaparse'
 import { insertRawOracleRows, getExistingMatchIds } from '../utils/supabaseClient.js'
 import { logInfo, logError } from '../utils/logger.js'
+import { createClient } from '@supabase/supabase-js'
 
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 const GOOGLE_FILE_URL = process.env.GOOGLE_FILE_URL
 
 const cleanRow = row => {
@@ -45,8 +47,17 @@ const run = async () => {
     if (newRows.length > 0) {
       await insertRawOracleRows(newRows)
       logInfo('✅ Nouvelles lignes insérées dans raw_oracle_matches.')
+
+      // 🔁 Appel de la fonction Supabase pour mettre à jour les autres tables
+      logInfo('📡 Appel de Supabase RPC regenerate_all_tables...')
+      const { error } = await supabase.rpc('regenerate_all_tables')
+      if (error) {
+        logError(`❌ Erreur RPC regenerate_all_tables : ${error.message}`)
+        throw error
+      }
+      logInfo('🧠 Tables matches, team_match_stats et player_match_stats régénérées.')
     } else {
-      logInfo('📭 Aucune ligne nouvelle à insérer.')
+      logInfo('📭 Aucune ligne nouvelle à insérer. Les autres tables ne seront pas régénérées.')
     }
 
   } catch (error) {
