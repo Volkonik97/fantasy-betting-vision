@@ -24,7 +24,7 @@ jobs:
         run: node scripts/updateRawOracleMatches.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
 
       - name: Recalculer les stats (regenerate_all_tables)
