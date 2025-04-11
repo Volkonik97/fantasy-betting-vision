@@ -6,8 +6,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  auto-update:
+  update:
     runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GOOGLE_FILE_URL: ${{ secrets.GOOGLE_FILE_URL }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -15,20 +21,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Importer raw_oracle_matches
+      - name: Mettre à jour la table raw_oracle_matches
         run: node scripts/updateRawOracleMatches.js
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
 
-      - name: Recalculer les stats (regenerate_all_tables)
+      - name: Recalculer les tables dérivées
         run: node scripts/syncDerivedTables.js
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
