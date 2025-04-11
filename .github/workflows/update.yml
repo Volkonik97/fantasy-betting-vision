@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Importer raw_oracle_matches
         run: node scripts/updateRawOracleMatches.js
