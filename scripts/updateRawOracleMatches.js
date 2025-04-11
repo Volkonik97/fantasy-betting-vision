@@ -1,31 +1,44 @@
-// scripts/updateRawOracleMatches.js
-import { parseOracleCSV } from '../utils/parseOracleCSV.js'
-import { insertRawMatches, getExistingMatchIds } from '../utils/supabaseClient.js'
+import axios from 'axios'
+import Papa from 'papaparse'
+import { insertRawOracleRows, getExistingMatchIds } from '../utils/supabaseClient.js'
 import { logInfo, logError } from '../utils/logger.js'
 
-const ORACLE_CSV_URL = process.env.GOOGLE_FILE_URL;
+const GOOGLE_FILE_URL = process.env.GOOGLE_FILE_URL
 
-const main = async () => {
+const run = async () => {
   try {
-    logInfo('[updateRawOracleMatches] Lecture de la liste des gameids connus...')
-    const existingGameIds = await getKnownGameIds()
+    logInfo('🔄 Mise à jour de la table raw_oracle_matches...')
+    logInfo(`🌍 Téléchargement du CSV depuis : ${GOOGLE_FILE_URL}`)
 
-    logInfo('[updateRawOracleMatches] Téléchargement et parsing du CSV Oracle...')
-    const { matches } = await parseOracleCSV(ORACLE_CSV_URL, Array.from(existingGameIds))
-
-    const newMatches = matches.filter(match => !existingGameIds.has(match.id))
-
-    if (!newMatches.length) {
-      logInfo('✅ Aucun nouveau match à importer.')
-      return
+    if (!GOOGLE_FILE_URL || !/^https?:\/\//.test(GOOGLE_FILE_URL)) {
+      throw new Error(`URL invalide ou absente : "${GOOGLE_FILE_URL}"`)
     }
 
-    await insertRawMatches(newMatches)
-    logInfo(`✅ ${newMatches.length} nouveaux matchs insérés dans raw_oracle_matches.`)
-  } catch (err) {
-    logError('❌ Erreur dans updateRawOracleMatches :', err)
-    process.exit(1)
+    const response = await axios.get(GOOGLE_FILE_URL)
+    const csvData = response.data
+
+    const parsed = Papa.parse(csvData, {
+      header: true,
+      skipEmptyLines: true
+    }).data
+
+    logInfo(`📄 ${parsed.length} lignes extraites du CSV.`)
+
+    const knownGameIds = await getExistingMatchIds()
+    const newRows = parsed.filter(row => !knownGameIds.includes(row.gameid))
+
+    logInfo(`🆕 ${newRows.length} nouvelles lignes à insérer.`)
+
+    if (newRows.length > 0) {
+      await insertRawOracleRows(newRows)
+      logInfo('✅ Nouvelles lignes insérées dans raw_oracle_matches.')
+    } else {
+      logInfo('📭 Aucune ligne nouvelle à insérer.')
+    }
+
+  } catch (error) {
+    logError(`❌ Erreur updateRawOracleMatches : ${error.message}`)
   }
 }
 
-main()
+run()
