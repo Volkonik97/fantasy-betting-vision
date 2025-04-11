@@ -1,12 +1,12 @@
-name: Auto Update Oracle Matches
+name: Update Oracle Matches
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Toutes les 6 heures
-  workflow_dispatch: # Permet aussi de lancer manuellement
+    - cron: '0 */6 * * *'  # toutes les 6 heures
+  workflow_dispatch:
 
 jobs:
-  update-database:
+  auto-update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -20,14 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Update raw_oracle_matches
+      - name: Importer raw_oracle_matches
         run: node scripts/updateRawOracleMatches.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           GOOGLE_FILE_ID: ${{ secrets.GOOGLE_FILE_ID }}
 
-      - name: Sync derived tables
+      - name: Recalculer les stats (regenerate_all_tables)
         run: node scripts/syncDerivedTables.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
