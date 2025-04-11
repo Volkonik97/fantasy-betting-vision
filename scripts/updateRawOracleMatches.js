@@ -1,6 +1,6 @@
 // scripts/updateRawOracleMatches.js
 import { parseOracleCSV } from '../utils/parseOracleCSV.js'
-import { insertRawMatches, getKnownGameIds } from '../utils/supabaseClient.js'
+import { insertRawMatches, getExistingMatchIds } from '../utils/supabaseClient.js'
 import { logInfo, logError } from '../utils/logger.js'
 
 const ORACLE_CSV_URL = process.env.GOOGLE_FILE_URL;
