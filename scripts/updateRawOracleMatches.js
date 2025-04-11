@@ -3,7 +3,7 @@ import { parseOracleCSV } from '../utils/parseOracleCSV.js'
 import { insertRawMatches, getKnownGameIds } from '../utils/supabaseClient.js'
 import { logInfo, logError } from '../utils/logger.js'
 
-const ORACLE_CSV_URL = `https://drive.google.com/uc?export=download&id=${process.env.GOOGLE_FILE_ID}`
+const ORACLE_CSV_URL = process.env.GOOGLE_FILE_URL;
 
 const main = async () => {
   try {
