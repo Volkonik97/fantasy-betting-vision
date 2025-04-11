@@ -1,6 +1,8 @@
 import { parseOracleCSV } from './utils/parseOracleCSV.js'
-import { insertDataToSupabase, getExistingMatchIds, getKnownTeamIds } from './utils/supabaseClient.js'
+import { insertDataToSupabase, insertRawOracleRows, getExistingMatchIds, getKnownTeamIds } from './utils/supabaseClient.js'
 import { logInfo, logError, logWarn } from './utils/logger.js'
+import Papa from 'papaparse'
+import axios from 'axios'
 
 const GOOGLE_FILE_URL = process.env.GOOGLE_FILE_URL
 
@@ -12,6 +14,22 @@ const run = async () => {
     if (!GOOGLE_FILE_URL || !/^https?:\/\//.test(GOOGLE_FILE_URL)) {
       throw new Error(`URL invalide ou absente : "${GOOGLE_FILE_URL}"`)
     }
+
+    // ➕ Téléchargement du CSV brut
+    const response = await axios.get(GOOGLE_FILE_URL)
+    const csvData = response.data
+
+    // ➕ Parsing brut (sans filtrage)
+    const parsedRaw = Papa.parse(csvData, {
+      header: true,
+      skipEmptyLines: true
+    }).data
+
+    logInfo(`📦 ${parsedRaw.length} lignes brutes extraites.`)
+
+    // ➕ Insertion dans raw_oracle_matches
+    await insertRawOracleRows(parsedRaw)
+    logInfo('📦 Données brutes stockées dans raw_oracle_matches avec succès.')
 
     const knownTeamIds = await getKnownTeamIds()
     logInfo(`📚 ${knownTeamIds.length} équipes connues récupérées depuis Supabase.`)
