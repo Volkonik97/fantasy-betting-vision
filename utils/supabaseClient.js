@@ -2,7 +2,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { logInfo, logError } from './logger.js'
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
 
 export const getKnownGameIds = async () => {
   const { data, error } = await supabase
