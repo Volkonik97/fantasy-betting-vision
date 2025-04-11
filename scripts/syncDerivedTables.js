@@ -1,21 +1,31 @@
-// scripts/syncDerivedTables.js
 import { createClient } from '@supabase/supabase-js';
+
+function checkEnv() {
+  const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+  for (const name of required) {
+    if (!process.env[name]) {
+      console.error(`❌ Variable d'environnement manquante : ${name}`);
+      process.exit(1);
+    }
+  }
+}
+
+checkEnv();
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const main = async () => {
-  console.log('[syncDerivedTables] Appel de regenerate_all_tables()...');
+async function regenerateAll() {
+  console.log('[LOG] 🔁 Exécution de la fonction SQL `regenerate_all_tables()`...');
   const { error } = await supabase.rpc('regenerate_all_tables');
-
   if (error) {
-    console.error('Erreur lors de l’appel de regenerate_all_tables :', error);
+    console.error('❌ Erreur lors de l’exécution de regenerate_all_tables :', error);
     process.exit(1);
+  } else {
+    console.log('✅ Tables dérivées mises à jour avec succès.');
   }
+}
 
-  console.log('[syncDerivedTables] Tables mises à jour avec succès ✅');
-};
-
-main();
+regenerateAll();
