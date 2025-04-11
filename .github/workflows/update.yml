@@ -28,7 +28,3 @@ jobs:
 
       - name: Mettre à jour la table raw_oracle_matches
         run: node scripts/updateRawOracleMatches.js
-
-      - name: Recalculer les tables dérivées
-        run: node scripts/syncDerivedTables.js
-
