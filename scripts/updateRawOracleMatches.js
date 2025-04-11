@@ -1,9 +1,20 @@
+// 📁 scripts/updateRawOracleMatches.js
+
 import axios from 'axios'
 import Papa from 'papaparse'
 import { insertRawOracleRows, getExistingMatchIds } from '../utils/supabaseClient.js'
 import { logInfo, logError } from '../utils/logger.js'
 
 const GOOGLE_FILE_URL = process.env.GOOGLE_FILE_URL
+
+const cleanRow = row => {
+  const cleaned = {}
+  for (const key in row) {
+    const value = row[key]
+    cleaned[key] = value === '' ? null : value
+  }
+  return cleaned
+}
 
 const run = async () => {
   try {
@@ -24,8 +35,10 @@ const run = async () => {
 
     logInfo(`📄 ${parsed.length} lignes extraites du CSV.`)
 
+    const cleanedRows = parsed.map(cleanRow)
+
     const knownGameIds = await getExistingMatchIds()
-    const newRows = parsed.filter(row => !knownGameIds.includes(row.gameid))
+    const newRows = cleanedRows.filter(row => !knownGameIds.includes(row.gameid))
 
     logInfo(`🆕 ${newRows.length} nouvelles lignes à insérer.`)
 
