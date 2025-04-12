@@ -10,22 +10,22 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
   if (!imageUrl) return false;
   
   try {
-    // For external URLs (not Supabase storage), just return true
+    // Pour les URLs externes (pas Supabase storage), retourner true
     if (!imageUrl.includes('supabase.co/storage')) {
       return true;
     }
     
-    // Extract bucket name and path from the URL
-    // Example URL format: https://{project-ref}.supabase.co/storage/v1/object/public/{bucket}/{path}
+    // Extraire le nom du bucket et le chemin à partir de l'URL
+    // Format d'URL exemple: https://{project-ref}.supabase.co/storage/v1/object/public/{bucket}/{path}
     const urlParts = imageUrl.split('/storage/v1/object/public/');
     if (urlParts.length !== 2) {
-      console.warn(`Invalid image URL format: ${imageUrl}`);
+      console.warn(`Format d'URL d'image invalide: ${imageUrl}`);
       return false;
     }
     
     const pathParts = urlParts[1].split('/');
     if (pathParts.length < 2) {
-      console.warn(`Not enough path parts in URL: ${imageUrl}`);
+      console.warn(`Pas assez de parties dans le chemin URL: ${imageUrl}`);
       return false;
     }
     
@@ -33,27 +33,27 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
     const path = pathParts.slice(1).join('/');
     
     if (!bucket || !path) {
-      console.warn(`Missing bucket or path in URL: ${imageUrl}`);
+      console.warn(`Bucket ou chemin manquant dans l'URL: ${imageUrl}`);
       return false;
     }
     
-    console.log(`Verifying image in bucket: ${bucket}, path: ${path}`);
+    console.log(`Vérification de l'image dans le bucket: ${bucket}, chemin: ${path}`);
     
-    // Check if the object exists without downloading it
+    // Vérifier si l'objet existe sans le télécharger
     const { data, error } = await supabase
       .storage
       .from(bucket)
-      .createSignedUrl(path, 60); // Create a signed URL with 60 seconds expiry
+      .createSignedUrl(path, 60); // Créer une URL signée avec 60 secondes d'expiration
     
     if (error) {
-      console.error("Error checking image existence:", error);
+      console.error("Erreur lors de la vérification de l'existence de l'image:", error);
       return false;
     }
     
-    // If we successfully created a signed URL, the file exists
+    // Si nous avons réussi à créer une URL signée, le fichier existe
     return !!data;
   } catch (error) {
-    console.error("Exception verifying image:", error);
+    console.error("Exception lors de la vérification de l'image:", error);
     return false;
   }
 };

@@ -2,6 +2,8 @@
 import React from "react";
 import { Match, Team } from "@/utils/models/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface TeamMatchRowProps {
   match: Match;
@@ -15,7 +17,7 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     return null;
   }
   
-  // Check if team is blue by ID or name for more flexibility
+  // Vérifier si l'équipe est bleue par ID ou nom pour plus de flexibilité
   const isBlue = match.teamBlue.id === teamId || match.teamBlue.name === teamName;
   const opponent = isBlue ? match.teamRed : match.teamBlue;
   const side = isBlue ? "Bleu" : "Rouge";
@@ -27,10 +29,17 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     ? match.predictedWinner === match.result.winner 
     : null;
   
+  // Formater la date correctement
+  const matchDate = new Date(match.date);
+  const isValidDate = !isNaN(matchDate.getTime());
+  const formattedDate = isValidDate 
+    ? format(matchDate, "dd/MM/yyyy", { locale: fr })
+    : "Date invalide";
+  
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50">
       <td className="px-4 py-3">
-        {new Date(match.date).toLocaleDateString()}
+        {formattedDate}
       </td>
       <td className="px-4 py-3">{match.tournament}</td>
       <td className="px-4 py-3">

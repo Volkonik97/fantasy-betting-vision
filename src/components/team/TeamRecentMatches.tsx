@@ -30,7 +30,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
       }
       
       try {
-        // Sort matches by date (most recent first)
+        // Trier les matchs par date (les plus récents en premier)
         const sortedMatches = [...matches].sort((a, b) => {
           return new Date(b.date).getTime() - new Date(a.date).getTime();
         });
@@ -39,13 +39,13 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
         
         const updatedMatches = await Promise.all(
           sortedMatches.map(async (match) => {
-            // Ensure the match is valid
+            // S'assurer que le match est valide
             if (!match.teamBlue || !match.teamRed) {
               console.error(`Match invalide (${match.id}): données d'équipe manquantes`, match);
               return match;
             }
             
-            // Determine opponent team
+            // Déterminer l'équipe adverse
             const isBlue = match.teamBlue.id === team.id || match.teamBlue.name === team.name;
             const opponent = isBlue ? match.teamRed : match.teamBlue;
             
@@ -55,12 +55,18 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
             }
             
             try {
+              // Rechercher d'abord un logo déjà valide
+              if (opponent.logo && !opponent.logo.includes("undefined") && !opponent.logo.includes("null")) {
+                return match;
+              }
+              
+              // Sinon, essayer de récupérer le logo
               const logoUrl = await getTeamLogoUrl(opponent.id);
               if (logoUrl) {
-                // Create a new opponent object with the logo
+                // Créer un nouvel objet adversaire avec le logo
                 const updatedOpponent = { ...opponent, logo: logoUrl };
                 
-                // Return updated match with the new opponent
+                // Retourner un match mis à jour avec le nouvel adversaire
                 return isBlue 
                   ? { ...match, teamRed: updatedOpponent }
                   : { ...match, teamBlue: updatedOpponent };
@@ -69,7 +75,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
               console.error(`Erreur lors de la récupération du logo pour l'équipe ${opponent.id}:`, error);
             }
             
-            // Return original match if logo fetch failed
+            // Retourner le match original si la récupération du logo a échoué
             return match;
           })
         );
