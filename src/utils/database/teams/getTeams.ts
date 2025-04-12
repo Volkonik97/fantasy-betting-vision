@@ -74,12 +74,21 @@ export const getTeams = async (): Promise<Team[]> => {
       // Convert raw data to Team objects using our adapter and sort them
       const normalizedTeams = teamsData.map(team => {
         // Explicitly format winrate values to ensure they're interpreted correctly
+        // The view returns different field names for winrates (with _percent suffix)
         const processedTeam = {
           ...team,
-          winrate: typeof team.winrate === 'number' ? team.winrate : parseFloat(team.winrate || '0'),
-          winrate_blue: typeof team.winrate_blue === 'number' ? team.winrate_blue : parseFloat(team.winrate_blue || '0'),
-          winrate_red: typeof team.winrate_red === 'number' ? team.winrate_red : parseFloat(team.winrate_red || '0')
+          winrate: typeof team.winrate_percent === 'number' ? team.winrate_percent / 100 : parseFloat(String(team.winrate_percent || '0')) / 100,
+          winrate_blue: typeof team.winrate_blue_percent === 'number' ? team.winrate_blue_percent / 100 : parseFloat(String(team.winrate_blue_percent || '0')) / 100,
+          winrate_red: typeof team.winrate_red_percent === 'number' ? team.winrate_red_percent / 100 : parseFloat(String(team.winrate_red_percent || '0')) / 100
         };
+        
+        // Log raw values from team summary view
+        console.log(`Raw values from team_summary_view for ${team.teamname}:`, {
+          winrate_percent: team.winrate_percent,
+          winrate_blue_percent: team.winrate_blue_percent,
+          winrate_red_percent: team.winrate_red_percent,
+        });
+        
         return adaptTeamFromDatabase(processedTeam);
       }).sort((a, b) => a.name.localeCompare(b.name));
       

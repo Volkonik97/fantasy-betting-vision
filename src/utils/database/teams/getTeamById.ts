@@ -40,9 +40,6 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     // Convert retrieved data to proper team object
     const baseTeam = adaptTeamFromDatabase(data);
     
-    // Ensure players array is initialized
-    baseTeam.players = baseTeam.players || [];
-
     // Try to get summary data from team_summary_view if available
     try {
       const { data: summaryData, error: summaryError } = await supabase
@@ -54,15 +51,29 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       if (!summaryError && summaryData) {
         console.log("Found team summary data:", summaryData);
         
+        // If we have winrate data from summary view, convert percent to decimal format
+        let winRates = {};
+        if (summaryData.winrate_percent !== undefined) {
+          winRates = {
+            winRate: summaryData.winrate_percent / 100,
+            blueWinRate: (summaryData.winrate_blue_percent || 0) / 100,
+            redWinRate: (summaryData.winrate_red_percent || 0) / 100,
+          };
+        }
+        
         // Create a combined team object with data from both sources
         const mergedTeam: Team = {
           ...baseTeam,
+          ...winRates,
           aggression_score: summaryData.aggression_score || 0,
           earlygame_score: summaryData.earlygame_score || 0,
           objectives_score: summaryData.objectives_score || 0,
           dragon_diff: summaryData.dragon_diff || 0,
           tower_diff: summaryData.tower_diff || 0
         };
+        
+        // Ensure players array is initialized
+        mergedTeam.players = mergedTeam.players || [];
         
         return mergedTeam;
       }
@@ -71,6 +82,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       // Continue with regular team data
     }
 
+    // Ensure players array is initialized
+    baseTeam.players = baseTeam.players || [];
+    
     return baseTeam;
   } catch (error) {
     console.error("Exception in getTeamById:", error);

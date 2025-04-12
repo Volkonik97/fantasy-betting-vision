@@ -1,3 +1,4 @@
+
 import { Team } from "@/utils/models/types";
 
 /**
@@ -33,8 +34,35 @@ export interface DatabaseTeam {
   // Additional fields as needed
 }
 
+// Type for team data from team_summary_view
+export interface TeamSummaryViewData {
+  teamid: string;
+  teamname: string;
+  logo?: string | null;
+  region?: string;
+  winrate_percent?: number;
+  winrate_blue_percent?: number;
+  winrate_red_percent?: number;
+  avg_gamelength: number;
+  avg_towers: number;
+  firstblood_pct: number;
+  avg_dragons: number;
+  avg_kills: number;
+  avg_kill_diff: number;
+  firstdragon_pct: number;
+  avg_dragons_against: number;
+  avg_towers_against: number;
+  avg_heralds: number;
+  avg_void_grubs: number;
+  aggression_score?: number;
+  earlygame_score?: number;
+  objectives_score?: number;
+  dragon_diff?: number;
+  tower_diff?: number;
+}
+
 // For RawDatabaseTeam
-export type RawDatabaseTeam = Partial<DatabaseTeam>;
+export type RawDatabaseTeam = Partial<DatabaseTeam | TeamSummaryViewData>;
 
 /**
  * Adapter to convert database team format to application Team model
@@ -64,9 +92,9 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
   });
   
   // Ensure numeric values are properly parsed
-  const winRate = typeof dbTeam.winrate === 'number' ? dbTeam.winrate : parseFloat(dbTeam.winrate || '0');
-  const blueWinRate = typeof dbTeam.winrate_blue === 'number' ? dbTeam.winrate_blue : parseFloat(dbTeam.winrate_blue || '0');
-  const redWinRate = typeof dbTeam.winrate_red === 'number' ? dbTeam.winrate_red : parseFloat(dbTeam.winrate_red || '0');
+  const winRate = typeof dbTeam.winrate === 'number' ? dbTeam.winrate : parseFloat(String(dbTeam.winrate || '0'));
+  const blueWinRate = typeof dbTeam.winrate_blue === 'number' ? dbTeam.winrate_blue : parseFloat(String(dbTeam.winrate_blue || '0'));
+  const redWinRate = typeof dbTeam.winrate_red === 'number' ? dbTeam.winrate_red : parseFloat(String(dbTeam.winrate_red || '0'));
   
   return {
     id: dbTeam.teamid || '',
@@ -78,8 +106,8 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     redWinRate: redWinRate,
     averageGameTime: dbTeam.avg_gamelength || 0,
     
-    // Initialize players as an empty array to prevent undefined issues
-    players: [],
+    // Always initialize players as an empty array
+    players: Array.isArray(dbTeam.players) ? dbTeam.players : [],
     
     // Objective statistics
     firstblood_pct: dbTeam.firstblood_pct || 0,
