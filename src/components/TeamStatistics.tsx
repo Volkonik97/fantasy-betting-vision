@@ -99,7 +99,15 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
     },
   ];
 
-  const hasTimeline = timelineStats && Object.keys(timelineStats).length > 0;
+  const hasTimeline = timelineStats && Object.keys(timelineStats || {}).length > 0;
+
+  // Helper function to safely access timeline stat properties
+  const getTimelineStat = (time: string, property: string, defaultValue: any = 0) => {
+    if (!timelineStats || !timelineStats[time] || timelineStats[time][property] === undefined) {
+      return defaultValue;
+    }
+    return timelineStats[time][property];
+  };
 
   return (
     <Card className="overflow-hidden h-full">
@@ -191,12 +199,15 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <TabsContent value="gold">
                     <div className="space-y-2">
                       <div className="grid grid-cols-4 gap-2">
-                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                        {Object.keys(timelineStats || {}).map((time) => (
                           <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                             <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                            <div className="font-semibold">{stats.avgGold.toLocaleString()}</div>
-                            <div className={`text-xs mt-1 ${stats.avgGoldDiff > 0 ? 'text-green-600' : stats.avgGoldDiff < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                              {stats.avgGoldDiff > 0 ? '+' : ''}{stats.avgGoldDiff.toLocaleString()}
+                            <div className="font-semibold">
+                              {getTimelineStat(time, 'avgGold', 0).toLocaleString()}
+                            </div>
+                            <div className={`text-xs mt-1 ${getTimelineStat(time, 'avgGoldDiff', 0) > 0 ? 'text-green-600' : getTimelineStat(time, 'avgGoldDiff', 0) < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                              {getTimelineStat(time, 'avgGoldDiff', 0) > 0 ? '+' : ''}
+                              {getTimelineStat(time, 'avgGoldDiff', 0).toLocaleString()}
                             </div>
                           </div>
                         ))}
@@ -207,12 +218,14 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <TabsContent value="cs">
                     <div className="space-y-2">
                       <div className="grid grid-cols-4 gap-2">
-                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                        {Object.keys(timelineStats || {}).map((time) => (
                           <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                             <div className="text-sm text-gray-500 mb-1">{time} min</div>
-                            <div className="font-semibold">{stats.avgCs}</div>
+                            <div className="font-semibold">
+                              {getTimelineStat(time, 'avgCs', 0)}
+                            </div>
                             <div className="text-xs mt-1 text-gray-600">
-                              {(stats.avgCs / parseInt(time)).toFixed(1)} CS/min
+                              {(getTimelineStat(time, 'avgCs', 0) / parseInt(time)).toFixed(1)} CS/min
                             </div>
                           </div>
                         ))}
@@ -223,14 +236,14 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
                   <TabsContent value="kda">
                     <div className="space-y-2">
                       <div className="grid grid-cols-4 gap-2">
-                        {Object.entries(timelineStats).map(([time, stats]: [string, any]) => (
+                        {Object.keys(timelineStats || {}).map((time) => (
                           <div key={time} className="bg-slate-50 p-3 rounded-lg text-center shadow-sm">
                             <div className="text-sm text-gray-500 mb-1">{time} min</div>
                             <div className="font-semibold">
-                              {stats.avgKills} / {stats.avgDeaths}
+                              {getTimelineStat(time, 'avgKills', 0)} / {getTimelineStat(time, 'avgDeaths', 0)}
                             </div>
                             <div className="text-xs mt-1 text-gray-600">
-                              {(stats.avgKills / (stats.avgDeaths || 1)).toFixed(1)} KDA
+                              {(getTimelineStat(time, 'avgKills', 0) / (getTimelineStat(time, 'avgDeaths', 0) || 1)).toFixed(1)} KDA
                             </div>
                           </div>
                         ))}
