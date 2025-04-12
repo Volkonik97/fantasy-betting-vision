@@ -1,7 +1,6 @@
-
 import { MatchTeamStats } from '../types';
 import { LeagueGameDataRow } from '../../csv/types';
-import { safeParseFloat, safeParseInt } from '../types';
+import { safeParseFloat, safeParseInt } from '../utils';
 
 /**
  * Extract team statistics from game rows, processing both blue and red teams independently
