@@ -238,13 +238,41 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
             };
           }
           
-          // Safe access to date with fallback
-          const matchDate = matchData?.date ? new Date(matchData.date) : new Date();
+          // Create a safe date with fallback
+          let matchDate = new Date();
+          try {
+            // Check if matchData exists and has a date property
+            if (matchData && typeof matchData === 'object') {
+              // Try different date field formats that might exist
+              const possibleDateFields = ['date', 'match_date', 'played_at', 'created_at'];
+              for (const field of possibleDateFields) {
+                if (field in matchData && matchData[field]) {
+                  const parsedDate = new Date(matchData[field]);
+                  if (!isNaN(parsedDate.getTime())) {
+                    matchDate = parsedDate;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (dateError) {
+            console.warn(`Error parsing date for match ${stat.match_id}:`, dateError);
+          }
           
           // Determine player's team and if they won
           const playerTeamId = stat.team_id;
-          const isBlueTeam = matchData?.team1_id === playerTeamId;
-          const isWinner = matchData?.winner_team_id === playerTeamId;
+          let isWinner = false;
+          
+          // Safely check if player's team is the winner
+          if (matchData && typeof matchData === 'object') {
+            const possibleWinnerFields = ['winner_team_id', 'winner_id', 'winning_team_id'];
+            for (const field of possibleWinnerFields) {
+              if (field in matchData && matchData[field] === playerTeamId) {
+                isWinner = true;
+                break;
+              }
+            }
+          }
           
           return {
             ...stat,
@@ -304,7 +332,7 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
       .from('matches')
       .select('*')
       .or(`team1_id.eq.${teamId},team2_id.eq.${teamId}`)
-      .order('date');
+      .order('gameid');
       
     if (matchesError) {
       console.error(`Error fetching matches for team ${teamId}:`, matchesError);
@@ -318,16 +346,43 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
     
     // Process matches to extract timeline data
     const timelineData = matches.map(match => {
+      // Handle safely - check if match data exists
+      if (!match) return null;
+      
+      // Determine if team is blue side (team1)
       const isTeamBlue = match.team1_id === teamId;
       
-      // Default scores with type safety
+      // Determine winner and scores with defaults
+      let isWin = false;
       const teamScore = 0;
       const opponentScore = 0;
-      const isWin = match.winner_team_id === teamId;
+      
+      // Safely check if this team is the winner
+      if (match.winner_team_id === teamId) {
+        isWin = true;
+      }
+      
+      // Safely create a date object with fallback
+      let matchDate = new Date();
+      try {
+        // Check for various date field formats
+        const possibleDateFields = ['date', 'match_date', 'played_at', 'created_at'];
+        for (const field of possibleDateFields) {
+          if (field in match && match[field]) {
+            const parsedDate = new Date(match[field]);
+            if (!isNaN(parsedDate.getTime())) {
+              matchDate = parsedDate;
+              break;
+            }
+          }
+        }
+      } catch (dateError) {
+        console.warn(`Error parsing date for match ${match.gameid}:`, dateError);
+      }
       
       return {
         match_id: match.gameid,
-        date: match.date ? new Date(match.date) : new Date(),
+        date: matchDate,
         tournament: match.tournament || 'Unknown',
         patch: match.patch || '',
         opponent_id: isTeamBlue 
@@ -340,7 +395,7 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
         is_win: isWin,
         side: isTeamBlue ? 'blue' : 'red'
       };
-    });
+    }).filter(Boolean); // Remove any null entries
     
     // Update cache
     playerStatsCache[cacheKey] = timelineData;

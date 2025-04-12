@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -5,24 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
-
-interface SimplePlayer {
-  id: string;
-  name: string;
-  image: string | null;
-}
-
-interface PlayerWithImage {
-  player: SimplePlayer;
-  imageFile: File | null;
-  newImageUrl: string | null;
-  processed: boolean;
-}
-
-interface ImageUploadError {
-  count: number;
-  lastError: string | null;
-}
+import { PlayerWithImage } from "./image-import/types"; // Import the shared type
 
 import DropZone from "./image-import/DropZone";
 import UploadErrorAlert from "./image-import/UploadErrorAlert";
@@ -32,6 +16,11 @@ import PlayerImagesFilter from "./image-import/PlayerImagesFilter";
 import PlayerImagesList from "./image-import/PlayerImagesList";
 import RlsWarning from "./image-import/RlsWarning";
 import BucketStatusInfo from "./image-import/BucketStatusInfo";
+
+interface ImageUploadError {
+  count: number;
+  lastError: string | null;
+}
 
 interface PlayerImagesImportProps {
   bucketStatus?: "loading" | "exists" | "error";
@@ -95,7 +84,8 @@ const PlayerImagesImport = ({
         console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
       }
       
-      const initialPlayerImages = playersList.map(player => ({
+      // Ensure we're creating objects that match the PlayerWithImage type
+      const initialPlayerImages: PlayerWithImage[] = playersList.map(player => ({
         player,
         imageFile: null,
         newImageUrl: null,
@@ -272,7 +262,7 @@ const PlayerImagesImport = ({
         const { error: updateError } = await supabase
           .from('players')
           .update({ image: publicUrl })
-          .eq('id', playerId);
+          .eq('playerid', playerId);
         
         if (updateError) {
           console.error("Error updating player:", updateError);
