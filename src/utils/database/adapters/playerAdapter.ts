@@ -33,6 +33,33 @@ export interface DatabasePlayer {
   avg_firstblood_victim?: number;
 }
 
+// For player data in player_summary_view
+export interface PlayerSummaryViewData {
+  playerid: string;
+  playername: string;
+  position: string;
+  teamid: string;
+  avg_kills: number;
+  avg_deaths: number;
+  avg_assists: number;
+  kda: number;
+  cspm: number;
+  dpm: number;
+  damage_share: number;
+  gpm?: number;
+  gold_share_percent?: number;
+  vspm: number;
+  wcpm: number;
+  dmg_per_gold?: number;
+  kill_participation_pct?: number;
+  earlygame_score?: number;
+  aggression_score?: number;
+  avg_golddiffat10?: number;
+  avg_xpdiffat10?: number;
+  avg_csdiffat10?: number;
+  efficiency_score?: number;
+}
+
 // For RawDatabasePlayer
 export type RawDatabasePlayer = Partial<DatabasePlayer>;
 

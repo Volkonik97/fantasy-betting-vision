@@ -46,20 +46,56 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
           team.players = playerSummaryData.map(player => {
             console.log(`Processing player ${player.playername} with damage_share:`, player.damage_share);
             
+            // Get player image from the players table since it's not in player_summary_view
             return {
               id: player.playerid,
               name: player.playername,
               role: normalizeRoleName(player.position) as PlayerRole,
-              image: player.image || '',
+              image: '', // We'll have to fetch this separately
               team: player.teamid,
               teamName: team.name,
               teamRegion: team.region,
               kda: player.kda || 0,
               csPerMin: player.cspm || 0,
               damageShare: player.damage_share || 0,
-              championPool: player.champion_pool ? String(player.champion_pool) : '0'
+              championPool: '0' // We'll have to fetch this separately
             };
           });
+          
+          // Fetch additional player data for images and championPool
+          if (team.players.length > 0) {
+            const playerIds = team.players.map(p => p.id);
+            const { data: playersExtendedData, error: playersExtendedError } = await supabase
+              .from('players')
+              .select('playerid, image, champion_pool')
+              .in('playerid', playerIds);
+              
+            if (!playersExtendedError && playersExtendedData && playersExtendedData.length > 0) {
+              // Create a lookup map for quick access
+              const playerDataMap = new Map();
+              playersExtendedData.forEach(p => {
+                playerDataMap.set(p.playerid, {
+                  image: p.image,
+                  championPool: p.champion_pool ? String(p.champion_pool) : '0'
+                });
+              });
+              
+              // Enrich players with the missing data
+              team.players = team.players.map(player => {
+                const extendedData = playerDataMap.get(player.id);
+                if (extendedData) {
+                  return {
+                    ...player,
+                    image: extendedData.image || '',
+                    championPool: extendedData.championPool
+                  };
+                }
+                return player;
+              });
+            } else {
+              console.warn("Could not fetch extended player data:", playersExtendedError);
+            }
+          }
         } else {
           // Fallback to regular players table if player_summary_view didn't work
           const { data: playersData, error: playersError } = await supabase
