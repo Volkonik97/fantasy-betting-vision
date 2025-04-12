@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getMatches } from "@/utils/database/matchesService";
 import { getSideStatistics } from "@/utils/statistics"; 
-import { Match, SideStatistics } from "@/utils/models/types";
+import { Match } from "@/utils/models/types";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -23,8 +23,6 @@ const MatchDetails = () => {
   const [match, setMatch] = useState<Match | null>(null);
   
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [blueTeamStats, setBlueTeamStats] = useState<SideStatistics | null>(null);
-  const [redTeamStats, setRedTeamStats] = useState<SideStatistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -49,25 +47,11 @@ const MatchDetails = () => {
         
         setMatch(foundMatch);
         
-        // Load team stats
-        try {
-          const blue = await getSideStatistics(foundMatch.teamBlue.id);
-          const red = await getSideStatistics(foundMatch.teamRed.id);
-          
-          // Add team IDs to the stats objects
-          setBlueTeamStats({
-            ...blue,
-            teamId: foundMatch.teamBlue.id
-          });
-          
-          setRedTeamStats({
-            ...red,
-            teamId: foundMatch.teamRed.id
-          });
-        } catch (statsError) {
-          console.error("Erreur lors du chargement des statistiques d'équipe:", statsError);
-          // Continue without team stats
+        // Set default selected team to blue team
+        if (!selectedTeam && foundMatch.teamBlue) {
+          setSelectedTeam(foundMatch.teamBlue.id);
         }
+        
       } catch (error) {
         console.error("Erreur lors du chargement des données du match:", error);
         toast.error("Échec du chargement des détails du match");
@@ -77,7 +61,7 @@ const MatchDetails = () => {
     };
     
     loadMatchData();
-  }, [id]);
+  }, [id, selectedTeam]);
   
   if (isLoading) {
     return (
@@ -105,6 +89,9 @@ const MatchDetails = () => {
   const handleTeamSelect = (teamId: string) => {
     setSelectedTeam(teamId === selectedTeam ? null : teamId);
   };
+  
+  // Determine opponent team based on selected team
+  const opponent = selectedTeam === match.teamBlue.id ? match.teamRed.id : match.teamBlue.id;
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -136,11 +123,13 @@ const MatchDetails = () => {
           </div>
           
           <div>
-            <TeamAnalysisTabs 
-              blueTeamStats={blueTeamStats} 
-              redTeamStats={redTeamStats} 
-              isLoading={isLoading} 
-            />
+            {selectedTeam && (
+              <TeamAnalysisTabs 
+                match={match}
+                selectedTeam={selectedTeam}
+                opponent={opponent}
+              />
+            )}
           </div>
         </div>
       </main>
