@@ -1,6 +1,30 @@
-
 import { LeagueGameDataRow } from '../../csv/types';
 import { GameTracker } from '../types';
+
+// Keep track of games we've seen
+const gamesMap = new Map<string, GameTracker>();
+
+/**
+ * Get or create a game tracker for a specific game ID
+ */
+export function getOrCreateGame(gameId: string): GameTracker {
+  // Check if we already have this game
+  let game = gamesMap.get(gameId);
+  
+  // If not, create a new game tracker
+  if (!game) {
+    game = {
+      id: gameId,
+      teams: {
+        blue: '',
+        red: ''
+      }
+    };
+    gamesMap.set(gameId, game);
+  }
+  
+  return game;
+}
 
 /**
  * Initialize a game tracker object
@@ -83,12 +107,10 @@ export function identifyGameResult(game: GameTracker, rows: LeagueGameDataRow[])
   const resultRow = rows.find(row => row.result === '1' || row.result === 'TRUE' || row.result === 'true');
   
   if (resultRow && resultRow.teamid) {
-    updatedGame.result = resultRow.teamid;
-    
-    // Get the game duration if available
-    if (resultRow.gamelength) {
-      updatedGame.duration = resultRow.gamelength;
-    }
+    updatedGame.result = {
+      winner: resultRow.teamid,
+      duration: resultRow.gamelength || ''
+    };
   }
   
   return updatedGame;

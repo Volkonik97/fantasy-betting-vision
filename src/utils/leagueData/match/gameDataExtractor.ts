@@ -2,6 +2,19 @@
 import { LeagueGameDataRow } from '../../csv/types';
 
 /**
+ * Extract basic game data from a row
+ */
+export function extractGameData(row: LeagueGameDataRow) {
+  return {
+    date: row.date || '',
+    league: row.league || '',
+    year: row.year ? parseInt(row.year as string) : undefined,
+    split: row.split || '',
+    patch: row.patch || ''
+  };
+}
+
+/**
  * Group game data rows by game ID
  */
 export function groupGamesByGameId(data: LeagueGameDataRow[]): Map<string, LeagueGameDataRow[]> {

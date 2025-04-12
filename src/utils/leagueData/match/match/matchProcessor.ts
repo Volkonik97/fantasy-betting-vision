@@ -18,7 +18,7 @@ export function processMatch(row: LeagueGameDataRow) {
   const gameData = extractGameData(row);
   
   // Get picks and bans if available
-  const picksAndBans = extractPicksAndBans(row);
+  const { picks: picksData, bans: bansData } = extractPicksAndBans([row]);
   
   // Get or create game tracker
   const game = getOrCreateGame(gameId);
@@ -35,7 +35,58 @@ export function processMatch(row: LeagueGameDataRow) {
   return {
     gameId,
     gameData,
-    picksAndBans,
+    picksAndBans: { picks: picksData, bans: bansData },
     game
+  };
+}
+
+/**
+ * Process all match data from a dataset
+ */
+export function processMatchData(data: LeagueGameDataRow[]) {
+  console.log(`Processing match data from ${data.length} rows...`);
+  
+  // Track unique games
+  const uniqueGames = new Map();
+  
+  // Track match stats
+  const matchStats = new Map();
+  
+  // Track player stats
+  const matchPlayerStats = new Map();
+  
+  // Track processed matches
+  const matchesArray: any[] = [];
+  
+  // Process each row
+  data.forEach(row => {
+    const result = processMatch(row);
+    if (result) {
+      const { gameId, game } = result;
+      
+      // Track unique games
+      uniqueGames.set(gameId, game);
+      
+      // Add to matches array if not already there
+      if (!matchesArray.find(m => m.id === gameId)) {
+        matchesArray.push({
+          id: gameId,
+          date: game.date,
+          league: game.league,
+          year: game.year,
+          teamBlueId: game.teams.blue,
+          teamRedId: game.teams.red
+        });
+      }
+    }
+  });
+  
+  console.log(`Processed ${uniqueGames.size} unique games`);
+  
+  return {
+    uniqueGames,
+    matchStats,
+    matchPlayerStats,
+    matchesArray
   };
 }
