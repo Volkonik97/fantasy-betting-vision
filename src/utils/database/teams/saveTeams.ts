@@ -1,92 +1,96 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Team } from '../../models/types';
-import { chunk } from '../../dataConverter';
+import { Team } from "../../models/types";
 import { toast } from "sonner";
-import { clearTeamsCache } from './teamCache';
+import { clearTeamsCache } from "./teamCache";
+import { adaptTeamForDatabase } from "../adapters/teamAdapter";
 
 /**
- * Save teams to database
+ * Save teams to the database
  */
 export const saveTeams = async (teams: Team[]): Promise<boolean> => {
   try {
-    console.log(`Saving ${teams.length} teams to Supabase`);
-    
-    // Clear cache when saving new teams
-    clearTeamsCache();
-    
-    // Check for duplicate team IDs
-    const teamIds = teams.map(team => team.id);
-    const uniqueTeamIds = new Set(teamIds);
-    
-    if (uniqueTeamIds.size !== teams.length) {
-      console.warn(`Found ${teams.length - uniqueTeamIds.size} duplicate team IDs in the input data`);
-      
-      // Create a map to find duplicates
-      const idCounts = teamIds.reduce((acc, id) => {
-        acc[id] = (acc[id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      // Log duplicates
-      Object.entries(idCounts)
-        .filter(([_, count]) => count > 1)
-        .forEach(([id, count]) => {
-          console.warn(`Team ID "${id}" appears ${count} times`);
-        });
-      
-      // Filter out duplicates, keeping only the first occurrence of each ID
-      const seenIds = new Set<string>();
-      teams = teams.filter(team => {
-        if (seenIds.has(team.id)) {
-          return false;
-        }
-        seenIds.add(team.id);
-        return true;
-      });
-      
-      console.log(`Filtered down to ${teams.length} unique teams`);
+    if (!teams || teams.length === 0) {
+      console.log("No teams to save");
+      return true;
     }
     
-    // Insert teams in batches of 50 using upsert (on conflict update)
-    const teamChunks = chunk(teams, 50);
-    let successCount = 0;
+    console.log(`Saving ${teams.length} teams to the database...`);
     
-    for (const teamChunk of teamChunks) {
-      try {
-        const { error: teamsError } = await supabase
-          .from('teams')
-          .upsert(
-            teamChunk.map(team => ({
-              id: team.id,
-              name: team.name,
-              logo: team.logo,
-              region: team.region,
-              win_rate: team.winRate,
-              blue_win_rate: team.blueWinRate,
-              red_win_rate: team.redWinRate,
-              average_game_time: team.averageGameTime
-            })),
-            { onConflict: 'id' }
-          );
+    // Map to database format
+    const dbTeams = teams.map(team => adaptTeamForDatabase(team));
+    
+    // First, check which teams already exist to avoid conflicts
+    const existingTeamIds = new Set<string>();
+    const { data: existingTeams, error: checkError } = await supabase
+      .from('teams')
+      .select('teamid')
+      .in('teamid', dbTeams.map(t => t.teamid || '').filter(Boolean));
+    
+    if (checkError) {
+      console.error("Error checking existing teams:", checkError);
+    } else if (existingTeams) {
+      existingTeams.forEach(team => {
+        if (team.teamid) existingTeamIds.add(team.teamid);
+      });
+      console.log(`Found ${existingTeamIds.size} existing teams`);
+    }
+    
+    // Separate teams into new and existing
+    const newTeams = dbTeams.filter(team => !existingTeamIds.has(team.teamid || ''));
+    const existingTeamsToUpdate = dbTeams.filter(team => existingTeamIds.has(team.teamid || ''));
+    
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Insert new teams
+    if (newTeams.length > 0) {
+      const { data: insertData, error: insertError } = await supabase
+        .from('teams')
+        .insert(newTeams);
         
-        if (teamsError) {
-          console.error("Error upserting teams batch:", teamsError);
-          toast.error(`Erreur lors de la mise à jour des équipes: ${teamsError.message}`);
-          continue; // Continue with the next batch rather than stopping everything
-        }
-        
-        successCount += teamChunk.length;
-      } catch (error) {
-        console.error("Error during team batch upsert:", error);
-        continue; // Continue with the next batch
+      if (insertError) {
+        console.error("Error inserting new teams:", insertError);
+        errorCount += newTeams.length;
+        toast.error(`Erreur lors de l'ajout de ${newTeams.length} nouvelles équipes`);
+      } else {
+        successCount += newTeams.length;
+        console.log(`Successfully inserted ${newTeams.length} new teams`);
       }
     }
     
-    console.log(`Successfully upserted ${successCount}/${teams.length} teams`);
-    return successCount > 0;
+    // Update existing teams
+    if (existingTeamsToUpdate.length > 0) {
+      const { data: updateData, error: updateError } = await supabase
+        .from('teams')
+        .upsert(existingTeamsToUpdate, {
+          onConflict: 'teamid',
+          ignoreDuplicates: false
+        });
+        
+      if (updateError) {
+        console.error("Error updating existing teams:", updateError);
+        errorCount += existingTeamsToUpdate.length;
+        toast.error(`Erreur lors de la mise à jour de ${existingTeamsToUpdate.length} équipes existantes`);
+      } else {
+        successCount += existingTeamsToUpdate.length;
+        console.log(`Successfully updated ${existingTeamsToUpdate.length} existing teams`);
+      }
+    }
+    
+    // Clear cache to ensure fresh data on next fetch
+    clearTeamsCache();
+    
+    if (errorCount > 0) {
+      toast.warning(`${successCount} équipes sauvegardées, ${errorCount} échecs`);
+      return successCount > 0;
+    } else {
+      toast.success(`${successCount} équipes sauvegardées avec succès`);
+      return true;
+    }
   } catch (error) {
-    console.error("Error saving teams:", error);
-    toast.error("Une erreur s'est produite lors de l'enregistrement des équipes");
+    console.error("Unexpected error in saveTeams:", error);
+    toast.error("Erreur lors de la sauvegarde des équipes");
     return false;
   }
 };

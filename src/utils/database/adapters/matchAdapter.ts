@@ -95,7 +95,7 @@ export const adaptMatchFromDatabase = (data: RawDatabaseMatch): Match => {
     result: {
       winner: data.winner_team_id || '',
       score: [data.score_blue || 0, data.score_red || 0],
-      duration: data.duration || data.gamelength?.toString() || "0",
+      duration: data.duration || (data.gamelength?.toString() || "0"),
       mvp: data.mvp || ""
     },
     extraStats: {
@@ -149,7 +149,7 @@ export const adaptMatchForDatabase = (match: Match): RawDatabaseMatch => {
     winner_team_id: match.result?.winner,
     score_blue: match.result?.score[0] || 0,
     score_red: match.result?.score[1] || 0,
-    duration: match.result?.duration,
+    duration: match.result?.duration?.toString(),
     mvp: match.result?.mvp,
     status: match.status,
     predicted_winner: match.predictedWinner,

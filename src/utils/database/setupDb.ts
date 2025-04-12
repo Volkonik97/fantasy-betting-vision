@@ -1,38 +1,43 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 /**
- * Sets up database functions and tables required for the application
+ * Execute raw SQL
  */
-export async function setupDbFunctions(): Promise<boolean> {
+export const executeSQL = async (sql: string): Promise<boolean> => {
   try {
-    // Check if the data_updates table exists
-    const { data: hasDataUpdates, error: dataUpdatesError } = await supabase.from('data_updates').select('id').limit(1);
+    const { data, error } = await supabase.rpc("execute_sql", { sql_query: sql });
     
-    // If the table doesn't exist, create it
-    if (dataUpdatesError && dataUpdatesError.message.includes('does not exist')) {
-      const { error: createError } = await supabase.rpc('execute_sql', {
-        sql_query: `
-          CREATE TABLE IF NOT EXISTS public.data_updates (
-            id SERIAL PRIMARY KEY,
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-          );
-        `
-      });
-      
-      if (createError) {
-        console.error('Error creating data_updates table:', createError);
-        toast.error('Erreur lors de la création de la table data_updates');
-        return false;
-      }
+    if (error) {
+      console.error("Error executing SQL:", error);
+      toast.error("Erreur lors de l'exécution SQL");
+      return false;
     }
     
-    // Successfully set up DB functions
     return true;
   } catch (error) {
-    console.error('Error setting up database functions:', error);
-    toast.error('Erreur lors de la configuration des fonctions de base de données');
+    console.error("Error in executeSQL:", error);
+    toast.error("Erreur d'exécution SQL");
     return false;
   }
-}
+};
+
+/**
+ * Check if a table exists
+ */
+export const checkTableExists = async (tableName: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc("check_table_exists", { table_name: tableName });
+    
+    if (error) {
+      console.error(`Error checking if table ${tableName} exists:`, error);
+      return false;
+    }
+    
+    return data || false;
+  } catch (error) {
+    console.error(`Error in checkTableExists for ${tableName}:`, error);
+    return false;
+  }
+};

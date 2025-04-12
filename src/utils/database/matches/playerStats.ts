@@ -222,24 +222,32 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
     // Get match details for each stat
     const matchDetails = await Promise.all(
       matchStats.map(async (stat) => {
-        const { data: matchData, error: matchError } = await supabase
-          .from('matches')
-          .select('date')
-          .eq('id', stat.match_id)
-          .single();
+        try {
+          const { data: matchData, error: matchError } = await supabase
+            .from('matches')
+            .select('date, id, gameid')
+            .eq('gameid', stat.match_id)
+            .maybeSingle();
+            
+          if (matchError || !matchData) {
+            console.warn(`Could not fetch date for match ${stat.match_id}:`, matchError);
+            return {
+              ...stat,
+              date: null
+            };
+          }
           
-        if (matchError) {
-          console.warn(`Could not fetch date for match ${stat.match_id}:`, matchError);
+          return {
+            ...stat,
+            date: matchData.date
+          };
+        } catch (err) {
+          console.error(`Error processing match ${stat.match_id}:`, err);
           return {
             ...stat,
             date: null
           };
         }
-        
-        return {
-          ...stat,
-          date: matchData.date
-        };
       })
     );
     
@@ -284,7 +292,7 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
     const { data: matches, error: matchesError } = await supabase
       .from('matches')
       .select('*')
-      .or(`team1_id.eq.${teamId},team2_id.eq.${teamId},team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`)
+      .or(`team1_id.eq.${teamId},team2_id.eq.${teamId}`)
       .order('date');
       
     if (matchesError) {
@@ -293,27 +301,30 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
       return [];
     }
     
+    if (!matches || matches.length === 0) {
+      return [];
+    }
+    
     // Process matches to extract timeline data
-    const timelineData = (matches || []).map(match => {
+    const timelineData = matches.map(match => {
       const isTeamBlue = 
-        match.team_blue_id === teamId || 
         match.team1_id === teamId;
         
-      const teamScore = isTeamBlue ? match.score_blue : match.score_red;
-      const opponentScore = isTeamBlue ? match.score_red : match.score_blue;
+      const teamScore = isTeamBlue ? (match.score_blue || 0) : (match.score_red || 0);
+      const opponentScore = isTeamBlue ? (match.score_red || 0) : (match.score_blue || 0);
       const isWin = match.winner_team_id === teamId;
       
       return {
-        match_id: match.id,
+        match_id: match.gameid,
         date: match.date,
         tournament: match.tournament,
         patch: match.patch,
         opponent_id: isTeamBlue 
-          ? (match.team_red_id || match.team2_id) 
-          : (match.team_blue_id || match.team1_id),
+          ? (match.team2_id) 
+          : (match.team1_id),
         opponent_name: isTeamBlue 
-          ? (match.team_red_name || match.team2_name) 
-          : (match.team_blue_name || match.team1_name),
+          ? (match.team2_name) 
+          : (match.team1_name),
         score: [teamScore, opponentScore],
         is_win: isWin,
         side: isTeamBlue ? 'blue' : 'red'

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from "../../models/types";
 import { toast } from "sonner";
 import { getTeamsFromCache, isTeamsCacheValid, setTeamsCache } from "./teamCache";
+import { adaptTeamFromDatabase } from "../adapters/teamAdapter";
 
 /**
  * Récupère les équipes depuis la vue 'team_summary_view'.
@@ -41,19 +42,10 @@ export const getTeams = async (): Promise<Team[]> => {
       }
       
       console.log(`✅ Repli réussi, ${fallbackData.length} équipes chargées depuis la table teams`);
-      const sortedTeams = [...fallbackData].sort((a, b) => a.name.localeCompare(b.name));
       
-      // Normaliser les données (la table peut avoir des noms de colonnes différents de la vue)
-      const normalizedTeams = sortedTeams.map(team => ({
-        id: team.id || team.teamid,
-        name: team.name || team.teamname,
-        region: team.region,
-        logo: team.logo,
-        winRate: team.winrate || 0,
-        blueWinRate: team.winrate_blue || 0,
-        redWinRate: team.winrate_red || 0,
-        averageGameTime: team.avg_gamelength || 0
-      }));
+      // Convert raw data to Team objects using our adapter and sort them
+      const normalizedTeams = fallbackData.map(adaptTeamFromDatabase)
+        .sort((a, b) => a.name.localeCompare(b.name));
       
       // Mettre à jour le cache
       setTeamsCache(normalizedTeams);
@@ -62,19 +54,9 @@ export const getTeams = async (): Promise<Team[]> => {
 
     // Traiter les données et mettre en cache
     if (teamsData) {
-      const sortedTeams = [...teamsData].sort((a, b) => a.name.localeCompare(b.name));
-      
-      // Normaliser les données
-      const normalizedTeams = sortedTeams.map(team => ({
-        id: team.id || team.teamid,
-        name: team.name || team.teamname,
-        region: team.region,
-        logo: team.logo,
-        winRate: team.winrate || team.winrate_percent / 100 || 0,
-        blueWinRate: team.winrate_blue || team.winrate_blue_percent / 100 || 0,
-        redWinRate: team.winrate_red || team.winrate_red_percent / 100 || 0,
-        averageGameTime: team.average_game_time || team.avg_gamelength || 0
-      }));
+      // Convert raw data to Team objects using our adapter and sort them
+      const normalizedTeams = teamsData.map(adaptTeamFromDatabase)
+        .sort((a, b) => a.name.localeCompare(b.name));
       
       // Mettre à jour le cache
       setTeamsCache(normalizedTeams);

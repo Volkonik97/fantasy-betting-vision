@@ -26,7 +26,9 @@ export function processMatch(row: LeagueGameDataRow) {
   // Update game data
   if (gameData.date) game.date = gameData.date;
   if (gameData.league) game.league = gameData.league;
-  if (gameData.year) game.year = gameData.year;
+  if (gameData.year) game.year = gameData.year.toString();
+  if (gameData.split) game.split = gameData.split;
+  if (gameData.patch) game.patch = gameData.patch;
   
   // Add row to game's rows
   if (!game.rows) game.rows = new Set();

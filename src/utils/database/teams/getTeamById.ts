@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Team } from "../../models/types";
 import { toast } from "sonner";
 import { getTeamsFromCache, updateTeamInCache } from "./teamCache";
+import { adaptTeamFromDatabase } from "../adapters/teamAdapter";
 
 /**
  * Récupère une équipe à partir de la vue 'team_summary_view' ou de la table 'teams'
@@ -70,28 +71,8 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
 
-    // Normaliser les données selon la structure attendue par l'appli
-    const team: Team = {
-      id: data.id || data.teamid,
-      name: data.name || data.teamname,
-      region: data.region,
-      logo: data.logo,
-      winRate: data.winrate || data.winrate_percent / 100 || 0,
-      blueWinRate: data.winrate_blue || data.winrate_blue_percent / 100 || 0,
-      redWinRate: data.winrate_red || data.winrate_red_percent / 100 || 0,
-      averageGameTime: data.average_game_time || data.avg_gamelength || 0,
-      // Ajouter d'autres propriétés selon la structure actuelle
-      blueFirstBlood: data.firstblood_blue_pct || 0,
-      redFirstBlood: data.firstblood_red_pct || 0,
-      blueFirstDragon: data.blue_firstdragon_pct || 0,
-      redFirstDragon: data.red_firstdragon_pct || 0,
-      blueFirstHerald: data.blue_firstherald_pct || 0,
-      redFirstHerald: data.red_firstherald_pct || 0,
-      blueFirstTower: data.blue_firsttower_pct || 0,
-      redFirstTower: data.red_firsttower_pct || 0,
-      blueFirstBaron: data.blue_firstbaron_pct || 0,
-      redFirstBaron: data.red_firstbaron_pct || 0
-    };
+    // Convert raw data to Team object using our adapter
+    const team = adaptTeamFromDatabase(data);
     
     // Mettre à jour l'équipe dans le cache
     updateTeamInCache(team);

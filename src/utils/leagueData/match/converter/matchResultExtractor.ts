@@ -2,32 +2,30 @@
 import { GameTracker } from '../../types';
 
 /**
- * Extract match result data
+ * Extract match result data from game tracker
  */
-export function extractMatchResultData(game: GameTracker): {
-  winnerTeamId: string;
-  scoreBlue: string;
-  scoreRed: string;
-  duration?: string;
-  mvp?: string;
-} {
-  let winnerTeamId = game.result || '';
-  let scoreBlue = '0';
-  let scoreRed = '0';
-  
-  // Set the scores based on the winner
-  if (winnerTeamId === game.teams.blue) {
-    scoreBlue = '1';
-    scoreRed = '0';
-  } else if (winnerTeamId === game.teams.red) {
-    scoreBlue = '0';
-    scoreRed = '1';
+export function extractMatchResult(game: GameTracker): { 
+  winner: string; 
+  duration: string; 
+  score?: [number, number];
+} | null {
+  // If game has no result property, return null
+  if (!game.result) {
+    return null;
   }
   
   return {
-    winnerTeamId,
-    scoreBlue,
-    scoreRed,
-    duration: game.duration
+    winner: game.result.winner,
+    duration: game.result.duration
   };
+}
+
+/**
+ * Extract match duration from game tracker
+ */
+export function extractMatchDuration(game: GameTracker): string {
+  if (game.result && game.result.duration) {
+    return game.result.duration;
+  }
+  return '0';
 }

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Player, PlayerRole } from "@/utils/models/types";
 import { toast } from "sonner";
-import { adaptPlayerFromDatabase, adaptPlayerForDatabase } from "./adapters/playerAdapter";
+import { adaptPlayerFromDatabase, adaptPlayerForDatabase, RawDatabasePlayer } from "./adapters/playerAdapter";
 
 let playersCache: Record<string, Player> = {};
 let cacheExpiryTime = 0;
@@ -105,7 +105,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     }
     
     // First try with playerid
-    let { data, error } = await supabase
+    let { data: playerData, error } = await supabase
       .from('players')
       .select('*')
       .eq('playerid', playerId)
@@ -126,17 +126,17 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
         return null;
       }
       
-      // Use altData instead of reassigning to data
-      data = altData;
+      // Use altData if playerid lookup failed
+      playerData = altData;
     }
     
-    if (!data) {
+    if (!playerData) {
       console.log(`No player found with ID ${playerId}`);
       return null;
     }
     
     // Convert to Player object
-    const player = adaptPlayerFromDatabase(data);
+    const player = adaptPlayerFromDatabase(playerData);
     
     // Update cache
     playersCache[player.id] = player;
