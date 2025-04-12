@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "../../models/types";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 /**
  * Vérifie si un match fait partie d'une série (basé sur l'ID)
@@ -148,48 +149,8 @@ export const fetchSeriesMatches = async (baseMatchId: string): Promise<Match[]> 
       return [];
     }
     
-    // Convertir les données Supabase en format Match
-    return data.map(match => {
-      return {
-        id: match.gameid || match.id,
-        tournament: match.tournament || '',
-        date: match.date || '',
-        teamBlue: {
-          id: match.team_blue_id || match.team1_id || '',
-          name: match.team_blue_name || match.team1_name || 'Équipe Bleue',
-          region: match.team_blue_region || 'Unknown',
-          logo: '',
-          winRate: 0,
-          blueWinRate: 0,
-          redWinRate: 0,
-          averageGameTime: 0
-        },
-        teamRed: {
-          id: match.team_red_id || match.team2_id || '',
-          name: match.team_red_name || match.team2_name || 'Équipe Rouge',
-          region: match.team_red_region || 'Unknown',
-          logo: '',
-          winRate: 0,
-          blueWinRate: 0,
-          redWinRate: 0,
-          averageGameTime: 0
-        },
-        status: match.status || 'Completed',
-        predictedWinner: match.predicted_winner || '',
-        blueWinOdds: match.blue_win_odds || 0.5,
-        redWinOdds: match.red_win_odds || 0.5,
-        result: {
-          winner: match.winner_team_id || '',
-          score: [match.score_blue || 0, match.score_red || 0],
-          duration: match.duration || match.gamelength?.toString() || '0',
-          mvp: match.mvp || ''
-        },
-        extraStats: {
-          patch: match.patch || '',
-          gameNumber: match.game_number || getGameNumberFromId(match.id || '')
-        }
-      };
-    });
+    // Convert the data using our adapter
+    return data.map(match => adaptMatchFromDatabase(match as RawDatabaseMatch));
   } catch (error) {
     console.error(`Erreur lors de la récupération des matchs de la série ${baseMatchId}:`, error);
     return [];

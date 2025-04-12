@@ -1,65 +1,34 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Execute a SQL query using supabase SQL API
+ * Execute a custom SQL function on the database
  */
-export async function executeSql(query: string): Promise<any> {
+export const executeCustomSql = async (sql: string): Promise<{ success: boolean; error?: any }> => {
   try {
-    const { data, error } = await supabase.rpc('execute_sql', { sql_query: query });
-    
-    if (error) {
-      throw error;
+    // For security, we limit what can be executed - only allow CREATE or ALTER statements
+    if (!sql.trim().toUpperCase().startsWith('CREATE') && !sql.trim().toUpperCase().startsWith('ALTER')) {
+      return { 
+        success: false, 
+        error: "Only CREATE and ALTER statements are allowed" 
+      };
     }
-    
-    return data;
-  } catch (error) {
-    console.error('Error executing SQL:', error);
-    throw error;
-  }
-}
 
-/**
- * Create a database function
- */
-export async function createDatabaseFunction(functionName: string, functionBody: string): Promise<boolean> {
-  try {
-    // Use raw SQL for creating functions since the RPC may not exist yet
-    const { error } = await executeSql(functionBody);
-    
-    if (error) {
-      console.error(`Error creating function ${functionName}:`, error);
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    console.error(`Error creating function ${functionName}:`, error);
-    return false;
-  }
-}
+    // Use a generic RPC call to execute the SQL directly
+    // Note: This requires appropriate permissions
+    const { error } = await supabase.rpc("create_function", {
+      function_name: "dynamic_sql",
+      function_body: sql
+    });
 
-/**
- * Check if a database function exists
- */
-export async function checkFunctionExists(functionName: string): Promise<boolean> {
-  try {
-    const { data, error } = await executeSql(`
-      SELECT count(*) > 0 as exists
-      FROM pg_proc 
-      JOIN pg_namespace ON pg_namespace.oid = pg_proc.pronamespace
-      WHERE proname = '${functionName}'
-        AND nspname = 'public'
-    `);
-    
     if (error) {
-      console.error(`Error checking if function ${functionName} exists:`, error);
-      return false;
+      console.error("Error executing SQL:", error);
+      return { success: false, error };
     }
-    
-    return data?.[0]?.exists || false;
+
+    return { success: true };
   } catch (error) {
-    console.error(`Error checking if function ${functionName} exists:`, error);
-    return false;
+    console.error("Unexpected error executing SQL:", error);
+    return { success: false, error };
   }
-}
+};

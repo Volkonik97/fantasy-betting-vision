@@ -10,6 +10,7 @@ import { Match } from "@/utils/models/types";
  * Represents the raw match structure as returned from the database
  */
 export interface RawDatabaseMatch {
+  id?: string;
   gameid: string;
   firstbaron_team_id?: string;
   firstblood_team_id?: string;
@@ -25,6 +26,12 @@ export interface RawDatabaseMatch {
   team2_name?: string;
   team1_region?: string;
   team2_region?: string;
+  team_blue_id?: string;
+  team_red_id?: string;
+  team_blue_name?: string;
+  team_red_name?: string;
+  team_blue_region?: string;
+  team_red_region?: string;
   winner_team_id?: string;
   score_blue?: number;
   score_red?: number;
@@ -33,12 +40,6 @@ export interface RawDatabaseMatch {
   status?: "Upcoming" | "Live" | "Completed";
   tournament?: string;
   date?: string;
-  team_blue_id?: string;
-  team_red_id?: string;
-  team_blue_name?: string;
-  team_red_name?: string;
-  team_blue_region?: string;
-  team_red_region?: string;
   predicted_winner?: string;
   blue_win_odds?: number;
   red_win_odds?: number;
@@ -56,6 +57,7 @@ export interface RawDatabaseMatch {
   first_baron?: string | boolean;
   first_tower?: string | boolean;
   first_herald?: string | boolean;
+  // Add any other database fields here
 }
 
 /**
@@ -63,7 +65,7 @@ export interface RawDatabaseMatch {
  */
 export const adaptMatchFromDatabase = (data: RawDatabaseMatch): Match => {
   return {
-    id: data.gameid,
+    id: data.id || data.gameid,
     tournament: data.tournament || 'Unknown',
     date: data.date || new Date().toISOString(),
     teamBlue: {
@@ -121,7 +123,7 @@ export const adaptMatchFromDatabase = (data: RawDatabaseMatch): Match => {
 /**
  * Adapt an application Match model to a format suitable for database insertion
  */
-export const adaptMatchForDatabase = (match: Match): any => {
+export const adaptMatchForDatabase = (match: Match): RawDatabaseMatch => {
   // Convert game_number to a number if it's a string
   let gameNumber: number | undefined = undefined;
   if (match.extraStats?.game_number !== undefined) {

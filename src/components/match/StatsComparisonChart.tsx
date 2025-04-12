@@ -56,7 +56,13 @@ const StatsComparisonChart = ({ teamName, opponentName, teamStats, opponentStats
           <XAxis dataKey="name" />
           <YAxis unit="%" />
           <Tooltip 
-            formatter={(value: number) => `${value.toFixed(1)}%`} 
+            // Fix: Fixed formatter to handle the case when value is a string
+            formatter={(value: any) => {
+              if (typeof value === 'number') {
+                return `${value.toFixed(1)}%`;
+              }
+              return `${value}%`;
+            }} 
           />
           <Legend />
           <Bar dataKey={teamName} fill="#3b82f6" />

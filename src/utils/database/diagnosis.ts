@@ -16,12 +16,28 @@ export const checkTeamPlayerLinks = async (teamId: string) => {
     
     if (teamError) {
       console.error(`Error retrieving team ${teamId}:`, teamError);
-      return { success: false, error: teamError.message };
+      return { 
+        success: false, 
+        error: teamError.message,
+        teamDetails: {
+          id: teamId,
+          name: "Unknown Team", // Default value when team doesn't exist
+          exists: false
+        }
+      };
     }
     
     if (!team) {
       console.warn(`Team ${teamId} not found in database`);
-      return { success: false, error: 'Team not found' };
+      return { 
+        success: false, 
+        error: 'Team not found',
+        teamDetails: {
+          id: teamId,
+          name: "Unknown Team",
+          exists: false
+        }
+      };
     }
     
     console.log(`Team found: ${team.name} (${team.id})`);
@@ -34,7 +50,15 @@ export const checkTeamPlayerLinks = async (teamId: string) => {
     
     if (playersError) {
       console.error(`Error retrieving players for team ${teamId}:`, playersError);
-      return { success: false, error: playersError.message };
+      return { 
+        success: false, 
+        error: playersError.message,
+        team: {
+          id: team.id || teamId,
+          name: team.name || "Unknown Team",
+          exists: true
+        }
+      };
     }
     
     if (!playersData || playersData.length === 0) {
@@ -55,21 +79,40 @@ export const checkTeamPlayerLinks = async (teamId: string) => {
       return { 
         success: false, 
         error: 'No players found for this team',
-        team: team,
+        team: {
+          id: team.id || teamId,
+          name: team.name || "Unknown Team",
+          exists: true
+        },
         samplePlayers: allPlayers || [] 
       };
     }
     
-    console.log(`Found ${playersData.length} players for team ${team.name}:`, 
-      playersData.map(p => ({ id: p.id, name: p.name, role: p.role })));
+    // Map player data to ensure consistent format
+    const formattedPlayers = playersData.map(player => ({
+      id: player.id || player.playerid,
+      name: player.name || player.playername,
+      role: player.role || player.position
+    }));
+    
+    console.log(`Found ${formattedPlayers.length} players for team ${team.name}:`, 
+      formattedPlayers);
     
     return {
       success: true,
-      team: team,
-      players: playersData
+      team: {
+        id: team.id || teamId,
+        name: team.name || "Unknown Team",
+        exists: true
+      },
+      players: formattedPlayers
     };
   } catch (error) {
     console.error("Error in diagnostic check:", error);
-    return { success: false, error: String(error) };
+    return { 
+      success: false, 
+      error: String(error),
+      errorDetails: error 
+    };
   }
 };

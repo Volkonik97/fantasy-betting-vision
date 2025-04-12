@@ -62,7 +62,8 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
       
       if (isMatchInSeries) {
         try {
-          const validSeries = await isStandardSeries(match.id);
+          // Fix: Convert string to array for input arguments expecting string[]
+          const validSeries = await isStandardSeries([match.id]);
           console.log(`Match ${match.id} is${validSeries ? '' : ' not'} a valid series`);
           
           setIsSeries(validSeries);

@@ -1,144 +1,70 @@
 
-import { LeagueGameDataRow } from '../csv/types';
-import { TeamCSV } from '../csv/types';
-import { TeamStatsTracker } from './types';
-import { normalizeTimeValue } from '../formatters/timeFormatter';
+import { TeamStatsTracker, TeamStatsMap } from "./types";
 
-// Process team statistics from League data rows
-export function processTeamData(data: LeagueGameDataRow[]): {
-  uniqueTeams: Map<string, TeamCSV>,
-  teamStats: Map<string, TeamStatsTracker>
-} {
-  // Extract unique teams and initialize their stats
-  const uniqueTeams = new Map<string, TeamCSV>();
-  const teamStats = new Map<string, TeamStatsTracker>();
+/**
+ * Create a new team stats tracker
+ */
+export const createTeamTracker = (id: string, name: string, region: string = ""): TeamStatsTracker => {
+  return {
+    id,
+    name,
+    region,
+    logo: "",
+    players: [],
+    games: 0,
+    wins: 0,
+    losses: 0,
+    blueGames: 0,
+    blueWins: 0,
+    blueLosses: 0,
+    redGames: 0,
+    redWins: 0,
+    redLosses: 0,
+    kills: 0,
+    deaths: 0,
+    dragons: 0,
+    heralds: 0,
+    barons: 0,
+    towers: 0,
+    totalGameTime: 0,
+    gameTimes: []
+  };
+};
+
+/**
+ * Merge team records, needed when team has different IDs in different data sources
+ */
+export const mergeTeams = (teamsMap: TeamStatsMap, sourceId: string, targetId: string): void => {
+  const sourceTeam = teamsMap.get(sourceId);
+  const targetTeam = teamsMap.get(targetId);
   
-  // First pass: gather all unique teams
-  data.forEach(row => {
-    if (!row.teamid || !row.teamname) return;
-    
-    if (!uniqueTeams.has(row.teamid)) {
-      uniqueTeams.set(row.teamid, {
-        id: row.teamid,
-        name: row.teamname,
-        logo: '',
-        region: row.league || '',
-        winRate: '0',
-        blueWinRate: '0',
-        redWinRate: '0',
-        averageGameTime: '0'
-      });
-      
-      teamStats.set(row.teamid, {
-        id: row.teamid,
-        name: row.teamname,
-        logo: '',
-        region: row.league || '',
-        players: [],
-        games: 0,
-        wins: 0,
-        losses: 0,
-        blueWins: 0,
-        blueLosses: 0,
-        redWins: 0,
-        redLosses: 0,
-        gameTimes: []
-      });
-    }
-  });
+  if (!sourceTeam || !targetTeam) {
+    console.error(`Cannot merge teams - source: ${sourceId}, target: ${targetId}`, {
+      sourceExists: !!sourceTeam,
+      targetExists: !!targetTeam
+    });
+    return;
+  }
   
-  console.log(`Nombre d'équipes uniques identifiées: ${uniqueTeams.size}`);
+  // Transfer stats from source to target
+  targetTeam.games += sourceTeam.games;
+  targetTeam.wins += sourceTeam.wins;
+  targetTeam.losses += sourceTeam.losses;
+  targetTeam.blueGames += sourceTeam.blueGames;
+  targetTeam.blueWins += sourceTeam.blueWins;
+  targetTeam.blueLosses += sourceTeam.blueLosses;
+  targetTeam.redGames += sourceTeam.redGames;
+  targetTeam.redWins += sourceTeam.redWins;
+  targetTeam.redLosses += sourceTeam.redLosses;
+  targetTeam.kills += sourceTeam.kills;
+  targetTeam.deaths += sourceTeam.deaths;
+  targetTeam.dragons += sourceTeam.dragons;
+  targetTeam.heralds += sourceTeam.heralds;
+  targetTeam.barons += sourceTeam.barons;
+  targetTeam.towers += sourceTeam.towers;
+  targetTeam.totalGameTime += sourceTeam.totalGameTime;
+  targetTeam.gameTimes = [...targetTeam.gameTimes, ...sourceTeam.gameTimes];
   
-  // Second pass: process game results by team
-  const processedGames = new Set<string>();
-  
-  data.forEach(row => {
-    // Skip if no team ID or game ID
-    if (!row.teamid || !row.gameid) return;
-    
-    // Process each game only once per team
-    const gameTeamKey = `${row.gameid}-${row.teamid}`;
-    if (processedGames.has(gameTeamKey)) return;
-    processedGames.add(gameTeamKey);
-    
-    // Get team stats tracker
-    const stats = teamStats.get(row.teamid);
-    if (!stats) return;
-    
-    // Process win/loss
-    const isWin = row.result === '1';
-    
-    if (isWin) {
-      stats.wins++;
-    } else {
-      stats.losses++;
-    }
-    
-    // Process side-specific win/loss
-    const side = (row.side || '').toLowerCase();
-    if (side === 'blue') {
-      if (isWin) {
-        stats.blueWins++;
-      } else {
-        stats.blueLosses++;
-      }
-    } else if (side === 'red') {
-      if (isWin) {
-        stats.redWins++;
-      } else {
-        stats.redLosses++;
-      }
-    }
-    
-    // Process game time if available
-    if (row.gamelength) {
-      // Check if gamelength is in seconds or in MM:SS format
-      let gameTimeSeconds = 0;
-      
-      if (row.gamelength.includes(':')) {
-        // Format MM:SS
-        const [minutes, seconds] = row.gamelength.split(':').map(Number);
-        gameTimeSeconds = (minutes * 60) + seconds;
-      } else {
-        // Use normalizeTimeValue to handle various formats consistently
-        gameTimeSeconds = normalizeTimeValue(row.gamelength);
-      }
-      
-      // If we have a valid game time, add to the array
-      if (!isNaN(gameTimeSeconds) && gameTimeSeconds > 0) {
-        stats.gameTimes.push(gameTimeSeconds);
-      }
-    }
-  });
-  
-  // Calculate team statistics
-  teamStats.forEach((stats, teamId) => {
-    const team = uniqueTeams.get(teamId);
-    if (!team) return;
-    
-    // Calculate win rates
-    const totalGames = stats.wins + stats.losses;
-    if (totalGames > 0) {
-      team.winRate = (stats.wins / totalGames).toFixed(3);
-    }
-    
-    const totalBlueGames = stats.blueWins + stats.blueLosses;
-    if (totalBlueGames > 0) {
-      team.blueWinRate = (stats.blueWins / totalBlueGames).toFixed(3);
-    }
-    
-    const totalRedGames = stats.redWins + stats.redLosses;
-    if (totalRedGames > 0) {
-      team.redWinRate = (stats.redWins / totalRedGames).toFixed(3);
-    }
-    
-    // Calculate average game time in minutes
-    if (stats.gameTimes.length > 0) {
-      const avgGameTimeSeconds = stats.gameTimes.reduce((sum, time) => sum + time, 0) / stats.gameTimes.length;
-      // Store as seconds, not minutes (we'll format as MM:SS when displaying)
-      team.averageGameTime = avgGameTimeSeconds.toFixed(0);
-    }
-  });
-  
-  return { uniqueTeams, teamStats };
-}
+  // Remove the source team from the map
+  teamsMap.delete(sourceId);
+};

@@ -1,8 +1,7 @@
 
 import React, { useState } from "react";
-import { Line, LineChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TimelineStats } from "@/utils/models/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TimelineChartProps {
   teamName: string;
@@ -11,112 +10,92 @@ interface TimelineChartProps {
   opponentTimelineStats: TimelineStats;
 }
 
-const TimelineChart = ({ 
-  teamName, 
-  opponentName, 
-  teamTimelineStats, 
-  opponentTimelineStats 
-}: TimelineChartProps) => {
-  const [activeMetric, setActiveMetric] = useState<"gold" | "cs" | "kda">("gold");
+const TimelineChart = ({ teamName, opponentName, teamTimelineStats, opponentTimelineStats }: TimelineChartProps) => {
+  const [stat, setStat] = useState<'gold' | 'cs' | 'xp'>('gold');
 
-  // Transform timeline stats into chart data
-  const timepoints = Object.keys(teamTimelineStats).sort((a, b) => parseInt(a) - parseInt(b));
-  
-  const getChartData = () => {
-    return timepoints.map(timepoint => {
-      const teamStats = teamTimelineStats[timepoint];
-      const oppStats = opponentTimelineStats[timepoint];
-      
-      return {
-        name: `${timepoint} min`,
-        [`${teamName} Gold`]: teamStats.avgGold,
-        [`${opponentName} Gold`]: oppStats.avgGold,
-        [`${teamName} CS`]: teamStats.avgCs,
-        [`${opponentName} CS`]: oppStats.avgCs,
-        [`${teamName} KDA`]: teamStats.avgKills / (teamStats.avgDeaths || 1),
-        [`${opponentName} KDA`]: oppStats.avgKills / (oppStats.avgDeaths || 1),
-        [`${teamName} Kills`]: teamStats.avgKills,
-        [`${opponentName} Kills`]: oppStats.avgKills,
-        [`${teamName} Deaths`]: teamStats.avgDeaths,
-        [`${opponentName} Deaths`]: oppStats.avgDeaths,
-      };
-    });
-  };
+  // Merge timeline stats into chart data
+  const chartData = Object.keys(teamTimelineStats).map(time => {
+    const teamStats = teamTimelineStats[time];
+    const opponentStats = opponentTimelineStats[time];
 
-  const chartData = getChartData();
-  
-  const renderChart = () => {
-    switch (activeMetric) {
-      case "gold":
-        return (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => value.toLocaleString()} />
-              <Legend />
-              <Line type="monotone" dataKey={`${teamName} Gold`} stroke="#3b82f6" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey={`${opponentName} Gold`} stroke="#ef4444" activeDot={{ r: 8 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        );
-      case "cs":
-        return (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey={`${teamName} CS`} stroke="#3b82f6" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey={`${opponentName} CS`} stroke="#ef4444" activeDot={{ r: 8 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        );
-      case "kda":
-        return (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip formatter={(value: number) => value.toFixed(2)} />
-              <Legend />
-              <Line type="monotone" dataKey={`${teamName} Kills`} stroke="#3b82f6" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey={`${opponentName} Kills`} stroke="#ef4444" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey={`${teamName} Deaths`} stroke="#93c5fd" strokeDasharray="5 5" />
-              <Line type="monotone" dataKey={`${opponentName} Deaths`} stroke="#fca5a5" strokeDasharray="5 5" />
-            </LineChart>
-          </ResponsiveContainer>
-        );
+    return {
+      name: `${time} min`,
+      [`${teamName} Gold`]: teamStats.avgGold,
+      [`${opponentName} Gold`]: opponentStats?.avgGold || 0,
+      [`${teamName} CS`]: teamStats.avgCs,
+      [`${opponentName} CS`]: opponentStats?.avgCs || 0,
+      [`${teamName} XP`]: teamStats.avgXp,
+      [`${opponentName} XP`]: opponentStats?.avgXp || 0,
+    };
+  }).sort((a, b) => parseInt(a.name) - parseInt(b.name));
+
+  const getStatKeys = (): { team: string, opponent: string } => {
+    switch (stat) {
+      case 'cs':
+        return {
+          team: `${teamName} CS`,
+          opponent: `${opponentName} CS`
+        };
+      case 'xp':
+        return {
+          team: `${teamName} XP`,
+          opponent: `${opponentName} XP`
+        };
       default:
-        return null;
+        return {
+          team: `${teamName} Gold`,
+          opponent: `${opponentName} Gold`
+        };
     }
   };
 
+  const { team: teamKey, opponent: opponentKey } = getStatKeys();
+
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="gold" onValueChange={(value) => setActiveMetric(value as "gold" | "cs" | "kda")}>
-        <TabsList className="grid grid-cols-3 mb-4">
-          <TabsTrigger value="gold">Gold</TabsTrigger>
-          <TabsTrigger value="cs">CS</TabsTrigger>
-          <TabsTrigger value="kda">K/D</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="gold">
-          {renderChart()}
-        </TabsContent>
-        
-        <TabsContent value="cs">
-          {renderChart()}
-        </TabsContent>
-        
-        <TabsContent value="kda">
-          {renderChart()}
-        </TabsContent>
-      </Tabs>
+      <div className="flex justify-center space-x-4">
+        <button
+          className={`px-4 py-2 rounded-lg ${stat === 'gold' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => setStat('gold')}
+        >
+          Gold
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg ${stat === 'cs' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => setStat('cs')}
+        >
+          CS
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg ${stat === 'xp' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          onClick={() => setStat('xp')}
+        >
+          XP
+        </button>
+      </div>
+
+      <ResponsiveContainer width="100%" height={300}>
+        <AreaChart
+          data={chartData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip 
+            formatter={(value: any) => {
+              // Fix: Type checking for value before using toFixed
+              if (typeof value === 'number') {
+                return value.toFixed(0);
+              }
+              return value;
+            }}
+          />
+          <Legend />
+          <Area type="monotone" dataKey={teamKey} stackId="1" stroke="#8884d8" fill="#8884d8" />
+          <Area type="monotone" dataKey={opponentKey} stackId="2" stroke="#82ca9d" fill="#82ca9d" />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 };
