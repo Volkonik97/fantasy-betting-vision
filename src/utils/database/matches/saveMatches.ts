@@ -1,11 +1,11 @@
-import { supabase } from "../../integrations/supabase/client";
-import { MatchCSV } from "../../csv/types";
-import { Match } from "../../models/types";
+
+import { supabase } from "@/integrations/supabase/client";
 import { prepareJsonData } from "../../leagueData/utils";
 import { booleanToString } from "../../leagueData/utils";
 import { chunk } from "../../dataConverter";
 import { toast } from "sonner";
 import { clearMatchCache } from './getMatches';
+import { Match } from "../../models/types";
 
 /**
  * Save matches to the database
