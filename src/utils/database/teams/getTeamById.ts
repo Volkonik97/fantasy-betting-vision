@@ -1,8 +1,9 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Team } from '@/utils/models/types';
+import { Team, Player, PlayerRole } from '@/utils/models/types';
 import { toast } from 'sonner';
 import { adaptTeamFromDatabase } from '../adapters/teamAdapter';
+import { normalizeRoleName } from '@/utils/leagueData/assembler/modelConverter';
 
 /**
  * Get a team by its ID
@@ -39,11 +40,11 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
           
         if (!playersError && playersData && playersData.length > 0) {
           console.log(`Found ${playersData.length} players for team ${teamId}`);
-          // Add players to the team object
+          // Add players to the team object - ensure role is properly cast to PlayerRole
           team.players = playersData.map(player => ({
             id: player.playerid,
             name: player.playername,
-            role: player.position || 'Unknown',
+            role: normalizeRoleName(player.position) as PlayerRole,
             image: player.image || '',
             team: player.teamid,
             teamName: team.name,
@@ -96,11 +97,11 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       
     if (!playersError && playersData && playersData.length > 0) {
       console.log(`Found ${playersData.length} players for team ${teamId}`);
-      // Add players to the team object
+      // Add players to the team object - ensure role is properly cast to PlayerRole
       team.players = playersData.map(player => ({
         id: player.playerid,
         name: player.playername,
-        role: player.position || 'Unknown',
+        role: normalizeRoleName(player.position) as PlayerRole,
         image: player.image || '',
         team: player.teamid,
         teamName: team.name,
