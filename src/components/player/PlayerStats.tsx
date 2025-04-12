@@ -18,9 +18,21 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
       // If it's already a percentage (likely between 0-100)
       return `${Math.round(value)}%`;
     }
-    // Handle string values or fallback
-    return value || '0%';
+    // If it's a string that can be parsed as a number
+    if (typeof value === 'string') {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        if (numValue >= 0 && numValue <= 1) {
+          return `${Math.round(numValue * 100)}%`;
+        }
+        return `${Math.round(numValue)}%`;
+      }
+    }
+    // Handle fallback case
+    return '0%';
   };
+
+  console.log(`PlayerStats rendering with damageShare:`, damageShare, `formatted as:`, formatDamageShare(damageShare));
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-3 gap-2 text-center">
@@ -33,9 +45,7 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
         <p className="text-xs text-gray-500">CS/min</p>
       </div>
       <div>
-        <p className="font-semibold">
-          {formatDamageShare(damageShare)}
-        </p>
+        <p className="font-semibold">{formatDamageShare(damageShare)}</p>
         <p className="text-xs text-gray-500">DMG%</p>
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
@@ -30,6 +31,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   // Add debug information for this specific player
   useEffect(() => {
     console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}, ID: ${player.id}`);
+    console.log(`Player stats - KDA: ${player.kda}, CS/min: ${player.csPerMin}, Damage Share: ${player.damageShare}`);
     
     // Vérifier si le joueur a toutes les propriétés nécessaires
     if (!player.role || !player.teamName || !player.teamRegion) {

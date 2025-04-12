@@ -1,3 +1,4 @@
+
 import { LeagueGameDataRow } from '../csv/types';
 import { PlayerCSV } from '../csv/types';
 import { 
@@ -139,6 +140,7 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
     const player = uniquePlayers.get(playerId);
     if (player && damageShares.length > 0) {
       const avgDamageShare = damageShares.reduce((sum, share) => sum + share, 0) / damageShares.length;
+      console.log(`Setting damage share for player ${playerId} to ${avgDamageShare.toFixed(3)}`);
       player.damageShare = avgDamageShare.toFixed(3);
     }
   });
