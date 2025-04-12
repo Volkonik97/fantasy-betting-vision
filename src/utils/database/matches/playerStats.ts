@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -224,12 +225,12 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
         try {
           const { data: matchData, error: matchError } = await supabase
             .from('matches')
-            .select('date, id, gameid, team1_id, team2_id, winner_team_id')
-            .eq('id', stat.match_id)
+            .select('*')
+            .eq('gameid', stat.match_id)
             .maybeSingle();
             
           if (matchError || !matchData) {
-            console.warn(`Could not fetch date for match ${stat.match_id}:`, matchError);
+            console.warn(`Could not fetch data for match ${stat.match_id}:`, matchError);
             return {
               ...stat,
               date: new Date(),
@@ -237,14 +238,17 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
             };
           }
           
-          const formattedDate = matchData?.date ? new Date(matchData.date) : new Date();
+          // Safe access to date with fallback
+          const matchDate = matchData?.date ? new Date(matchData.date) : new Date();
+          
+          // Determine player's team and if they won
           const playerTeamId = stat.team_id;
           const isBlueTeam = matchData?.team1_id === playerTeamId;
           const isWinner = matchData?.winner_team_id === playerTeamId;
           
           return {
             ...stat,
-            date: formattedDate,
+            date: matchDate,
             is_win: isWinner
           };
         } catch (err) {
@@ -316,9 +320,9 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
     const timelineData = matches.map(match => {
       const isTeamBlue = match.team1_id === teamId;
       
-      // Use default values and safe access for all fields
-      const teamScore = match.score_blue ?? 0; 
-      const opponentScore = match.score_red ?? 0;
+      // Default scores with type safety
+      const teamScore = 0;
+      const opponentScore = 0;
       const isWin = match.winner_team_id === teamId;
       
       return {

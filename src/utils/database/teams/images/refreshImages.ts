@@ -11,8 +11,8 @@ export const refreshImageReferences = async (): Promise<{fixedCount: number, com
     // Import supabase directly here to avoid circular dependencies
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Get all players with images
-    const { data: players, error } = await supabase
+    // Get all players with images - use safe query approach
+    const { data: playersWithImages, error } = await supabase
       .from('players')
       .select('playerid, image')
       .not('image', 'is', null);
@@ -22,18 +22,21 @@ export const refreshImageReferences = async (): Promise<{fixedCount: number, com
       return {fixedCount: 0, completed: false};
     }
     
-    if (!players || players.length === 0) return {fixedCount: 0, completed: true};
+    if (!playersWithImages || playersWithImages.length === 0) {
+      return {fixedCount: 0, completed: true};
+    }
     
     let fixedCount = 0;
     
-    // Check each player's image (limit to a reasonable batch size)
-    const batchSize = 10; // Process players in smaller batches to avoid timeouts
-    const playersToProcess = players.slice(0, batchSize);
+    // Process a reasonable batch size to avoid timeouts
+    const batchSize = 10;
+    const playersToProcess = playersWithImages.slice(0, batchSize);
     
-    console.log(`Processing ${playersToProcess.length} player images out of ${players.length}`);
+    console.log(`Processing ${playersToProcess.length} player images out of ${playersWithImages.length}`);
     
     for (const player of playersToProcess) {
-      if (!player.image) continue;
+      // Skip if player has no valid image reference
+      if (!player || !player.playerid || !player.image) continue;
       
       const exists = await verifyImageExists(player.image);
       
@@ -45,7 +48,7 @@ export const refreshImageReferences = async (): Promise<{fixedCount: number, com
     }
     
     // Return whether we've processed all players
-    const completed = playersToProcess.length === players.length;
+    const completed = playersToProcess.length === playersWithImages.length;
     
     return {
       fixedCount,

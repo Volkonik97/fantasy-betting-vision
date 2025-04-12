@@ -1,3 +1,4 @@
+
 // Utility function to determine the series score up to a given game
 // This is useful for displaying the score in the UI for ongoing series
 
@@ -12,9 +13,9 @@ const getSeriesScoreUpToGame = (matches: any[], currentGameId: string): [number,
     return [0, 0];
   }
 
-  // Extract team IDs from the first match
-  const team1Id = matches[0].team1_id;
-  const team2Id = matches[0].team2_id;
+  // Extract team IDs from the first match safely
+  const team1Id = matches[0]?.team1_id;
+  const team2Id = matches[0]?.team2_id;
 
   if (!team1Id || !team2Id) {
     console.warn("Team IDs not found in match data");
@@ -29,8 +30,8 @@ const getSeriesScoreUpToGame = (matches: any[], currentGameId: string): [number,
     }
 
     // If game_number is not available, sort by date
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
     return dateA - dateB;
   });
 
@@ -38,6 +39,7 @@ const getSeriesScoreUpToGame = (matches: any[], currentGameId: string): [number,
   let team2Score = 0;
 
   for (const match of sortedMatches) {
+    // Stop counting when we reach the current game
     if (match.gameid === currentGameId) {
       break;
     }

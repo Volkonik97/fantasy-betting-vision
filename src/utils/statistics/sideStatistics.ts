@@ -1,54 +1,60 @@
+
 import { SideStatistics, TimelineStats } from '../models/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Get side statistics for a team
+// Get side statistics for a team with simplified types to avoid deep nesting
 export const getSideStatistics = async (teamId: string): Promise<SideStatistics> => {
   try {
     console.log(`[sideStatistics] Fetching side statistics for team: ${teamId}`);
 
-    // Query the database for matches involving this team
+    if (!teamId) {
+      console.warn("[sideStatistics] No team ID provided");
+      return createDefaultSideStatistics(teamId);
+    }
+
+    // Query database for blue side matches
     const { data: blueMatches, error: blueError } = await supabase
       .from('matches')
       .select('*')
-      .eq('team_blue_id', teamId);
+      .eq('team1_id', teamId);
 
+    // Query database for red side matches
     const { data: redMatches, error: redError } = await supabase
       .from('matches')
       .select('*')
-      .eq('team_red_id', teamId);
+      .eq('team2_id', teamId);
 
     if (blueError) console.error('[sideStatistics] Error fetching blue side matches:', blueError);
     if (redError) console.error('[sideStatistics] Error fetching red side matches:', redError);
 
-    const allMatches = [...(blueMatches || []), ...(redMatches || [])];
+    const blueMatchesArray = blueMatches || [];
+    const redMatchesArray = redMatches || [];
+    const allMatches = [...blueMatchesArray, ...redMatchesArray];
+    
     if (allMatches.length === 0) return createDefaultSideStatistics(teamId);
 
+    // Fetch team stats
     const { data: teamMatchStats, error: statsError } = await supabase
       .from('team_match_stats')
       .select('*')
       .eq('team_id', teamId);
 
+    // Fetch player stats for first blood
     const { data: playerMatchStats, error: playerError } = await supabase
       .from('player_match_stats')
-      .select('match_id, team_id, side, first_blood_kill')
+      .select('match_id, team_id, side, firstbloodkill')
       .eq('team_id', teamId);
 
     if (statsError) console.error('[sideStatistics] Error fetching team match stats:', statsError);
     if (playerError) console.error('[sideStatistics] Error fetching player match stats:', playerError);
 
-    console.log('[sideStatistics] playerMatchStats loaded:', playerMatchStats?.length);
-    if (playerMatchStats && playerMatchStats.length > 0) {
-      console.log('[sideStatistics] First 5:', playerMatchStats.slice(0, 5));
-    } else {
-      console.warn('[sideStatistics] ⚠️ No player match stats found for team:', teamId);
-    }
-
+    // Calculate statistics
     const stats = calculateSideStatistics(
       teamId,
       allMatches,
-      blueMatches || [],
-      redMatches || [],
+      blueMatchesArray,
+      redMatchesArray,
       teamMatchStats || [],
       playerMatchStats || []
     );
@@ -56,11 +62,12 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     return stats;
   } catch (error) {
     console.error('[sideStatistics] Error getting side statistics:', error);
-    toast.error("Erreur lors du chargement des statistiques d'équipe");
+    toast.error("Error loading team statistics");
     return createDefaultSideStatistics(teamId);
   }
 };
 
+// Safe calculation of statistics
 function calculateSideStatistics(
   teamId: string,
   allMatches: any[],
@@ -69,9 +76,11 @@ function calculateSideStatistics(
   teamMatchStats: any[],
   playerMatchStats: any[]
 ): SideStatistics {
+  // Filter completed matches
   const completedBlueMatches = blueMatches.filter(m => m.status === 'Completed');
   const completedRedMatches = redMatches.filter(m => m.status === 'Completed');
 
+  // Calculate win rates
   const blueWins = completedBlueMatches.filter(m => m.winner_team_id === teamId).length;
   const redWins = completedRedMatches.filter(m => m.winner_team_id === teamId).length;
 
@@ -83,21 +92,22 @@ function calculateSideStatistics(
     ? Math.round((redWins / completedRedMatches.length) * 100)
     : 50;
 
-  // First Blood calculation from player stats
+  // Calculate first blood rates from player stats
   const blueSideGames = new Set<string>();
   const redSideGames = new Set<string>();
   const blueFBGames = new Set<string>();
   const redFBGames = new Set<string>();
 
   for (const stat of playerMatchStats || []) {
+    if (!stat || !stat.match_id) continue;
+    
     const matchId = stat.match_id;
     const isBlue = stat.side?.toLowerCase() === 'blue';
 
     if (isBlue) blueSideGames.add(matchId);
     else redSideGames.add(matchId);
 
-    if (stat.first_blood_kill === true) {
-      console.log(`[sideStatistics] FB kill found! match=${matchId} blue=${isBlue}`);
+    if (stat.firstbloodkill === true) {
       if (isBlue) blueFBGames.add(matchId);
       else redFBGames.add(matchId);
     }
@@ -111,30 +121,24 @@ function calculateSideStatistics(
     ? Math.round((redFBGames.size / redSideGames.size) * 100)
     : 0;
 
-  console.log('[sideStatistics] FB ratios:', {
-    blueFirstBlood,
-    redFirstBlood,
-    blueSideGames: blueSideGames.size,
-    redSideGames: redSideGames.size,
-    blueFBGames: blueFBGames.size,
-    redFBGames: redFBGames.size,
-  });
+  // Filter team stats by side
+  const blueTeamStats = teamMatchStats.filter(stat => stat && stat.side?.toLowerCase() === 'blue');
+  const redTeamStats = teamMatchStats.filter(stat => stat && stat.side?.toLowerCase() === 'red');
 
-  const blueTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === true);
-  const redTeamStats = teamMatchStats.filter(stat => stat.is_blue_side === false);
+  // Calculate objective rates
+  const blueFirstDragon = calculateObjectiveRate(blueTeamStats, 'firstdragon', true);
+  const redFirstDragon = calculateObjectiveRate(redTeamStats, 'firstdragon', true);
 
-  const blueFirstDragon = calculateObjectiveCountPercentage(blueTeamStats, 'first_dragon', true);
-  const redFirstDragon = calculateObjectiveCountPercentage(redTeamStats, 'first_dragon', true);
+  const blueFirstHerald = calculateObjectiveRate(blueTeamStats, 'firstherald', true);
+  const redFirstHerald = calculateObjectiveRate(redTeamStats, 'firstherald', true);
 
-  const blueFirstHerald = calculateObjectiveCountPercentage(blueTeamStats, 'first_herald', true);
-  const redFirstHerald = calculateObjectiveCountPercentage(redTeamStats, 'first_herald', true);
+  const blueFirstTower = calculateObjectiveRate(blueTeamStats, 'firsttower', true);
+  const redFirstTower = calculateObjectiveRate(redTeamStats, 'firsttower', true);
 
-  const blueFirstTower = calculateObjectiveCountPercentage(blueTeamStats, 'first_tower', true);
-  const redFirstTower = calculateObjectiveCountPercentage(redTeamStats, 'first_tower', true);
+  const blueFirstBaron = calculateObjectiveRate(blueTeamStats, 'firstbaron', true);
+  const redFirstBaron = calculateObjectiveRate(redTeamStats, 'firstbaron', true);
 
-  const blueFirstBaron = calculateObjectiveCountPercentage(blueTeamStats, 'first_baron', true);
-  const redFirstBaron = calculateObjectiveCountPercentage(redTeamStats, 'first_baron', true);
-
+  // Return complete statistics
   return {
     teamId,
     blueWins: blueWinRate,
@@ -153,11 +157,16 @@ function calculateSideStatistics(
   };
 }
 
-function calculateObjectiveCountPercentage(stats: any[], objectiveKey: string, logDetails: boolean = false): number {
-  if (stats.length === 0) return 50;
+// Helper function to calculate objective rates
+function calculateObjectiveRate(stats: any[], objectiveKey: string, logDetails: boolean = false): number {
+  if (!stats || stats.length === 0) return 50;
 
-  const objectiveCount = stats.filter(stat => stat[objectiveKey] === true).length;
-  const totalMatches = stats.length;
+  // Apply null/undefined safety
+  const validStats = stats.filter(stat => stat !== null && stat !== undefined);
+  if (validStats.length === 0) return 50;
+
+  const objectiveCount = validStats.filter(stat => stat[objectiveKey] === true).length;
+  const totalMatches = validStats.length;
   const percentage = Math.round((objectiveCount / totalMatches) * 100);
 
   if (logDetails) {
@@ -167,6 +176,7 @@ function calculateObjectiveCountPercentage(stats: any[], objectiveKey: string, l
   return percentage;
 }
 
+// Create default statistics when data is unavailable
 function createDefaultSideStatistics(teamId: string): SideStatistics {
   return {
     teamId,
@@ -186,6 +196,7 @@ function createDefaultSideStatistics(teamId: string): SideStatistics {
   };
 }
 
+// Create default timeline statistics
 function createDefaultTimelineStats(): TimelineStats {
   return {
     '10': {

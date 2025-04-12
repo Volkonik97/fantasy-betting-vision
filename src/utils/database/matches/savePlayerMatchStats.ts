@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
@@ -18,7 +19,7 @@ export const savePlayerMatchStats = async (
     }
     
     // Extract all unique match IDs from player stats
-    const matchIds = [...new Set(playerStats.map(stat => stat.match_id))];
+    const matchIds = [...new Set(playerStats.filter(stat => stat && stat.match_id).map(stat => stat.match_id))];
     console.log(`Found ${matchIds.length} unique matches referenced in player stats`);
     
     // Process match IDs in batches to avoid "URI too large" errors
@@ -44,11 +45,13 @@ export const savePlayerMatchStats = async (
         }
         
         // Add found matches to our set - use gameid as the primary identifier
-        (existingMatches || []).forEach(match => existingMatchIds.add(match.gameid));
+        (existingMatches || []).forEach(match => {
+          if (match && match.gameid) existingMatchIds.add(match.gameid);
+        });
         
         // Identify missing matches in this batch
         matchIdBatch.forEach(id => {
-          if (!existingMatchIds.has(id)) {
+          if (id && !existingMatchIds.has(id)) {
             missingMatchIds.add(id);
           }
         });
@@ -70,15 +73,6 @@ export const savePlayerMatchStats = async (
                       stat !== undefined && 
                       stat.match_id && 
                       existingMatchIds.has(stat.match_id);
-      
-      if (!isValid && stat && stat.match_id) {
-        if (missingMatchIds.has(stat.match_id)) {
-          // This is an expected issue - match doesn't exist in our database
-          // Don't log every one of these as it floods the console
-        } else {
-          console.log(`Skipping player stat for match ${stat.match_id} - invalid data or match does not exist`);
-        }
-      }
       
       return isValid;
     }).map(stat => {
@@ -106,9 +100,9 @@ export const savePlayerMatchStats = async (
         stat.first_blood_victim = !!stat.first_blood_victim;
       }
       
-      // Pour éviter d'avoir des valeurs indéfinies ou nulles
+      // Set undefined or null values to appropriate defaults
       for (const key in stat) {
-        if (typeof stat[key] === 'undefined') {
+        if (typeof stat[key] === 'undefined' || stat[key] === null) {
           if (typeof stat[key] === 'boolean') {
             stat[key] = false;
           } else if (typeof stat[key] === 'number') {
@@ -205,7 +199,7 @@ export const savePlayerMatchStats = async (
           progressCallback(processedCount, totalStats);
         }
         
-        // Add a deliberate delay between batches to avoid overloading the database
+        // Add a deliberate delay between batches
         await new Promise(resolve => setTimeout(resolve, 200));
         
       } catch (batchError) {

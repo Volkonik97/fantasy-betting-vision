@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
@@ -20,7 +21,7 @@ export const saveTeamMatchStats = async (
     // Extract all unique match IDs from team stats
     const matchIds = [...new Set(teamStats.map(stat => stat.match_id))];
     
-    // Get all existing match IDs from the matches table
+    // Get all existing match IDs from the matches table using a safer approach
     const { data: existingMatches, error: matchesError } = await supabase
       .from('matches')
       .select('gameid')
@@ -33,7 +34,7 @@ export const saveTeamMatchStats = async (
     }
     
     // Create a Set of existing match IDs for quick lookup
-    const existingMatchIds = new Set(existingMatches?.map(match => match.gameid) || []);
+    const existingMatchIds = new Set((existingMatches || []).map(match => match.gameid).filter(Boolean));
     
     // Filter stats to only include those with valid match references
     const validStats = teamStats.filter(stat => {

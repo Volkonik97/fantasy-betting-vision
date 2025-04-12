@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -7,10 +6,24 @@ import { toast } from "sonner";
 import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
 
-// Import the new component types
-import { PlayerWithImage, ImageUploadError } from "./image-import/types";
+interface SimplePlayer {
+  id: string;
+  name: string;
+  image: string | null;
+}
 
-// Import the new components
+interface PlayerWithImage {
+  player: SimplePlayer;
+  imageFile: File | null;
+  newImageUrl: string | null;
+  processed: boolean;
+}
+
+interface ImageUploadError {
+  count: number;
+  lastError: string | null;
+}
+
 import DropZone from "./image-import/DropZone";
 import UploadErrorAlert from "./image-import/UploadErrorAlert";
 import UploadControls from "./image-import/UploadControls";
@@ -104,39 +117,22 @@ const PlayerImagesImport = ({
       .replace(/[^a-z0-9]/g, "");
   };
 
-  const findMatchingPlayer = (fileName: string, playerImages: PlayerWithImage[]): number => {
+  const findMatchingPlayer = (fileName: string): number => {
     const normalizedFileName = normalizeString(fileName);
     
-    const exactMatch = playerImages.findIndex(item => 
-      normalizeString(item.player.name) === normalizedFileName
-    );
-    
-    if (exactMatch !== -1) return exactMatch;
-    
-    const containsFullName = playerImages.findIndex(item => 
-      normalizedFileName.includes(normalizeString(item.player.name))
-    );
-    
-    if (containsFullName !== -1) return containsFullName;
-    
-    const nameContainsFileName = playerImages.findIndex(item => 
-      normalizeString(item.player.name).includes(normalizedFileName)
-    );
-    
-    if (nameContainsFileName !== -1) return nameContainsFileName;
-    
     for (let i = 0; i < playerImages.length; i++) {
-      const playerName = playerImages[i].player.name;
-      const playerWords = playerName.split(/\s+/);
+      const normalizedPlayerName = normalizeString(playerImages[i].player.name);
       
-      for (const word of playerWords) {
-        if (word.length > 2) {
-          const normalizedWord = normalizeString(word);
-          if (normalizedFileName.includes(normalizedWord) || 
-              normalizedWord.includes(normalizedFileName)) {
-            return i;
-          }
-        }
+      if (normalizedPlayerName === normalizedFileName) {
+        return i;
+      }
+      
+      if (normalizedFileName.includes(normalizedPlayerName)) {
+        return i;
+      }
+      
+      if (normalizedPlayerName.includes(normalizedFileName)) {
+        return i;
       }
     }
     
@@ -153,27 +149,17 @@ const PlayerImagesImport = ({
     
     files.forEach(file => {
       const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
+      const matchIndex = findMatchingPlayer(fileName);
       
-      // Use a simpler approach to find matching players to avoid type issues
-      let foundMatch = false;
-      for (let i = 0; i < updatedPlayerImages.length; i++) {
-        const playerName = updatedPlayerImages[i].player.name.toLowerCase();
+      if (matchIndex !== -1) {
+        const objectUrl = URL.createObjectURL(file);
         
-        if (fileName.includes(playerName) || playerName.includes(fileName)) {
-          const objectUrl = URL.createObjectURL(file);
-          
-          updatedPlayerImages[i] = {
-            ...updatedPlayerImages[i],
-            imageFile: file,
-            newImageUrl: objectUrl
-          };
-          
-          foundMatch = true;
-          break;
-        }
-      }
-      
-      if (!foundMatch) {
+        updatedPlayerImages[matchIndex] = {
+          ...updatedPlayerImages[matchIndex],
+          imageFile: file,
+          newImageUrl: objectUrl
+        };
+      } else {
         unmatchedFiles.push(file);
       }
     });

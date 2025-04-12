@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SideStatistics } from '@/utils/models/types';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics 
       return null;
     }
 
+    // Using a more defensive approach to avoid type issues
     const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
       .select('*')
@@ -25,16 +27,23 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics 
 
     const matches = matchesData || [];
 
+    // Initialize statistics
     let blueWins = 0;
     let redWins = 0;
     let blueFirstBlood = 0;
     let redFirstBlood = 0;
     let blueFirstDragon = 0;
+    let redFirstDragon = 0;
+    let blueFirstHerald = 0;
     let redFirstHerald = 0;
     let blueFirstTower = 0;
     let redFirstTower = 0;
     let blueFirstBaron = 0;
     let redFirstBaron = 0;
+
+    // Count blue/red side matches
+    let blueSideMatches = 0;
+    let redSideMatches = 0;
 
     // Process each match
     matches.forEach(match => {
@@ -43,6 +52,10 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics 
       const isRed = match.team2_id === teamId;
 
       if (!isBlue && !isRed) return;
+
+      // Increment side counters
+      if (isBlue) blueSideMatches++;
+      if (isRed) redSideMatches++;
 
       // Check winner
       const isWinner = match.winner_team_id === teamId;
@@ -60,14 +73,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics 
       if (isBlue && hasFirstDragon) blueFirstDragon++;
       if (isRed && hasFirstDragon) redFirstDragon++;
 
-      // Process first herald (if available)
-      if (match.firstherald_team_id) {
-        const hasFirstHerald = match.firstherald_team_id === teamId;
-        if (isBlue && hasFirstHerald) blueFirstHerald++;
-        if (isRed && hasFirstHerald) redFirstHerald++;
-      }
-
-      // Process first tower
+      // Process first tower (if available)
       const hasFirstTower = match.firsttower_team_id === teamId;
       if (isBlue && hasFirstTower) blueFirstTower++;
       if (isRed && hasFirstTower) redFirstTower++;
@@ -80,24 +86,21 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics 
       }
     });
 
-    // Calculate total matches on each side
-    const blueSideMatches = matches.filter(m => m.team1_id === teamId).length;
-    const redSideMatches = matches.filter(m => m.team2_id === teamId).length;
-
+    // Create the result object with safe division
     return {
       teamId: teamId,
-      blueWins: blueWins,
-      redWins: redWins,
-      blueFirstBlood: blueFirstBlood,
-      redFirstBlood: redFirstBlood,
-      blueFirstDragon: blueFirstDragon,
-      redFirstDragon: redFirstDragon,
-      blueFirstHerald: blueFirstHerald,
-      redFirstHerald: redFirstHerald,
-      blueFirstTower: blueFirstTower,
-      redFirstTower: redFirstTower,
-      blueFirstBaron: blueFirstBaron,
-      redFirstBaron: redFirstBaron
+      blueWins: blueSideMatches > 0 ? Math.round((blueWins / blueSideMatches) * 100) : 0,
+      redWins: redSideMatches > 0 ? Math.round((redWins / redSideMatches) * 100) : 0,
+      blueFirstBlood: blueSideMatches > 0 ? Math.round((blueFirstBlood / blueSideMatches) * 100) : 0,
+      redFirstBlood: redSideMatches > 0 ? Math.round((redFirstBlood / redSideMatches) * 100) : 0,
+      blueFirstDragon: blueSideMatches > 0 ? Math.round((blueFirstDragon / blueSideMatches) * 100) : 0, 
+      redFirstDragon: redSideMatches > 0 ? Math.round((redFirstDragon / redSideMatches) * 100) : 0,
+      blueFirstHerald: blueSideMatches > 0 ? Math.round((blueFirstHerald / blueSideMatches) * 100) : 0,
+      redFirstHerald: redSideMatches > 0 ? Math.round((redFirstHerald / redSideMatches) * 100) : 0,
+      blueFirstTower: blueSideMatches > 0 ? Math.round((blueFirstTower / blueSideMatches) * 100) : 0,
+      redFirstTower: redSideMatches > 0 ? Math.round((redFirstTower / redSideMatches) * 100) : 0,
+      blueFirstBaron: blueSideMatches > 0 ? Math.round((blueFirstBaron / blueSideMatches) * 100) : 0,
+      redFirstBaron: redSideMatches > 0 ? Math.round((redFirstBaron / redSideMatches) * 100) : 0
     };
   } catch (error) {
     console.error("Error fetching side statistics:", error);

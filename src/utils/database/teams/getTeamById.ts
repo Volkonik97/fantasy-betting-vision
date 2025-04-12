@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/utils/models/types';
 import { toast } from 'sonner';
@@ -17,7 +18,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     console.log(`Getting team by ID: ${teamId}`);
 
     // Fetch team data
-    const { data: teamData, error } = await supabase
+    const { data, error } = await supabase
       .from('teams')
       .select('*')
       .eq('teamid', teamId)
@@ -29,12 +30,15 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
 
-    if (!teamData) {
+    if (!data) {
       console.log(`No team found with ID: ${teamId}`);
       return null;
     }
 
-    console.log("Team data retrieved:", teamData);
+    console.log("Team data retrieved:", data);
+    
+    // Convert retrieved data to proper team object
+    const baseTeam = adaptTeamFromDatabase(data);
 
     // Try to get summary data from team_summary_view if available
     try {
@@ -48,9 +52,8 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         console.log("Found team summary data:", summaryData);
         
         // Create a combined team object with data from both sources
-        const teamData = adaptTeamFromDatabase(teamData);
         const mergedTeam: Team = {
-          ...teamData,
+          ...baseTeam,
           aggression_score: summaryData.aggression_score || 0,
           earlygame_score: summaryData.earlygame_score || 0,
           objectives_score: summaryData.objectives_score || 0,
@@ -65,9 +68,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       // Continue with regular team data
     }
 
-    // Convert to application format using adapter
-    const team = adaptTeamFromDatabase(teamData);
-    return team;
+    return baseTeam;
   } catch (error) {
     console.error("Exception in getTeamById:", error);
     toast.error("An error occurred while fetching team details");
