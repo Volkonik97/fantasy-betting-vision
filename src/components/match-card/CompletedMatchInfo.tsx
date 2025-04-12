@@ -7,10 +7,15 @@ import { getSeriesScore } from "@/utils/database/matches/series";
 
 interface CompletedMatchInfoProps {
   result: {
-    winner: string;
+    winner: string; // Make winner required
     score: [number, number] | number[];
-    duration: number | string;
+    duration: string | number;
     mvp?: string;
+    firstBlood?: string | boolean;
+    firstDragon?: string | boolean;
+    firstBaron?: string | boolean;
+    firstHerald?: string | boolean;
+    firstTower?: string | boolean;
   };
   winnerName: string;
   matchId: string;
@@ -49,8 +54,8 @@ const CompletedMatchInfo = ({
             // Convert array score to object format
             if (Array.isArray(score)) {
               setSeriesScore({ 
-                blue: score[0],
-                red: score[1]
+                blue: score[0] || 0,
+                red: score[1] || 0
               });
             } else {
               setSeriesScore(score);

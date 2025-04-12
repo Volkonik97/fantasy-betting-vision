@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -96,10 +97,18 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   // Debug the scores
   console.log(`Match ${match.id} - Score: ${blueScore}:${redScore}`, match.result?.score);
   
-  // Determine winner name
+  // Determine winner name and ensure it exists
   const winnerName = match.result?.winner 
     ? (match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name)
-    : '';
+    : 'Unknown';
+  
+  // Create a properly typed match result for CompletedMatchInfo
+  const safeResult = match.result ? {
+    winner: match.result.winner || match.teamBlue.id, // Default to blue team if no winner
+    score: scoreArray,
+    duration: match.result.duration || "0",
+    mvp: match.result.mvp
+  } : undefined;
   
   return (
     <div 
@@ -125,10 +134,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           onBlueLogoError={() => setBlueLogoError(true)}
           onRedLogoError={() => setRedLogoError(true)}
           status={match.status}
-          result={match.result ? {
-            ...match.result,
-            score: scoreArray  // Use the properly typed score array
-          } : undefined}
+          result={match.result}
           blueScore={blueScore}
           redScore={redScore}
           matchId={match.id}
@@ -151,12 +157,9 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           <UpcomingMatchInfo matchDate={matchDate} />
         )}
         
-        {match.status === "Completed" && match.result && winnerName && (
+        {match.status === "Completed" && safeResult && winnerName && (
           <CompletedMatchInfo 
-            result={{
-              ...match.result,
-              score: scoreArray  // Ensure we pass the properly typed score
-            }}
+            result={safeResult}
             winnerName={winnerName}
             matchId={match.id}
             seriesAggregation={isSeries}

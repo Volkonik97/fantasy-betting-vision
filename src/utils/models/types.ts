@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -48,9 +49,9 @@ export interface Match {
   redWinOdds: number;
   status: 'Upcoming' | 'Live' | 'Completed';
   result?: {
-    winner?: string;
-    score?: [number, number];
-    duration?: string;
+    winner: string;
+    score: [number, number];
+    duration: string | number;
     mvp?: string;
     firstBlood?: string | boolean;
     firstDragon?: string | boolean;
@@ -112,6 +113,8 @@ export interface Match {
     // Ensure picks and bans properties are properly defined
     picks?: any;
     bans?: any;
+    // Properly define game_number as a string or number
+    game_number?: string | number;
   };
   playerStats?: any[];
 }
@@ -125,7 +128,7 @@ export interface Tournament {
   logo: string;
 }
 
-// Ajout de la définition TimelineStatPoint pour les stats de timeline
+// TimelineStatPoint for timeline stats
 export interface TimelineStatPoint {
   avgGold: number;
   avgXp: number;
@@ -137,12 +140,12 @@ export interface TimelineStatPoint {
   avgAssists?: number;
 }
 
-// Type pour les statistiques de timeline par point de temps
+// Type for timeline statistics by time point
 export interface TimelineStats {
   [timePoint: string]: TimelineStatPoint;
 }
 
-// Statistiques par côté (bleu/rouge)
+// Side-based statistics (blue/red)
 export interface SideStatistics {
   teamId: string;
   blueWins: number;

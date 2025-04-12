@@ -1,3 +1,4 @@
+
 // Define types for league data processing
 
 // Player Statistics Tracker
@@ -128,6 +129,7 @@ export interface GameTracker {
     winner: string;
     duration: string;
   };
+  year?: string; // Added to allow this property
 }
 
 // Match team statistics

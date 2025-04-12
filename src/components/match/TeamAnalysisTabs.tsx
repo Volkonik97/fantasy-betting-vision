@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SideAnalysis from "@/components/SideAnalysis";
-import { SideStatistics } from "@/utils/models/types";
+import { SideStatistics, TimelineStats } from "@/utils/models/types";
 import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
 import { toast } from "sonner";
 import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
@@ -36,9 +37,12 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
       
       console.log(`Found timeline stats for team ${teamId}:`, timelineStats);
       
+      // Ensure we have the correct type for timelineStats
+      const typedTimelineStats: TimelineStats = timelineStats as TimelineStats;
+      
       return {
         ...originalStats,
-        timelineStats: timelineStats as TimelineStats
+        timelineStats: typedTimelineStats
       };
     } catch (error) {
       console.error(`Error calculating team stats for ${teamId}:`, error);
