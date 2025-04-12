@@ -10,22 +10,36 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
   if (!imageUrl) return false;
   
   try {
+    // For external URLs (not Supabase storage), just return true
+    if (!imageUrl.includes('supabase.co/storage')) {
+      return true;
+    }
+    
     // Extract bucket name and path from the URL
     // Example URL format: https://{project-ref}.supabase.co/storage/v1/object/public/{bucket}/{path}
     const urlParts = imageUrl.split('/storage/v1/object/public/');
-    if (urlParts.length !== 2) return false;
+    if (urlParts.length !== 2) {
+      console.warn(`Invalid image URL format: ${imageUrl}`);
+      return false;
+    }
     
     const pathParts = urlParts[1].split('/');
-    if (pathParts.length < 2) return false;
+    if (pathParts.length < 2) {
+      console.warn(`Not enough path parts in URL: ${imageUrl}`);
+      return false;
+    }
     
     const bucket = pathParts[0];
     const path = pathParts.slice(1).join('/');
     
-    if (!bucket || !path) return false;
+    if (!bucket || !path) {
+      console.warn(`Missing bucket or path in URL: ${imageUrl}`);
+      return false;
+    }
     
     console.log(`Verifying image in bucket: ${bucket}, path: ${path}`);
     
-    // Use HEAD request instead of download to reduce bandwidth usage
+    // Check if the object exists without downloading it
     const { data, error } = await supabase
       .storage
       .from(bucket)

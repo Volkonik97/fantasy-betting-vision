@@ -1,7 +1,8 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
+import { verifyImageExists } from "@/utils/database/teams/imageUtils";
 
 interface PlayerImageProps {
   name: string;
@@ -11,16 +12,50 @@ interface PlayerImageProps {
 
 const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
   const [imageError, setImageError] = useState(false);
+  const [validatedImage, setValidatedImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const validateImage = async () => {
+      if (!image) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        // Only validate for Supabase storage URLs to avoid unnecessary checks
+        if (image.includes('supabase.co/storage')) {
+          console.log(`Validating image for ${name}:`, image);
+          const isValid = await verifyImageExists(image);
+          setValidatedImage(isValid ? image : null);
+        } else {
+          // For other URLs, assume they are valid
+          setValidatedImage(image);
+        }
+      } catch (error) {
+        console.error(`Error validating image for ${name}:`, error);
+        setValidatedImage(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    validateImage();
+  }, [image, name]);
 
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
-      {image && !imageError ? (
+      {isLoading ? (
+        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+          <div className="animate-pulse w-12 h-12 bg-gray-200 rounded-full"></div>
+        </div>
+      ) : validatedImage && !imageError ? (
         <img
-          src={image}
+          src={validatedImage}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            console.log(`Image load error for player ${name}:`, image);
+            console.log(`Image load error for player ${name}:`, validatedImage);
             setImageError(true);
             const target = e.target as HTMLImageElement;
             target.onerror = null; // Prevent infinite error loop

@@ -32,10 +32,11 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   useEffect(() => {
     console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}, ID: ${player.id}`);
     console.log(`Player stats - KDA: ${player.kda}, CS/min: ${player.csPerMin}, Damage Share: ${player.damageShare}`);
+    console.log(`Player image URL: ${player.image || 'no image'}`);
     
-    // Vérifier si le joueur a toutes les propriétés nécessaires
+    // Verify if the player has all required properties
     if (!player.role || !player.teamName || !player.teamRegion) {
-      console.warn(`⚠️ PlayerCard: Joueur ${player.name} avec des propriétés manquantes: ` +
+      console.warn(`⚠️ PlayerCard: Player ${player.name} missing properties: ` +
         `${!player.role ? 'role ' : ''}` +
         `${!player.teamName ? 'teamName ' : ''}` +
         `${!player.teamRegion ? 'teamRegion ' : ''}`
