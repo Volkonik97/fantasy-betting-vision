@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { verifyImageExists } from "@/utils/database/teams/imageUtils";
+import { verifyImageExists } from "@/utils/database/teams/images/verifyImage";
 
 interface PlayerImageProps {
   name: string;
