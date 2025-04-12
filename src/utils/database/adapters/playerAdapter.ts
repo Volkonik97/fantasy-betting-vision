@@ -52,6 +52,6 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     kda: player.kda,
     cspm: player.csPerMin,
     damage_share: player.damageShare,
-    champion_pool: typeof player.championPool === 'number' ? player.championPool : 0
+    champion_pool: player.championPool
   };
 };

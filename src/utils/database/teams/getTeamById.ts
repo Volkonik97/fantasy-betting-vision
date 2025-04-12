@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Team } from "../../models/types";
 import { toast } from "sonner";
@@ -71,8 +70,8 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
       return null;
     }
 
-    // Convert raw data to Team object using our adapter
-    const team = adaptTeamFromDatabase(data);
+    // Use the adapter to convert to Team object
+    const team = adaptTeamFromDatabase(data as any);
     
     // Mettre à jour l'équipe dans le cache
     updateTeamInCache(team);

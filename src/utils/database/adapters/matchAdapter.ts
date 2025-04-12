@@ -65,7 +65,7 @@ export interface RawDatabaseMatch {
  */
 export const adaptMatchFromDatabase = (data: RawDatabaseMatch): Match => {
   return {
-    id: data.id || data.gameid,
+    id: data.id || data.gameid || '',
     tournament: data.tournament || 'Unknown',
     date: data.date || new Date().toISOString(),
     teamBlue: {
@@ -110,11 +110,11 @@ export const adaptMatchFromDatabase = (data: RawDatabaseMatch): Match => {
       dragons: data.dragons || 0,
       heralds: data.heralds || 0,
       barons: data.barons || 0,
-      first_blood: data.firstblood_team_id || data.first_blood || null,
-      first_dragon: data.firstdragon_team_id || data.first_dragon || null,
-      first_baron: data.firstbaron_team_id || data.first_baron || null,
-      first_tower: data.firsttower_team_id || data.first_tower || null,
-      first_herald: data.first_herald || null,
+      first_blood: data.firstblood_team_id || (typeof data.first_blood === 'string' ? data.first_blood : null),
+      first_dragon: data.firstdragon_team_id || (typeof data.first_dragon === 'string' ? data.first_dragon : null),
+      first_baron: data.firstbaron_team_id || (typeof data.first_baron === 'string' ? data.first_baron : null),
+      first_tower: data.firsttower_team_id || (typeof data.first_tower === 'string' ? data.first_tower : null),
+      first_herald: typeof data.first_herald === 'string' ? data.first_herald : null,
       game_number: data.game_number
     }
   };

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SideStatistics } from '../models/types';
 import { getMockSideStatistics } from '../statistics';
@@ -39,8 +38,10 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     console.log(`[sideStatisticsService] Found ${matchesData.length} matches for team ${teamId}`);
     
     // Calculate statistics based on matches
-    const blueMatches = matchesData.filter(m => m.team_blue_id === teamId);
-    const redMatches = matchesData.filter(m => m.team_red_id === teamId);
+    const blueMatches = matchesData.filter(m => 
+      (m.team_blue_id === teamId || m.team1_id === teamId));
+    const redMatches = matchesData.filter(m => 
+      (m.team_red_id === teamId || m.team2_id === teamId));
     
     const blueMatchCount = blueMatches.length;
     const redMatchCount = redMatches.length;
@@ -58,38 +59,42 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     
     // Calculate first objectives
     const blueFirstBlood = calculatePercentage(
-      blueMatches.filter(m => m.first_blood === teamId).length, 
+      blueMatches.filter(m => m.firstblood_team_id === teamId).length, 
       blueMatchCount
     );
     const redFirstBlood = calculatePercentage(
-      redMatches.filter(m => m.first_blood === teamId).length, 
+      redMatches.filter(m => m.firstblood_team_id === teamId).length, 
       redMatchCount
     );
     
     const blueFirstDragon = calculatePercentage(
-      blueMatches.filter(m => m.first_dragon === teamId).length, 
+      blueMatches.filter(m => m.firstdragon_team_id === teamId).length, 
       blueMatchCount
     );
     const redFirstDragon = calculatePercentage(
-      redMatches.filter(m => m.first_dragon === teamId).length, 
+      redMatches.filter(m => m.firstdragon_team_id === teamId).length, 
       redMatchCount
     );
     
     const blueFirstHerald = calculatePercentage(
-      blueMatches.filter(m => m.first_herald === teamId).length, 
+      blueMatches.filter(m => 
+        (m.first_herald === teamId || m.firstherald_team_id === teamId)
+      ).length, 
       blueMatchCount
     );
     const redFirstHerald = calculatePercentage(
-      redMatches.filter(m => m.first_herald === teamId).length, 
+      redMatches.filter(m => 
+        (m.first_herald === teamId || m.firstherald_team_id === teamId)
+      ).length, 
       redMatchCount
     );
     
     const blueFirstTower = calculatePercentage(
-      blueMatches.filter(m => m.first_tower === teamId).length, 
+      blueMatches.filter(m => m.firsttower_team_id === teamId).length, 
       blueMatchCount
     );
     const redFirstTower = calculatePercentage(
-      redMatches.filter(m => m.first_tower === teamId).length, 
+      redMatches.filter(m => m.firsttower_team_id === teamId).length, 
       redMatchCount
     );
     

@@ -32,6 +32,13 @@ export interface RawDatabaseTeam {
   blue_firstbaron_pct?: number;
   red_firstbaron_pct?: number;
   // Add any other fields from the team_summary_view or teams table
+  aggression_score?: number;
+  dragon_diff?: number;
+  earlygame_score?: number;
+  objectives_score?: number;
+  winrate_percent?: number;
+  winrate_blue_percent?: number;
+  winrate_red_percent?: number;
 }
 
 /**

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,7 +40,7 @@ export const fetchEnhancedMatchStats = async (
     // Créer un Map pour un accès plus rapide aux données des matchs
     const matchesMap = new Map();
     matchesData?.forEach(match => {
-      matchesMap.set(match.id, match);
+      matchesMap.set(match.gameid, match);
     });
     
     // Traitement de chaque statistique de joueur
@@ -116,9 +115,10 @@ export const fetchEnhancedMatchStats = async (
         }
         
         // Ajouter les informations au stat
+        const opponentTeamName = opponentTeam?.name || `Équipe ${opponentTeamId}`;
         matchesWithDetails.push({
           ...stat,
-          opponentTeamName: opponentTeam?.name || `Équipe ${opponentTeamId}`,
+          opponentTeamName: opponentTeamName,
           opponentTeamId: opponentTeamId,
           matchDate: formattedDate,
           tournament: matchData.tournament || "Tournoi inconnu"

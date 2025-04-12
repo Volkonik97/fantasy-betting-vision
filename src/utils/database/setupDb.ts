@@ -7,6 +7,8 @@ import { toast } from "sonner";
  */
 export const executeSQL = async (sql: string): Promise<boolean> => {
   try {
+    // This is a custom function that might not exist in all Supabase instances
+    // Use direct query execution as fallback
     const { data, error } = await supabase.rpc("execute_sql", { sql_query: sql });
     
     if (error) {
@@ -40,4 +42,12 @@ export const checkTableExists = async (tableName: string): Promise<boolean> => {
     console.error(`Error in checkTableExists for ${tableName}:`, error);
     return false;
   }
+};
+
+/**
+ * Export functions for setupDbFunctions to maintain compatibility
+ */
+export const setupDbFunctions = {
+  executeSQL,
+  checkTableExists
 };

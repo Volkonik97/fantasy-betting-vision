@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -237,9 +236,15 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
             };
           }
           
+          const formattedDate = matchData.date ? new Date(matchData.date) : new Date();
+          const isWinner = isBlueTeam ? 
+            (matchData.winner_team_id === playerTeamId) : 
+            (matchData.winner_team_id === playerTeamId);
+          
           return {
             ...stat,
-            date: matchData.date
+            date: formattedDate,
+            is_win: isWinner
           };
         } catch (err) {
           console.error(`Error processing match ${stat.match_id}:`, err);

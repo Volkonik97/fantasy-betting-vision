@@ -1,9 +1,8 @@
-
 import { GameTracker } from '../../types';
 import { MatchCSV } from '../../../csv/types';
 import { determineMatchStatus } from './statusDeterminer';
 import { extractTeamStatistics } from './teamStatsExtractor';
-import { extractMatchResultData } from './matchResultExtractor';
+import { extractMatchResult } from "./matchResultExtractor";
 import { extractObjectiveStats } from './objectiveStatsExtractor';
 import { debugMatchData } from './debugHelper';
 import { extractPicksAndBans } from '../picksAndBansExtractor';
@@ -40,7 +39,7 @@ export function convertToMatchCsv(game: GameTracker, matchStats: Map<string, Map
   
   // Extract match result data if the match is completed
   if (status === 'Completed' && game.result) {
-    const resultData = extractMatchResultData(game);
+    const resultData = extractMatchResult(game);
     Object.assign(matchCsv, resultData);
   }
   
