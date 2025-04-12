@@ -115,7 +115,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
               View Team Details
             </Link>
             <span className="text-sm text-gray-500">
-              {team.players.length} Players
+              {team.players && team.players.length ? `${team.players.length} Players` : 'No players'}
             </span>
           </div>
         </CardContent>

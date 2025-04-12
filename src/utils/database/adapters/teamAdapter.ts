@@ -51,6 +51,9 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     redWinRate: dbTeam.winrate_red || 0,
     averageGameTime: dbTeam.avg_gamelength || 0,
     
+    // Initialize players as an empty array to prevent undefined issues
+    players: [],
+    
     // Objective statistics
     firstblood_pct: dbTeam.firstblood_pct || 0,
     blueFirstBlood: dbTeam.firstblood_blue_pct || 0,

@@ -39,6 +39,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     
     // Convert retrieved data to proper team object
     const baseTeam = adaptTeamFromDatabase(data);
+    
+    // Ensure players array is initialized
+    baseTeam.players = baseTeam.players || [];
 
     // Try to get summary data from team_summary_view if available
     try {
