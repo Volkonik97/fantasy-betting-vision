@@ -104,7 +104,8 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       return playersCache[playerId];
     }
     
-    const { data, error } = await supabase
+    // First try with playerid
+    let { data, error } = await supabase
       .from('players')
       .select('*')
       .eq('playerid', playerId)
@@ -125,6 +126,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
         return null;
       }
       
+      // Use altData instead of reassigning to data
       data = altData;
     }
     
