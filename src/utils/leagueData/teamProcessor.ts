@@ -1,5 +1,6 @@
 
 import { TeamStatsTracker, TeamStatsMap } from "./types";
+import { LeagueGameDataRow } from "../csv/types";
 
 /**
  * Create a new team stats tracker
@@ -67,4 +68,35 @@ export const mergeTeams = (teamsMap: TeamStatsMap, sourceId: string, targetId: s
   
   // Remove the source team from the map
   teamsMap.delete(sourceId);
+};
+
+/**
+ * Process team data from raw CSV rows
+ * This function is called from the assembler to process team statistics
+ */
+export const processTeamData = (data: LeagueGameDataRow[]) => {
+  console.log(`Processing team data from ${data.length} rows...`);
+  
+  const uniqueTeams = new Map<string, TeamStatsTracker>();
+  
+  // Process each row to extract team information
+  data.forEach(row => {
+    if (!row.teamid || !row.teamname) return;
+    
+    // Get or create team record
+    let team = uniqueTeams.get(row.teamid);
+    if (!team) {
+      team = createTeamTracker(row.teamid, row.teamname, row.league || "");
+      uniqueTeams.set(row.teamid, team);
+    }
+    
+    // Update team region if available and not already set
+    if (row.league && !team.region) {
+      team.region = row.league;
+    }
+  });
+  
+  console.log(`Processed ${uniqueTeams.size} unique teams`);
+  
+  return { uniqueTeams };
 };

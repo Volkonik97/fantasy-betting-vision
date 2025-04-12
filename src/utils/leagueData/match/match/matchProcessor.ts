@@ -1,68 +1,41 @@
 
-import { LeagueGameDataRow } from '../../../csv/types';
-import { GameTracker, MatchTeamStats, PlayerMatchStats } from '../../types';
-import { ProcessedGameData } from '../types';
-import { groupGamesByGameId } from '../gameDataExtractor';
-import { initializeGameTracker, identifyTeamSides, identifyGameResult } from '../gameTracker';
-import { extractTeamStats } from '../teamStatsExtractor';
-import { extractPlayerStats } from '../playerStatsExtractor';
-import { convertToMatchCsv } from '../converter/matchCsvConverter';
-import { extractPicksAndBans } from '../picksAndBansExtractor';
+import { LeagueGameDataRow } from "../../../csv/types";
+import { extractPicksAndBans } from "../picksAndBansExtractor";
+import { extractGameData } from "../gameDataExtractor";
+import { getOrCreateGame } from "../gameTracker";
 
 /**
- * Process match data from League data rows with improved efficiency
+ * Process a single match from the raw data
  */
-export function processMatchData(data: LeagueGameDataRow[]): ProcessedGameData {
-  console.log(`Processing ${data.length} rows of match data...`);
+export function processMatch(row: LeagueGameDataRow) {
+  if (!row.gameid) {
+    console.warn("Skipping row without gameid:", row);
+    return null;
+  }
+
+  // Get basic game data
+  const gameId = row.gameid;
+  const gameData = extractGameData(row);
   
-  // Create maps for tracking game/match data
-  const uniqueGames = new Map<string, GameTracker>();
-  const matchStats = new Map<string, Map<string, MatchTeamStats>>();
-  const matchPlayerStats = new Map<string, Map<string, PlayerMatchStats>>();
+  // Get picks and bans if available
+  const picksAndBans = extractPicksAndBans(row);
   
-  // Group data by game ID for batch processing
-  const gameIdGroups = groupGamesByGameId(data);
+  // Get or create game tracker
+  const game = getOrCreateGame(gameId);
   
-  console.log(`Found ${gameIdGroups.size} unique games to process`);
+  // Update game data
+  if (gameData.date) game.date = gameData.date;
+  if (gameData.league) game.league = gameData.league;
+  if (gameData.year) game.year = gameData.year;
   
-  // Process each game with all its rows at once
-  gameIdGroups.forEach((gameRows, gameId) => {
-    // Initialize game data
-    let game = initializeGameTracker(gameId, gameRows[0]);
-    
-    // Identify teams and their sides
-    const { updatedGame } = identifyTeamSides(game, gameRows);
-    game = updatedGame;
-    
-    // Identify game result
-    game = identifyGameResult(game, gameRows);
-    
-    // Extract team statistics
-    const teamStatsMap = extractTeamStats(gameId, gameRows);
-    
-    // Extract player statistics
-    const playerStatsMap = extractPlayerStats(gameId, gameRows);
-    
-    // Add the complete game data to our maps
-    uniqueGames.set(gameId, game);
-    matchStats.set(gameId, teamStatsMap);
-    matchPlayerStats.set(gameId, playerStatsMap);
-  });
-  
-  // Convert the maps to arrays for the return object
-  const matchesArray = Array.from(uniqueGames.values()).map(match => {
-    return convertToMatchCsv(match, matchStats);
-  });
-  
-  console.log(`Processed ${uniqueGames.size} matches, ${matchPlayerStats.size} player stats groups`);
+  // Add row to game's rows
+  if (!game.rows) game.rows = new Set();
+  game.rows.add(row);
   
   return {
-    uniqueGames,
-    matchStats,
-    matchPlayerStats,
-    matchesArray
+    gameId,
+    gameData,
+    picksAndBans,
+    game
   };
 }
-
-// Re-export the function with its original signature for backward compatibility
-export { processMatchData as default };

@@ -3,7 +3,6 @@ import { LeagueGameDataRow } from '../../csv/types';
 import { processMatchData } from '../match/matchProcessor';
 import { processTeamData } from '../teamProcessor';
 import { processPlayerData } from '../playerProcessor';
-import { extractTeamSpecificStats } from '../../database/matches/teamStatsExtractor';
 import { AssembledLeagueData } from './types';
 import { convertToApplicationModels } from './converter';
 import { buildTeamMatchStatsArray } from './matchStatsBuilder';
