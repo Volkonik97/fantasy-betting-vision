@@ -17,7 +17,55 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
 
     console.log(`Getting team by ID: ${teamId}`);
 
-    // Fetch team data
+    // First fetch team data from team_summary_view if available
+    try {
+      const { data: summaryData, error: summaryError } = await supabase
+        .from('team_summary_view')
+        .select('*')
+        .eq('teamid', teamId)
+        .maybeSingle();
+
+      if (!summaryError && summaryData) {
+        console.log("Found team summary data:", summaryData);
+        
+        // If we have data from the summary view, use it as the primary source
+        const team = adaptTeamFromDatabase(summaryData);
+        
+        // Now fetch players for this team
+        const { data: playersData, error: playersError } = await supabase
+          .from('players')
+          .select('*')
+          .eq('teamid', teamId);
+          
+        if (!playersError && playersData && playersData.length > 0) {
+          console.log(`Found ${playersData.length} players for team ${teamId}`);
+          // Add players to the team object
+          team.players = playersData.map(player => ({
+            id: player.playerid,
+            name: player.playername,
+            role: player.position || 'Unknown',
+            image: player.image || '',
+            team: player.teamid,
+            teamName: team.name,
+            teamRegion: team.region,
+            kda: player.kda || 0,
+            csPerMin: player.cspm || 0,
+            damageShare: player.damage_share || 0,
+            championPool: player.champion_pool ? String(player.champion_pool) : '0'
+          }));
+        } else {
+          console.log(`No players found for team ${teamId}`);
+          team.players = [];
+        }
+        
+        return team;
+      }
+    } catch (summaryError) {
+      console.warn("Could not fetch team summary data:", summaryError);
+      // Continue with regular team data
+    }
+
+    // Fallback to the regular teams table if team_summary_view didn't work
     const { data, error } = await supabase
       .from('teams')
       .select('*')
@@ -38,54 +86,36 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
     console.log("Team data retrieved:", data);
     
     // Convert retrieved data to proper team object
-    const baseTeam = adaptTeamFromDatabase(data);
+    const team = adaptTeamFromDatabase(data);
     
-    // Try to get summary data from team_summary_view if available
-    try {
-      const { data: summaryData, error: summaryError } = await supabase
-        .from('team_summary_view')
-        .select('*')
-        .eq('teamid', teamId)
-        .maybeSingle();
-
-      if (!summaryError && summaryData) {
-        console.log("Found team summary data:", summaryData);
-        
-        // If we have winrate data from summary view, convert percent to decimal format
-        let winRates = {};
-        if (summaryData.winrate_percent !== undefined) {
-          winRates = {
-            winRate: summaryData.winrate_percent / 100,
-            blueWinRate: (summaryData.winrate_blue_percent || 0) / 100,
-            redWinRate: (summaryData.winrate_red_percent || 0) / 100,
-          };
-        }
-        
-        // Create a combined team object with data from both sources
-        const mergedTeam: Team = {
-          ...baseTeam,
-          ...winRates,
-          aggression_score: summaryData.aggression_score || 0,
-          earlygame_score: summaryData.earlygame_score || 0,
-          objectives_score: summaryData.objectives_score || 0,
-          dragon_diff: summaryData.dragon_diff || 0,
-          tower_diff: summaryData.tower_diff || 0
-        };
-        
-        // Ensure players array is initialized
-        mergedTeam.players = mergedTeam.players || [];
-        
-        return mergedTeam;
-      }
-    } catch (summaryError) {
-      console.warn("Could not fetch team summary data:", summaryError);
-      // Continue with regular team data
+    // Fetch players for this team
+    const { data: playersData, error: playersError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('teamid', teamId);
+      
+    if (!playersError && playersData && playersData.length > 0) {
+      console.log(`Found ${playersData.length} players for team ${teamId}`);
+      // Add players to the team object
+      team.players = playersData.map(player => ({
+        id: player.playerid,
+        name: player.playername,
+        role: player.position || 'Unknown',
+        image: player.image || '',
+        team: player.teamid,
+        teamName: team.name,
+        teamRegion: team.region,
+        kda: player.kda || 0,
+        csPerMin: player.cspm || 0,
+        damageShare: player.damage_share || 0,
+        championPool: player.champion_pool ? String(player.champion_pool) : '0'
+      }));
+    } else {
+      console.log(`No players found for team ${teamId}`);
+      team.players = [];
     }
-
-    // Ensure players array is initialized
-    baseTeam.players = baseTeam.players || [];
     
-    return baseTeam;
+    return team;
   } catch (error) {
     console.error("Exception in getTeamById:", error);
     toast.error("An error occurred while fetching team details");

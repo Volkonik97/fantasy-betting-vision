@@ -20,7 +20,10 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   // Ensure team data has valid values
   const winRate = team.winRate || 0;
   const avgGameTime = team.averageGameTime || 0;
-  const hasPlayers = team.players && team.players.length > 0;
+  
+  // Safely determine the player count
+  const playerCount = team.players ? team.players.length : 0;
+  const hasPlayers = playerCount > 0;
   
   useEffect(() => {
     const fetchLogo = async () => {
@@ -64,9 +67,10 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
       winRate: team.winRate,
       blueWinRate: team.blueWinRate,
       redWinRate: team.redWinRate,
-      playersCount: team.players?.length || 0
+      playersCount: playerCount,
+      hasPlayers: hasPlayers
     });
-  }, [team]);
+  }, [team, playerCount, hasPlayers]);
 
   return (
     <motion.div
@@ -131,7 +135,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
               View Team Details
             </Link>
             <span className="text-sm text-gray-500">
-              {hasPlayers ? `${team.players.length} Players` : 'No players'}
+              {hasPlayers ? `${playerCount} Players` : 'No players'}
             </span>
           </div>
         </CardContent>
