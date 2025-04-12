@@ -1,85 +1,76 @@
-import { supabase } from "@/integrations/supabase/client";
-import { Team } from "../../models/types";
-import { toast } from "sonner";
-import { getTeamsFromCache, updateTeamInCache } from "./teamCache";
-import { adaptTeamFromDatabase } from "../adapters/teamAdapter";
+
+import { supabase } from '@/integrations/supabase/client';
+import { Team } from '@/utils/models/types';
+import { toast } from 'sonner';
+import { adaptTeamFromDatabase } from '../adapters/teamAdapter';
 
 /**
- * Récupère une équipe à partir de la vue 'team_summary_view' ou de la table 'teams'
- * avec gestion du cache et fallback
+ * Get a team by its ID
  */
 export const getTeamById = async (teamId: string): Promise<Team | null> => {
   try {
     if (!teamId) {
-      console.error("ID d'équipe non fourni");
+      console.error("No team ID provided");
+      toast.error("Missing team ID");
       return null;
     }
-    
-    // Essayer de récupérer depuis le cache d'abord
-    const cachedTeams = getTeamsFromCache();
-    if (cachedTeams) {
-      const cachedTeam = cachedTeams.find(team => team.id === teamId);
-      if (cachedTeam) {
-        console.log(`🧠 Équipe ${teamId} récupérée depuis le cache`);
-        return cachedTeam;
-      }
-    }
 
-    // Essayer d'abord avec la vue team_summary_view
-    let { data, error } = await supabase
-      .from("team_summary_view")
-      .select("*")
-      .eq("id", teamId)
+    console.log(`Getting team by ID: ${teamId}`);
+
+    // Fetch team data
+    const { data: teamData, error } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('teamid', teamId)
       .single();
 
-    // Si la vue n'existe pas ou a un problème, essayer avec la table teams
     if (error) {
-      console.log("❌ Erreur lors du chargement depuis la vue, tentative avec la table teams");
-      
-      // Essai avec teamid (au cas où le nom de colonne est différent)
-      const { data: teamData, error: teamError } = await supabase
-        .from("teams")
-        .select("*")
-        .eq("id", teamId)
-        .single();
-      
-      if (teamError) {
-        // Essai avec une autre colonne potentielle
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from("teams")
-          .select("*")
-          .eq("teamid", teamId)
-          .single();
-          
-        if (fallbackError) {
-          console.error("❌ Toutes les tentatives de récupération de l'équipe ont échoué:", 
-            { viewError: error, tableError: teamError, fallbackError });
-          toast.error("Échec du chargement de l'équipe");
-          return null;
-        }
-        
-        data = fallbackData;
-      } else {
-        data = teamData;
-      }
-    }
-
-    if (!data) {
-      console.error(`❌ Aucune donnée pour l'équipe ${teamId}`);
-      toast.error("Équipe non trouvée");
+      console.error("Error fetching team:", error);
+      toast.error("Failed to load team details");
       return null;
     }
 
-    // Use the adapter to convert to Team object
-    const team = adaptTeamFromDatabase(data as any);
-    
-    // Mettre à jour l'équipe dans le cache
-    updateTeamInCache(team);
-    
+    if (!teamData) {
+      console.log(`No team found with ID: ${teamId}`);
+      return null;
+    }
+
+    console.log("Team data retrieved:", teamData);
+
+    // Try to get summary data from team_summary_view if available
+    try {
+      const { data: summaryData, error: summaryError } = await supabase
+        .from('team_summary_view')
+        .select('*')
+        .eq('teamid', teamId)
+        .maybeSingle();
+
+      if (!summaryError && summaryData) {
+        console.log("Found team summary data:", summaryData);
+        
+        // Create a combined team object with data from both sources
+        const mergedTeam = {
+          ...adaptTeamFromDatabase(teamData),
+          aggression_score: summaryData.aggression_score || 0,
+          earlygame_score: summaryData.earlygame_score || 0,
+          objectives_score: summaryData.objectives_score || 0,
+          dragon_diff: summaryData.dragon_diff || 0,
+          tower_diff: summaryData.tower_diff || 0
+        };
+        
+        return mergedTeam as Team;
+      }
+    } catch (summaryError) {
+      console.warn("Could not fetch team summary data:", summaryError);
+      // Continue with regular team data
+    }
+
+    // Convert to application format using adapter
+    const team = adaptTeamFromDatabase(teamData);
     return team;
   } catch (error) {
-    console.error("❌ Erreur inattendue dans getTeamById :", error);
-    toast.error("Erreur serveur");
+    console.error("Exception in getTeamById:", error);
+    toast.error("An error occurred while fetching team details");
     return null;
   }
 };

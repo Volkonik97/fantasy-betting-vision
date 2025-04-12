@@ -1,3 +1,4 @@
+
 import { Team } from "@/utils/models/types";
 
 /**
@@ -33,6 +34,9 @@ export interface DatabaseTeam {
   // Additional fields as needed
 }
 
+// For RawDatabaseTeam
+export type RawDatabaseTeam = Partial<DatabaseTeam>;
+
 /**
  * Adapter to convert database team format to application Team model
  */
@@ -42,10 +46,10 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     name: dbTeam.teamname || '',
     logo: dbTeam.logo || null,
     region: dbTeam.region || 'Unknown',
-    win_rate: dbTeam.winrate || 0,
-    blue_win_rate: dbTeam.winrate_blue || 0,
-    red_win_rate: dbTeam.winrate_red || 0,
-    average_game_time: dbTeam.avg_gamelength || 0,
+    winRate: dbTeam.winrate || 0,
+    blueWinRate: dbTeam.winrate_blue || 0,
+    redWinRate: dbTeam.winrate_red || 0,
+    averageGameTime: dbTeam.avg_gamelength || 0,
     
     // Objective statistics
     firstblood_pct: dbTeam.firstblood_pct || 0,
@@ -80,16 +84,16 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
 /**
  * Adapter to convert application Team model to database format
  */
-export const adaptTeamForDatabase = (team: Team): DatabaseTeam => {
+export const adaptTeamForDatabase = (team: Team): RawDatabaseTeam => {
   return {
     teamid: team.id,
     teamname: team.name,
     logo: team.logo || null,
     region: team.region || 'Unknown',
-    winrate: team.win_rate || 0,
-    winrate_blue: team.blue_win_rate || 0,
-    winrate_red: team.red_win_rate || 0,
-    avg_gamelength: team.average_game_time || 0,
+    winrate: team.winRate || 0,
+    winrate_blue: team.blueWinRate || 0,
+    winrate_red: team.redWinRate || 0,
+    avg_gamelength: team.averageGameTime || 0,
     avg_towers: team.avg_towers || 0,
     firstblood_pct: team.firstblood_pct || 0,
     firstblood_blue_pct: team.blueFirstBlood || 0,

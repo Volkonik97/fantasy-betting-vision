@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -27,6 +28,9 @@ export interface DatabasePlayer {
   // Additional fields...
 }
 
+// For RawDatabasePlayer
+export type RawDatabasePlayer = Partial<DatabasePlayer>;
+
 /**
  * Adapter to convert database player format to application Player model
  */
@@ -36,7 +40,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     name: dbPlayer.playername || '',
     role: dbPlayer.position || '',
     image: dbPlayer.image || null,
-    team_id: dbPlayer.teamid || '',
+    team: dbPlayer.teamid || '',
     
     // Performance stats
     kda: dbPlayer.kda || 0,
@@ -45,16 +49,17 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     avg_assists: dbPlayer.avg_assists || 0,
     
     // Champion info
-    champion_pool: dbPlayer.champion_pool ? String(dbPlayer.champion_pool) : '0',
+    championPool: dbPlayer.champion_pool ? String(dbPlayer.champion_pool) : '0',
     
     // Farm and gold
+    csPerMin: dbPlayer.cspm || 0,
     cspm: dbPlayer.cspm || 0,
     earned_gpm: dbPlayer.earned_gpm || 0,
     earned_gold_share: dbPlayer.earned_gold_share || 0,
     
     // Damage
     dpm: dbPlayer.dpm || 0,
-    damage_share: dbPlayer.damage_share || 0,
+    damageShare: dbPlayer.damage_share || 0,
     
     // Vision
     vspm: dbPlayer.vspm || 0,
@@ -75,21 +80,21 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
 /**
  * Adapter to convert application Player model to database format
  */
-export const adaptPlayerForDatabase = (player: Player): DatabasePlayer => {
+export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
   return {
     playerid: player.id,
     playername: player.name,
     position: player.role,
     image: player.image,
-    teamid: player.team_id,
+    teamid: player.team,
     avg_kills: player.avg_kills || 0,
     avg_deaths: player.avg_deaths || 0,
     avg_assists: player.avg_assists || 0,
     kda: player.kda || 0,
-    champion_pool: player.champion_pool ? parseInt(player.champion_pool as string, 10) : 0,
-    cspm: player.cspm || 0,
+    champion_pool: typeof player.championPool === 'string' ? parseInt(player.championPool, 10) : (Array.isArray(player.championPool) ? player.championPool.length : 0),
+    cspm: player.cspm || player.csPerMin || 0,
     dpm: player.dpm || 0,
-    damage_share: player.damage_share || 0,
+    damage_share: player.damageShare || 0,
     totalgold: 0, // Not mapping this from Player model for now
     total_cs: 0, // Not mapping this from Player model for now
     earned_gpm: player.earned_gpm || 0,

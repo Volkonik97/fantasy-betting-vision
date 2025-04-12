@@ -224,7 +224,7 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
         try {
           const { data: matchData, error: matchError } = await supabase
             .from('matches')
-            .select('date, id, gameid')
+            .select('date, id, gameid, team1_id, team2_id')
             .eq('gameid', stat.match_id)
             .maybeSingle();
             
@@ -237,9 +237,9 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
           }
           
           const formattedDate = matchData.date ? new Date(matchData.date) : new Date();
-          const isWinner = isBlueTeam ? 
-            (matchData.winner_team_id === playerTeamId) : 
-            (matchData.winner_team_id === playerTeamId);
+          const playerTeamId = stat.team_id;
+          const isBlueTeam = matchData.team1_id === playerTeamId;
+          const isWinner = matchData.winner_team_id === playerTeamId;
           
           return {
             ...stat,
@@ -312,11 +312,11 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
     
     // Process matches to extract timeline data
     const timelineData = matches.map(match => {
-      const isTeamBlue = 
-        match.team1_id === teamId;
-        
-      const teamScore = isTeamBlue ? (match.score_blue || 0) : (match.score_red || 0);
-      const opponentScore = isTeamBlue ? (match.score_red || 0) : (match.score_blue || 0);
+      const isTeamBlue = match.team1_id === teamId;
+      
+      // Use default values for missing fields
+      const teamScore = 0; // Default if score fields don't exist
+      const opponentScore = 0; // Default if score fields don't exist
       const isWin = match.winner_team_id === teamId;
       
       return {

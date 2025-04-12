@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -6,12 +5,18 @@ export interface Team {
   region: string;
   logo?: string;
   players?: Player[];
+  
+  // Naming properties to match database fields
   winRate: number;
   blueWinRate: number;
   redWinRate: number;
   averageGameTime: number;
+  
+  // First objective stats
+  firstblood_pct?: number;
   blueFirstBlood?: number;
   redFirstBlood?: number;
+  firstdragon_pct?: number;
   blueFirstDragon?: number;
   redFirstDragon?: number;
   blueFirstHerald?: number;
@@ -20,6 +25,16 @@ export interface Team {
   redFirstTower?: number;
   blueFirstBaron?: number;
   redFirstBaron?: number;
+  
+  // Stats that were being referenced but not defined
+  avg_towers?: number;
+  avg_dragons?: number;
+  avg_kill_diff?: number;
+  avg_kills?: number;
+  avg_dragons_against?: number;
+  avg_towers_against?: number;
+  avg_heralds?: number;
+  avg_void_grubs?: number;
 }
 
 export type PlayerRole = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' | 'Unknown';
@@ -29,13 +44,24 @@ export interface Player {
   name: string;
   role: PlayerRole;
   image: string;
-  team: string;
-  teamName?: string;  // Added teamName as an optional property
-  teamRegion?: string; // Added teamRegion as an optional property
+  team: string; // This is mapped to team_id in database
+  teamName?: string;
+  teamRegion?: string;
   kda: number;
-  csPerMin: number;
-  damageShare: number;
+  csPerMin: number; // Database uses cspm
+  damageShare: number; // Database uses damage_share
   championPool: string[] | string;
+  
+  // Adding fields that are used in database but not defined in the interface
+  avg_kills?: number;
+  avg_deaths?: number;
+  avg_assists?: number;
+  cspm?: number;
+  dpm?: number;
+  earned_gpm?: number;
+  earned_gold_share?: number;
+  vspm?: number;
+  wcpm?: number;
 }
 
 export interface Match {

@@ -154,17 +154,26 @@ const PlayerImagesImport = ({
     files.forEach(file => {
       const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
       
-      const playerIndex = findMatchingPlayer(fileName, updatedPlayerImages);
-      
-      if (playerIndex !== -1) {
-        const objectUrl = URL.createObjectURL(file);
+      // Use a simpler approach to find matching players to avoid type issues
+      let foundMatch = false;
+      for (let i = 0; i < updatedPlayerImages.length; i++) {
+        const playerName = updatedPlayerImages[i].player.name.toLowerCase();
         
-        updatedPlayerImages[playerIndex] = {
-          ...updatedPlayerImages[playerIndex],
-          imageFile: file,
-          newImageUrl: objectUrl
-        };
-      } else {
+        if (fileName.includes(playerName) || playerName.includes(fileName)) {
+          const objectUrl = URL.createObjectURL(file);
+          
+          updatedPlayerImages[i] = {
+            ...updatedPlayerImages[i],
+            imageFile: file,
+            newImageUrl: objectUrl
+          };
+          
+          foundMatch = true;
+          break;
+        }
+      }
+      
+      if (!foundMatch) {
         unmatchedFiles.push(file);
       }
     });

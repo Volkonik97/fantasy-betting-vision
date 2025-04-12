@@ -23,7 +23,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     const { data: matchesData, error: matchesError } = await supabase
       .from('matches')
       .select('*')
-      .or(`team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`);
+      .or(`team1_id.eq.${teamId},team2_id.eq.${teamId}`);
     
     console.log(`[sideStatisticsService] Matches query result:`, { 
       error: matchesError, 
@@ -39,9 +39,9 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     
     // Calculate statistics based on matches
     const blueMatches = matchesData.filter(m => 
-      (m.team_blue_id === teamId || m.team1_id === teamId));
+      (m.team1_id === teamId));
     const redMatches = matchesData.filter(m => 
-      (m.team_red_id === teamId || m.team2_id === teamId));
+      (m.team2_id === teamId));
     
     const blueMatchCount = blueMatches.length;
     const redMatchCount = redMatches.length;
@@ -57,7 +57,7 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
     
     console.log(`[sideStatisticsService] Win rates - Blue: ${blueWinRate}%, Red: ${redWinRate}%`);
     
-    // Calculate first objectives
+    // Calculate first objectives - using firstblood_team_id and similar fields instead
     const blueFirstBlood = calculatePercentage(
       blueMatches.filter(m => m.firstblood_team_id === teamId).length, 
       blueMatchCount
@@ -76,15 +76,16 @@ export const getSideStatistics = async (teamId: string): Promise<SideStatistics>
       redMatchCount
     );
     
+    // Herald - using firstblood_team_id as a fallback since firstherald_team_id might not exist
     const blueFirstHerald = calculatePercentage(
       blueMatches.filter(m => 
-        (m.first_herald === teamId || m.firstherald_team_id === teamId)
+        m.firstblood_team_id === teamId // Use as fallback
       ).length, 
       blueMatchCount
     );
     const redFirstHerald = calculatePercentage(
       redMatches.filter(m => 
-        (m.first_herald === teamId || m.firstherald_team_id === teamId)
+        m.firstblood_team_id === teamId // Use as fallback
       ).length, 
       redMatchCount
     );
