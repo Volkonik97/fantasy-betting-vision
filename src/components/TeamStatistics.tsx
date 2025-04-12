@@ -19,6 +19,9 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
   
+  // Ensure win rates are properly formatted
+  const winRate = typeof team.winRate === 'number' ? team.winRate : 0;
+  
   useEffect(() => {
     const fetchLogo = async () => {
       if (!team.id) return;
@@ -72,7 +75,7 @@ const TeamStatistics = ({ team, timelineStats }: TeamStatisticsProps) => {
   const stats = [
     { 
       name: "Win Rate", 
-      value: `${(team.winRate * 100).toFixed(0)}%`,
+      value: `${(winRate * 100).toFixed(0)}%`,
       icon: <Trophy size={18} className="text-amber-500" />,
       color: "bg-amber-50"
     },

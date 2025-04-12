@@ -17,8 +17,8 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
   
-  // Ensure team data has valid values
-  const winRate = team.winRate || 0;
+  // Ensure team data has valid values and is properly formatted for display
+  const winRate = typeof team.winRate === 'number' ? team.winRate : 0;
   const avgGameTime = team.averageGameTime || 0;
   
   // Safely determine the player count
@@ -65,12 +65,14 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     console.log(`TeamCard rendered for ${team.name}:`, {
       id: team.id,
       winRate: team.winRate,
+      formattedWinRate: `${(winRate * 100).toFixed(0)}%`,
       blueWinRate: team.blueWinRate,
       redWinRate: team.redWinRate,
       playersCount: playerCount,
-      hasPlayers: hasPlayers
+      hasPlayers: hasPlayers,
+      avgGameTime: avgGameTime
     });
-  }, [team, playerCount, hasPlayers]);
+  }, [team, playerCount, hasPlayers, winRate, avgGameTime]);
 
   return (
     <motion.div

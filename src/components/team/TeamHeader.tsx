@@ -15,6 +15,27 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
   
+  // Ensure win rates are properly formatted
+  const winRate = typeof team.winRate === 'number' ? team.winRate : 0;
+  const blueWinRate = typeof team.blueWinRate === 'number' ? team.blueWinRate : 0;
+  const redWinRate = typeof team.redWinRate === 'number' ? team.redWinRate : 0;
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log('TeamHeader winrates:', {
+      raw: {
+        winRate: team.winRate,
+        blueWinRate: team.blueWinRate,
+        redWinRate: team.redWinRate
+      },
+      formatted: {
+        winRate: (winRate * 100).toFixed(0) + '%',
+        blueWinRate: (blueWinRate * 100).toFixed(0) + '%',
+        redWinRate: (redWinRate * 100).toFixed(0) + '%'
+      }
+    });
+  }, [team.winRate, team.blueWinRate, team.redWinRate, winRate, blueWinRate, redWinRate]);
+  
   useEffect(() => {
     const fetchLogo = async () => {
       if (!team?.id) return;
@@ -90,7 +111,7 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
             <div className="flex justify-center mb-1">
               <Percent size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{(team.winRate * 100).toFixed(0)}%</p>
+            <p className="text-2xl font-bold">{(winRate * 100).toFixed(0)}%</p>
             <p className="text-xs text-gray-500">Win Rate</p>
           </div>
           
@@ -106,7 +127,7 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
             <div className="flex justify-center mb-1">
               <TrendingUp size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{(team.blueWinRate * 100).toFixed(0)}%</p>
+            <p className="text-2xl font-bold">{(blueWinRate * 100).toFixed(0)}%</p>
             <p className="text-xs text-gray-500">Blue Side Wins</p>
           </div>
           
@@ -114,7 +135,7 @@ const TeamHeader = ({ team }: TeamHeaderProps) => {
             <div className="flex justify-center mb-1">
               <TrendingUp size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{(team.redWinRate * 100).toFixed(0)}%</p>
+            <p className="text-2xl font-bold">{(redWinRate * 100).toFixed(0)}%</p>
             <p className="text-xs text-gray-500">Red Side Wins</p>
           </div>
         </div>

@@ -83,18 +83,39 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     };
   }
 
+  // Determine if we're dealing with team_summary_view data or regular teams table data
+  const isFromSummaryView = 'winrate_percent' in dbTeam || 'winrate_blue_percent' in dbTeam || 'winrate_red_percent' in dbTeam;
+  
   // Log the raw winrate values for debugging
   console.log(`Raw winrate values for ${dbTeam.teamname || 'unknown team'}:`, {
+    isFromSummaryView: isFromSummaryView,
     winrate: dbTeam.winrate,
+    winrate_percent: dbTeam.winrate_percent,
     winrate_blue: dbTeam.winrate_blue,
+    winrate_blue_percent: dbTeam.winrate_blue_percent,
     winrate_red: dbTeam.winrate_red,
-    typeof_winrate: typeof dbTeam.winrate
+    winrate_red_percent: dbTeam.winrate_red_percent
   });
   
-  // Ensure numeric values are properly parsed
-  const winRate = typeof dbTeam.winrate === 'number' ? dbTeam.winrate : parseFloat(String(dbTeam.winrate || '0'));
-  const blueWinRate = typeof dbTeam.winrate_blue === 'number' ? dbTeam.winrate_blue : parseFloat(String(dbTeam.winrate_blue || '0'));
-  const redWinRate = typeof dbTeam.winrate_red === 'number' ? dbTeam.winrate_red : parseFloat(String(dbTeam.winrate_red || '0'));
+  // Handle winrates based on data source
+  let winRate = 0, blueWinRate = 0, redWinRate = 0;
+  
+  if (isFromSummaryView) {
+    // Handle team_summary_view data (percentages are already in 0-100 range)
+    winRate = typeof dbTeam.winrate_percent === 'number' ? dbTeam.winrate_percent / 100 : 0;
+    blueWinRate = typeof dbTeam.winrate_blue_percent === 'number' ? dbTeam.winrate_blue_percent / 100 : 0;
+    redWinRate = typeof dbTeam.winrate_red_percent === 'number' ? dbTeam.winrate_red_percent / 100 : 0;
+  } else {
+    // Handle regular teams table data (usually in 0-1 range)
+    winRate = typeof dbTeam.winrate === 'number' ? dbTeam.winrate : parseFloat(String(dbTeam.winrate || '0'));
+    blueWinRate = typeof dbTeam.winrate_blue === 'number' ? dbTeam.winrate_blue : parseFloat(String(dbTeam.winrate_blue || '0'));
+    redWinRate = typeof dbTeam.winrate_red === 'number' ? dbTeam.winrate_red : parseFloat(String(dbTeam.winrate_red || '0'));
+  }
+  
+  // Log the converted values for debugging
+  console.log(`Converted winrate values for ${dbTeam.teamname || 'unknown team'}:`, {
+    winRate, blueWinRate, redWinRate
+  });
   
   return {
     id: dbTeam.teamid || '',
