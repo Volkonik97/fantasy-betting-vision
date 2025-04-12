@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -17,11 +16,9 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
   
-  // Ensure team data has valid values and is properly formatted for display
   const winRate = typeof team.winRate === 'number' ? team.winRate : 0;
   const avgGameTime = team.averageGameTime || 0;
   
-  // Safely determine the player count
   const playerCount = team.players ? team.players.length : 0;
   const hasPlayers = playerCount > 0;
   
@@ -33,20 +30,17 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
       setLogoError(false);
       
       try {
-        // First try to use the logo directly from the team object
         if (team.logo && !team.logo.includes("undefined")) {
           setLogoUrl(team.logo);
           setLogoLoading(false);
           return;
         }
         
-        // If no direct logo, try to fetch from storage
         const url = await getTeamLogoUrl(team.id);
         if (url && !url.includes("undefined")) {
           console.log(`Logo found for ${team.name} in card: ${url}`);
           setLogoUrl(url);
         } else {
-          // Set logo error if no valid URL found
           setLogoError(true);
         }
       } catch (error) {
@@ -60,7 +54,6 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     fetchLogo();
   }, [team.id, team.logo, team.name]);
 
-  // Log team data for debugging
   useEffect(() => {
     console.log(`TeamCard rendered for ${team.name}:`, {
       id: team.id,
@@ -131,7 +124,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           
           <div className="flex justify-between mt-auto pt-4">
             <Link 
-              to={`/teams/${team.id}`} 
+              to={`/team/${team.id}`} 
               className="text-sm text-lol-blue hover:underline"
             >
               View Team Details
