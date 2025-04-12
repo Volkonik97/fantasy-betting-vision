@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 
@@ -10,17 +10,20 @@ interface PlayerImageProps {
 }
 
 const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
-      {image ? (
+      {image && !imageError ? (
         <img
           src={image}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
+            console.log(`Image load error for player ${name}:`, image);
+            setImageError(true);
             const target = e.target as HTMLImageElement;
             target.onerror = null; // Prevent infinite error loop
-            target.src = "/placeholder.svg";
           }}
         />
       ) : (
