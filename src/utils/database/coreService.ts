@@ -1,10 +1,39 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { chunk } from '../dataConverter';
-import { 
-  resetCache,
-} from '../csvTypes';
+import { resetCache } from '../csv/cache/dataCache';
 import { toast } from "sonner";
+
+// Créer la table data_updates si elle n'existe pas
+const createDataUpdatesTableIfNeeded = async (): Promise<boolean> => {
+  try {
+    // Vérifier si la table existe
+    const { data, error } = await supabase
+      .rpc('check_table_exists', { table_name: 'data_updates' });
+    
+    if (error) {
+      console.error("Erreur lors de la vérification de la table data_updates:", error);
+      return false;
+    }
+    
+    // Si la table n'existe pas, la créer
+    if (!data) {
+      const { error: createError } = await supabase.rpc('create_data_updates_table');
+      
+      if (createError) {
+        console.error("Erreur lors de la création de la table data_updates:", createError);
+        return false;
+      }
+      
+      console.log("Table data_updates créée avec succès");
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la vérification/création de la table data_updates:", error);
+    return false;
+  }
+};
 
 // Database-related functions
 
@@ -30,18 +59,17 @@ export const hasDatabaseData = async (): Promise<boolean> => {
 // Get the last database update timestamp
 export const getLastDatabaseUpdate = async (): Promise<string | null> => {
   try {
-    const { data, error } = await supabase
-      .from('data_updates')
-      .select('updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(1);
+    await createDataUpdatesTableIfNeeded();
     
-    if (error || !data || data.length === 0) {
+    const { data, error } = await supabase
+      .rpc('get_last_update');
+    
+    if (error || !data) {
       console.error("Erreur lors de la récupération de la date de mise à jour:", error);
       return null;
     }
     
-    return data[0].updated_at || null;
+    return data;
   } catch (error) {
     console.error("Erreur lors de la récupération de la date de mise à jour:", error);
     return null;
@@ -51,9 +79,10 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
 // Update the last database update timestamp
 export const updateLastUpdate = async (): Promise<boolean> => {
   try {
+    await createDataUpdatesTableIfNeeded();
+    
     const { error } = await supabase
-      .from('data_updates')
-      .insert([{ updated_at: new Date().toISOString() }]);
+      .rpc('update_last_update', { update_time: new Date().toISOString() });
     
     if (error) {
       console.error("Erreur lors de la mise à jour de la date:", error);
@@ -77,7 +106,7 @@ export const clearDatabase = async (): Promise<boolean> => {
     const { error: statsError } = await supabase
       .from('player_match_stats')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+      .neq('id', 0);
     
     if (statsError) {
       console.error("Erreur lors de la suppression des statistiques:", statsError);
@@ -90,7 +119,7 @@ export const clearDatabase = async (): Promise<boolean> => {
     const { error: matchesError } = await supabase
       .from('matches')
       .delete()
-      .neq('id', '');
+      .neq('gameid', '');
     
     if (matchesError) {
       console.error("Erreur lors de la suppression des matchs:", matchesError);
@@ -103,7 +132,7 @@ export const clearDatabase = async (): Promise<boolean> => {
     const { error: playersError } = await supabase
       .from('players')
       .delete()
-      .neq('id', '');
+      .neq('playerid', '');
     
     if (playersError) {
       console.error("Erreur lors de la suppression des joueurs:", playersError);
@@ -116,7 +145,7 @@ export const clearDatabase = async (): Promise<boolean> => {
     const { error: teamsError } = await supabase
       .from('teams')
       .delete()
-      .neq('id', '');
+      .neq('teamid', '');
     
     if (teamsError) {
       console.error("Erreur lors de la suppression des équipes:", teamsError);
@@ -124,12 +153,10 @@ export const clearDatabase = async (): Promise<boolean> => {
       return false;
     }
     
-    // Add a data update entry
-    await supabase
-      .from('data_updates')
-      .insert([{ updated_at: new Date().toISOString() }]);
+    // Update the last update timestamp
+    await updateLastUpdate();
     
-    // Reset the cache - properly export and use it
+    // Reset the cache
     resetCache();
     
     console.log("Suppression des données terminée avec succès");
