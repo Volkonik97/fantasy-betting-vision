@@ -28,7 +28,13 @@ export async function checkTableExists(tableName: string): Promise<boolean> {
  */
 export async function createDataUpdatesTable(): Promise<boolean> {
   try {
-    const { error } = await supabase.rpc('create_data_updates_table');
+    // Create the table using SQL query instead of RPC
+    const { error } = await supabase.query(`
+      CREATE TABLE IF NOT EXISTS public.data_updates (
+        id SERIAL PRIMARY KEY,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
     
     if (error) {
       console.error('Error creating data_updates table:', error);
@@ -47,14 +53,20 @@ export async function createDataUpdatesTable(): Promise<boolean> {
  */
 export async function getLastUpdate(): Promise<string | null> {
   try {
-    const { data, error } = await supabase.rpc('get_last_update');
+    // Query directly instead of using RPC
+    const { data, error } = await supabase
+      .from('data_updates')
+      .select('updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
     
     if (error) {
       console.error('Error getting last update:', error);
       return null;
     }
     
-    return data;
+    return data?.updated_at || null;
   } catch (error) {
     console.error('Error getting last update:', error);
     return null;
@@ -64,29 +76,28 @@ export async function getLastUpdate(): Promise<string | null> {
 /**
  * Updates the last database update timestamp
  */
-export async function updateLastUpdate(timestamp: string = new Date().toISOString()): Promise<string | null> {
+export async function updateLastUpdate(): Promise<boolean> {
   try {
-    const { data, error } = await supabase.rpc('update_last_update', { 
-      timestamp: timestamp 
-    });
+    const { error } = await supabase
+      .from('data_updates')
+      .insert([{ updated_at: new Date().toISOString() }]);
     
     if (error) {
       console.error('Error updating last update:', error);
-      return null;
+      return false;
     }
     
-    return data;
+    return true;
   } catch (error) {
     console.error('Error updating last update:', error);
-    return null;
+    return false;
   }
 }
 
 /**
- * Safely executes a query using a direct RPC function
- * (This is an alternative to working with data_updates table directly)
+ * Safely executes a query using direct SQL instead of RPC functions
  */
-export async function executeSafeDataUpdate(timestamp: string = new Date().toISOString()): Promise<boolean> {
+export async function executeSafeDataUpdate(): Promise<boolean> {
   try {
     // First ensure the table exists
     const tableExists = await checkTableExists('data_updates');
@@ -96,9 +107,7 @@ export async function executeSafeDataUpdate(timestamp: string = new Date().toISO
     }
     
     // Update the timestamp
-    const result = await updateLastUpdate(timestamp);
-    
-    return !!result;
+    return await updateLastUpdate();
   } catch (error) {
     console.error('Error executing safe data update:', error);
     return false;

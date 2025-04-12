@@ -15,6 +15,7 @@ import {
   setLoadedTournaments, 
   resetCache 
 } from '../csv/cache/dataCache';
+import { executeSafeDataUpdate, getLastUpdate } from './coreService';
 
 // Save all data to the database
 export async function saveToDatabase(
@@ -100,33 +101,8 @@ export async function saveToDatabase(
 // Update the last database update timestamp
 export async function updateTimestamp(): Promise<boolean> {
   try {
-    // First check if data_updates table exists
-    const { error: checkError } = await supabase
-      .from('data_updates')
-      .select('id')
-      .limit(1);
-    
-    if (checkError && checkError.message.includes('does not exist')) {
-      // Create the table if it doesn't exist
-      const { error: createError } = await supabase.rpc('create_data_updates_table');
-      
-      if (createError) {
-        console.error('Error creating data_updates table:', createError);
-        return false;
-      }
-    }
-    
-    // Insert a new timestamp record using the update_last_update function
-    const { error } = await supabase.rpc('update_last_update', { 
-      timestamp: new Date().toISOString() 
-    });
-      
-    if (error) {
-      console.error('Error updating timestamp:', error);
-      return false;
-    }
-    
-    return true;
+    // Use the utility function from coreService
+    return await executeSafeDataUpdate();
   } catch (error) {
     console.error('Error updating timestamp:', error);
     return false;
@@ -136,15 +112,8 @@ export async function updateTimestamp(): Promise<boolean> {
 // Get the last database update timestamp
 export async function getLastDatabaseUpdate(): Promise<string | null> {
   try {
-    // Use the get_last_update RPC function
-    const { data, error } = await supabase.rpc('get_last_update');
-      
-    if (error || !data) {
-      console.error('Error getting last update timestamp:', error);
-      return null;
-    }
-    
-    return data;
+    // Use the utility function from coreService
+    return await getLastUpdate();
   } catch (error) {
     console.error('Error getting last update timestamp:', error);
     return null;
@@ -187,7 +156,7 @@ export async function clearDatabase(): Promise<boolean> {
     const { error: matchesError } = await supabase
       .from('matches')
       .delete()
-      .neq('id', '');
+      .neq('gameid', '');
     
     if (matchesError) {
       console.error("Erreur lors de la suppression des matchs:", matchesError);
@@ -275,7 +244,7 @@ export async function preloadData(): Promise<void> {
   }
 }
 
-// Re-export service functions for backwards compatibility
+// Re-export for backwards compatibility
 export {
   getTeams,
   getPlayers,
