@@ -1,6 +1,7 @@
 
 import { LeagueGameDataRow } from '../../csv/types';
-import { PicksAndBans, prepareJsonData } from '../types';
+import { PicksAndBans } from '../types';
+import { prepareJsonData } from '../utils';
 
 /**
  * Extract picks and bans data from game rows

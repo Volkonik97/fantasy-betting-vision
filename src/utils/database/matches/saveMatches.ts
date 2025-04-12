@@ -1,8 +1,9 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Match } from '../../models/types';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
-import { booleanToString, prepareJsonData } from '../../leagueData/types';
+import { booleanToString, prepareJsonData } from '../../leagueData/utils';
 
 // Import the clearMatchCache function from getMatches
 import { clearMatchCache } from './getMatches';

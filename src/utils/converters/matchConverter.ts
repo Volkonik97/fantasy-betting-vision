@@ -1,7 +1,7 @@
 
 import { MatchCSV } from '../csv/types';
 import { Match, Team } from '../models/types';
-import { prepareJsonData } from '../leagueData/types';
+import { prepareJsonData } from '../leagueData/utils';
 
 /**
  * Convert match CSV data to application Match objects

@@ -1,4 +1,3 @@
-
 // Define types for league data processing
 
 // Player Statistics Tracker
@@ -27,13 +26,13 @@ export interface TeamStatsTracker {
   region: string;
   games: number;
   wins: number;
-  losses: number; // Added missing property
+  losses: number; 
   blueGames: number;
   blueWins: number;
-  blueLosses: number; // Added missing property
+  blueLosses: number; 
   redGames: number;
   redWins: number;
-  redLosses: number; // Added missing property
+  redLosses: number; 
   kills: number;
   deaths: number;
   dragons: number;
@@ -41,8 +40,9 @@ export interface TeamStatsTracker {
   barons: number;
   towers: number;
   totalGameTime: number;
-  gameTimes: number[]; // Added missing property
-  logo?: string; // Added missing property
+  gameTimes: number[];
+  logo?: string;
+  players?: any[];
 }
 
 // Map of team ID to team statistics
@@ -112,4 +112,126 @@ export interface MatchResult {
   score: [number, number];
   duration: number;
   mvp?: string;
+}
+
+// Game tracker for match data processing
+export interface GameTracker {
+  id: string;
+  league?: string;
+  date?: string;
+  teams: {
+    blue: string;
+    red: string;
+  };
+  rows?: Set<any>;
+  result?: {
+    winner: string;
+    duration: string;
+  };
+}
+
+// Match team statistics
+export interface MatchTeamStats {
+  team_id: string;
+  match_id: string;
+  side: string;
+  is_winner: boolean;
+  team_kpm?: number;
+  ckpm?: number;
+  first_blood?: boolean;
+  team_kills?: number;
+  team_deaths?: number;
+  first_dragon?: boolean;
+  dragons?: number;
+  elemental_drakes?: number;
+  infernals?: number;
+  mountains?: number;
+  clouds?: number;
+  oceans?: number;
+  chemtechs?: number;
+  hextechs?: number;
+  drakes_unknown?: number;
+  elders?: number;
+  first_herald?: boolean;
+  heralds?: number;
+  first_baron?: boolean;
+  barons?: number;
+  void_grubs?: number;
+  first_tower?: boolean;
+  first_mid_tower?: boolean;
+  first_three_towers?: boolean;
+  towers?: number;
+  turret_plates?: number;
+  inhibitors?: number;
+}
+
+// Player match statistics
+export interface PlayerMatchStats {
+  participant_id: string;
+  player_id: string;
+  team_id: string;
+  match_id: string;
+  side: string;
+  position: string;
+  champion: string;
+  is_winner: boolean;
+  
+  // Combat stats
+  kills: number;
+  deaths: number;
+  assists: number;
+  double_kills?: number;
+  triple_kills?: number;
+  quadra_kills?: number;
+  penta_kills?: number;
+  first_blood_kill?: boolean;
+  first_blood_assist?: boolean;
+  first_blood_victim?: boolean;
+  
+  // Damage stats
+  damage_to_champions?: number;
+  dpm?: number;
+  damage_share?: number;
+  damage_taken_per_minute?: number;
+  damage_mitigated_per_minute?: number;
+  
+  // Vision stats
+  wards_placed?: number;
+  wpm?: number;
+  wards_killed?: number;
+  wcpm?: number;
+  control_wards_bought?: number;
+  vision_score?: number;
+  vspm?: number;
+  
+  // Gold stats
+  total_gold?: number;
+  earned_gold?: number;
+  earned_gpm?: number;
+  earned_gold_share?: number;
+  gold_spent?: number;
+  gspd?: number;
+  gpr?: number;
+  
+  // CS stats
+  total_cs?: number;
+  minion_kills?: number;
+  monster_kills?: number;
+  monster_kills_own_jungle?: number;
+  monster_kills_enemy_jungle?: number;
+  cspm?: number;
+  
+  // Timeline stats
+  gold_at_10?: number;
+  xp_at_10?: number;
+  cs_at_10?: number;
+  gold_diff_at_10?: number;
+  xp_diff_at_10?: number;
+  cs_diff_at_10?: number;
+  kills_at_10?: number;
+  deaths_at_10?: number;
+  assists_at_10?: number;
+  
+  // Additional timeline stats (15, 20, 25 minutes)
+  // ... other timeline stats 
 }
