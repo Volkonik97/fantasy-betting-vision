@@ -14,7 +14,7 @@ export const refreshImageReferences = async (): Promise<{fixedCount: number, com
     // Get all players with images
     const { data: players, error } = await supabase
       .from('players')
-      .select('id, image')
+      .select('playerid, image')
       .not('image', 'is', null);
     
     if (error) {
@@ -39,7 +39,7 @@ export const refreshImageReferences = async (): Promise<{fixedCount: number, com
       
       if (!exists) {
         // Clear invalid image reference
-        const success = await clearInvalidImageReference(player.id);
+        const success = await clearInvalidImageReference(player.playerid);
         if (success) fixedCount++;
       }
     }

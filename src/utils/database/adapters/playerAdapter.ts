@@ -25,7 +25,12 @@ export interface DatabasePlayer {
   vspm: number;
   wcpm: number;
   control_wards_bought: number;
-  // Additional fields...
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
+  avg_firstblood_kill?: number;
+  avg_firstblood_assist?: number;
+  avg_firstblood_victim?: number;
 }
 
 // For RawDatabasePlayer
@@ -70,7 +75,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     avg_xpdiffat15: dbPlayer.avg_xpdiffat15 || 0,
     avg_csdiffat15: dbPlayer.avg_csdiffat15 || 0,
     
-    // Other stats
+    // First blood stats
     avg_firstblood_kill: dbPlayer.avg_firstblood_kill || 0,
     avg_firstblood_assist: dbPlayer.avg_firstblood_assist || 0,
     avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0
@@ -101,6 +106,12 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     earned_gold_share: player.earned_gold_share || 0,
     vspm: player.vspm || 0,
     wcpm: player.wcpm || 0,
-    control_wards_bought: 0 // Not mapping this from Player model for now
+    control_wards_bought: 0, // Not mapping this from Player model for now
+    avg_golddiffat15: player.avg_golddiffat15 || 0,
+    avg_xpdiffat15: player.avg_xpdiffat15 || 0,
+    avg_csdiffat15: player.avg_csdiffat15 || 0,
+    avg_firstblood_kill: player.avg_firstblood_kill || 0,
+    avg_firstblood_assist: player.avg_firstblood_assist || 0,
+    avg_firstblood_victim: player.avg_firstblood_victim || 0
   };
 };

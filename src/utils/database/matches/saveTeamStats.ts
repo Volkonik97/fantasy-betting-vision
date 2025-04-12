@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { chunk } from '@/utils/dataConverter';
@@ -39,16 +38,16 @@ export async function saveTeamMatchStats(
       try {
         const { data: existingMatches, error: matchesError } = await supabase
           .from('matches')
-          .select('id')
-          .in('id', matchIdBatch);
+          .select('gameid')
+          .in('gameid', matchIdBatch);
         
         if (matchesError) {
           console.error(`Erreur lors de la vérification d'un lot de ${matchIdBatch.length} matchs:`, matchesError);
           continue; // Continue with next batch instead of failing completely
         }
         
-        // Add found matches to our set
-        (existingMatches || []).forEach(match => existingMatchIds.add(match.id));
+        // Add found matches to our set - use gameid as the identifier
+        (existingMatches || []).forEach(match => existingMatchIds.add(match.gameid));
         
         // Identify missing matches in this batch
         matchIdBatch.forEach(id => {

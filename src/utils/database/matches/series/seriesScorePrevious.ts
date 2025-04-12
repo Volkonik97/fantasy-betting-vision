@@ -1,60 +1,58 @@
-
-import { supabase } from "@/integrations/supabase/client";
-import { getGameNumberFromId } from "./seriesIdentification";
-import { calculateSeriesScore } from "./seriesScoreUtils";
+// Utility function to determine the series score up to a given game
+// This is useful for displaying the score in the UI for ongoing series
 
 /**
- * Get series score up to a specific game number
- * @param baseMatchId Base match ID (without game number suffix)
- * @param currentGameNumber The current game number in the series
- * @param teamBlueId Team blue ID
- * @param teamRedId Team red ID
- * @returns Score up to the current game (exclusive of the current game)
+ * Determines the series score up to a given game in a series of matches.
+ * @param matches An array of match objects representing the series.
+ * @param currentGameId The ID of the current game for which to determine the score.
+ * @returns An array containing the scores for team1 and team2, respectively.
  */
-export const getSeriesScoreUpToGame = async (
-  baseMatchId: string,
-  currentGameNumber: number,
-  teamBlueId?: string,
-  teamRedId?: string
-): Promise<{ blue: number, red: number }> => {
-  try {
-    console.log(`Getting series score up to game ${currentGameNumber} for series ${baseMatchId}`);
-    
-    // Get all matches in the series up to but not including the current game
-    const { data: previousMatches, error } = await supabase
-      .from('matches')
-      .select('*')
-      .like('id', `${baseMatchId}_%`)
-      .order('id', { ascending: true });
-
-    if (error) {
-      console.error("Error fetching previous matches in series:", error);
-      return { blue: 0, red: 0 };
-    }
-
-    if (!previousMatches || previousMatches.length === 0) {
-      console.log(`No previous matches found for series ${baseMatchId}`);
-      return { blue: 0, red: 0 };
-    }
-    
-    // If there's only one match, it's a BO1, not a series
-    if (previousMatches.length === 1) {
-      console.log(`Only one match found for ${baseMatchId}, this is a BO1 not a series`);
-      return { blue: 0, red: 0 };
-    }
-
-    // Filter matches that come before the current game
-    const matchesBeforeCurrent = previousMatches.filter(match => {
-      const gameNumber = getGameNumberFromId(match.id);
-      return gameNumber < currentGameNumber;
-    });
-
-    console.log(`Found ${matchesBeforeCurrent.length} matches before game ${currentGameNumber}`);
-    
-    // Calculate the score based on previous matches
-    return calculateSeriesScore(matchesBeforeCurrent, teamBlueId, teamRedId);
-  } catch (error) {
-    console.error("Error calculating previous series score:", error);
-    return { blue: 0, red: 0 };
+const getSeriesScoreUpToGame = (matches: any[], currentGameId: string): [number, number] => {
+  if (!matches || matches.length === 0) {
+    return [0, 0];
   }
+
+  // Extract team IDs from the first match
+  const team1Id = matches[0].team1_id;
+  const team2Id = matches[0].team2_id;
+
+  if (!team1Id || !team2Id) {
+    console.warn("Team IDs not found in match data");
+    return [0, 0];
+  }
+
+  // Sort matches by game number or date to ensure correct order
+  const sortedMatches = [...matches].sort((a, b) => {
+    // Try sorting by game_number first
+    if (a.game_number !== undefined && b.game_number !== undefined) {
+      return Number(a.game_number) - Number(b.game_number);
+    }
+
+    // If game_number is not available, sort by date
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return dateA - dateB;
+  });
+
+  let team1Score = 0;
+  let team2Score = 0;
+
+  for (const match of sortedMatches) {
+    if (match.gameid === currentGameId) {
+      break;
+    }
+
+    // Safely access winner_team_id with fallback
+    const winnerId = match.winner_team_id;
+
+    if (winnerId === team1Id) {
+      team1Score++;
+    } else if (winnerId === team2Id) {
+      team2Score++;
+    }
+  }
+
+  return [team1Score, team2Score];
 };
+
+export { getSeriesScoreUpToGame };

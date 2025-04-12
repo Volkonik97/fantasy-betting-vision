@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/utils/models/types';
 import { toast } from 'sonner';
@@ -49,8 +48,9 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         console.log("Found team summary data:", summaryData);
         
         // Create a combined team object with data from both sources
-        const mergedTeam = {
-          ...adaptTeamFromDatabase(teamData),
+        const teamData = adaptTeamFromDatabase(teamData);
+        const mergedTeam: Team = {
+          ...teamData,
           aggression_score: summaryData.aggression_score || 0,
           earlygame_score: summaryData.earlygame_score || 0,
           objectives_score: summaryData.objectives_score || 0,
@@ -58,7 +58,7 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
           tower_diff: summaryData.tower_diff || 0
         };
         
-        return mergedTeam as Team;
+        return mergedTeam;
       }
     } catch (summaryError) {
       console.warn("Could not fetch team summary data:", summaryError);

@@ -224,22 +224,23 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
         try {
           const { data: matchData, error: matchError } = await supabase
             .from('matches')
-            .select('date, id, gameid, team1_id, team2_id')
-            .eq('gameid', stat.match_id)
+            .select('date, id, gameid, team1_id, team2_id, winner_team_id')
+            .eq('id', stat.match_id)
             .maybeSingle();
             
           if (matchError || !matchData) {
             console.warn(`Could not fetch date for match ${stat.match_id}:`, matchError);
             return {
               ...stat,
-              date: null
+              date: new Date(),
+              is_win: false
             };
           }
           
-          const formattedDate = matchData.date ? new Date(matchData.date) : new Date();
+          const formattedDate = matchData?.date ? new Date(matchData.date) : new Date();
           const playerTeamId = stat.team_id;
-          const isBlueTeam = matchData.team1_id === playerTeamId;
-          const isWinner = matchData.winner_team_id === playerTeamId;
+          const isBlueTeam = matchData?.team1_id === playerTeamId;
+          const isWinner = matchData?.winner_team_id === playerTeamId;
           
           return {
             ...stat,
@@ -250,7 +251,8 @@ export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> =
           console.error(`Error processing match ${stat.match_id}:`, err);
           return {
             ...stat,
-            date: null
+            date: new Date(),
+            is_win: false
           };
         }
       })
@@ -314,22 +316,22 @@ export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
     const timelineData = matches.map(match => {
       const isTeamBlue = match.team1_id === teamId;
       
-      // Use default values for missing fields
-      const teamScore = 0; // Default if score fields don't exist
-      const opponentScore = 0; // Default if score fields don't exist
+      // Use default values and safe access for all fields
+      const teamScore = match.score_blue ?? 0; 
+      const opponentScore = match.score_red ?? 0;
       const isWin = match.winner_team_id === teamId;
       
       return {
         match_id: match.gameid,
-        date: match.date,
-        tournament: match.tournament,
-        patch: match.patch,
+        date: match.date ? new Date(match.date) : new Date(),
+        tournament: match.tournament || 'Unknown',
+        patch: match.patch || '',
         opponent_id: isTeamBlue 
-          ? (match.team2_id) 
-          : (match.team1_id),
+          ? (match.team2_id || '') 
+          : (match.team1_id || ''),
         opponent_name: isTeamBlue 
-          ? (match.team2_name) 
-          : (match.team1_name),
+          ? (match.team2_name || '') 
+          : (match.team1_name || ''),
         score: [teamScore, opponentScore],
         is_win: isWin,
         side: isTeamBlue ? 'blue' : 'red'

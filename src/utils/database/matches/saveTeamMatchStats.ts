@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { chunk } from '../../dataConverter';
 import { toast } from "sonner";
@@ -24,17 +23,17 @@ export const saveTeamMatchStats = async (
     // Get all existing match IDs from the matches table
     const { data: existingMatches, error: matchesError } = await supabase
       .from('matches')
-      .select('id')
-      .in('id', matchIds);
+      .select('gameid')
+      .in('gameid', matchIds);
     
     if (matchesError) {
-      console.error("Erreur lors de la vérification des matchs existants:", matchesError);
-      toast.error("Erreur lors de la vérification des matchs existants");
+      console.error("Error checking existing matches:", matchesError);
+      toast.error("Error checking existing matches");
       return false;
     }
     
     // Create a Set of existing match IDs for quick lookup
-    const existingMatchIds = new Set(existingMatches?.map(match => match.id) || []);
+    const existingMatchIds = new Set(existingMatches?.map(match => match.gameid) || []);
     
     // Filter stats to only include those with valid match references
     const validStats = teamStats.filter(stat => {
@@ -42,7 +41,7 @@ export const saveTeamMatchStats = async (
                       stat !== undefined && 
                       stat.match_id && 
                       existingMatchIds.has(stat.match_id) &&
-                      stat.team_id;  // Ensure team_id is present
+                      stat.team_id;
       
       if (!isValid && stat && stat.match_id) {
         console.log(`Skipping team stat for match ${stat.match_id} - match does not exist in database or missing team_id`);

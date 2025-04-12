@@ -77,7 +77,14 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     avg_kills: dbTeam.avg_kills || 0,
     avg_kill_diff: dbTeam.avg_kill_diff || 0,
     avg_heralds: dbTeam.avg_heralds || 0,
-    avg_void_grubs: dbTeam.avg_void_grubs || 0
+    avg_void_grubs: dbTeam.avg_void_grubs || 0,
+    
+    // Team summary view fields
+    aggression_score: dbTeam.aggression_score || 0,
+    earlygame_score: dbTeam.earlygame_score || 0,
+    objectives_score: dbTeam.objectives_score || 0,
+    dragon_diff: dbTeam.dragon_diff || 0,
+    tower_diff: dbTeam.tower_diff || 0
   };
 };
 

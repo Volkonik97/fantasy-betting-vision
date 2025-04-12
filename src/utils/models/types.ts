@@ -26,7 +26,7 @@ export interface Team {
   blueFirstBaron?: number;
   redFirstBaron?: number;
   
-  // Stats that were being referenced but not defined
+  // Stats fields that are being used in the code
   avg_towers?: number;
   avg_dragons?: number;
   avg_kill_diff?: number;
@@ -35,6 +35,18 @@ export interface Team {
   avg_towers_against?: number;
   avg_heralds?: number;
   avg_void_grubs?: number;
+  
+  // Fields for time-based differentials
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
+  
+  // Score fields from team_summary_view
+  aggression_score?: number;
+  earlygame_score?: number;
+  objectives_score?: number;
+  dragon_diff?: number;
+  tower_diff?: number;
 }
 
 export type PlayerRole = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support' | 'Unknown';
@@ -62,6 +74,16 @@ export interface Player {
   earned_gold_share?: number;
   vspm?: number;
   wcpm?: number;
+  
+  // Early game stats
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
+  
+  // First blood stats
+  avg_firstblood_kill?: number;
+  avg_firstblood_assist?: number;
+  avg_firstblood_victim?: number;
 }
 
 export interface Match {
