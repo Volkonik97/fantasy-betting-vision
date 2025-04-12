@@ -74,3 +74,85 @@ export const calculateAverage = (values: number[]): number => {
 export const formatPercentage = (value: number): string => {
   return `${Math.round(value * 100)}%`;
 };
+
+/**
+ * Safely parse a float from a string or other value, returning 0 if parsing fails
+ */
+export const safeParseFloat = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  
+  // Handle string values
+  if (typeof value === 'string') {
+    // Try to parse it
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  
+  // Handle number values
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : value;
+  }
+  
+  // Handle boolean values
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  
+  return 0;
+};
+
+/**
+ * Safely parse an integer from a string or other value, returning 0 if parsing fails
+ */
+export const safeParseInt = (value: any): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  
+  // Handle string values
+  if (typeof value === 'string') {
+    // Try to parse it
+    const parsed = parseInt(value, 10);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  
+  // Handle number values
+  if (typeof value === 'number') {
+    return isNaN(value) ? 0 : Math.floor(value);
+  }
+  
+  // Handle boolean values
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  
+  return 0;
+};
+
+/**
+ * Parse a boolean value from various formats
+ */
+export const parseBoolean = (value: any): boolean => {
+  if (value === null || value === undefined) return false;
+  
+  // Direct boolean
+  if (typeof value === 'boolean') return value;
+  
+  // Number values (0 = false, anything else = true)
+  if (typeof value === 'number') return value !== 0;
+  
+  // String values
+  if (typeof value === 'string') {
+    const normalizedValue = value.toLowerCase().trim();
+    return normalizedValue === 'true' || normalizedValue === '1' || 
+           normalizedValue === 'yes' || normalizedValue === 'y';
+  }
+  
+  return false;
+};
+
+/**
+ * Convert a boolean to "1" or "0" string representation
+ */
+export const booleanToString = (value: boolean | undefined | null): string => {
+  if (value === true) return "1";
+  return "0";
+};

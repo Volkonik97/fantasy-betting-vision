@@ -1,3 +1,4 @@
+
 import { PlayerMatchStats } from '../types';
 import { LeagueGameDataRow } from '../../csv/types';
 import { safeParseFloat, safeParseInt, parseBoolean } from '../utils';
@@ -78,69 +79,45 @@ export function extractPlayerStats(
       gold_at_10: safeParseInt(row.goldat10),
       xp_at_10: safeParseInt(row.xpat10),
       cs_at_10: safeParseInt(row.csat10),
-      opp_gold_at_10: safeParseInt(row.opp_goldat10),
-      opp_xp_at_10: safeParseInt(row.opp_xpat10),
-      opp_cs_at_10: safeParseInt(row.opp_csat10),
       gold_diff_at_10: safeParseInt(row.golddiffat10),
       xp_diff_at_10: safeParseInt(row.xpdiffat10),
       cs_diff_at_10: safeParseInt(row.csdiffat10),
       kills_at_10: safeParseInt(row.killsat10),
       assists_at_10: safeParseInt(row.assistsat10),
       deaths_at_10: safeParseInt(row.deathsat10),
-      opp_kills_at_10: safeParseInt(row.opp_killsat10),
-      opp_assists_at_10: safeParseInt(row.opp_assistsat10),
-      opp_deaths_at_10: safeParseInt(row.opp_deathsat10),
       
       // Timeline stats: 15 min
       gold_at_15: safeParseInt(row.goldat15),
       xp_at_15: safeParseInt(row.xpat15),
       cs_at_15: safeParseInt(row.csat15),
-      opp_gold_at_15: safeParseInt(row.opp_goldat15),
-      opp_xp_at_15: safeParseInt(row.opp_xpat15),
-      opp_cs_at_15: safeParseInt(row.opp_csat15),
       gold_diff_at_15: safeParseInt(row.golddiffat15),
       xp_diff_at_15: safeParseInt(row.xpdiffat15),
       cs_diff_at_15: safeParseInt(row.csdiffat15),
       kills_at_15: safeParseInt(row.killsat15),
       assists_at_15: safeParseInt(row.assistsat15),
       deaths_at_15: safeParseInt(row.deathsat15),
-      opp_kills_at_15: safeParseInt(row.opp_killsat15),
-      opp_assists_at_15: safeParseInt(row.opp_assistsat15),
-      opp_deaths_at_15: safeParseInt(row.opp_deathsat15),
       
       // Timeline stats: 20 min
       gold_at_20: safeParseInt(row.goldat20),
       xp_at_20: safeParseInt(row.xpat20),
       cs_at_20: safeParseInt(row.csat20),
-      opp_gold_at_20: safeParseInt(row.opp_goldat20),
-      opp_xp_at_20: safeParseInt(row.opp_xpat20),
-      opp_cs_at_20: safeParseInt(row.opp_csat20),
       gold_diff_at_20: safeParseInt(row.golddiffat20),
       xp_diff_at_20: safeParseInt(row.xpdiffat20),
       cs_diff_at_20: safeParseInt(row.csdiffat20),
       kills_at_20: safeParseInt(row.killsat20),
       assists_at_20: safeParseInt(row.assistsat20),
       deaths_at_20: safeParseInt(row.deathsat20),
-      opp_kills_at_20: safeParseInt(row.opp_killsat20),
-      opp_assists_at_20: safeParseInt(row.opp_assistsat20),
-      opp_deaths_at_20: safeParseInt(row.opp_deathsat20),
       
       // Timeline stats: 25 min
       gold_at_25: safeParseInt(row.goldat25),
       xp_at_25: safeParseInt(row.xpat25),
       cs_at_25: safeParseInt(row.csat25),
-      opp_gold_at_25: safeParseInt(row.opp_goldat25),
-      opp_xp_at_25: safeParseInt(row.opp_xpat25),
-      opp_cs_at_25: safeParseInt(row.opp_csat25),
       gold_diff_at_25: safeParseInt(row.golddiffat25),
       xp_diff_at_25: safeParseInt(row.xpdiffat25),
       cs_diff_at_25: safeParseInt(row.csdiffat25),
       kills_at_25: safeParseInt(row.killsat25),
       assists_at_25: safeParseInt(row.assistsat25),
-      deaths_at_25: safeParseInt(row.deathsat25),
-      opp_kills_at_25: safeParseInt(row.opp_killsat25),
-      opp_assists_at_25: safeParseInt(row.opp_assistsat25),
-      opp_deaths_at_25: safeParseInt(row.opp_deathsat25)
+      deaths_at_25: safeParseInt(row.deathsat25)
     });
   });
   
