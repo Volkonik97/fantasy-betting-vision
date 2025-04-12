@@ -6,17 +6,19 @@ import { LeagueGameDataRow } from '../../csv/types';
  */
 export interface GameTracker {
   id: string;
-  date: string;
-  league: string;
-  year: string;
-  split: string;
-  patch: string;
-  playoffs: boolean;
+  date?: string;
+  league?: string;
+  year?: string;
+  split?: string;
+  patch?: string;
+  playoffs?: boolean;
   teams: {
     blue: string;
     red: string;
   };
-  result?: string;
-  duration?: string;
+  result?: {
+    winner: string;
+    duration: string;
+  };
   rows?: Set<LeagueGameDataRow>;
 }

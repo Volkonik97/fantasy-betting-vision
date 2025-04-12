@@ -229,7 +229,7 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         {match.status === "Completed" && match.result && (
           <div className="mt-4 grid grid-cols-1 gap-2">
             <div className="text-sm text-gray-600">
-              <span className="font-medium">{match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}</span> won in {match.result.duration ? formatSecondsToMinutesSeconds(parseInt(match.result.duration)) : "??:??"}
+              <span className="font-medium">{match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name}</span> won in {match.result.duration ? formatSecondsToMinutesSeconds(typeof match.result.duration === 'number' ? match.result.duration : parseInt(match.result.duration)) : "??:??"}
             </div>
             {match.result.mvp && (
               <div className="flex items-center gap-2 text-sm text-gray-600">

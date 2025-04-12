@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { prepareJsonData } from "../../leagueData/utils";
 import { booleanToString } from "../../leagueData/utils";
@@ -104,7 +103,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 dragons: extraStats.dragons || 0,
                 barons: extraStats.barons || 0,
                 first_blood: extraStats.first_blood,
-                first_blood_processed: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood) || null,
+                first_blood_processed: booleanToString(extraStats.first_blood) || booleanToString(result.firstBlood || false),
                 hasPicks: !!picksData,
                 hasBans: !!bansData,
                 picksCount: picksData ? Object.keys(picksData).length : 0,
@@ -135,6 +134,7 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
               // Assemble match object with safe property access and proper boolean -> string conversion
               return {
                 id: match.id,
+                gameid: match.id, // Add gameid field to match the database schema
                 tournament: match.tournament || '',
                 date: match.date || '',
                 team_blue_id: teamBlueId,
@@ -164,16 +164,16 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 drakes_unknown: extraStats.drakes_unknown || 0,
                 elders: extraStats.elders || 0,
                 opp_elders: extraStats.opp_elders || 0,
-                // CORRECTION: Utilisation de la nouvelle fonction processBoolean pour les valeurs booléennes
-                first_herald: booleanToString(extraStats.first_herald !== undefined ? extraStats.first_herald : (result && 'firstHerald' in result ? result.firstHerald : null)),
+                // CORRECTION: Utilisation de la nouvelle fonction booleanToString améliorée
+                first_herald: booleanToString(extraStats.first_herald),
                 heralds: extraStats.heralds || 0,
                 opp_heralds: extraStats.opp_heralds || 0,
-                first_baron: booleanToString(extraStats.first_baron !== undefined ? extraStats.first_baron : (result && 'firstBaron' in result ? result.firstBaron : null)),
+                first_baron: booleanToString(extraStats.first_baron),
                 barons: extraStats.barons || 0,
                 opp_barons: extraStats.opp_barons || 0,
                 void_grubs: extraStats.void_grubs || 0,
                 opp_void_grubs: extraStats.opp_void_grubs || 0,
-                first_tower: booleanToString(extraStats.first_tower !== undefined ? extraStats.first_tower : (result && 'firstTower' in result ? result.firstTower : null)),
+                first_tower: booleanToString(extraStats.first_tower),
                 first_mid_tower: booleanToString(extraStats.first_mid_tower),
                 first_three_towers: booleanToString(extraStats.first_three_towers),
                 towers: extraStats.towers || 0,
@@ -188,8 +188,8 @@ export const saveMatches = async (matches: Match[]): Promise<boolean> => {
                 duration: result && 'duration' in result ? result.duration : '',
                 mvp: result && 'mvp' in result ? result.mvp : '',
                 // CORRECTION: Meilleure gestion des valeurs booléennes first_blood
-                first_blood: booleanToString(extraStats.first_blood !== undefined ? extraStats.first_blood : (result && 'firstBlood' in result ? result.firstBlood : null)),
-                first_dragon: booleanToString(extraStats.first_dragon !== undefined ? extraStats.first_dragon : (result && 'firstDragon' in result ? result.firstDragon : null)),
+                first_blood: booleanToString(extraStats.first_blood),
+                first_dragon: booleanToString(extraStats.first_dragon),
                 picks: picksData,
                 bans: bansData,
                 game_number: match.id.includes('_') ? match.id.split('_').pop() || null : null

@@ -1,147 +1,151 @@
-
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SideAnalysis from "@/components/SideAnalysis";
-import { SideStatistics, TimelineStats } from "@/utils/models/types";
-import { getTeamTimelineStats } from "@/utils/database/matches/playerStats";
-import { toast } from "sonner";
-import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import StatsComparisonChart from "./StatsComparisonChart";
+import ObjectiveStats from "./ObjectiveStats";
+import TimelineChart from "./TimelineChart";
+import { Match, Team, TimelineStats } from "@/utils/models/types";
+import { useTeamStats } from "@/hooks/useTeamStats";
 
 interface TeamAnalysisTabsProps {
-  blueTeamStats: SideStatistics | null;
-  redTeamStats: SideStatistics | null;
-  isLoading: boolean;
+  match: Match;
+  selectedTeam: string;
+  opponent: string;
 }
 
-const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalysisTabsProps) => {
-  const [isLoadingData, setIsLoadingData] = useState(isLoading);
-  const [blueTeamDynamicStats, setBlueTeamDynamicStats] = useState<SideStatistics | null>(blueTeamStats);
-  const [redTeamDynamicStats, setRedTeamDynamicStats] = useState<SideStatistics | null>(redTeamStats);
+const TeamAnalysisTabs = ({ match, selectedTeam, opponent }: TeamAnalysisTabsProps) => {
+  const { stats: teamStats, isLoading: isTeamStatsLoading } = useTeamStats(selectedTeam);
+  const { stats: opponentStats, isLoading: isOpponentStatsLoading } = useTeamStats(opponent);
 
-  const getTeamPlayerStats = async (teamId: string | undefined, originalStats: SideStatistics | null) => {
-    if (!teamId || !originalStats) {
-      console.log(`Cannot get player stats: teamId=${teamId}, originalStats=${!!originalStats}`);
-      return originalStats;
-    }
-    
-    console.log(`Fetching player match stats for team ${teamId}`);
-    
-    try {
-      const timelineStats = await getTeamTimelineStats(teamId);
-      
-      if (!timelineStats) {
-        console.log(`No timeline stats found for team ${teamId}, using original data`);
-        return originalStats;
-      }
-      
-      console.log(`Found timeline stats for team ${teamId}:`, timelineStats);
-      
-      // Ensure we have the correct type for timelineStats
-      const typedTimelineStats: TimelineStats = timelineStats as TimelineStats;
-      
-      return {
-        ...originalStats,
-        timelineStats: typedTimelineStats
-      };
-    } catch (error) {
-      console.error(`Error calculating team stats for ${teamId}:`, error);
-      return originalStats;
+  const isLoading = isTeamStatsLoading || isOpponentStatsLoading;
+  
+  // Find the selected team details
+  const teamDetails = match.teamBlue.id === selectedTeam ? match.teamBlue : match.teamRed;
+  const opponentDetails = match.teamBlue.id === opponent ? match.teamBlue : match.teamRed;
+  
+  // Default values if stats are not available
+  const defaultTimelineStats: TimelineStats = {
+    '10': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgCsDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0,
+      avgAssists: 0
+    },
+    '15': {
+      avgGold: 0,
+      avgXp: 0,
+      avgCs: 0,
+      avgGoldDiff: 0,
+      avgCsDiff: 0,
+      avgKills: 0,
+      avgDeaths: 0,
+      avgAssists: 0
     }
   };
   
-  useEffect(() => {
-    const loadTeamStats = async () => {
-      setIsLoadingData(true);
-      
-      try {
-        const blueTeamId = blueTeamStats?.teamId;
-        const redTeamId = redTeamStats?.teamId;
-        
-        console.log("Loading dynamic team stats for:", { blueTeamId, redTeamId });
-        
-        if (!blueTeamId && !redTeamId) {
-          console.log("No team IDs available, using static data");
-          setBlueTeamDynamicStats(blueTeamStats);
-          setRedTeamDynamicStats(redTeamStats);
-          setIsLoadingData(false);
-          return;
-        }
-        
-        if (blueTeamId) {
-          const dynamicBlueStats = await getTeamPlayerStats(blueTeamId, blueTeamStats);
-          console.log("Dynamic blue team stats loaded:", !!dynamicBlueStats);
-          if (dynamicBlueStats) {
-            setBlueTeamDynamicStats(dynamicBlueStats);
-          }
-        } else {
-          setBlueTeamDynamicStats(blueTeamStats);
-        }
-        
-        if (redTeamId) {
-          const dynamicRedStats = await getTeamPlayerStats(redTeamId, redTeamStats);
-          console.log("Dynamic red team stats loaded:", !!dynamicRedStats);
-          if (dynamicRedStats) {
-            setRedTeamDynamicStats(dynamicRedStats);
-          }
-        } else {
-          setRedTeamDynamicStats(redTeamStats);
-        }
-      } catch (error) {
-        console.error("Error loading dynamic team stats:", error);
-        toast.error("Échec du chargement des statistiques d'équipe");
-        
-        setBlueTeamDynamicStats(blueTeamStats);
-        setRedTeamDynamicStats(redTeamStats);
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
+  // Convert any timeline stats data to the correct format if needed
+  const getTimelineStats = (stats: any): TimelineStats => {
+    if (!stats || !stats.timelineStats) return defaultTimelineStats;
     
-    loadTeamStats();
-  }, [blueTeamStats, redTeamStats]);
-  
-  const renderTeamStats = (teamStats: SideStatistics | null, tabValue: string) => {
-    if (isLoadingData) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lol-blue"></div>
-        </div>
-      );
+    // If it's already a TimelineStats object, use it
+    if (typeof stats.timelineStats === 'object' && !Array.isArray(stats.timelineStats)) {
+      return stats.timelineStats as TimelineStats;
     }
     
-    if (!teamStats) {
-      return (
-        <div className="text-center p-8 bg-white rounded-xl border border-gray-100 shadow-subtle">
-          <p className="text-gray-500">Aucune statistique disponible</p>
-        </div>
-      );
-    }
-    
-    return <SideAnalysis statistics={teamStats} />;
+    // Otherwise, convert from array or other format to TimelineStats
+    return defaultTimelineStats;
   };
+  
+  const teamTimelineStats = getTimelineStats(teamStats);
+  const opponentTimelineStats = getTimelineStats(opponentStats);
   
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 }}
-    >
-      <Tabs defaultValue="blueTeam">
-        <TabsList className="w-full mb-4">
-          <TabsTrigger value="blueTeam" className="w-1/2">Blue Side</TabsTrigger>
-          <TabsTrigger value="redTeam" className="w-1/2">Red Side</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="blueTeam">
-          {renderTeamStats(blueTeamDynamicStats, "blueTeam")}
-        </TabsContent>
-        
-        <TabsContent value="redTeam">
-          {renderTeamStats(redTeamDynamicStats, "redTeam")}
-        </TabsContent>
-      </Tabs>
-    </motion.div>
+    <Tabs defaultValue="overview" className="w-full">
+      <TabsList className="grid grid-cols-3 mb-4">
+        <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+        <TabsTrigger value="objectives">Objectifs</TabsTrigger>
+        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="overview">
+        <Card>
+          <CardHeader>
+            <CardTitle>Comparaison des équipes</CardTitle>
+            <CardDescription>
+              Statistiques globales des deux équipes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <p className="text-gray-500">Chargement des statistiques...</p>
+              </div>
+            ) : (
+              <StatsComparisonChart 
+                teamName={teamDetails.name} 
+                opponentName={opponentDetails.name}
+                teamStats={teamStats}
+                opponentStats={opponentStats}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="objectives">
+        <Card>
+          <CardHeader>
+            <CardTitle>Statistiques d'objectifs</CardTitle>
+            <CardDescription>
+              Taux de premier sang, premier dragon, etc.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <p className="text-gray-500">Chargement des statistiques...</p>
+              </div>
+            ) : (
+              <ObjectiveStats 
+                teamName={teamDetails.name}
+                opponentName={opponentDetails.name}
+                teamStats={teamStats}
+                opponentStats={opponentStats}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="timeline">
+        <Card>
+          <CardHeader>
+            <CardTitle>Progression dans le temps</CardTitle>
+            <CardDescription>
+              Or, XP et CS à différents moments de la partie
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-48 flex items-center justify-center">
+                <p className="text-gray-500">Chargement des statistiques...</p>
+              </div>
+            ) : (
+              <TimelineChart 
+                teamName={teamDetails.name}
+                opponentName={opponentDetails.name}
+                teamTimelineStats={teamTimelineStats}
+                opponentTimelineStats={opponentTimelineStats}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
   );
 };
 

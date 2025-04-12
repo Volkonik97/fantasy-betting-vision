@@ -140,7 +140,7 @@ export interface TimelineStatPoint {
   avgAssists?: number;
 }
 
-// Type for timeline statistics by time point
+// Type for timeline statistics by time point - update to use string indices
 export interface TimelineStats {
   [timePoint: string]: TimelineStatPoint;
 }

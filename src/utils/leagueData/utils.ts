@@ -152,7 +152,20 @@ export const parseBoolean = (value: any): boolean => {
 /**
  * Convert a boolean to "1" or "0" string representation
  */
-export const booleanToString = (value: boolean | undefined | null): string => {
-  if (value === true) return "1";
+export const booleanToString = (value: boolean | string | undefined | null): string => {
+  if (value === undefined || value === null) return "0";
+  
+  if (typeof value === 'boolean') {
+    return value ? "1" : "0";
+  }
+  
+  if (typeof value === 'string') {
+    const normalizedValue = value.toLowerCase().trim();
+    if (normalizedValue === 'true' || normalizedValue === '1' || 
+        normalizedValue === 'yes' || normalizedValue === 'y') {
+      return "1";
+    }
+  }
+  
   return "0";
 };
