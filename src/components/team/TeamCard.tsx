@@ -17,6 +17,11 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
   const [logoLoading, setLogoLoading] = useState(true);
   const [logoError, setLogoError] = useState(false);
   
+  // Ensure team data has valid values
+  const winRate = team.winRate || 0;
+  const avgGameTime = team.averageGameTime || 0;
+  const hasPlayers = team.players && team.players.length > 0;
+  
   useEffect(() => {
     const fetchLogo = async () => {
       if (!team.id) return;
@@ -51,6 +56,17 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
     
     fetchLogo();
   }, [team.id, team.logo, team.name]);
+
+  // Log team data for debugging
+  useEffect(() => {
+    console.log(`TeamCard rendered for ${team.name}:`, {
+      id: team.id,
+      winRate: team.winRate,
+      blueWinRate: team.blueWinRate,
+      redWinRate: team.redWinRate,
+      playersCount: team.players?.length || 0
+    });
+  }, [team]);
 
   return (
     <motion.div
@@ -99,11 +115,11 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Win Rate</p>
-              <p className="text-lg font-semibold">{(team.winRate * 100).toFixed(0)}%</p>
+              <p className="text-lg font-semibold">{(winRate * 100).toFixed(0)}%</p>
             </div>
             <div className="text-center p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Avg. Game Time</p>
-              <p className="text-lg font-semibold">{formatTime(team.averageGameTime)}</p>
+              <p className="text-lg font-semibold">{formatTime(avgGameTime)}</p>
             </div>
           </div>
           
@@ -115,7 +131,7 @@ const TeamCard: React.FC<TeamCardProps> = ({ team }) => {
               View Team Details
             </Link>
             <span className="text-sm text-gray-500">
-              {team.players && team.players.length ? `${team.players.length} Players` : 'No players'}
+              {hasPlayers ? `${team.players.length} Players` : 'No players'}
             </span>
           </div>
         </CardContent>

@@ -15,6 +15,7 @@ export const getTeams = async (): Promise<Team[]> => {
     if (isTeamsCacheValid()) {
       const cachedTeams = getTeamsFromCache();
       if (cachedTeams && cachedTeams.length > 0) {
+        console.log(`✅ ${cachedTeams.length} équipes récupérées depuis le cache`);
         return cachedTeams;
       }
     }
@@ -44,8 +45,24 @@ export const getTeams = async (): Promise<Team[]> => {
       console.log(`✅ Repli réussi, ${fallbackData.length} équipes chargées depuis la table teams`);
       
       // Convert raw data to Team objects using our adapter and sort them
-      const normalizedTeams = fallbackData.map(adaptTeamFromDatabase)
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const normalizedTeams = fallbackData.map(team => {
+        // Explicitly format winrate values to ensure they're interpreted correctly
+        const processedTeam = {
+          ...team,
+          winrate: typeof team.winrate === 'number' ? team.winrate : parseFloat(team.winrate || '0'),
+          winrate_blue: typeof team.winrate_blue === 'number' ? team.winrate_blue : parseFloat(team.winrate_blue || '0'),
+          winrate_red: typeof team.winrate_red === 'number' ? team.winrate_red : parseFloat(team.winrate_red || '0')
+        };
+        return adaptTeamFromDatabase(processedTeam);
+      }).sort((a, b) => a.name.localeCompare(b.name));
+
+      // Log winrates for debugging
+      console.log("Winrates after processing:", normalizedTeams.map(t => ({
+        name: t.name, 
+        winRate: t.winRate, 
+        blueWinRate: t.blueWinRate,
+        redWinRate: t.redWinRate
+      })));
       
       // Mettre à jour le cache
       setTeamsCache(normalizedTeams);
@@ -55,8 +72,24 @@ export const getTeams = async (): Promise<Team[]> => {
     // Traiter les données et mettre en cache
     if (teamsData) {
       // Convert raw data to Team objects using our adapter and sort them
-      const normalizedTeams = teamsData.map(adaptTeamFromDatabase)
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const normalizedTeams = teamsData.map(team => {
+        // Explicitly format winrate values to ensure they're interpreted correctly
+        const processedTeam = {
+          ...team,
+          winrate: typeof team.winrate === 'number' ? team.winrate : parseFloat(team.winrate || '0'),
+          winrate_blue: typeof team.winrate_blue === 'number' ? team.winrate_blue : parseFloat(team.winrate_blue || '0'),
+          winrate_red: typeof team.winrate_red === 'number' ? team.winrate_red : parseFloat(team.winrate_red || '0')
+        };
+        return adaptTeamFromDatabase(processedTeam);
+      }).sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Log winrates for debugging
+      console.log("Winrates after processing:", normalizedTeams.slice(0, 3).map(t => ({
+        name: t.name, 
+        winRate: t.winRate, 
+        blueWinRate: t.blueWinRate,
+        redWinRate: t.redWinRate
+      })));
       
       // Mettre à jour le cache
       setTeamsCache(normalizedTeams);

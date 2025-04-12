@@ -1,4 +1,3 @@
-
 import { Team } from "@/utils/models/types";
 
 /**
@@ -41,14 +40,42 @@ export type RawDatabaseTeam = Partial<DatabaseTeam>;
  * Adapter to convert database team format to application Team model
  */
 export const adaptTeamFromDatabase = (dbTeam: any): Team => {
+  // Safety check for existence of dbTeam
+  if (!dbTeam) {
+    console.error("Attempted to adapt undefined or null dbTeam");
+    return {
+      id: '',
+      name: '',
+      region: 'Unknown',
+      winRate: 0,
+      blueWinRate: 0,
+      redWinRate: 0,
+      averageGameTime: 0,
+      players: []
+    };
+  }
+
+  // Log the raw winrate values for debugging
+  console.log(`Raw winrate values for ${dbTeam.teamname || 'unknown team'}:`, {
+    winrate: dbTeam.winrate,
+    winrate_blue: dbTeam.winrate_blue,
+    winrate_red: dbTeam.winrate_red,
+    typeof_winrate: typeof dbTeam.winrate
+  });
+  
+  // Ensure numeric values are properly parsed
+  const winRate = typeof dbTeam.winrate === 'number' ? dbTeam.winrate : parseFloat(dbTeam.winrate || '0');
+  const blueWinRate = typeof dbTeam.winrate_blue === 'number' ? dbTeam.winrate_blue : parseFloat(dbTeam.winrate_blue || '0');
+  const redWinRate = typeof dbTeam.winrate_red === 'number' ? dbTeam.winrate_red : parseFloat(dbTeam.winrate_red || '0');
+  
   return {
     id: dbTeam.teamid || '',
     name: dbTeam.teamname || '',
     logo: dbTeam.logo || null,
     region: dbTeam.region || 'Unknown',
-    winRate: dbTeam.winrate || 0,
-    blueWinRate: dbTeam.winrate_blue || 0,
-    redWinRate: dbTeam.winrate_red || 0,
+    winRate: winRate,
+    blueWinRate: blueWinRate,
+    redWinRate: redWinRate,
     averageGameTime: dbTeam.avg_gamelength || 0,
     
     // Initialize players as an empty array to prevent undefined issues
@@ -60,8 +87,8 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     redFirstBlood: dbTeam.firstblood_red_pct || 0,
     
     firstdragon_pct: dbTeam.firstdragon_pct || 0,
-    blueFirstDragon: dbTeam.blue_firstdragon_pct || dbTeam.firstblood_blue_pct || 0,
-    redFirstDragon: dbTeam.red_firstdragon_pct || dbTeam.firstblood_red_pct || 0,
+    blueFirstDragon: dbTeam.blue_firstdragon_pct || 0,
+    redFirstDragon: dbTeam.red_firstdragon_pct || 0,
     
     blueFirstHerald: dbTeam.blue_firstherald_pct || 0,
     redFirstHerald: dbTeam.red_firstherald_pct || 0,
