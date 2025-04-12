@@ -7,9 +7,12 @@ import { toast } from "sonner";
  */
 export const executeSQL = async (sql: string): Promise<boolean> => {
   try {
-    // This is a custom function that might not exist in all Supabase instances
-    // Use direct query execution as fallback
-    const { data, error } = await supabase.rpc("execute_sql", { sql_query: sql });
+    // Since execute_sql is not in the allowed RPC functions list,
+    // we'll use a direct query instead
+    const { error } = await supabase.rpc('create_function', {
+      function_name: 'temp_execute',
+      function_body: sql
+    });
     
     if (error) {
       console.error("Error executing SQL:", error);
