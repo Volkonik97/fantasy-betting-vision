@@ -9,6 +9,21 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      data_updates: {
+        Row: {
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           firstbaron_team_id: string | null
@@ -1491,6 +1506,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
       compute_friendly_score: {
         Args: {
           role: string
@@ -1516,6 +1535,10 @@ export type Database = {
       compute_soft_weight: {
         Args: { player_id: string; league_name: string }
         Returns: number
+      }
+      create_function: {
+        Args: { function_name: string; function_body: string }
+        Returns: undefined
       }
       league_coefficient: {
         Args: { p_league: string }

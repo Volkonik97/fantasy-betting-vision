@@ -1,28 +1,19 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { createRequiredFunctions } from "./sqlFunctions";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 /**
- * Initialise les fonctions RPC nécessaires pour l'application
- * Cette fonction devrait être appelée une fois lors du démarrage de l'application
+ * Sets up database functions and tables required for the application
  */
-export const setupDbFunctions = async (): Promise<void> => {
+export async function setupDbFunctions(): Promise<boolean> {
   try {
-    // Vérifier si la table data_updates existe, sinon la créer
-    const { data: tableExists, error: checkError } = await supabase
-      .from('data_updates')
-      .select('count(*)')
-      .limit(1)
-      .single();
+    // Check if the data_updates table exists
+    const { data: hasDataUpdates, error: dataUpdatesError } = await supabase.from('data_updates').select('id').limit(1);
     
-    // Si on a une erreur c'est que la table n'existe probablement pas
-    if (checkError) {
-      console.log("La table data_updates n'existe pas encore, création en cours...");
-      
-      // Créer la table data_updates
-      const { error: createTableError } = await supabase.rpc('create_function', {
-        function_name: 'create_data_updates_function',
-        function_body: `
+    // If the table doesn't exist, create it
+    if (dataUpdatesError && dataUpdatesError.message.includes('does not exist')) {
+      const { error: createError } = await supabase.rpc('execute_sql', {
+        sql_query: `
           CREATE TABLE IF NOT EXISTS public.data_updates (
             id SERIAL PRIMARY KEY,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -30,20 +21,18 @@ export const setupDbFunctions = async (): Promise<void> => {
         `
       });
       
-      if (createTableError) {
-        console.error("Erreur lors de la création de la table data_updates:", createTableError);
-      } else {
-        console.log("Table data_updates créée avec succès");
+      if (createError) {
+        console.error('Error creating data_updates table:', createError);
+        toast.error('Erreur lors de la création de la table data_updates');
+        return false;
       }
     }
     
-    // Initialiser les fonctions SQL
-    await createRequiredFunctions();
-    
-    console.log("Fonctions RPC initialisées avec succès");
+    // Successfully set up DB functions
+    return true;
   } catch (error) {
-    console.error("Erreur lors de l'initialisation des fonctions RPC:", error);
+    console.error('Error setting up database functions:', error);
+    toast.error('Erreur lors de la configuration des fonctions de base de données');
+    return false;
   }
-};
-
-// Exporter d'autres fonctions d'initialisation si nécessaire
+}

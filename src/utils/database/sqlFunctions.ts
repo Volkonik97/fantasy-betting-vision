@@ -1,69 +1,65 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Creates SQL functions needed for the application
+ * Execute a SQL query using supabase SQL API
  */
-export const createRequiredFunctions = async (): Promise<boolean> => {
+export async function executeSql(query: string): Promise<any> {
   try {
-    // Create check_table_exists function
-    await supabase.rpc('create_function', {
-      function_name: 'check_table_exists',
-      function_body: `
-        CREATE OR REPLACE FUNCTION check_table_exists(table_name text)
-        RETURNS boolean
-        LANGUAGE plpgsql
-        AS $$
-        DECLARE
-          exists_check boolean;
-        BEGIN
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            AND table_name = $1
-          ) INTO exists_check;
-          RETURN exists_check;
-        END;
-        $$;
-      `
-    });
+    const { data, error } = await supabase.rpc('execute_sql', { sql_query: query });
     
-    // Create data_updates table function
-    await supabase.rpc('create_function', {
-      function_name: 'create_data_updates_table',
-      function_body: `
-        CREATE TABLE IF NOT EXISTS public.data_updates (
-          id SERIAL PRIMARY KEY,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `
-    });
+    if (error) {
+      throw error;
+    }
     
-    // Create get_last_update function
-    await supabase.rpc('create_function', {
-      function_name: 'get_last_update',
-      function_body: `
-        SELECT updated_at::text
-        FROM data_updates
-        ORDER BY updated_at DESC
-        LIMIT 1;
-      `
-    });
+    return data;
+  } catch (error) {
+    console.error('Error executing SQL:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a database function
+ */
+export async function createDatabaseFunction(functionName: string, functionBody: string): Promise<boolean> {
+  try {
+    // Use raw SQL for creating functions since the RPC may not exist yet
+    const { error } = await executeSql(functionBody);
     
-    // Create update_last_update function
-    await supabase.rpc('create_function', {
-      function_name: 'update_last_update',
-      function_body: `
-        INSERT INTO data_updates (updated_at)
-        VALUES ($1)
-        RETURNING updated_at::text;
-      `,
-      param_types: ['text']
-    });
+    if (error) {
+      console.error(`Error creating function ${functionName}:`, error);
+      return false;
+    }
     
     return true;
   } catch (error) {
-    console.error("Error creating SQL functions:", error);
+    console.error(`Error creating function ${functionName}:`, error);
     return false;
   }
-};
+}
+
+/**
+ * Check if a database function exists
+ */
+export async function checkFunctionExists(functionName: string): Promise<boolean> {
+  try {
+    const { data, error } = await executeSql(`
+      SELECT count(*) > 0 as exists
+      FROM pg_proc 
+      JOIN pg_namespace ON pg_namespace.oid = pg_proc.pronamespace
+      WHERE proname = '${functionName}'
+        AND nspname = 'public'
+    `);
+    
+    if (error) {
+      console.error(`Error checking if function ${functionName} exists:`, error);
+      return false;
+    }
+    
+    return data?.[0]?.exists || false;
+  } catch (error) {
+    console.error(`Error checking if function ${functionName} exists:`, error);
+    return false;
+  }
+}

@@ -1,123 +1,103 @@
+
 import React, { useState, useEffect } from "react";
-import { Users } from "lucide-react";
-import { formatTime } from "@/utils/formatters/timeFormatter";
-import { 
-  getSeriesScore, 
-  getGameNumberFromId, 
-  getBaseMatchId, 
-  getSeriesScoreUpToGame,
-  isStandardSeries
-} from "@/utils/database/matchesService";
+import { Link } from "react-router-dom";
+import { Clock, Trophy, TrendingUp } from "lucide-react";
+import { formatSecondsToMinutesSeconds } from "@/utils/dataConverter";
+import { getSeriesScore } from "@/utils/database/matches/series";
 
 interface CompletedMatchInfoProps {
   result: {
-    winner?: string;
-    score?: [number, number];
-    duration?: string;
+    winner: string;
+    score: [number, number] | number[];
+    duration: number | string;
     mvp?: string;
   };
   winnerName: string;
   matchId: string;
   seriesAggregation?: boolean;
-  teamBlueId?: string;
-  teamRedId?: string;
+  teamBlueId: string;
+  teamRedId: string;
 }
 
-const CompletedMatchInfo: React.FC<CompletedMatchInfoProps> = ({ 
+const CompletedMatchInfo = ({ 
   result, 
-  winnerName,
+  winnerName, 
   matchId,
   seriesAggregation = false,
   teamBlueId,
-  teamRedId 
-}) => {
-  const [seriesInfo, setSeriesInfo] = useState<string | null>(null);
-  const [seriesScore, setSeriesScore] = useState<{blue: number, red: number} | null>(null);
-  const [isBO1, setIsBO1] = useState<boolean>(true);
+  teamRedId
+}: CompletedMatchInfoProps) => {
+  const [seriesScore, setSeriesScore] = useState<{ blue: number; red: number }>({ blue: 0, red: 0 });
+  const [formattedDuration, setFormattedDuration] = useState("");
   
   useEffect(() => {
-    const getSeriesInfo = async () => {
-      if (seriesAggregation) {
+    // Format the match duration
+    const durationInSeconds = typeof result.duration === 'string' 
+      ? parseInt(result.duration) 
+      : result.duration;
+      
+    setFormattedDuration(formatSecondsToMinutesSeconds(durationInSeconds));
+    
+    // Calculate series score if needed
+    const fetchSeriesScore = async () => {
+      if (seriesAggregation && matchId) {
         try {
-          // First check if this is actually a series or just a BO1 with underscore in ID
-          const validSeries = await isStandardSeries(matchId);
+          // Ensure scores are properly formatted
+          const score = await getSeriesScore(matchId);
           
-          if (!validSeries) {
-            console.log(`Match ${matchId} is not part of a valid series, it's a BO1`);
-            setIsBO1(true);
-            return;
-          }
-          
-          setIsBO1(false);
-          
-          // Get the base match ID (without game number)
-          const baseMatchId = getBaseMatchId(matchId);
-          
-          // Get the game number
-          const gameNumber = getGameNumberFromId(matchId);
-          console.log(`Game number for match ${matchId} is ${gameNumber}`);
-          
-          // Get the series length
-          const seriesResult = await getSeriesScore(baseMatchId, '', '', true);
-          console.log(`Series length for ${baseMatchId} is ${seriesResult}`);
-          
-          // Check if the series length is valid and reasonable (max Bo7)
-          if (typeof seriesResult === 'number' && seriesResult > 1 && seriesResult <= 7) {
-            // Get the score up to this current game (not including this game's result)
-            if (gameNumber > 1 && teamBlueId && teamRedId) {
-              const previousScore = await getSeriesScoreUpToGame(
-                baseMatchId, 
-                gameNumber, 
-                teamBlueId, 
-                teamRedId
-              );
-              
-              console.log(`Previous score before game ${gameNumber}: Blue ${previousScore.blue} - Red ${previousScore.red}`);
-              setSeriesScore(previousScore);
+          if (score) {
+            // Convert array score to object format
+            if (Array.isArray(score)) {
+              setSeriesScore({ 
+                blue: score[0],
+                red: score[1]
+              });
+            } else {
+              setSeriesScore(score);
             }
-            
-            setSeriesInfo(`Game ${gameNumber} of ${seriesResult} in the series`);
-          } else {
-            // If the series length is invalid, just show the game number
-            setSeriesInfo(`Game ${gameNumber}`);
           }
         } catch (error) {
-          console.error("Error getting series info:", error);
+          console.error("Error fetching series score:", error);
         }
       }
     };
     
-    getSeriesInfo();
-  }, [matchId, seriesAggregation, teamBlueId, teamRedId]);
-  
-  const formattedDuration = result.duration ? formatTime(result.duration) : "??:??";
-  
-  // Determine the team colors based on which team is the winner
-  const isBlueWinner = teamBlueId === result.winner;
-  const isRedWinner = teamRedId === result.winner;
-  
+    fetchSeriesScore();
+  }, [matchId, result.duration, seriesAggregation]);
+
   return (
-    <div className="mt-4 grid grid-cols-1 gap-2">
-      <div className="text-sm text-gray-600">
-        <span className="font-medium">{winnerName}</span> won in {formattedDuration}
+    <div className="mt-4 pt-4 border-t border-gray-100">
+      <div className="flex items-center text-sm mb-2">
+        <Trophy className="w-4 h-4 text-amber-500 mr-2" />
+        <span className="text-gray-700">
+          {winnerName} a remporté cette rencontre
+        </span>
       </div>
-      {result.mvp && (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Users className="w-4 h-4 text-gray-400" />
-          <span>MVP: {result.mvp}</span>
-        </div>
-      )}
-      {seriesInfo && !isBO1 && (
-        <div className="text-xs text-gray-500 mt-1">
-          {seriesInfo}
-          {seriesScore && (
-            <span className="ml-2">
-              (Series: 
-              <span className={isBlueWinner ? "text-lol-blue" : "text-gray-600"}> {seriesScore.blue}</span>
-              -
-              <span className={isRedWinner ? "text-lol-red" : "text-gray-600"}> {seriesScore.red}</span>)
-            </span>
+      
+      {/* Score information with conditional display for series */}
+      <div className="flex items-center text-sm mb-2">
+        <TrendingUp className="w-4 h-4 text-blue-500 mr-2" />
+        <span className="text-gray-700">
+          {seriesAggregation ? (
+            `Score de la série: ${seriesScore.blue}-${seriesScore.red}`
+          ) : (
+            `Score: ${result.score[0]}-${result.score[1]}`
           )}
+        </span>
+      </div>
+      
+      {/* Duration information */}
+      <div className="flex items-center text-sm">
+        <Clock className="w-4 h-4 text-green-500 mr-2" />
+        <span className="text-gray-700">Durée: {formattedDuration}</span>
+      </div>
+      
+      {/* MVP information if available */}
+      {result.mvp && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <Link to={`/players/${result.mvp}`} className="text-sm text-blue-600 hover:underline">
+            MVP: {result.mvp}
+          </Link>
         </div>
       )}
     </div>

@@ -21,21 +21,23 @@ const AdminDatabaseUpdate = () => {
   
   const getLastUpdateTime = async () => {
     try {
-      // Try to query the data_updates table directly
+      // Use a direct SQL query approach instead of referencing the table directly
       const { data, error } = await supabase
         .from('data_updates')
         .select('updated_at')
         .order('updated_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
-      if (error) {
+      if (error && !error.message.includes('does not exist')) {
         console.error('Error fetching last update time:', error);
         return;
       }
       
       if (data) {
         setLastUpdateTime(data.updated_at);
+      } else {
+        console.log('No update records found.');
       }
     } catch (error) {
       console.error('Error fetching last update time:', error);

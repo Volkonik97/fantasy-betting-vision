@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { isPast, isFuture } from "date-fns";
 import { Match } from "@/utils/models/types";
@@ -90,9 +89,13 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
   const redScore = match.result?.score && match.result.score.length > 1 
     ? (typeof match.result.score[1] === 'number' ? match.result.score[1] : parseInt(String(match.result.score[1])) || 0) 
     : 0;
+  
+  // Create a properly typed score array
+  const scoreArray: [number, number] = [blueScore, redScore];
     
-  console.log(`Match ${match.id} - Final score calculation: Blue ${blueScore}, Red ${redScore}`);
-
+  // Debug the scores
+  console.log(`Match ${match.id} - Score: ${blueScore}:${redScore}`, match.result?.score);
+  
   // Determine winner name
   const winnerName = match.result?.winner 
     ? (match.result.winner === match.teamBlue.id ? match.teamBlue.name : match.teamRed.name)
@@ -122,7 +125,10 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
           onBlueLogoError={() => setBlueLogoError(true)}
           onRedLogoError={() => setRedLogoError(true)}
           status={match.status}
-          result={match.result}
+          result={match.result ? {
+            ...match.result,
+            score: scoreArray  // Use the properly typed score array
+          } : undefined}
           blueScore={blueScore}
           redScore={redScore}
           matchId={match.id}
@@ -147,7 +153,10 @@ const MatchCard = ({ match, className, showDetails = true }: MatchCardProps) => 
         
         {match.status === "Completed" && match.result && winnerName && (
           <CompletedMatchInfo 
-            result={match.result}
+            result={{
+              ...match.result,
+              score: scoreArray  // Ensure we pass the properly typed score
+            }}
             winnerName={winnerName}
             matchId={match.id}
             seriesAggregation={isSeries}

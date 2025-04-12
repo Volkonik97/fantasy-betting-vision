@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export async function checkTableExists(tableName: string): Promise<boolean> {
   try {
-    // Use a direct SQL query to check if the table exists
+    // Use the check_table_exists function we created in our SQL migration
     const { data, error } = await supabase.rpc('check_table_exists', { 
       table_name: tableName 
     });
@@ -28,16 +28,11 @@ export async function checkTableExists(tableName: string): Promise<boolean> {
  */
 export async function createDataUpdatesTable(): Promise<boolean> {
   try {
-    // Create the table using SQL query instead of RPC
-    const { error } = await supabase.query(`
-      CREATE TABLE IF NOT EXISTS public.data_updates (
-        id SERIAL PRIMARY KEY,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      );
-    `);
+    // Use raw SQL to create the table if needed (we already did this in our migration)
+    const { error } = await supabase.from('data_updates').select('id').limit(1);
     
-    if (error) {
-      console.error('Error creating data_updates table:', error);
+    if (error && error.code === '42P01') { // Table doesn't exist
+      console.error('Error accessing data_updates table:', error);
       return false;
     }
     

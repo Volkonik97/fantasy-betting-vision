@@ -38,7 +38,7 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
       
       return {
         ...originalStats,
-        timelineStats
+        timelineStats: timelineStats as TimelineStats
       };
     } catch (error) {
       console.error(`Error calculating team stats for ${teamId}:`, error);
@@ -67,7 +67,9 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
         if (blueTeamId) {
           const dynamicBlueStats = await getTeamPlayerStats(blueTeamId, blueTeamStats);
           console.log("Dynamic blue team stats loaded:", !!dynamicBlueStats);
-          setBlueTeamDynamicStats(dynamicBlueStats);
+          if (dynamicBlueStats) {
+            setBlueTeamDynamicStats(dynamicBlueStats);
+          }
         } else {
           setBlueTeamDynamicStats(blueTeamStats);
         }
@@ -75,7 +77,9 @@ const TeamAnalysisTabs = ({ blueTeamStats, redTeamStats, isLoading }: TeamAnalys
         if (redTeamId) {
           const dynamicRedStats = await getTeamPlayerStats(redTeamId, redTeamStats);
           console.log("Dynamic red team stats loaded:", !!dynamicRedStats);
-          setRedTeamDynamicStats(dynamicRedStats);
+          if (dynamicRedStats) {
+            setRedTeamDynamicStats(dynamicRedStats);
+          }
         } else {
           setRedTeamDynamicStats(redTeamStats);
         }
