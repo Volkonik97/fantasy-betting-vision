@@ -10,6 +10,12 @@ interface PlayerStatsProps {
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
   // Format damage share percentage properly
   const formatDamageShare = (value: number | string) => {
+    // If value is explicitly 0 or undefined/null, show 0%
+    if (value === 0 || value === undefined || value === null) {
+      return '0%';
+    }
+    
+    // If it's a number, format it properly
     if (typeof value === 'number') {
       // If it's already between 0-1, multiply by 100
       if (value >= 0 && value <= 1) {
@@ -18,8 +24,12 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
       // If it's already a percentage (likely between 0-100)
       return `${Math.round(value)}%`;
     }
-    // If it's a string that can be parsed as a number
+    
+    // If it's a string, try to parse it as a number
     if (typeof value === 'string') {
+      if (value.trim() === '') return '0%';
+      
+      // Try parsing as a number
       const numValue = parseFloat(value);
       if (!isNaN(numValue)) {
         if (numValue >= 0 && numValue <= 1) {
@@ -28,7 +38,8 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
         return `${Math.round(numValue)}%`;
       }
     }
-    // Handle fallback case
+    
+    // Default fallback
     return '0%';
   };
 

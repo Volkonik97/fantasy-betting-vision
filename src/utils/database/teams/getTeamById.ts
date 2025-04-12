@@ -33,30 +33,60 @@ export const getTeamById = async (teamId: string): Promise<Team | null> => {
         const team = adaptTeamFromDatabase(summaryData);
         
         // Now fetch players for this team
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
+        // First try player_summary_view to get enriched player data including damage_share
+        const { data: playerSummaryData, error: playerSummaryError } = await supabase
+          .from('player_summary_view')
           .select('*')
           .eq('teamid', teamId);
           
-        if (!playersError && playersData && playersData.length > 0) {
-          console.log(`Found ${playersData.length} players for team ${teamId}`);
-          // Add players to the team object - ensure role is properly cast to PlayerRole
-          team.players = playersData.map(player => ({
-            id: player.playerid,
-            name: player.playername,
-            role: normalizeRoleName(player.position) as PlayerRole,
-            image: player.image || '',
-            team: player.teamid,
-            teamName: team.name,
-            teamRegion: team.region,
-            kda: player.kda || 0,
-            csPerMin: player.cspm || 0,
-            damageShare: player.damage_share || 0,
-            championPool: player.champion_pool ? String(player.champion_pool) : '0'
-          }));
+        if (!playerSummaryError && playerSummaryData && playerSummaryData.length > 0) {
+          console.log(`Found ${playerSummaryData.length} players in player_summary_view for team ${teamId}`);
+          
+          // Add players to the team object - use player_summary_view data for better stats
+          team.players = playerSummaryData.map(player => {
+            console.log(`Processing player ${player.playername} with damage_share:`, player.damage_share);
+            
+            return {
+              id: player.playerid,
+              name: player.playername,
+              role: normalizeRoleName(player.position) as PlayerRole,
+              image: player.image || '',
+              team: player.teamid,
+              teamName: team.name,
+              teamRegion: team.region,
+              kda: player.kda || 0,
+              csPerMin: player.cspm || 0,
+              damageShare: player.damage_share || 0,
+              championPool: player.champion_pool ? String(player.champion_pool) : '0'
+            };
+          });
         } else {
-          console.log(`No players found for team ${teamId}`);
-          team.players = [];
+          // Fallback to regular players table if player_summary_view didn't work
+          const { data: playersData, error: playersError } = await supabase
+            .from('players')
+            .select('*')
+            .eq('teamid', teamId);
+            
+          if (!playersError && playersData && playersData.length > 0) {
+            console.log(`Found ${playersData.length} players for team ${teamId}`);
+            // Add players to the team object - ensure role is properly cast to PlayerRole
+            team.players = playersData.map(player => ({
+              id: player.playerid,
+              name: player.playername,
+              role: normalizeRoleName(player.position) as PlayerRole,
+              image: player.image || '',
+              team: player.teamid,
+              teamName: team.name,
+              teamRegion: team.region,
+              kda: player.kda || 0,
+              csPerMin: player.cspm || 0,
+              damageShare: player.damage_share || 0,
+              championPool: player.champion_pool ? String(player.champion_pool) : '0'
+            }));
+          } else {
+            console.log(`No players found for team ${teamId}`);
+            team.players = [];
+          }
         }
         
         return team;

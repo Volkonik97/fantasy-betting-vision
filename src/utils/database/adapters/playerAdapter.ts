@@ -40,8 +40,21 @@ export type RawDatabasePlayer = Partial<DatabasePlayer>;
  * Adapter to convert database player format to application Player model
  */
 export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
-  // Log damage share for debugging
-  console.log(`Adapting player ${dbPlayer.playername} with damage_share:`, dbPlayer.damage_share);
+  // Safely handle and log damage share for debugging
+  let damageShare = 0;
+  
+  if (dbPlayer.damage_share !== undefined) {
+    // Handle player_summary_view format (might be directly there)
+    damageShare = dbPlayer.damage_share;
+  } else if (dbPlayer.damageshare !== undefined) {
+    // Handle alternate field name that might be used
+    damageShare = dbPlayer.damageshare;
+  }
+  
+  console.log(`Adapting player ${dbPlayer.playername || dbPlayer.playerid} with damage_share:`, 
+    dbPlayer.damage_share, 
+    typeof dbPlayer.damage_share, 
+    `Final damageShare value:`, damageShare);
   
   return {
     id: dbPlayer.playerid || '',
@@ -67,7 +80,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     
     // Damage
     dpm: dbPlayer.dpm || 0,
-    damageShare: typeof dbPlayer.damage_share === 'number' ? dbPlayer.damage_share : 0,
+    damageShare: damageShare,
     
     // Vision
     vspm: dbPlayer.vspm || 0,
