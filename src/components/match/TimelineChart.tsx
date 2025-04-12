@@ -54,7 +54,7 @@ const TimelineChart = ({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => value.toLocaleString()} />
+              <Tooltip formatter={(value: number) => value.toLocaleString()} />
               <Legend />
               <Line type="monotone" dataKey={`${teamName} Gold`} stroke="#3b82f6" activeDot={{ r: 8 }} />
               <Line type="monotone" dataKey={`${opponentName} Gold`} stroke="#ef4444" activeDot={{ r: 8 }} />
@@ -82,7 +82,7 @@ const TimelineChart = ({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
-              <Tooltip formatter={(value) => value.toFixed(2)} />
+              <Tooltip formatter={(value: number) => value.toFixed(2)} />
               <Legend />
               <Line type="monotone" dataKey={`${teamName} Kills`} stroke="#3b82f6" activeDot={{ r: 8 }} />
               <Line type="monotone" dataKey={`${opponentName} Kills`} stroke="#ef4444" activeDot={{ r: 8 }} />

@@ -55,7 +55,9 @@ const StatsComparisonChart = ({ teamName, opponentName, teamStats, opponentStats
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis unit="%" />
-          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+          <Tooltip 
+            formatter={(value: number) => `${value.toFixed(1)}%`} 
+          />
           <Legend />
           <Bar dataKey={teamName} fill="#3b82f6" />
           <Bar dataKey={opponentName} fill="#ef4444" />

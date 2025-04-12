@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "../../models/types";
 import { toast } from "sonner";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 /**
  * Récupère un match spécifique par son ID
@@ -46,52 +47,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
 
-    // Normaliser les données selon la structure attendue
-    // En tenant compte des différents noms de colonnes possibles
-    const match: Match = {
-      id: data.id || data.gameid,
-      tournament: data.tournament,
-      date: data.date || new Date().toISOString(),
-      teamBlue: {
-        id: data.team_blue_id || data.team1_id,
-        name: data.team_blue_name || data.team1_name || "Équipe Bleue",
-        region: data.team_blue_region || data.team1_region || "Unknown",
-        logo: "",
-        winRate: 0,
-        blueWinRate: 0,
-        redWinRate: 0,
-        averageGameTime: 0
-      },
-      teamRed: {
-        id: data.team_red_id || data.team2_id,
-        name: data.team_red_name || data.team2_name || "Équipe Rouge",
-        region: data.team_red_region || data.team2_region || "Unknown",
-        logo: "",
-        winRate: 0,
-        blueWinRate: 0,
-        redWinRate: 0,
-        averageGameTime: 0
-      },
-      status: data.status || "Completed",
-      predictedWinner: data.predicted_winner || "",
-      blueWinOdds: data.blue_win_odds || 0.5,
-      redWinOdds: data.red_win_odds || 0.5,
-      result: {
-        winner: data.winner_team_id,
-        score: [data.score_blue || 0, data.score_red || 0],
-        duration: data.duration || data.gamelength?.toString() || "0",
-        mvp: data.mvp || ""
-      },
-      extraStats: {
-        patch: data.patch,
-        firstBlood: data.first_blood || data.firstblood_team_id,
-        firstDragon: data.first_dragon || data.firstdragon_team_id,
-        firstBaron: data.first_baron || data.firstbaron_team_id,
-        firstTower: data.first_tower || data.firsttower_team_id,
-        gameNumber: data.game_number
-      }
-    };
-    
+    // Use the adapter to convert database format to our application model
+    const match = adaptMatchFromDatabase(data as RawDatabaseMatch);
     return match;
   } catch (error) {
     console.error("❌ Erreur inattendue dans getMatchById :", error);

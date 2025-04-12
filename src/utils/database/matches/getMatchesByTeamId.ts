@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { toast } from "sonner";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 /**
  * Récupère tous les matchs d'une équipe spécifique avec gestion des différentes structures possibles
@@ -49,78 +50,14 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     console.log(`✅ ${data.length} matchs trouvés pour l'équipe ${teamId}`);
 
     // Récupérer les infos détaillées des équipes pour chaque match
-    const matchesWithTeamDetails = await Promise.all(
-      data.map(async (match) => {
-        // Identifier les IDs des équipes bleue et rouge (en tenant compte des différentes structures possibles)
-        const blueTeamId = match.team_blue_id || match.team1_id;
-        const redTeamId = match.team_red_id || match.team2_id;
+    const matchesWithTeamDetails: Match[] = await Promise.all(
+      data.map(async (rawMatch) => {
+        // Convert the raw database format to our application model
+        const match = adaptMatchFromDatabase(rawMatch as RawDatabaseMatch);
         
-        // Récupérer les détails des équipes impliquées
-        const teamBlueResponse = await supabase
-          .from("teams")
-          .select("*")
-          .eq("teamid", blueTeamId)
-          .single();
-          
-        const teamRedResponse = await supabase
-          .from("teams")
-          .select("*")
-          .eq("teamid", redTeamId)
-          .single();
-
-        // Convertir en format de match attendu par l'application
-        return {
-          id: match.id || match.gameid,
-          tournament: match.tournament || 'Unknown',
-          date: match.date || new Date().toISOString(),
-          teamBlue: {
-            id: blueTeamId,
-            name: teamBlueResponse.data?.teamname || match.team1_name || "Équipe Bleue",
-            region: teamBlueResponse.data?.region || "Unknown",
-            logo: teamBlueResponse.data?.logo || "",
-            winRate: teamBlueResponse.data?.winrate || 0,
-            blueWinRate: teamBlueResponse.data?.winrate_blue || 0,
-            redWinRate: teamBlueResponse.data?.winrate_red || 0,
-            averageGameTime: teamBlueResponse.data?.avg_gamelength || 0
-          },
-          teamRed: {
-            id: redTeamId,
-            name: teamRedResponse.data?.teamname || match.team2_name || "Équipe Rouge",
-            region: teamRedResponse.data?.region || "Unknown",
-            logo: teamRedResponse.data?.logo || "",
-            winRate: teamRedResponse.data?.winrate || 0,
-            blueWinRate: teamRedResponse.data?.winrate_blue || 0,
-            redWinRate: teamRedResponse.data?.winrate_red || 0,
-            averageGameTime: teamRedResponse.data?.avg_gamelength || 0
-          },
-          predictedWinner: match.predicted_winner || "",
-          blueWinOdds: match.blue_win_odds || 0.5,
-          redWinOdds: match.red_win_odds || 0.5,
-          status: match.status || "Completed",
-          result: {
-            winner: match.winner_team_id,
-            score: [match.score_blue || 0, match.score_red || 0],
-            duration: match.duration || match.gamelength?.toString() || "",
-            mvp: match.mvp || ""
-          },
-          extraStats: {
-            patch: match.patch || "",
-            year: match.year || null,
-            split: match.split || "",
-            playoffs: !!match.playoffs,
-            team_kpm: match.team_kpm || 0,
-            ckpm: match.ckpm || 0,
-            team_kills: match.team_kills || 0,
-            team_deaths: match.team_deaths || 0,
-            dragons: match.dragons || 0,
-            heralds: match.heralds || 0,
-            barons: match.barons || 0,
-            firstBlood: match.first_blood || match.firstblood_team_id || null,
-            firstDragon: match.first_dragon || match.firstdragon_team_id || null,
-            firstBaron: match.first_baron || match.firstbaron_team_id || null,
-            firstTower: match.first_tower || match.firsttower_team_id || null
-          }
-        } as Match;
+        // If needed, fetch additional team details here...
+        // For now, return the adapted match
+        return match;
       })
     );
 
