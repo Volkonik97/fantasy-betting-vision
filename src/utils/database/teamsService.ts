@@ -1,10 +1,8 @@
 
-// Re-export team-related functionality from modular files
-export { getTeams } from './teams/getTeams';
-export { getTeamById } from './teams/getTeamById';
-export { saveTeams } from './teams/saveTeams';
+// Fichier de service central pour les équipes
 
-// Function that previously cleared cache now logs that cache has been removed
-export const clearTeamsCache = () => {
-  console.log("Cache has been removed from the system");
-};
+// Réexporter les fonctions depuis les fichiers individuels
+export { getTeams, getTeamById, saveTeams } from './teams';
+export { clearTeamsCache } from './teams/teamCache';
+
+// Autres fonctions liées aux équipes pourraient être ajoutées ici au besoin
