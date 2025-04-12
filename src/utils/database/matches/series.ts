@@ -1,204 +1,99 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Match } from "../../models/types";
 
 /**
- * Vérifie si un ID de match correspond à une partie d'une série
+ * Vérifie si un match fait partie d'une série (basé sur l'ID)
  */
 export const isSeriesMatch = (matchId: string): boolean => {
   return matchId.includes('_');
 };
 
 /**
- * Extrait le numéro de jeu à partir de l'ID du match
+ * Extrait le numéro de jeu d'un ID de match de série 
  */
-export const getGameNumberFromId = (matchId: string): number => {
-  if (!isSeriesMatch(matchId)) return 1;
+export const getGameNumberFromId = (matchId: string): number | null => {
+  if (!isSeriesMatch(matchId)) return null;
   
   const parts = matchId.split('_');
-  const lastPart = parts[parts.length - 1];
+  const gameNumberStr = parts[parts.length - 1];
+  const gameNumber = parseInt(gameNumberStr);
   
-  if (lastPart && /^\d+$/.test(lastPart)) {
-    return parseInt(lastPart, 10);
-  }
-  
-  return 1;
+  return isNaN(gameNumber) ? null : gameNumber;
 };
 
 /**
- * Obtient l'ID de base d'un match (sans le numéro de jeu)
+ * Obtient l'ID de base d'une série (sans le numéro de jeu)
  */
 export const getBaseMatchId = (matchId: string): string => {
   if (!isSeriesMatch(matchId)) return matchId;
   
   const parts = matchId.split('_');
-  // Si le dernier élément est un nombre, le supprimer
-  const lastPart = parts[parts.length - 1];
-  
-  if (lastPart && /^\d+$/.test(lastPart)) {
-    parts.pop();
-  }
-  
-  return parts.join('_');
+  return parts.slice(0, -1).join('_');
 };
 
 /**
- * Vérifie si un match fait partie d'une série standard (BO3, BO5)
+ * Détermine la longueur standard d'une série (3 ou 5 jeux)
  */
-export const isStandardSeries = async (matchId: string): Promise<boolean> => {
-  if (!isSeriesMatch(matchId)) return false;
+export const determineSeriesLength = (matchIds: string[]): number => {
+  // La plupart des séries sont des Best-of-3 ou Best-of-5
+  return matchIds.length > 3 ? 5 : 3;
+};
+
+/**
+ * Vérifie si une série est de longueur standard (BO3 ou BO5)
+ */
+export const isStandardSeriesLength = (matchIds: string[]): boolean => {
+  return matchIds.length === 3 || matchIds.length === 5;
+};
+
+/**
+ * Vérifie si une série suit le format standard (numéros de jeu consécutifs)
+ */
+export const isStandardSeries = (matchIds: string[]): boolean => {
+  if (!isStandardSeriesLength(matchIds)) return false;
   
-  const baseId = getBaseMatchId(matchId);
+  // Extraire tous les numéros de jeu
+  const gameNumbers = matchIds
+    .map(id => getGameNumberFromId(id))
+    .filter(num => num !== null) as number[];
   
-  try {
-    // Récupérer tous les matchs de la série
-    const { data, error } = await supabase
-      .from('matches')
-      .select('id')
-      .like('id', `${baseId}_%`);
-    
-    if (error) {
-      console.error("Erreur lors de la vérification de la série:", error);
-      return false;
+  // Vérifier si tous les numéros de jeu sont consécutifs
+  return gameNumbers.length === matchIds.length && 
+         gameNumbers.every((num, idx) => num === idx + 1);
+};
+
+/**
+ * Calcule le score de la série à partir des matchs
+ */
+export const calculateSeriesScore = (matches: Match[]): [number, number] => {
+  let blueTeamWins = 0;
+  let redTeamWins = 0;
+  
+  matches.forEach(match => {
+    if (match.result && match.result.winner) {
+      if (match.result.winner === match.teamBlue.id) {
+        blueTeamWins++;
+      } else if (match.result.winner === match.teamRed.id) {
+        redTeamWins++;
+      }
     }
-    
-    // Une série standard a au moins 2 matchs, généralement 3 (BO3) ou 5 (BO5)
-    return data && data.length >= 2 && data.length <= 7;
-  } catch (error) {
-    console.error("Erreur lors de la vérification de la série:", error);
-    return false;
-  }
-};
-
-/**
- * Vérifie si une série a une longueur standard (BO3, BO5)
- */
-export const isStandardSeriesLength = (seriesLength: number): boolean => {
-  return seriesLength === 3 || seriesLength === 5 || seriesLength === 7;
-};
-
-/**
- * Détermine la longueur d'une série (BO3, BO5, etc.) 
- */
-export const determineSeriesLength = async (baseMatchId: string): Promise<number> => {
-  try {
-    const { data, error } = await supabase
-      .from('matches')
-      .select('id')
-      .like('id', `${baseMatchId}_%`);
-    
-    if (error) {
-      console.error("Erreur lors de la détermination de la longueur de la série:", error);
-      return 1;
-    }
-    
-    if (!data || data.length === 0) return 1;
-    
-    const matchCount = data.length;
-    // BO3 = 3 matchs max, BO5 = 5 matchs max
-    if (matchCount <= 3) return 3;
-    if (matchCount <= 5) return 5;
-    return 7; // BO7 ou plus
-  } catch (error) {
-    console.error("Erreur lors de la détermination de la longueur de la série:", error);
-    return 1;
-  }
+  });
+  
+  return [blueTeamWins, redTeamWins];
 };
 
 /**
  * Récupère le score d'une série
  */
-export const getSeriesScore = async (
-  baseMatchId: string, 
-  teamBlueId: string, 
-  teamRedId: string, 
-  returnSeriesLength = false
-): Promise<{blue: number, red: number} | number> => {
+export const getSeriesScore = async (baseMatchId: string): Promise<[number, number]> => {
   try {
     // Récupérer tous les matchs de la série
-    const { data, error } = await supabase
-      .from('matches')
-      .select('*')
-      .like('id', `${baseMatchId}_%`);
-    
-    if (error) {
-      console.error("Erreur lors de la récupération du score de la série:", error);
-      if (returnSeriesLength) return 1;
-      return {blue: 0, red: 0};
-    }
-    
-    if (!data || data.length === 0) {
-      if (returnSeriesLength) return 1;
-      return {blue: 0, red: 0};
-    }
-    
-    if (returnSeriesLength) {
-      // BO3 = 3 matchs max, BO5 = 5 matchs max
-      const matchCount = data.length;
-      if (matchCount <= 3) return 3;
-      if (matchCount <= 5) return 5;
-      return 7; // BO7 ou plus
-    }
-    
-    return calculateSeriesScore(data, teamBlueId, teamRedId);
+    const matches = await fetchSeriesMatches(baseMatchId);
+    return calculateSeriesScore(matches);
   } catch (error) {
-    console.error("Erreur lors de la récupération du score de la série:", error);
-    if (returnSeriesLength) return 1;
-    return {blue: 0, red: 0};
-  }
-};
-
-/**
- * Calcule le score d'une série à partir des données de match
- */
-export const calculateSeriesScore = (
-  matches: any[],
-  teamBlueId?: string,
-  teamRedId?: string
-): {blue: number, red: number} => {
-  const score = {blue: 0, red: 0};
-  
-  if (!matches || matches.length === 0) return score;
-  
-  // Si teamBlueId n'est pas fourni, utiliser le premier match pour le déterminer
-  const firstMatch = matches[0];
-  const actualTeamBlueId = teamBlueId || firstMatch.team_blue_id || firstMatch.team1_id;
-  const actualTeamRedId = teamRedId || firstMatch.team_red_id || firstMatch.team2_id;
-  
-  // Calculer le score
-  for (const match of matches) {
-    if (!match.winner_team_id) continue;
-    
-    if (match.winner_team_id === actualTeamBlueId) {
-      score.blue++;
-    } else if (match.winner_team_id === actualTeamRedId) {
-      score.red++;
-    }
-  }
-  
-  return score;
-};
-
-/**
- * Récupère tous les matchs d'une série
- */
-export const fetchSeriesMatches = async (baseMatchId: string): Promise<any[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('matches')
-      .select('*')
-      .like('id', `${baseMatchId}_%`)
-      .order('id');
-    
-    if (error) {
-      console.error("Erreur lors de la récupération des matchs de la série:", error);
-      return [];
-    }
-    
-    return data || [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des matchs de la série:", error);
-    return [];
+    console.error(`Erreur lors du calcul du score de la série ${baseMatchId}:`, error);
+    return [0, 0];
   }
 };
 
@@ -207,35 +102,96 @@ export const fetchSeriesMatches = async (baseMatchId: string): Promise<any[]> =>
  */
 export const getSeriesScoreUpToGame = async (
   baseMatchId: string,
-  gameNumber: number,
-  teamBlueId: string,
-  teamRedId: string
-): Promise<{blue: number, red: number}> => {
+  gameNumber: number
+): Promise<[number, number]> => {
   try {
-    // Récupérer tous les matchs de la série jusqu'au jeu spécifié
+    // Récupérer tous les matchs de la série
+    let matches = await fetchSeriesMatches(baseMatchId);
+    
+    // Filtrer les matchs jusqu'au jeu spécifié
+    matches = matches.filter(match => {
+      const thisGameNumber = getGameNumberFromId(match.id);
+      return thisGameNumber !== null && thisGameNumber <= gameNumber;
+    });
+    
+    return calculateSeriesScore(matches);
+  } catch (error) {
+    console.error(`Erreur lors du calcul du score de la série ${baseMatchId} jusqu'au jeu ${gameNumber}:`, error);
+    return [0, 0];
+  }
+};
+
+/**
+ * Récupère tous les matchs d'une série
+ */
+export const fetchSeriesMatches = async (baseMatchId: string): Promise<Match[]> => {
+  try {
+    // Comme baseMatchId peut être soit l'ID complet d'un match de la série, soit l'ID de base (sans numéro de jeu)
+    const actualBaseId = getBaseMatchId(baseMatchId);
+    
+    // Construire un pattern pour rechercher tous les matchs de la série
+    const pattern = `${actualBaseId}_%`;
+    
     const { data, error } = await supabase
       .from('matches')
       .select('*')
-      .like('id', `${baseMatchId}_%`);
+      .like('id', pattern)
+      .order('id');
     
     if (error) {
-      console.error("Erreur lors de la récupération du score de la série:", error);
-      return {blue: 0, red: 0};
+      console.error(`Erreur lors de la récupération des matchs de la série ${actualBaseId}:`, error);
+      return [];
     }
     
     if (!data || data.length === 0) {
-      return {blue: 0, red: 0};
+      console.log(`Aucun match trouvé pour la série ${actualBaseId}`);
+      return [];
     }
     
-    // Filtrer les matchs jusqu'au jeu spécifié (mais pas celui-ci)
-    const filteredMatches = data.filter(match => {
-      const currentGameNumber = getGameNumberFromId(match.id);
-      return currentGameNumber < gameNumber;
+    // Convertir les données Supabase en format Match
+    return data.map(match => {
+      return {
+        id: match.gameid || match.id,
+        tournament: match.tournament || '',
+        date: match.date || '',
+        teamBlue: {
+          id: match.team_blue_id || match.team1_id || '',
+          name: match.team_blue_name || match.team1_name || 'Équipe Bleue',
+          region: match.team_blue_region || 'Unknown',
+          logo: '',
+          winRate: 0,
+          blueWinRate: 0,
+          redWinRate: 0,
+          averageGameTime: 0
+        },
+        teamRed: {
+          id: match.team_red_id || match.team2_id || '',
+          name: match.team_red_name || match.team2_name || 'Équipe Rouge',
+          region: match.team_red_region || 'Unknown',
+          logo: '',
+          winRate: 0,
+          blueWinRate: 0,
+          redWinRate: 0,
+          averageGameTime: 0
+        },
+        status: match.status || 'Completed',
+        predictedWinner: match.predicted_winner || '',
+        blueWinOdds: match.blue_win_odds || 0.5,
+        redWinOdds: match.red_win_odds || 0.5,
+        result: {
+          winner: match.winner_team_id || '',
+          score: [match.score_blue || 0, match.score_red || 0],
+          duration: match.duration || match.gamelength?.toString() || '0',
+          mvp: match.mvp || ''
+        },
+        extraStats: {
+          patch: match.patch || '',
+          gameNumber: match.game_number || getGameNumberFromId(match.id || '')
+        }
+      };
     });
-    
-    return calculateSeriesScore(filteredMatches, teamBlueId, teamRedId);
   } catch (error) {
-    console.error("Erreur lors de la récupération du score de la série:", error);
-    return {blue: 0, red: 0};
+    console.error(`Erreur lors de la récupération des matchs de la série ${baseMatchId}:`, error);
+    return [];
   }
 };

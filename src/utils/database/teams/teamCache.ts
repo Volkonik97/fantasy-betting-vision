@@ -1,58 +1,47 @@
 
-/**
- * Système de cache pour les équipes
- * Réduit les appels à la base de données et améliore les performances
- */
-
 import { Team } from "../../models/types";
 
-// Cache des équipes
 let teamsCache: Team[] | null = null;
-let teamCacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 /**
- * Vérifie si le cache des équipes est valide
+ * Vérifie si le cache d'équipes est valide (non null et pas expiré)
  */
 export const isTeamsCacheValid = (): boolean => {
-  if (!teamsCache) return false;
-  
-  const now = Date.now();
-  return now - teamCacheTimestamp < CACHE_DURATION;
-};
-
-/**
- * Définit le cache des équipes
- */
-export const setTeamsCache = (teams: Team[]): void => {
-  teamsCache = [...teams];
-  teamCacheTimestamp = Date.now();
-  console.log(`🧠 Cache des équipes mis à jour avec ${teams.length} équipes`);
+  return (
+    teamsCache !== null &&
+    Date.now() - cacheTimestamp < CACHE_DURATION
+  );
 };
 
 /**
  * Récupère les équipes depuis le cache
  */
 export const getTeamsFromCache = (): Team[] | null => {
-  if (!isTeamsCacheValid()) {
-    return null;
-  }
-  
-  console.log(`🧠 Utilisation du cache d'équipes (${teamsCache?.length || 0} équipes)`);
-  return teamsCache ? [...teamsCache] : null;
+  return teamsCache;
 };
 
 /**
- * Vide le cache des équipes
+ * Récupère le nom d'une équipe à partir de son ID en utilisant le cache
  */
-export const clearTeamsCache = (): void => {
-  teamsCache = null;
-  teamCacheTimestamp = 0;
-  console.log("🧹 Cache des équipes vidé");
+export const getTeamNameFromCache = (teamId: string): string => {
+  if (!teamId || !teamsCache) return "Équipe inconnue";
+  
+  const team = teamsCache.find(t => t.id === teamId);
+  return team ? team.name : "Équipe inconnue";
 };
 
 /**
- * Met à jour une équipe spécifique dans le cache
+ * Met à jour le cache d'équipes
+ */
+export const setTeamsCache = (teams: Team[] | null): void => {
+  teamsCache = teams;
+  cacheTimestamp = Date.now();
+};
+
+/**
+ * Met à jour une équipe dans le cache
  */
 export const updateTeamInCache = (updatedTeam: Team): void => {
   if (!teamsCache) return;
@@ -60,20 +49,13 @@ export const updateTeamInCache = (updatedTeam: Team): void => {
   const index = teamsCache.findIndex(team => team.id === updatedTeam.id);
   if (index !== -1) {
     teamsCache[index] = updatedTeam;
-    teamCacheTimestamp = Date.now();
-    console.log(`🧠 Équipe ${updatedTeam.name} (${updatedTeam.id}) mise à jour dans le cache`);
   }
 };
 
 /**
- * Ajoute une équipe au cache
+ * Vide le cache d'équipes
  */
-export const addTeamToCache = (newTeam: Team): void => {
-  if (!teamsCache) {
-    teamsCache = [newTeam];
-  } else {
-    teamsCache.push(newTeam);
-  }
-  teamCacheTimestamp = Date.now();
-  console.log(`🧠 Équipe ${newTeam.name} (${newTeam.id}) ajoutée au cache`);
+export const clearTeamsCache = (): void => {
+  teamsCache = null;
+  cacheTimestamp = 0;
 };

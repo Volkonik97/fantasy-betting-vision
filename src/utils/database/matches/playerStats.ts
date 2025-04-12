@@ -1,226 +1,333 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { calculateTimelineStats } from '@/utils/statistics/timelineStats';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Cache for player stats to improve performance
-const playerStatsCache = new Map<string, any[]>();
- 
-/**
- * Clear the player stats cache
- */
-export function clearPlayerStatsCache() {
-  playerStatsCache.clear();
-  console.log('Player stats cache cleared');
-}
+// Cache for player stats
+let playerStatsCache: Record<string, any> = {};
+let cacheTimeStamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in ms
 
 /**
- * Récupère les statistiques d'un joueur sur tous ses matchs
- * @param playerId ID du joueur
- * @returns Liste des statistiques du joueur pour tous ses matchs
+ * Clears the player stats cache
  */
-export async function getPlayerMatchStats(playerId: string) {
+export const clearPlayerStatsCache = (): void => {
+  playerStatsCache = {};
+  cacheTimeStamp = 0;
+};
+
+/**
+ * Gets player match statistics for a specific player
+ */
+export const getPlayerMatchStats = async (playerId: string): Promise<any[]> => {
   try {
-    // Check if data exists in cache
-    if (playerStatsCache.has(playerId)) {
-      console.log(`Using cached stats for player ${playerId}`);
-      return playerStatsCache.get(playerId) || [];
-    }
-    
-    const { data, error } = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId);
-    
-    if (error) {
-      console.error("Erreur lors de la récupération des statistiques du joueur:", error);
+    if (!playerId) {
+      console.error("No player ID provided");
       return [];
     }
     
-    // Cache the results
-    if (data) {
-      playerStatsCache.set(playerId, data);
+    const cacheKey = `player_${playerId}`;
+    
+    // Check if stats are in cache and not expired
+    if (
+      playerStatsCache[cacheKey] && 
+      Date.now() - cacheTimeStamp < CACHE_DURATION
+    ) {
+      return playerStatsCache[cacheKey];
     }
     
-    return data || [];
-  } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques du joueur:", error);
-    return [];
-  }
-}
-
-/**
- * Alias for getPlayerMatchStats for backward compatibility
- * @param playerId ID du joueur
- * @returns Liste des statistiques du joueur pour tous ses matchs
- */
-export const getPlayerStats = getPlayerMatchStats;
-
-/**
- * Récupère les statistiques de joueurs pour une équipe spécifique
- * @param teamId ID de l'équipe
- * @returns Liste des statistiques des joueurs de l'équipe
- */
-export async function getTeamPlayersStats(teamId: string) {
-  try {
+    // If no cache, get data from the database
     const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
-      .eq('team_id', teamId);
-    
+      .eq('player_id', playerId)
+      .order('match_id');
+      
     if (error) {
-      console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
+      console.error(`Error fetching stats for player ${playerId}:`, error);
+      toast.error("Failed to load player statistics");
       return [];
     }
     
+    // Update cache
+    playerStatsCache[cacheKey] = data || [];
+    cacheTimeStamp = Date.now();
+    
     return data || [];
   } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques des joueurs de l'équipe:", error);
+    console.error(`Error in getPlayerMatchStats:`, error);
+    toast.error("An error occurred loading player statistics");
     return [];
   }
-}
+};
 
 /**
- * Récupère et calcule les statistiques de timeline pour un joueur spécifique
- * @param playerId ID du joueur
- * @returns Statistiques de timeline agrégées
+ * Gets player match statistics for a specific player in a specific match
  */
-export async function getPlayerTimelineStats(playerId: string) {
+export const getPlayerMatchStatsByPlayerAndMatch = async (
+  playerId: string,
+  matchId: string
+): Promise<any | null> => {
   try {
-    console.log(`Récupération des statistiques timeline pour le joueur ${playerId}`);
-    
-    // Récupérer toutes les statistiques du joueur
-    const playerStats = await getPlayerMatchStats(playerId);
-    
-    if (!playerStats || playerStats.length === 0) {
-      console.log(`Aucune statistique trouvée pour le joueur ${playerId}`);
+    if (!playerId || !matchId) {
+      console.error("Missing player ID or match ID");
       return null;
     }
     
-    console.log(`Trouvé ${playerStats.length} statistiques pour le joueur ${playerId}`);
+    const { data, error } = await supabase
+      .from('player_match_stats')
+      .select('*')
+      .eq('player_id', playerId)
+      .eq('match_id', matchId)
+      .single();
+      
+    if (error) {
+      console.error(`Error fetching stats for player ${playerId} in match ${matchId}:`, error);
+      return null;
+    }
     
-    // Utiliser la fonction existante pour calculer les statistiques timeline
-    return calculateTimelineStats(playerStats);
+    return data;
   } catch (error) {
-    console.error("Erreur lors du calcul des statistiques timeline du joueur:", error);
+    console.error(`Error in getPlayerMatchStatsByPlayerAndMatch:`, error);
     return null;
   }
-}
+};
 
 /**
- * Génère des statistiques de timeline pour une équipe à partir des statistiques de ses joueurs
- * @param teamId ID de l'équipe
- * @returns Statistiques de timeline agrégées
+ * Gets overall player statistics
  */
-export async function getTeamTimelineStats(teamId: string) {
+export const getPlayerStats = async (playerId: string): Promise<any | null> => {
   try {
-    console.log(`Récupération des statistiques timeline pour l'équipe ${teamId}`);
-    
-    // Récupérer toutes les statistiques des joueurs de l'équipe
-    const playerStats = await getTeamPlayersStats(teamId);
-    
-    if (!playerStats || playerStats.length === 0) {
-      console.log(`Aucune statistique de joueur trouvée pour l'équipe ${teamId}`);
+    if (!playerId) {
+      console.error("No player ID provided");
       return null;
     }
     
-    console.log(`Trouvé ${playerStats.length} statistiques de joueurs pour l'équipe ${teamId}`);
+    const cacheKey = `player_stats_${playerId}`;
     
-    // Points de temps pour l'analyse
-    const timePoints = ['10', '15', '20', '25'];
-    const result: any = {};
+    // Check if stats are in cache and not expired
+    if (
+      playerStatsCache[cacheKey] && 
+      Date.now() - cacheTimeStamp < CACHE_DURATION
+    ) {
+      return playerStatsCache[cacheKey];
+    }
     
-    // Pour chaque point de temps, calculer les moyennes
-    timePoints.forEach(time => {
-      // Préparer les clés pour accéder aux données
-      const goldKey = `gold_at_${time}`;
-      const xpKey = `xp_at_${time}`;
-      const csKey = `cs_at_${time}`;
-      const goldDiffKey = `gold_diff_at_${time}`;
-      const csDiffKey = `cs_diff_at_${time}`;
-      const killsKey = `kills_at_${time}`;
-      const deathsKey = `deaths_at_${time}`;
-      const assistsKey = `assists_at_${time}`;
+    // Get player data
+    const { data: playerData, error: playerError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('playerid', playerId)
+      .single();
       
-      // Récupérer les données valides pour chaque métrique
-      const goldValues = playerStats
-        .filter(s => s[goldKey] !== null && s[goldKey] !== undefined)
-        .map(s => s[goldKey]);
+    if (playerError) {
+      console.error(`Error fetching player ${playerId}:`, playerError);
+      toast.error("Failed to load player data");
+      return null;
+    }
+    
+    // Get match stats
+    const matchStats = await getPlayerMatchStats(playerId);
+    
+    // Calculate aggregate statistics
+    const aggregatedStats = calculateAggregateStats(matchStats);
+    
+    // Combine player data with aggregated stats
+    const combinedStats = {
+      ...playerData,
+      ...aggregatedStats,
+      matchCount: matchStats.length
+    };
+    
+    // Update cache
+    playerStatsCache[cacheKey] = combinedStats;
+    cacheTimeStamp = Date.now();
+    
+    return combinedStats;
+  } catch (error) {
+    console.error(`Error in getPlayerStats:`, error);
+    toast.error("An error occurred loading player statistics");
+    return null;
+  }
+};
+
+/**
+ * Calculate aggregate statistics from match stats
+ */
+const calculateAggregateStats = (matchStats: any[]): any => {
+  if (!matchStats || matchStats.length === 0) {
+    return {
+      winRate: 0,
+      kdaRatio: 0,
+      averageKills: 0,
+      averageDeaths: 0,
+      averageAssists: 0
+    };
+  }
+  
+  let wins = 0;
+  let totalKills = 0;
+  let totalDeaths = 0;
+  let totalAssists = 0;
+  
+  matchStats.forEach(stat => {
+    if (stat.is_winner) wins++;
+    totalKills += stat.kills || 0;
+    totalDeaths += stat.deaths || 0;
+    totalAssists += stat.assists || 0;
+  });
+  
+  const matchCount = matchStats.length;
+  const winRate = (wins / matchCount) * 100;
+  const averageKills = totalKills / matchCount;
+  const averageDeaths = totalDeaths / matchCount;
+  const averageAssists = totalAssists / matchCount;
+  
+  // Calculate KDA (avoiding division by zero)
+  const kdaRatio = totalDeaths === 0 
+    ? totalKills + totalAssists 
+    : (totalKills + totalAssists) / totalDeaths;
+  
+  return {
+    winRate,
+    kdaRatio,
+    averageKills,
+    averageDeaths,
+    averageAssists
+  };
+};
+
+/**
+ * Gets player timeline statistics
+ */
+export const getPlayerTimelineStats = async (playerId: string): Promise<any[]> => {
+  try {
+    if (!playerId) {
+      console.error("No player ID provided");
+      return [];
+    }
+    
+    const cacheKey = `player_timeline_${playerId}`;
+    
+    // Check if stats are in cache and not expired
+    if (
+      playerStatsCache[cacheKey] && 
+      Date.now() - cacheTimeStamp < CACHE_DURATION
+    ) {
+      return playerStatsCache[cacheKey];
+    }
+    
+    // Get match stats
+    const matchStats = await getPlayerMatchStats(playerId);
+    
+    // Get match details for each stat
+    const matchDetails = await Promise.all(
+      matchStats.map(async (stat) => {
+        const { data: matchData, error: matchError } = await supabase
+          .from('matches')
+          .select('date')
+          .eq('id', stat.match_id)
+          .single();
+          
+        if (matchError) {
+          console.warn(`Could not fetch date for match ${stat.match_id}:`, matchError);
+          return {
+            ...stat,
+            date: null
+          };
+        }
         
-      const xpValues = playerStats
-        .filter(s => s[xpKey] !== null && s[xpKey] !== undefined)
-        .map(s => s[xpKey]);
-        
-      const csValues = playerStats
-        .filter(s => s[csKey] !== null && s[csKey] !== undefined)
-        .map(s => s[csKey]);
-        
-      const goldDiffValues = playerStats
-        .filter(s => s[goldDiffKey] !== null && s[goldDiffKey] !== undefined)
-        .map(s => s[goldDiffKey]);
-        
-      const csDiffValues = playerStats
-        .filter(s => s[csDiffKey] !== null && s[csDiffKey] !== undefined)
-        .map(s => s[csDiffKey]);
-        
-      const killsValues = playerStats
-        .filter(s => s[killsKey] !== null && s[killsKey] !== undefined)
-        .map(s => s[killsKey]);
-        
-      const deathsValues = playerStats
-        .filter(s => s[deathsKey] !== null && s[deathsKey] !== undefined)
-        .map(s => s[deathsKey]);
-        
-      const assistsValues = playerStats
-        .filter(s => s[assistsKey] !== null && s[assistsKey] !== undefined)
-        .map(s => s[assistsKey]);
+        return {
+          ...stat,
+          date: matchData.date
+        };
+      })
+    );
+    
+    // Sort by date
+    const sortedMatches = matchDetails
+      .filter(match => match.date)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Update cache
+    playerStatsCache[cacheKey] = sortedMatches;
+    cacheTimeStamp = Date.now();
+    
+    return sortedMatches;
+  } catch (error) {
+    console.error(`Error in getPlayerTimelineStats:`, error);
+    toast.error("An error occurred loading player timeline statistics");
+    return [];
+  }
+};
+
+/**
+ * Gets team timeline statistics
+ */
+export const getTeamTimelineStats = async (teamId: string): Promise<any[]> => {
+  try {
+    if (!teamId) {
+      console.error("No team ID provided");
+      return [];
+    }
+    
+    const cacheKey = `team_timeline_${teamId}`;
+    
+    // Check if stats are in cache and not expired
+    if (
+      playerStatsCache[cacheKey] && 
+      Date.now() - cacheTimeStamp < CACHE_DURATION
+    ) {
+      return playerStatsCache[cacheKey];
+    }
+    
+    // Get team matches
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`team1_id.eq.${teamId},team2_id.eq.${teamId},team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`)
+      .order('date');
       
-      // Calculer les moyennes
-      const avgGold = calculateAverage(goldValues);
-      const avgXp = calculateAverage(xpValues);
-      const avgCs = calculateAverage(csValues);
-      const avgGoldDiff = calculateAverage(goldDiffValues);
-      const avgCsDiff = calculateAverage(csDiffValues);
-      const avgKills = calculateAverage(killsValues, 1);
-      const avgDeaths = calculateAverage(deathsValues, 1);
-      const avgAssists = calculateAverage(assistsValues, 1);
+    if (matchesError) {
+      console.error(`Error fetching matches for team ${teamId}:`, matchesError);
+      toast.error("Failed to load team matches");
+      return [];
+    }
+    
+    // Process matches to extract timeline data
+    const timelineData = (matches || []).map(match => {
+      const isTeamBlue = 
+        match.team_blue_id === teamId || 
+        match.team1_id === teamId;
+        
+      const teamScore = isTeamBlue ? match.score_blue : match.score_red;
+      const opponentScore = isTeamBlue ? match.score_red : match.score_blue;
+      const isWin = match.winner_team_id === teamId;
       
-      // Stocker les résultats
-      result[time] = {
-        avgGold: Math.round(avgGold),
-        avgXp: Math.round(avgXp),
-        avgCs: Math.round(avgCs),
-        avgGoldDiff: Math.round(avgGoldDiff),
-        avgCsDiff: Math.round(avgCsDiff),
-        avgKills: Math.round(avgKills * 10) / 10, // Une décimale
-        avgDeaths: Math.round(avgDeaths * 10) / 10, // Une décimale
-        avgAssists: Math.round(avgAssists * 10) / 10 // Une décimale
+      return {
+        match_id: match.id,
+        date: match.date,
+        tournament: match.tournament,
+        patch: match.patch,
+        opponent_id: isTeamBlue 
+          ? (match.team_red_id || match.team2_id) 
+          : (match.team_blue_id || match.team1_id),
+        opponent_name: isTeamBlue 
+          ? (match.team_red_name || match.team2_name) 
+          : (match.team_blue_name || match.team1_name),
+        score: [teamScore, opponentScore],
+        is_win: isWin,
+        side: isTeamBlue ? 'blue' : 'red'
       };
     });
     
-    console.log("Statistiques timeline calculées:", result);
-    return result;
+    // Update cache
+    playerStatsCache[cacheKey] = timelineData;
+    cacheTimeStamp = Date.now();
+    
+    return timelineData;
   } catch (error) {
-    console.error("Erreur lors du calcul des statistiques timeline:", error);
-    return null;
+    console.error(`Error in getTeamTimelineStats:`, error);
+    toast.error("An error occurred loading team timeline statistics");
+    return [];
   }
-}
-
-/**
- * Calcule la moyenne d'un tableau de valeurs
- * @param values Tableau de valeurs
- * @param defaultValue Valeur par défaut si le tableau est vide
- * @returns Moyenne des valeurs
- */
-function calculateAverage(values: any[], defaultValue = 0) {
-  if (!values || values.length === 0) return defaultValue;
-  
-  // Filtrer les valeurs non numériques
-  const numericValues = values.filter(v => !isNaN(Number(v)));
-  
-  if (numericValues.length === 0) return defaultValue;
-  
-  // Calculer la moyenne
-  const sum = numericValues.reduce((acc, val) => acc + Number(val), 0);
-  return sum / numericValues.length;
-}
-
+};

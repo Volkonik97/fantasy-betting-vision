@@ -1,15 +1,21 @@
 
 import { Team, Player, Match, Tournament } from '../models/types';
-import { getTeams, saveTeams } from './teamsService';
-import { getPlayers } from './playersService';
-import { getMatches, getMatchesByTeamId, saveTeamMatchStats } from './matches/matchesService';
+import { getTeams, saveTeams } from './teams/teamsService';
+import { getPlayers, savePlayers } from './playersService';
+import { getMatches } from './matches/getMatches';
 import { getTournaments } from './tournamentsService';
 import { saveMatches } from './matches/saveMatches';
-import { savePlayers } from './playersService';
 import { savePlayerMatchStats } from './matches/savePlayerMatchStats';
+import { saveTeamMatchStats } from './matches/saveTeamStats';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { setLoadedTeams, setLoadedPlayers, setLoadedMatches, setLoadedTournaments } from '../csvTypes';
+import { 
+  setLoadedTeams, 
+  setLoadedPlayers, 
+  setLoadedMatches, 
+  setLoadedTournaments, 
+  resetCache 
+} from '../csv/cache/dataCache';
 
 // Save all data to the database
 export async function saveToDatabase(
@@ -92,90 +98,34 @@ export async function saveToDatabase(
   }
 }
 
-// Clear all data from the database
-export async function clearDatabase(): Promise<boolean> {
+// Update the last database update timestamp
+export async function updateTimestamp(): Promise<boolean> {
   try {
-    // Clear data in order to respect foreign key constraints
-    const tables = [
-      'player_match_stats',
-      'players',
-      'matches',
-      'teams',
-      'data_updates'
-    ];
+    // First check if data_updates table exists
+    const { error: checkError } = await supabase
+      .from('data_updates')
+      .select('id')
+      .limit(1);
     
-    for (const table of tables) {
-      // Fixed: For UUID columns, we need to use a proper condition
-      let deleteQuery;
+    if (checkError && checkError.message.includes('does not exist')) {
+      // Create the table if it doesn't exist
+      const { error: createError } = await supabase.query(`
+        CREATE TABLE IF NOT EXISTS public.data_updates (
+          id SERIAL PRIMARY KEY,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `);
       
-      if (table === 'player_match_stats') {
-        // For player_match_stats, use a different condition since it has UUID id
-        const { error } = await supabase
-          .from(table as "player_match_stats")
-          .delete()
-          .not('id', 'is', null); // Delete all rows where id is not null
-        
-        if (error) {
-          console.error(`Error clearing ${table}:`, error);
-          toast.error(`Erreur lors de la suppression des données de ${table}: ${error.message}`);
-          return false;
-        }
-      } else {
-        // For other tables, delete all rows
-        const { error } = await supabase
-          .from(table as any)
-          .delete()
-          .not('id', 'is', null);
-        
-        if (error) {
-          console.error(`Error clearing ${table}:`, error);
-          toast.error(`Erreur lors de la suppression des données de ${table}: ${error.message}`);
-          return false;
-        }
+      if (createError) {
+        console.error('Error creating data_updates table:', createError);
+        return false;
       }
     }
     
-    // Clear the cache
-    setLoadedTeams(null);
-    setLoadedPlayers(null);
-    setLoadedMatches(null);
-    setLoadedTournaments(null);
-    
-    return true;
-  } catch (error) {
-    console.error('Error clearing database:', error);
-    toast.error('Erreur lors de la suppression des données de la base de données');
-    return false;
-  }
-}
-
-// Check if there's any data in the database
-export async function hasDatabaseData(): Promise<boolean> {
-  try {
-    // Check if any teams exist
-    const { data: teams, error: teamsError } = await supabase
-      .from('teams')
-      .select('id')
-      .limit(1);
-      
-    if (teamsError) {
-      console.error('Error checking for teams:', teamsError);
-      return false;
-    }
-    
-    return teams && teams.length > 0;
-  } catch (error) {
-    console.error('Error checking database data:', error);
-    return false;
-  }
-}
-
-// Update the last data update timestamp
-export async function updateTimestamp(): Promise<boolean> {
-  try {
+    // Insert a new timestamp record
     const { error } = await supabase
       .from('data_updates')
-      .upsert([{ id: 1, updated_at: new Date().toISOString() }]);
+      .insert([{ updated_at: new Date().toISOString() }]);
       
     if (error) {
       console.error('Error updating timestamp:', error);
@@ -211,6 +161,113 @@ export async function getLastDatabaseUpdate(): Promise<string | null> {
   }
 }
 
+// Clear database - improved to handle foreign key constraints properly
+export async function clearDatabase(): Promise<boolean> {
+  try {
+    console.log("Début de la suppression des données...");
+    
+    // First clear player_match_stats as it references both players and matches
+    console.log("Suppression des statistiques de match des joueurs...");
+    const { error: statsError } = await supabase
+      .from('player_match_stats')
+      .delete()
+      .neq('id', 0);
+    
+    if (statsError) {
+      console.error("Erreur lors de la suppression des statistiques:", statsError);
+      toast.error(`Erreur lors de la suppression des statistiques: ${statsError.message}`);
+      return false;
+    }
+    
+    // Clear team_match_stats if it exists
+    console.log("Suppression des statistiques des équipes...");
+    const { error: teamStatsError } = await supabase
+      .from('team_match_stats')
+      .delete()
+      .neq('id', 0);
+    
+    if (teamStatsError && !teamStatsError.message.includes('does not exist')) {
+      console.error("Erreur lors de la suppression des statistiques d'équipe:", teamStatsError);
+      toast.error(`Erreur lors de la suppression des statistiques d'équipe: ${teamStatsError.message}`);
+      return false;
+    }
+    
+    // Then clear matches (depends on team_blue_id and team_red_id)
+    console.log("Suppression des matchs...");
+    const { error: matchesError } = await supabase
+      .from('matches')
+      .delete()
+      .neq('id', '');
+    
+    if (matchesError) {
+      console.error("Erreur lors de la suppression des matchs:", matchesError);
+      toast.error(`Erreur lors de la suppression des matchs: ${matchesError.message}`);
+      return false;
+    }
+    
+    // Then clear players as they reference teams
+    console.log("Suppression des joueurs...");
+    const { error: playersError } = await supabase
+      .from('players')
+      .delete()
+      .neq('playerid', '');
+    
+    if (playersError) {
+      console.error("Erreur lors de la suppression des joueurs:", playersError);
+      toast.error(`Erreur lors de la suppression des joueurs: ${playersError.message}`);
+      return false;
+    }
+    
+    // Finally clear teams
+    console.log("Suppression des équipes...");
+    const { error: teamsError } = await supabase
+      .from('teams')
+      .delete()
+      .neq('teamid', '');
+    
+    if (teamsError) {
+      console.error("Erreur lors de la suppression des équipes:", teamsError);
+      toast.error(`Erreur lors de la suppression des équipes: ${teamsError.message}`);
+      return false;
+    }
+    
+    // Update the last update timestamp
+    await updateTimestamp();
+    
+    // Reset the cache
+    resetCache();
+    
+    console.log("Suppression des données terminée avec succès");
+    toast.success("Base de données vidée avec succès");
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la suppression des données:", error);
+    toast.error(`Erreur lors de la suppression des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    return false;
+  }
+}
+
+// Check if there's any data in the database
+export async function hasDatabaseData(): Promise<boolean> {
+  try {
+    // Check if any teams exist
+    const { data: teams, error: teamsError } = await supabase
+      .from('teams')
+      .select('teamid')
+      .limit(1);
+      
+    if (teamsError) {
+      console.error('Error checking for teams:', teamsError);
+      return false;
+    }
+    
+    return teams && teams.length > 0;
+  } catch (error) {
+    console.error('Error checking database data:', error);
+    return false;
+  }
+}
+
 // Preload all data from the database
 export async function preloadData(): Promise<void> {
   try {
@@ -233,6 +290,6 @@ export {
   getTeams,
   getPlayers,
   getMatches,
-  getMatchesByTeamId,
-  getTournaments
+  getTournaments,
+  resetCache
 };

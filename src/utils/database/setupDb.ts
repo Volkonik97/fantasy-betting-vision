@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { createRequiredFunctions } from "./sqlFunctions";
 
 /**
  * Initialise les fonctions RPC nécessaires pour l'application
@@ -7,17 +8,37 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const setupDbFunctions = async (): Promise<void> => {
   try {
-    // Créer la fonction check_table_exists
-    await supabase.rpc('create_check_table_exists_function');
+    // Vérifier si la table data_updates existe, sinon la créer
+    const { data: tableExists, error: checkError } = await supabase
+      .from('data_updates')
+      .select('count(*)')
+      .limit(1)
+      .single();
     
-    // Créer la fonction create_data_updates_table
-    await supabase.rpc('create_data_updates_table_function');
+    // Si on a une erreur c'est que la table n'existe probablement pas
+    if (checkError) {
+      console.log("La table data_updates n'existe pas encore, création en cours...");
+      
+      // Créer la table data_updates
+      const { error: createTableError } = await supabase.rpc('create_function', {
+        function_name: 'create_data_updates_function',
+        function_body: `
+          CREATE TABLE IF NOT EXISTS public.data_updates (
+            id SERIAL PRIMARY KEY,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `
+      });
+      
+      if (createTableError) {
+        console.error("Erreur lors de la création de la table data_updates:", createTableError);
+      } else {
+        console.log("Table data_updates créée avec succès");
+      }
+    }
     
-    // Créer la fonction get_last_update
-    await supabase.rpc('create_get_last_update_function');
-    
-    // Créer la fonction update_last_update
-    await supabase.rpc('create_update_last_update_function');
+    // Initialiser les fonctions SQL
+    await createRequiredFunctions();
     
     console.log("Fonctions RPC initialisées avec succès");
   } catch (error) {

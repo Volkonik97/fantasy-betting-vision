@@ -7,18 +7,26 @@ import { toast } from "sonner";
 // Créer la table data_updates si elle n'existe pas
 const createDataUpdatesTableIfNeeded = async (): Promise<boolean> => {
   try {
-    // Vérifier si la table existe
+    // Vérifier si la table existe en essayant de faire une requête
     const { data, error } = await supabase
-      .rpc('check_table_exists', { table_name: 'data_updates' });
+      .from('data_updates')
+      .select('count(*)')
+      .limit(1);
     
+    // Si on a une erreur c'est que la table n'existe probablement pas
     if (error) {
-      console.error("Erreur lors de la vérification de la table data_updates:", error);
-      return false;
-    }
-    
-    // Si la table n'existe pas, la créer
-    if (!data) {
-      const { error: createError } = await supabase.rpc('create_data_updates_table');
+      console.log("La table data_updates n'existe pas encore, création en cours...");
+      
+      // Créer la table data_updates manuellement
+      const { error: createError } = await supabase.rpc('create_function', {
+        function_name: 'create_data_updates_table',
+        function_body: `
+          CREATE TABLE IF NOT EXISTS public.data_updates (
+            id SERIAL PRIMARY KEY,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `
+      });
       
       if (createError) {
         console.error("Erreur lors de la création de la table data_updates:", createError);
@@ -61,15 +69,20 @@ export const getLastDatabaseUpdate = async (): Promise<string | null> => {
   try {
     await createDataUpdatesTableIfNeeded();
     
+    // Query the table directly instead of using RPC
     const { data, error } = await supabase
-      .rpc('get_last_update');
+      .from('data_updates')
+      .select('updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
     
     if (error || !data) {
       console.error("Erreur lors de la récupération de la date de mise à jour:", error);
       return null;
     }
     
-    return data;
+    return data.updated_at;
   } catch (error) {
     console.error("Erreur lors de la récupération de la date de mise à jour:", error);
     return null;
@@ -81,8 +94,10 @@ export const updateLastUpdate = async (): Promise<boolean> => {
   try {
     await createDataUpdatesTableIfNeeded();
     
+    // Insert directly instead of using RPC
     const { error } = await supabase
-      .rpc('update_last_update', { update_time: new Date().toISOString() });
+      .from('data_updates')
+      .insert([{ updated_at: new Date().toISOString() }]);
     
     if (error) {
       console.error("Erreur lors de la mise à jour de la date:", error);
@@ -114,12 +129,25 @@ export const clearDatabase = async (): Promise<boolean> => {
       return false;
     }
     
+    // Clear team_match_stats if it exists
+    console.log("Suppression des statistiques des équipes...");
+    const { error: teamStatsError } = await supabase
+      .from('team_match_stats')
+      .delete()
+      .neq('id', 0);
+    
+    if (teamStatsError && !teamStatsError.message.includes('does not exist')) {
+      console.error("Erreur lors de la suppression des statistiques d'équipe:", teamStatsError);
+      toast.error(`Erreur lors de la suppression des statistiques d'équipe: ${teamStatsError.message}`);
+      return false;
+    }
+    
     // Then clear matches (depends on team_blue_id and team_red_id)
     console.log("Suppression des matchs...");
     const { error: matchesError } = await supabase
       .from('matches')
       .delete()
-      .neq('gameid', '');
+      .neq('id', '');
     
     if (matchesError) {
       console.error("Erreur lors de la suppression des matchs:", matchesError);
@@ -153,8 +181,10 @@ export const clearDatabase = async (): Promise<boolean> => {
       return false;
     }
     
-    // Update the last update timestamp
-    await updateLastUpdate();
+    // Update the last update timestamp by inserting a new record
+    await supabase
+      .from('data_updates')
+      .insert([{ updated_at: new Date().toISOString() }]);
     
     // Reset the cache
     resetCache();

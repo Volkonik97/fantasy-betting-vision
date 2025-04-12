@@ -15,15 +15,15 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
 
     console.log(`🔍 Récupération des matchs pour l'équipe ${teamId}`);
 
-    // Première tentative: Utiliser la vue match_summary_view
+    // Utiliser la table matches directement avec condition "OU" pour chercher dans les colonnes team1_id et team2_id
     let { data, error } = await supabase
-      .from("match_summary_view")
+      .from("matches")
       .select("*")
-      .or(`team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`);
+      .or(`team1_id.eq.${teamId},team2_id.eq.${teamId}`);
 
-    // Si la vue n'existe pas, essayer directement avec la table matches
+    // Si cette approche échoue, essayer avec d'autres noms de colonnes possibles
     if (error) {
-      console.log("🔄 Vue match_summary_view non trouvée, tentative avec la table matches...");
+      console.log("🔄 Premier format de colonne non trouvé, tentative avec un autre format...");
       
       // Essai avec les colonnes team_blue_id/team_red_id
       const { data: matchesData, error: matchesError } = await supabase
@@ -32,24 +32,13 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
         .or(`team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`);
       
       if (matchesError) {
-        // Essai avec d'autres noms de colonnes possibles
-        console.log("🔄 Tentative avec des noms de colonnes alternatifs...");
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from("matches")
-          .select("*")
-          .or(`team1_id.eq.${teamId},team2_id.eq.${teamId}`);
-          
-        if (fallbackError) {
-          console.error("❌ Toutes les tentatives de récupération des matchs ont échoué:", 
-            { viewError: error, matchesError, fallbackError });
-          toast.error("Erreur lors du chargement des matchs de l'équipe");
-          return [];
-        }
-        
-        data = fallbackData;
-      } else {
-        data = matchesData;
+        console.error("❌ Toutes les tentatives de récupération des matchs ont échoué:", 
+          { firstError: error, secondError: matchesError });
+        toast.error("Erreur lors du chargement des matchs de l'équipe");
+        return [];
       }
+      
+      data = matchesData;
     }
 
     if (!data || data.length === 0) {
@@ -62,7 +51,7 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     // Récupérer les infos détaillées des équipes pour chaque match
     const matchesWithTeamDetails = await Promise.all(
       data.map(async (match) => {
-        // Identifier les IDs des équipes bleue et rouge
+        // Identifier les IDs des équipes bleue et rouge (en tenant compte des différentes structures possibles)
         const blueTeamId = match.team_blue_id || match.team1_id;
         const redTeamId = match.team_red_id || match.team2_id;
         
@@ -70,24 +59,24 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
         const teamBlueResponse = await supabase
           .from("teams")
           .select("*")
-          .eq("id", blueTeamId)
+          .eq("teamid", blueTeamId)
           .single();
           
         const teamRedResponse = await supabase
           .from("teams")
           .select("*")
-          .eq("id", redTeamId)
+          .eq("teamid", redTeamId)
           .single();
 
         // Convertir en format de match attendu par l'application
         return {
           id: match.id || match.gameid,
-          tournament: match.tournament,
-          date: match.date,
+          tournament: match.tournament || 'Unknown',
+          date: match.date || new Date().toISOString(),
           teamBlue: {
             id: blueTeamId,
-            name: teamBlueResponse.data?.name || teamBlueResponse.data?.teamname || match.team1_name || "Équipe Bleue",
-            region: teamBlueResponse.data?.region || "",
+            name: teamBlueResponse.data?.teamname || match.team1_name || "Équipe Bleue",
+            region: teamBlueResponse.data?.region || "Unknown",
             logo: teamBlueResponse.data?.logo || "",
             winRate: teamBlueResponse.data?.winrate || 0,
             blueWinRate: teamBlueResponse.data?.winrate_blue || 0,
@@ -96,8 +85,8 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
           },
           teamRed: {
             id: redTeamId,
-            name: teamRedResponse.data?.name || teamRedResponse.data?.teamname || match.team2_name || "Équipe Rouge",
-            region: teamRedResponse.data?.region || "",
+            name: teamRedResponse.data?.teamname || match.team2_name || "Équipe Rouge",
+            region: teamRedResponse.data?.region || "Unknown",
             logo: teamRedResponse.data?.logo || "",
             winRate: teamRedResponse.data?.winrate || 0,
             blueWinRate: teamRedResponse.data?.winrate_blue || 0,
@@ -112,30 +101,26 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
             winner: match.winner_team_id,
             score: [match.score_blue || 0, match.score_red || 0],
             duration: match.duration || match.gamelength?.toString() || "",
-            mvp: match.mvp || "",
-            firstBlood: match.first_blood || match.firstblood_team_id,
-            firstDragon: match.first_dragon || match.firstdragon_team_id,
-            firstBaron: match.first_baron || match.firstbaron_team_id,
-            firstHerald: match.first_herald || match.firstherald_team_id,
-            firstTower: match.first_tower || match.firsttower_team_id
+            mvp: match.mvp || ""
           },
           extraStats: {
-            patch: match.patch,
-            year: match.year,
-            split: match.split,
-            playoffs: match.playoffs || false,
-            team_kpm: match.team_kpm,
-            ckpm: match.ckpm,
-            team_kills: match.team_kills,
-            team_deaths: match.team_deaths,
-            dragons: match.dragons,
-            heralds: match.heralds,
-            barons: match.barons,
-            firstBlood: match.first_blood || match.firstblood_team_id,
-            firstDragon: match.first_dragon || match.firstdragon_team_id,
-            firstBaron: match.first_baron || match.firstbaron_team_id
+            patch: match.patch || "",
+            year: match.year || null,
+            split: match.split || "",
+            playoffs: !!match.playoffs,
+            team_kpm: match.team_kpm || 0,
+            ckpm: match.ckpm || 0,
+            team_kills: match.team_kills || 0,
+            team_deaths: match.team_deaths || 0,
+            dragons: match.dragons || 0,
+            heralds: match.heralds || 0,
+            barons: match.barons || 0,
+            firstBlood: match.first_blood || match.firstblood_team_id || null,
+            firstDragon: match.first_dragon || match.firstdragon_team_id || null,
+            firstBaron: match.first_baron || match.firstbaron_team_id || null,
+            firstTower: match.first_tower || match.firsttower_team_id || null
           }
-        };
+        } as Match;
       })
     );
 

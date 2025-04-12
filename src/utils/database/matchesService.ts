@@ -1,7 +1,7 @@
 
 // Fichier de service central pour les matchs
 
-// Réexporter les fonctions depuis le dossier matches
+// Exporter les fonctions depuis les différents fichiers de service
 export { getMatches, clearMatchCache } from './matches/getMatches';
 export { getMatchesByTeamId } from './matches/getMatchesByTeamId';
 export { getMatchById } from './matches/getMatchById';
@@ -13,7 +13,7 @@ export {
   getPlayerTimelineStats,
   clearPlayerStatsCache,
   getPlayerMatchStatsByPlayerAndMatch
-} from './matches/getPlayerMatchStats';
+} from './matches/playerStats';
 
 // Exporter les fonctions liées aux séries
 export {
