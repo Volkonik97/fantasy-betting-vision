@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from "react";
 import { Team } from "@/utils/models/types";
-import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
+// Update import for getTeams and clearTeamsCache
+import { getTeams, clearTeamsCache } from "@/utils/database/teams/teamsService";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";

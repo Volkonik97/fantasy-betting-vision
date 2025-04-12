@@ -1,4 +1,3 @@
-
 import { Team, Player, Match, Tournament } from '../models/types';
 import { getTeams, saveTeams } from './teams/teamsService';
 import { getPlayers, savePlayers } from './playersService';
@@ -109,12 +108,7 @@ export async function updateTimestamp(): Promise<boolean> {
     
     if (checkError && checkError.message.includes('does not exist')) {
       // Create the table if it doesn't exist
-      const { error: createError } = await supabase.query(`
-        CREATE TABLE IF NOT EXISTS public.data_updates (
-          id SERIAL PRIMARY KEY,
-          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-        );
-      `);
+      const { error: createError } = await supabase.rpc('create_data_updates_table');
       
       if (createError) {
         console.error('Error creating data_updates table:', createError);
@@ -122,10 +116,10 @@ export async function updateTimestamp(): Promise<boolean> {
       }
     }
     
-    // Insert a new timestamp record
-    const { error } = await supabase
-      .from('data_updates')
-      .insert([{ updated_at: new Date().toISOString() }]);
+    // Insert a new timestamp record using the update_last_update function
+    const { error } = await supabase.rpc('update_last_update', { 
+      timestamp: new Date().toISOString() 
+    });
       
     if (error) {
       console.error('Error updating timestamp:', error);
@@ -142,19 +136,15 @@ export async function updateTimestamp(): Promise<boolean> {
 // Get the last database update timestamp
 export async function getLastDatabaseUpdate(): Promise<string | null> {
   try {
-    const { data, error } = await supabase
-      .from('data_updates')
-      .select('updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Use the get_last_update RPC function
+    const { data, error } = await supabase.rpc('get_last_update');
       
     if (error || !data) {
       console.error('Error getting last update timestamp:', error);
       return null;
     }
     
-    return data.updated_at;
+    return data;
   } catch (error) {
     console.error('Error getting last update timestamp:', error);
     return null;

@@ -1,15 +1,28 @@
 
-// Export team-related functionality from a central index file
-export { getTeams } from './getTeams';
-export { getTeamById } from './getTeamById';
-export { saveTeams } from './saveTeams';
-export { clearTeamsCache } from './teamCache';
+// Re-export functions from the team-related files
+import { getTeams } from './getTeams';
+import { getTeamById } from './getTeamById';
+import { saveTeams } from './saveTeams';
+import { 
+  getTeamNameFromCache, 
+  getTeamsFromCache, 
+  isTeamsCacheValid, 
+  setTeamsCache, 
+  updateTeamInCache, 
+  clearTeamsCache 
+} from './teamCache';
 
-// Export image-related functionality 
 export {
-  verifyImageExists,
-  clearInvalidImageReference, 
-  clearAllPlayerImageReferences,
-  refreshImageReferences,
-  checkBucketRlsPermission
-} from './images';
+  // Team data functions
+  getTeams,
+  getTeamById,
+  saveTeams,
+  
+  // Team cache functions
+  getTeamNameFromCache,
+  getTeamsFromCache,
+  isTeamsCacheValid,
+  setTeamsCache,
+  updateTeamInCache,
+  clearTeamsCache
+};

@@ -1,203 +1,106 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { chunk } from '../dataConverter';
-import { resetCache } from '../csv/cache/dataCache';
-import { toast } from "sonner";
+import { supabase } from '@/integrations/supabase/client';
 
-// Créer la table data_updates si elle n'existe pas
-const createDataUpdatesTableIfNeeded = async (): Promise<boolean> => {
+/**
+ * Checks if a table exists in the database
+ */
+export async function checkTableExists(tableName: string): Promise<boolean> {
   try {
-    // Vérifier si la table existe en essayant de faire une requête
-    const { data, error } = await supabase
-      .from('data_updates')
-      .select('count(*)')
-      .limit(1);
+    // Use a direct SQL query to check if the table exists
+    const { data, error } = await supabase.rpc('check_table_exists', { 
+      table_name: tableName 
+    });
     
-    // Si on a une erreur c'est que la table n'existe probablement pas
     if (error) {
-      console.log("La table data_updates n'existe pas encore, création en cours...");
-      
-      // Créer la table data_updates manuellement
-      const { error: createError } = await supabase.rpc('create_function', {
-        function_name: 'create_data_updates_table',
-        function_body: `
-          CREATE TABLE IF NOT EXISTS public.data_updates (
-            id SERIAL PRIMARY KEY,
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-          );
-        `
-      });
-      
-      if (createError) {
-        console.error("Erreur lors de la création de la table data_updates:", createError);
-        return false;
-      }
-      
-      console.log("Table data_updates créée avec succès");
+      console.error('Error checking if table exists:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Error checking if table exists:', error);
+    return false;
+  }
+}
+
+/**
+ * Creates the data_updates table if it doesn't exist
+ */
+export async function createDataUpdatesTable(): Promise<boolean> {
+  try {
+    const { error } = await supabase.rpc('create_data_updates_table');
+    
+    if (error) {
+      console.error('Error creating data_updates table:', error);
+      return false;
     }
     
     return true;
   } catch (error) {
-    console.error("Erreur lors de la vérification/création de la table data_updates:", error);
+    console.error('Error creating data_updates table:', error);
     return false;
   }
-};
+}
 
-// Database-related functions
-
-// Check if database has data
-export const hasDatabaseData = async (): Promise<boolean> => {
+/**
+ * Gets the last database update timestamp
+ */
+export async function getLastUpdate(): Promise<string | null> {
   try {
-    const { data, error } = await supabase
-      .from('teams')
-      .select('count');
+    const { data, error } = await supabase.rpc('get_last_update');
     
     if (error) {
-      console.error("Erreur lors de la vérification des données:", error);
-      return false;
-    }
-    
-    return data && data.length > 0 && data[0].count > 0;
-  } catch (error) {
-    console.error("Erreur lors de la vérification des données:", error);
-    return false;
-  }
-};
-
-// Get the last database update timestamp
-export const getLastDatabaseUpdate = async (): Promise<string | null> => {
-  try {
-    await createDataUpdatesTableIfNeeded();
-    
-    // Query the table directly instead of using RPC
-    const { data, error } = await supabase
-      .from('data_updates')
-      .select('updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
-    
-    if (error || !data) {
-      console.error("Erreur lors de la récupération de la date de mise à jour:", error);
+      console.error('Error getting last update:', error);
       return null;
     }
     
-    return data.updated_at;
+    return data;
   } catch (error) {
-    console.error("Erreur lors de la récupération de la date de mise à jour:", error);
+    console.error('Error getting last update:', error);
     return null;
   }
-};
+}
 
-// Update the last database update timestamp
-export const updateLastUpdate = async (): Promise<boolean> => {
+/**
+ * Updates the last database update timestamp
+ */
+export async function updateLastUpdate(timestamp: string = new Date().toISOString()): Promise<string | null> {
   try {
-    await createDataUpdatesTableIfNeeded();
-    
-    // Insert directly instead of using RPC
-    const { error } = await supabase
-      .from('data_updates')
-      .insert([{ updated_at: new Date().toISOString() }]);
+    const { data, error } = await supabase.rpc('update_last_update', { 
+      timestamp: timestamp 
+    });
     
     if (error) {
-      console.error("Erreur lors de la mise à jour de la date:", error);
-      return false;
+      console.error('Error updating last update:', error);
+      return null;
     }
     
-    return true;
+    return data;
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la date:", error);
-    return false;
+    console.error('Error updating last update:', error);
+    return null;
   }
-};
+}
 
-// Clear database - improved to handle foreign key constraints properly
-export const clearDatabase = async (): Promise<boolean> => {
+/**
+ * Safely executes a query using a direct RPC function
+ * (This is an alternative to working with data_updates table directly)
+ */
+export async function executeSafeDataUpdate(timestamp: string = new Date().toISOString()): Promise<boolean> {
   try {
-    console.log("Début de la suppression des données...");
+    // First ensure the table exists
+    const tableExists = await checkTableExists('data_updates');
     
-    // First clear player_match_stats as it references both players and matches
-    console.log("Suppression des statistiques de match des joueurs...");
-    const { error: statsError } = await supabase
-      .from('player_match_stats')
-      .delete()
-      .neq('id', 0);
-    
-    if (statsError) {
-      console.error("Erreur lors de la suppression des statistiques:", statsError);
-      toast.error(`Erreur lors de la suppression des statistiques: ${statsError.message}`);
-      return false;
+    if (!tableExists) {
+      await createDataUpdatesTable();
     }
     
-    // Clear team_match_stats if it exists
-    console.log("Suppression des statistiques des équipes...");
-    const { error: teamStatsError } = await supabase
-      .from('team_match_stats')
-      .delete()
-      .neq('id', 0);
+    // Update the timestamp
+    const result = await updateLastUpdate(timestamp);
     
-    if (teamStatsError && !teamStatsError.message.includes('does not exist')) {
-      console.error("Erreur lors de la suppression des statistiques d'équipe:", teamStatsError);
-      toast.error(`Erreur lors de la suppression des statistiques d'équipe: ${teamStatsError.message}`);
-      return false;
-    }
-    
-    // Then clear matches (depends on team_blue_id and team_red_id)
-    console.log("Suppression des matchs...");
-    const { error: matchesError } = await supabase
-      .from('matches')
-      .delete()
-      .neq('id', '');
-    
-    if (matchesError) {
-      console.error("Erreur lors de la suppression des matchs:", matchesError);
-      toast.error(`Erreur lors de la suppression des matchs: ${matchesError.message}`);
-      return false;
-    }
-    
-    // Then clear players as they reference teams
-    console.log("Suppression des joueurs...");
-    const { error: playersError } = await supabase
-      .from('players')
-      .delete()
-      .neq('playerid', '');
-    
-    if (playersError) {
-      console.error("Erreur lors de la suppression des joueurs:", playersError);
-      toast.error(`Erreur lors de la suppression des joueurs: ${playersError.message}`);
-      return false;
-    }
-    
-    // Finally clear teams
-    console.log("Suppression des équipes...");
-    const { error: teamsError } = await supabase
-      .from('teams')
-      .delete()
-      .neq('teamid', '');
-    
-    if (teamsError) {
-      console.error("Erreur lors de la suppression des équipes:", teamsError);
-      toast.error(`Erreur lors de la suppression des équipes: ${teamsError.message}`);
-      return false;
-    }
-    
-    // Update the last update timestamp by inserting a new record
-    await supabase
-      .from('data_updates')
-      .insert([{ updated_at: new Date().toISOString() }]);
-    
-    // Reset the cache
-    resetCache();
-    
-    console.log("Suppression des données terminée avec succès");
-    toast.success("Base de données vidée avec succès");
-    return true;
+    return !!result;
   } catch (error) {
-    console.error("Erreur lors de la suppression des données:", error);
-    toast.error(`Erreur lors de la suppression des données: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+    console.error('Error executing safe data update:', error);
     return false;
   }
-};
-
-// Export resetCache to make it available to other modules
-export { resetCache };
+}
