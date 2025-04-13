@@ -13,14 +13,13 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   }
   
   try {
-    // Execute update directly without destructuring
-    const updateOperation = await supabase
+    const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
     
-    if (updateOperation.error) {
-      console.error("Error clearing image reference:", updateOperation.error);
+    if (response.error) {
+      console.error("Error clearing image reference:", response.error);
       return false;
     }
     
@@ -38,26 +37,26 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const countOperation = await supabase
+    const countResponse = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    if (countOperation.error) {
-      console.error("Error counting player images:", countOperation.error);
+    if (countResponse.error) {
+      console.error("Error counting player images:", countResponse.error);
       return { success: false, clearedCount: 0 };
     }
 
-    const beforeCount = countOperation.count || 0;
+    const beforeCount = countResponse.count || 0;
 
     // Update all players to set image to null
-    const updateOperation = await supabase
+    const updateResponse = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
     
-    if (updateOperation.error) {
-      console.error("Error clearing all image references:", updateOperation.error);
+    if (updateResponse.error) {
+      console.error("Error clearing all image references:", updateResponse.error);
       return { success: false, clearedCount: 0 };
     }
     
