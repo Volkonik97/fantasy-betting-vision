@@ -18,10 +18,10 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
     let response: { error: any };
     
     try {
-      response = await supabase
+      response = await (supabase
         .from('players')
         .update({ image: null })
-        .eq('id', playerId) as { error: any };
+        .eq('id', playerId) as unknown as { error: any });      
     } catch (e) {
       console.error("Error executing update query:", e);
       return false;

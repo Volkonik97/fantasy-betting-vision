@@ -26,11 +26,12 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     let response: { data: any; error: any };
     
     try {
-      response = await supabase
+      response = await (supabase
         .from('matches')
         .select('*')
         .eq('id', matchId)
-        .maybeSingle() as { data: any; error: any };
+        .maybeSingle() as unknown as { data: any; error: any });
+      ;
     } catch (e) {
       console.error("Error executing ID query:", e);
       return null;
