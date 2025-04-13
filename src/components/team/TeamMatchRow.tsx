@@ -2,9 +2,10 @@
 import React from "react";
 import { Match, Team } from "@/utils/models/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TeamMatchRowProps {
   match: Match;
@@ -33,34 +34,23 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     ? match.predictedWinner === match.result.winner 
     : null;
   
-  // S'assurer que la date est correctement gérée
-  let matchDate: Date = new Date();
-  let formattedDate: string = "Date invalide";
+  // Format the date properly
+  let formattedDate = "Date invalide";
   
   try {
-    // Essayer de parser la date dans différents formats possibles
-    if (typeof match.date === 'string') {
-      // Utiliser parseISO qui est plus robuste pour les chaînes de date ISO
-      matchDate = parseISO(match.date);
+    if (match.date) {
+      // Ensure we're working with a string for parseISO
+      const dateString = typeof match.date === 'string' ? match.date : String(match.date);
+      const parsedDate = parseISO(dateString);
       
-      // Vérifier si la date est valide
-      if (isNaN(matchDate.getTime())) {
-        console.warn(`Date invalide pour le match ${match.id}: ${match.date}`);
-        formattedDate = "Date invalide";
+      if (isValid(parsedDate)) {
+        formattedDate = format(parsedDate, "dd/MM/yyyy", { locale: fr });
       } else {
-        formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
+        console.warn(`Format de date invalide pour le match ${match.id}: ${match.date}`);
       }
-    } else if (match.date && typeof match.date === 'object' && 'getTime' in match.date) {
-      // Vérifier si l'objet a une méthode getTime de manière sûre pour TypeScript
-      matchDate = match.date as Date;
-      formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
-    } else {
-      console.warn(`Format de date non reconnu pour le match ${match.id}: ${match.date}`);
-      formattedDate = "Date invalide";
     }
   } catch (error) {
     console.error(`Erreur lors du formatage de la date pour le match ${match.id}:`, error);
-    formattedDate = "Date invalide";
   }
   
   // Charger le logo de l'adversaire
@@ -89,7 +79,7 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
       <td className="px-4 py-3">
         {formattedDate}
       </td>
-      <td className="px-4 py-3">{match.tournament}</td>
+      <td className="px-4 py-3">{match.tournament || "N/A"}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           <Avatar className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex items-center justify-center">

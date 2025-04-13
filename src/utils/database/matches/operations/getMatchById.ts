@@ -22,50 +22,50 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    const idResponse = await supabase
+    const { data: idData, error: idError } = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
     
     // Handle by ID response
-    if (idResponse.error) {
-      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idResponse.error);
+    if (idError) {
+      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      const gameIdResponse = await supabase
+      const { data: gameIdData, error: gameIdError } = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .maybeSingle();
       
       // Handle gameid response
-      if (gameIdResponse.error) {
+      if (gameIdError) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError: idResponse.error, gameidError: gameIdResponse.error });
+          { idError, gameidError: gameIdError });
         toast.error("Match not found");
         return null;
       }
       
       // Check if we have data
-      if (!gameIdResponse.data) {
+      if (!gameIdData) {
         return null;
       }
       
-      // Type assertion after null check to avoid deep inference
-      const matchData = gameIdResponse.data as unknown as RawDatabaseMatch;
+      // Use type casting to avoid deep type inference
+      const matchData = gameIdData as unknown as RawDatabaseMatch;
       return adaptMatchFromDatabase(matchData);
     }
     
     // Check if we have data from ID query
-    if (!idResponse.data) {
+    if (!idData) {
       console.error(`No data found for match ${matchId}`);
       toast.error("Match not found");
       return null;
     }
     
-    // Type assertion after null check to avoid deep inference
-    const matchData = idResponse.data as unknown as RawDatabaseMatch;
+    // Use type casting to avoid deep type inference
+    const matchData = idData as unknown as RawDatabaseMatch;
     return adaptMatchFromDatabase(matchData);
     
   } catch (error) {
