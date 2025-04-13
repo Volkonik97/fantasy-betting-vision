@@ -10,6 +10,11 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
   if (!imageUrl) return false;
   
   try {
+    // Pour les URLs internes à l'application (lovable-uploads)
+    if (imageUrl.includes('/lovable-uploads/')) {
+      return true; // Ces images sont dans le dossier public
+    }
+    
     // Pour les URLs externes (pas Supabase storage), retourner true
     if (!imageUrl.includes('supabase.co/storage')) {
       return true;

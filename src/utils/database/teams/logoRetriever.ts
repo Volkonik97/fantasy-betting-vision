@@ -53,6 +53,12 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       return "/lovable-uploads/d4a83519-9297-4ffc-890c-666b32b48c55.png";
     }
     
+    // Gestion améliorée pour T1/SKT
+    if (teamId.toLowerCase().includes("t1") || teamId.toLowerCase().includes("skt")) {
+      console.log("T1/SKT détecté - utilisation du logo spécifique");
+      return "/lovable-uploads/072fbcd9-2c2a-4db9-b9d1-771a0b61f798.png";
+    }
+    
     // D'abord, essayer d'obtenir le fichier directement en utilisant l'ID d'équipe et les extensions courantes
     const formats = ['png', 'jpg', 'jpeg', 'svg', 'webp'];
     
@@ -94,6 +100,28 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       return null;
     }
     
+    // Recherche par surnoms
+    const teamName = Object.entries(TEAM_NICKNAME_MAP).find(([nickname, _]) => 
+      teamId.toLowerCase().includes(nickname.toLowerCase())
+    )?.[1];
+    
+    if (teamName) {
+      console.log(`Recherche avec surnom pour ${teamId} -> ${teamName}`);
+      // Chercher un fichier qui correspond au nom complet
+      const logoFileByName = files.find(file => 
+        file.name.toLowerCase().includes(teamName.toLowerCase())
+      );
+      
+      if (logoFileByName) {
+        console.log(`Fichier logo trouvé par surnom pour l'équipe ${teamId}: ${logoFileByName.name}`);
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(logoFileByName.name);
+        
+        return publicUrl;
+      }
+    }
+    
     // Chercher n'importe quel fichier qui commence par l'ID de l'équipe
     const logoFile = files.find(file => 
       file.name.toLowerCase().startsWith(teamId.toLowerCase()) ||
@@ -109,6 +137,21 @@ export const getTeamLogoUrl = async (teamId: string): Promise<string | null> => 
       const { data: { publicUrl } } = supabase.storage
         .from(BUCKET_NAME)
         .getPublicUrl(logoFile.name);
+      
+      return publicUrl;
+    }
+    
+    // Recherche par correspondance partielle
+    const partialMatchFile = files.find(file => {
+      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // Enlever l'extension
+      return fileName.includes(teamId.toLowerCase()) || teamId.toLowerCase().includes(fileName);
+    });
+    
+    if (partialMatchFile) {
+      console.log(`Fichier logo trouvé par correspondance partielle pour l'équipe ${teamId}: ${partialMatchFile.name}`);
+      const { data: { publicUrl } } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(partialMatchFile.name);
       
       return publicUrl;
     }

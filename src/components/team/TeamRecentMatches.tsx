@@ -32,7 +32,9 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
       try {
         // Trier les matchs par date (les plus récents en premier)
         const sortedMatches = [...matches].sort((a, b) => {
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
+          const dateA = a.date ? new Date(a.date).getTime() : 0;
+          const dateB = b.date ? new Date(b.date).getTime() : 0;
+          return dateB - dateA;
         });
         
         console.log(`Tri des matchs: ${sortedMatches.length} matchs après tri par date`);
@@ -63,6 +65,7 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
               // Sinon, essayer de récupérer le logo
               const logoUrl = await getTeamLogoUrl(opponent.id);
               if (logoUrl) {
+                console.log(`Logo trouvé pour l'adversaire ${opponent.name} (${opponent.id}): ${logoUrl}`);
                 // Créer un nouvel objet adversaire avec le logo
                 const updatedOpponent = { ...opponent, logo: logoUrl };
                 
@@ -70,6 +73,8 @@ const TeamRecentMatches = ({ team, matches }: TeamRecentMatchesProps) => {
                 return isBlue 
                   ? { ...match, teamRed: updatedOpponent }
                   : { ...match, teamBlue: updatedOpponent };
+              } else {
+                console.log(`Aucun logo trouvé pour l'adversaire ${opponent.name} (${opponent.id})`);
               }
             } catch (error) {
               console.error(`Erreur lors de la récupération du logo pour l'équipe ${opponent.id}:`, error);

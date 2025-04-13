@@ -2,8 +2,9 @@
 import React from "react";
 import { Match, Team } from "@/utils/models/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 
 interface TeamMatchRowProps {
   match: Match;
@@ -12,6 +13,9 @@ interface TeamMatchRowProps {
 }
 
 const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
+  const [opponentLogo, setOpponentLogo] = React.useState<string | null>(null);
+  const [logoError, setLogoError] = React.useState(false);
+
   if (!match.teamBlue || !match.teamRed) {
     console.error(`Données de match incomplètes pour le match ${match.id}`);
     return null;
@@ -29,12 +33,55 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     ? match.predictedWinner === match.result.winner 
     : null;
   
-  // Formater la date correctement
-  const matchDate = new Date(match.date);
-  const isValidDate = !isNaN(matchDate.getTime());
-  const formattedDate = isValidDate 
-    ? format(matchDate, "dd/MM/yyyy", { locale: fr })
-    : "Date invalide";
+  // S'assurer que la date est correctement gérée
+  let matchDate;
+  let formattedDate;
+  
+  try {
+    // Essayer de parser la date dans différents formats possibles
+    if (typeof match.date === 'string') {
+      // Utiliser parseISO qui est plus robuste pour les chaînes de date ISO
+      matchDate = parseISO(match.date);
+      
+      // Vérifier si la date est valide
+      if (isNaN(matchDate.getTime())) {
+        console.warn(`Date invalide pour le match ${match.id}: ${match.date}`);
+        formattedDate = "Date invalide";
+      } else {
+        formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
+      }
+    } else if (match.date instanceof Date) {
+      matchDate = match.date;
+      formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
+    } else {
+      console.warn(`Format de date non reconnu pour le match ${match.id}: ${match.date}`);
+      formattedDate = "Date invalide";
+    }
+  } catch (error) {
+    console.error(`Erreur lors du formatage de la date pour le match ${match.id}:`, error);
+    formattedDate = "Date invalide";
+  }
+  
+  // Charger le logo de l'adversaire
+  React.useEffect(() => {
+    const loadOpponentLogo = async () => {
+      try {
+        if (!opponent.logo && opponent.id) {
+          const logo = await getTeamLogoUrl(opponent.id);
+          if (logo) {
+            setOpponentLogo(logo);
+          }
+        } else if (opponent.logo) {
+          setOpponentLogo(opponent.logo);
+        }
+      } catch (error) {
+        console.error(`Erreur lors du chargement du logo pour ${opponent.name}:`, error);
+        setLogoError(true);
+      }
+    };
+    
+    loadOpponentLogo();
+  }, [opponent.id, opponent.logo, opponent.name]);
   
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50">
@@ -45,11 +92,14 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           <Avatar className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-            <AvatarImage 
-              src={opponent.logo} 
-              alt={`${opponent.name} logo`} 
-              className="w-4 h-4 object-contain"
-            />
+            {!logoError && opponentLogo ? (
+              <AvatarImage 
+                src={opponentLogo} 
+                alt={`${opponent.name} logo`} 
+                className="w-4 h-4 object-contain"
+                onError={() => setLogoError(true)}
+              />
+            ) : null}
             <AvatarFallback className="text-xs">
               {opponent.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
