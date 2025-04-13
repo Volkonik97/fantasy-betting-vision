@@ -26,6 +26,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          date: string | null
           firstbaron_team_id: string | null
           firstblood_team_id: string | null
           firstdragon_team_id: string | null
@@ -50,6 +51,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          date?: string | null
           firstbaron_team_id?: string | null
           firstblood_team_id?: string | null
           firstdragon_team_id?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          date?: string | null
           firstbaron_team_id?: string | null
           firstblood_team_id?: string | null
           firstdragon_team_id?: string | null
