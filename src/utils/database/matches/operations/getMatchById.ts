@@ -22,32 +22,32 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    // Use a raw response approach to bypass deep type instantiation
-    const idResponseRaw = await supabase
+    // Avoid type inference by using a non-typed approach
+    const idResponse = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
     
-    // Explicitly type the response parts to avoid deep inference
-    const idData = idResponseRaw.data as RawDatabaseMatch | null;
-    const idError = idResponseRaw.error;
+    // Manually extract and type the response parts
+    const idData = idResponse.data as any;
+    const idError = idResponse.error;
     
     // Handle by ID response
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      // Use a raw response approach to bypass deep type instantiation
-      const gameIdResponseRaw = await supabase
+      // Use non-typed approach
+      const gameIdResponse = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Explicitly type the response parts to avoid deep inference
-      const gameIdData = gameIdResponseRaw.data as RawDatabaseMatch | null;
-      const gameIdError = gameIdResponseRaw.error;
+      // Manually extract and type
+      const gameIdData = gameIdResponse.data as any;
+      const gameIdError = gameIdResponse.error;
       
       // Handle gameid response
       if (gameIdError) {
@@ -62,7 +62,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
-      // Use direct type casting with a simple casting chain
+      // Convert to our application model
       return adaptMatchFromDatabase(gameIdData);
     }
     
@@ -73,7 +73,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Use direct type casting with a simple casting chain
+    // Convert to our application model
     return adaptMatchFromDatabase(idData);
     
   } catch (error) {

@@ -14,14 +14,14 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   
   try {
     // Update player record to set image to null
-    // Use a typeless approach to avoid deep type instantiation
-    const responseRaw = await supabase
+    // Use minimal typing approach to avoid deep instantiation
+    const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
     
-    // Extract error explicitly to avoid deep typing
-    const error = responseRaw.error;
+    // Extract error with explicit type
+    const error = response.error as any;
     
     // Handle error case explicitly
     if (error !== null) {
@@ -43,15 +43,15 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    // Use a typeless approach to avoid deep type instantiation
-    const countResponseRaw = await supabase
+    // Use minimal typing approach
+    const countResponse = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    // Extract data explicitly to avoid deep typing
-    const countError = countResponseRaw.error;
-    const count = countResponseRaw.count;
+    // Extract data with explicit types
+    const countError = countResponse.error as any;
+    const count = countResponse.count as number | null;
     
     // Handle count response error
     if (countError !== null) {
@@ -63,14 +63,14 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = typeof count === 'number' ? count : 0;
 
     // Update all players to set image to null
-    // Use a typeless approach to avoid deep type instantiation
-    const updateResponseRaw = await supabase
+    // Use minimal typing approach
+    const updateResponse = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
     
-    // Extract error explicitly to avoid deep typing
-    const updateError = updateResponseRaw.error;
+    // Extract error with explicit type
+    const updateError = updateResponse.error as any;
     
     // Handle update response error
     if (updateError !== null) {
