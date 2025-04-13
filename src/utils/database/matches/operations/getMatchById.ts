@@ -28,8 +28,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .eq('id', matchId)
       .maybeSingle();
     
-    // Explicitly extract data and error to avoid deep type inference
-    const idData = idResponse.data;
+    // Use explicit type annotation and extraction to avoid deep type inference
+    const idData: RawDatabaseMatch | null = idResponse.data;
     const idError = idResponse.error;
       
     if (idError) {
@@ -42,8 +42,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Explicitly extract data and error to avoid deep type inference
-      const gameIdData = gameIdResponse.data;
+      // Use explicit type annotation and extraction to avoid deep type inference
+      const gameIdData: RawDatabaseMatch | null = gameIdResponse.data;
       const gameIdError = gameIdResponse.error;
         
       if (gameIdError) {
@@ -57,7 +57,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
-      return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
+      return adaptMatchFromDatabase(gameIdData);
     }
     
     if (!idData) {
@@ -67,7 +67,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Convert to Match object
-    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
+    return adaptMatchFromDatabase(idData);
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
     toast.error("Server error");

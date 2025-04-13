@@ -19,7 +19,7 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
       .update({ image: null })
       .eq('id', playerId);
     
-    // Explicitly extract error
+    // Explicitly extract error to avoid deep type inference
     const updateError = response.error;
     
     if (updateError) {
