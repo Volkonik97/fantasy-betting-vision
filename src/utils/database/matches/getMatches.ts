@@ -87,10 +87,12 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Check cache first - improved type safety
+    // Check cache first with simplified logic
     if (Date.now() - cacheTimeStamp < CACHE_DURATION) {
-      for (const cacheKey in matchesCache) {
-        const cachedMatch = (matchesCache[cacheKey] || []).find(m => m.id === matchId);
+      for (const key in matchesCache) {
+        const matches = matchesCache[key];
+        // Safely find match in array
+        const cachedMatch = matches.find(m => m.id === matchId);
         if (cachedMatch) {
           return cachedMatch;
         }
