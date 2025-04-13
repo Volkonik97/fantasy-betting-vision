@@ -22,30 +22,32 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    // Use any to bypass deep type instantiation
-    const idResponse: any = await supabase
+    // Use a raw response approach to bypass deep type instantiation
+    const idResponseRaw = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
     
-    const idData = idResponse.data;
-    const idError = idResponse.error;
+    // Explicitly type the response parts to avoid deep inference
+    const idData = idResponseRaw.data as RawDatabaseMatch | null;
+    const idError = idResponseRaw.error;
     
     // Handle by ID response
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      // Use any to bypass deep type instantiation
-      const gameIdResponse: any = await supabase
+      // Use a raw response approach to bypass deep type instantiation
+      const gameIdResponseRaw = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .maybeSingle();
       
-      const gameIdData = gameIdResponse.data;
-      const gameIdError = gameIdResponse.error;
+      // Explicitly type the response parts to avoid deep inference
+      const gameIdData = gameIdResponseRaw.data as RawDatabaseMatch | null;
+      const gameIdError = gameIdResponseRaw.error;
       
       // Handle gameid response
       if (gameIdError) {
@@ -60,8 +62,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
-      // Use direct type casting to avoid deep inference
-      return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
+      // Use direct type casting with a simple casting chain
+      return adaptMatchFromDatabase(gameIdData);
     }
     
     // Check if we have data from ID query
@@ -71,8 +73,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Use direct type casting to avoid deep inference
-    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
+    // Use direct type casting with a simple casting chain
+    return adaptMatchFromDatabase(idData);
     
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);

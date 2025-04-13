@@ -14,13 +14,14 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   
   try {
     // Update player record to set image to null
-    // Use any to bypass deep type instantiation
-    const response: any = await supabase
+    // Use a typeless approach to avoid deep type instantiation
+    const responseRaw = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
     
-    const error = response.error;
+    // Extract error explicitly to avoid deep typing
+    const error = responseRaw.error;
     
     // Handle error case explicitly
     if (error !== null) {
@@ -42,14 +43,15 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    // Use any to bypass deep type instantiation
-    const countResponse: any = await supabase
+    // Use a typeless approach to avoid deep type instantiation
+    const countResponseRaw = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    const countError = countResponse.error;
-    const count = countResponse.count;
+    // Extract data explicitly to avoid deep typing
+    const countError = countResponseRaw.error;
+    const count = countResponseRaw.count;
     
     // Handle count response error
     if (countError !== null) {
@@ -61,13 +63,14 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = typeof count === 'number' ? count : 0;
 
     // Update all players to set image to null
-    // Use any to bypass deep type instantiation
-    const updateResponse: any = await supabase
+    // Use a typeless approach to avoid deep type instantiation
+    const updateResponseRaw = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
     
-    const updateError = updateResponse.error;
+    // Extract error explicitly to avoid deep typing
+    const updateError = updateResponseRaw.error;
     
     // Handle update response error
     if (updateError !== null) {
