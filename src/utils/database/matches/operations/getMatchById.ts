@@ -23,22 +23,22 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     
     // Try to fetch by ID first
     // Execute the query without type inference
-    let response: any;
+    let response: { data: any; error: any };
     
     try {
       response = await supabase
         .from('matches')
         .select('*')
         .eq('id', matchId)
-        .maybeSingle();
+        .maybeSingle() as { data: any; error: any };
     } catch (e) {
       console.error("Error executing ID query:", e);
       return null;
     }
     
-    // Manually extract and type the response parts
-    const idData = response.data as any;
-    const idError = response.error as any;
+    // Manually extract the response parts
+    const idData = response.data;
+    const idError = response.error;
     
     // Handle by ID response
     if (idError) {
@@ -46,22 +46,22 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       
       // Try with gameid as fallback
       // Execute the query without type inference
-      let gameIdResponse: any;
+      let gameIdResponse: { data: any; error: any };
       
       try {
         gameIdResponse = await supabase
           .from('matches')
           .select('*')
           .eq('gameid', matchId)
-          .maybeSingle();
+          .maybeSingle() as { data: any; error: any };
       } catch (e) {
         console.error("Error executing gameid query:", e);
         return null;
       }
       
-      // Manually extract and type
-      const gameIdData = gameIdResponse.data as any;
-      const gameIdError = gameIdResponse.error as any;
+      // Manually extract the response parts
+      const gameIdData = gameIdResponse.data;
+      const gameIdError = gameIdResponse.error;
       
       // Handle gameid response
       if (gameIdError) {
@@ -77,7 +77,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       }
       
       // Convert to our application model
-      return adaptMatchFromDatabase(gameIdData);
+      return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
     }
     
     // Check if we have data from ID query
@@ -88,7 +88,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Convert to our application model
-    return adaptMatchFromDatabase(idData);
+    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
     
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
