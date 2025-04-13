@@ -7,8 +7,10 @@
  */
 
 // Re-export all match adapter functionality from the new files
+export type { 
+  RawDatabaseMatch
+} from './match';
 export { 
-  RawDatabaseMatch,
   adaptMatchFromDatabase,
   adaptMatchForDatabase,
   booleanToString,

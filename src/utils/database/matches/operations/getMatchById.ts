@@ -28,6 +28,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .eq('id', matchId)
       .maybeSingle();
     
+    // Explicitly extract data and error to avoid deep type inference
     const idData = idResponse.data;
     const idError = idResponse.error;
       
@@ -41,6 +42,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq('gameid', matchId)
         .maybeSingle();
       
+      // Explicitly extract data and error to avoid deep type inference
       const gameIdData = gameIdResponse.data;
       const gameIdError = gameIdResponse.error;
         
