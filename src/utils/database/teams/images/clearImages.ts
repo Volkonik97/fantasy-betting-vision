@@ -14,10 +14,12 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   
   try {
     // Update player record to set image to null
-    const { error } = await supabase
+    const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
+    
+    const error = response.error;
     
     // Handle error case explicitly
     if (error !== null) {
@@ -39,10 +41,13 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const { data: countData, count, error: countError } = await supabase
+    const countResponse = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
+    
+    const countError = countResponse.error;
+    const count = countResponse.count;
     
     // Handle count response error
     if (countError !== null) {
@@ -54,10 +59,12 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = typeof count === 'number' ? count : 0;
 
     // Update all players to set image to null
-    const { error: updateError } = await supabase
+    const updateResponse = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
+    
+    const updateError = updateResponse.error;
     
     // Handle update response error
     if (updateError !== null) {
