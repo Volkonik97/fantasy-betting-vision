@@ -1,6 +1,12 @@
-
 // Re-export from the matches directory
-import { getMatches, getMatchById, clearMatchCache, getMatchesByTeamId } from './getMatches';
+export { 
+  getMatches, 
+  getMatchById, 
+  clearMatchCache, 
+  getMatchesByTeamId 
+} from './getMatches';
+
+// Re-export other functions
 import { saveMatches } from './saveMatches';
 import { 
   getPlayerMatchStats, 
@@ -27,24 +33,22 @@ import { saveTeamMatchStats } from './saveTeamStats';
 import { getTeamMatchStats, getAllTeamMatchStats, getMatchTeamStats } from './getTeamStats';
 
 export {
-  getMatches,
-  getMatchById,
-  getMatchesByTeamId,
+  // Already re-exported at the top:
+  // getMatches, getMatchById, clearMatchCache, getMatchesByTeamId
+
+  // Other exports:
   saveMatches,
   getPlayerMatchStats,
   getPlayerStats,
   getTeamTimelineStats,
   getPlayerTimelineStats,
   clearPlayerStatsCache,
-  clearMatchCache,
   savePlayerMatchStats,
   extractTeamSpecificStats,
-  // Nouvelles fonctions pour les statistiques d'équipe
   saveTeamMatchStats,
   getTeamMatchStats,
   getAllTeamMatchStats,
   getMatchTeamStats,
-  // Series-related exports
   isSeriesMatch,
   getSeriesScore,
   getGameNumberFromId,

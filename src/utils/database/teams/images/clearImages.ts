@@ -13,15 +13,16 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   }
   
   try {
-    // Explicitly define response types to avoid deep type inference
-    const updateResult = await supabase
+    // Explicitly define response handling to avoid deep type inference
+    const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
     
-    // Extract error separately from the response
-    if (updateResult.error) {
-      console.error("Error clearing image reference:", updateResult.error);
+    const updateError = response.error;
+    
+    if (updateError) {
+      console.error("Error clearing image reference:", updateError);
       return false;
     }
     
@@ -39,26 +40,29 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const countResult = await supabase
+    const countResponse = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    if (countResult.error) {
-      console.error("Error counting player images:", countResult.error);
+    const countError = countResponse.error;
+    const beforeCount = countResponse.count || 0;
+    
+    if (countError) {
+      console.error("Error counting player images:", countError);
       return { success: false, clearedCount: 0 };
     }
 
-    const beforeCount = countResult.count || 0;
-
     // Update all players to set image to null
-    const updateResult = await supabase
+    const updateResponse = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
     
-    if (updateResult.error) {
-      console.error("Error clearing all image references:", updateResult.error);
+    const updateError = updateResponse.error;
+    
+    if (updateError) {
+      console.error("Error clearing all image references:", updateError);
       return { success: false, clearedCount: 0 };
     }
     
