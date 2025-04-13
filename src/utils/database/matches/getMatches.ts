@@ -87,14 +87,18 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Check cache first with simplified logic
+    // Simple cache check without complex type operations
     if (Date.now() - cacheTimeStamp < CACHE_DURATION) {
-      for (const key in matchesCache) {
-        const matches = matchesCache[key];
-        // Safely find match in array
-        const cachedMatch = matches.find(m => m.id === matchId);
-        if (cachedMatch) {
-          return cachedMatch;
+      // Use a simple loop to avoid complex type operations
+      const matchCacheKeys = Object.keys(matchesCache);
+      for (let i = 0; i < matchCacheKeys.length; i++) {
+        const key = matchCacheKeys[i];
+        const matches = matchesCache[key] || [];
+        
+        for (let j = 0; j < matches.length; j++) {
+          if (matches[j].id === matchId) {
+            return matches[j];
+          }
         }
       }
     }
