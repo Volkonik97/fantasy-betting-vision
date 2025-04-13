@@ -13,11 +13,13 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   }
   
   try {
-    // Explicitly defining PostgrestResponse type to avoid deep inference
-    const { error } = await supabase
+    // Use explicit type annotation for the response to avoid deep type inference
+    const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
+    
+    const error = response.error;
     
     if (error) {
       console.error("Error clearing image reference:", error);
@@ -38,10 +40,13 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const { count, error: countError } = await supabase
+    const countResponse = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
+    
+    const countError = countResponse.error;
+    const count = countResponse.count;
     
     if (countError) {
       console.error("Error counting player images:", countError);
@@ -51,10 +56,12 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = count || 0;
 
     // Update all players to set image to null
-    const { error: updateError } = await supabase
+    const updateResponse = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
+    
+    const updateError = updateResponse.error;
     
     if (updateError) {
       console.error("Error clearing all image references:", updateError);
