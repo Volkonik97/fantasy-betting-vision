@@ -22,34 +22,35 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    // Execute the query without type inference
-    let response: { data: any; error: any };
+    // Use explicit typing to avoid deep inference issues
+    let idResponse: { data: any; error: any };
     
     try {
-      response = await (supabase
+      // Break the type inference with explicit typing
+      idResponse = await supabase
         .from('matches')
         .select('*')
         .eq('id', matchId)
-        .maybeSingle() as unknown as { data: any; error: any });
-      ;
+        .maybeSingle() as { data: any; error: any };
     } catch (e) {
       console.error("Error executing ID query:", e);
       return null;
     }
     
     // Manually extract the response parts
-    const idData = response.data;
-    const idError = response.error;
+    const idData = idResponse.data;
+    const idError = idResponse.error;
     
     // Handle by ID response
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      // Execute the query without type inference
+      // Use explicit typing to avoid deep inference issues
       let gameIdResponse: { data: any; error: any };
       
       try {
+        // Break the type inference with explicit typing
         gameIdResponse = await supabase
           .from('matches')
           .select('*')

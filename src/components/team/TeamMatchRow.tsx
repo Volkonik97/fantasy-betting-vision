@@ -57,13 +57,73 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
   React.useEffect(() => {
     const loadOpponentLogo = async () => {
       try {
-        if (!opponent.logo && opponent.id) {
+        if (logoError) {
+          return; // Si on a déjà eu une erreur, ne pas réessayer
+        }
+        
+        // Cas spécial pour Gen.G
+        if (opponent.name.toLowerCase().includes('gen.g') || opponent.name.toLowerCase() === 'geng') {
+          setOpponentLogo("/lovable-uploads/8e2289d0-fe11-463b-a9fc-8116d67f7a15.png");
+          return;
+        }
+        
+        // Cas spécial pour Cloud9
+        if (opponent.name.toLowerCase().includes('cloud9') || opponent.name.toLowerCase() === 'c9') {
+          setOpponentLogo("/lovable-uploads/61322944-83d9-4ad7-a676-44dc5d959bd6.png");
+          return;
+        }
+        
+        // Cas spécial pour Disguised
+        if (opponent.name.toLowerCase().includes('disguised')) {
+          setOpponentLogo("/lovable-uploads/e1e0225a-15c3-4752-81a5-31b23ff17f11.png");
+          return;
+        }
+        
+        // Cas spécial pour FlyQuest
+        if (opponent.name.toLowerCase().includes('flyquest') || opponent.name.toLowerCase() === 'fly') {
+          setOpponentLogo("/lovable-uploads/e8ad379a-9beb-4829-9c74-75a074568549.png");
+          return;
+        }
+        
+        // Cas spécial pour Team Liquid
+        if (opponent.name.toLowerCase().includes('liquid') || opponent.name.toLowerCase() === 'tl') {
+          setOpponentLogo("/lovable-uploads/4d612b58-6777-485c-8fd7-6c23892150e7.png");
+          return;
+        }
+        
+        // Cas spécial pour PaiN Gaming
+        if (opponent.name.toLowerCase().includes('pain') || opponent.name.toLowerCase().includes('paingaming')) {
+          setOpponentLogo("/lovable-uploads/d4a83519-9297-4ffc-890c-666b32b48c55.png");
+          return;
+        }
+        
+        // Gestion améliorée pour T1/SKT
+        if (opponent.name.toLowerCase().includes('t1') || opponent.name.toLowerCase().includes('skt')) {
+          setOpponentLogo("/lovable-uploads/072fbcd9-2c2a-4db9-b9d1-771a0b61f798.png");
+          return;
+        }
+        
+        // Utiliser le logo existant s'il est valide
+        if (opponent.logo && !opponent.logo.includes('undefined') && !opponent.logo.includes('null')) {
+          console.log(`Utilisation du logo existant pour ${opponent.name}: ${opponent.logo}`);
+          setOpponentLogo(opponent.logo);
+          return;
+        }
+        
+        // Sinon, chercher le logo via le service
+        if (opponent.id) {
+          console.log(`Recherche de logo pour l'équipe ${opponent.name} (${opponent.id})`);
           const logo = await getTeamLogoUrl(opponent.id);
           if (logo) {
+            console.log(`Logo trouvé pour ${opponent.name}: ${logo}`);
             setOpponentLogo(logo);
+          } else {
+            console.warn(`Aucun logo trouvé pour ${opponent.name}`);
+            setLogoError(true);
           }
-        } else if (opponent.logo) {
-          setOpponentLogo(opponent.logo);
+        } else {
+          console.warn(`ID d'équipe manquant pour ${opponent.name}`);
+          setLogoError(true);
         }
       } catch (error) {
         console.error(`Erreur lors du chargement du logo pour ${opponent.name}:`, error);
@@ -72,7 +132,7 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     };
     
     loadOpponentLogo();
-  }, [opponent.id, opponent.logo, opponent.name]);
+  }, [opponent.id, opponent.name, opponent.logo, logoError]);
   
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50">
