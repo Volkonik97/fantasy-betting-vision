@@ -19,8 +19,8 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
       .update({ image: null })
       .eq('id', playerId);
     
-    // Destructure manually to avoid type inference issues
-    if (response.error) {
+    // Handle error case explicitly
+    if (response.error !== null) {
       console.error("Error clearing image reference:", response.error);
       return false;
     }
@@ -44,14 +44,17 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    // Manually handle the response to avoid deep inference
-    if (countResponse.error) {
+    // Handle count response error
+    if (countResponse.error !== null) {
       console.error("Error counting player images:", countResponse.error);
       return { success: false, clearedCount: 0 };
     }
     
-    // Safely access the count with fallback
-    const beforeCount = typeof countResponse.count === 'number' ? countResponse.count : 0;
+    // Extract count with explicit type checking
+    let beforeCount = 0;
+    if (typeof countResponse.count === 'number') {
+      beforeCount = countResponse.count;
+    }
 
     // Update all players to set image to null
     const updateResponse = await supabase
@@ -59,8 +62,8 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .update({ image: null })
       .not('image', 'is', null);
     
-    // Manually handle the response
-    if (updateResponse.error) {
+    // Handle update response error
+    if (updateResponse.error !== null) {
       console.error("Error clearing all image references:", updateResponse.error);
       return { success: false, clearedCount: 0 };
     }
