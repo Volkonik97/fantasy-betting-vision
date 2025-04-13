@@ -28,8 +28,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .eq('id', matchId)
       .maybeSingle();
     
-    // Use explicit type annotation and extraction to avoid deep type inference
-    const idData: RawDatabaseMatch | null = idResponse.data;
+    // Extract data and error explicitly with direct property access to avoid deep type inference
+    const idData = idResponse.data as RawDatabaseMatch | null;
     const idError = idResponse.error;
       
     if (idError) {
@@ -42,8 +42,8 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Use explicit type annotation and extraction to avoid deep type inference
-      const gameIdData: RawDatabaseMatch | null = gameIdResponse.data;
+      // Extract data and error explicitly with direct property access to avoid deep type inference
+      const gameIdData = gameIdResponse.data as RawDatabaseMatch | null;
       const gameIdError = gameIdResponse.error;
         
       if (gameIdError) {

@@ -19,7 +19,7 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
       .update({ image: null })
       .eq('id', playerId);
     
-    // Explicitly extract error to avoid deep type inference
+    // Access error directly to avoid deep type inference
     const updateError = response.error;
     
     if (updateError) {
@@ -46,7 +46,7 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    // Explicitly extract error and count
+    // Access properties directly to avoid deep type inference
     const countError = countResponse.error;
     const beforeCount = countResponse.count || 0;
     
@@ -61,7 +61,7 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .update({ image: null })
       .not('image', 'is', null);
     
-    // Explicitly extract error
+    // Access error directly to avoid deep type inference
     const updateError = updateResponse.error;
     
     if (updateError) {
