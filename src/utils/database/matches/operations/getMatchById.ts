@@ -28,10 +28,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .eq('id', matchId)
       .maybeSingle();
     
-    // Extract data and error explicitly with direct property access to avoid deep type inference
-    const idData = idResponse.data as RawDatabaseMatch | null;
+    // Manually destructure the response to avoid deep type inference
     const idError = idResponse.error;
-      
+    
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
@@ -42,10 +41,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Extract data and error explicitly with direct property access to avoid deep type inference
-      const gameIdData = gameIdResponse.data as RawDatabaseMatch | null;
+      // Manually destructure this response too
       const gameIdError = gameIdResponse.error;
-        
+      
       if (gameIdError) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
           { idError, gameidError: gameIdError });
@@ -53,13 +51,17 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
+      // Safe conversion after error check
+      const gameIdData = gameIdResponse.data;
       if (!gameIdData) {
         return null;
       }
       
-      return adaptMatchFromDatabase(gameIdData);
+      return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
     }
     
+    // Safe conversion after error check
+    const idData = idResponse.data;
     if (!idData) {
       console.error(`No data found for match ${matchId}`);
       toast.error("Match not found");
@@ -67,7 +69,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Convert to Match object
-    return adaptMatchFromDatabase(idData);
+    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
     toast.error("Server error");

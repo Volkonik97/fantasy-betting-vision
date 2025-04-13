@@ -19,11 +19,9 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
       .update({ image: null })
       .eq('id', playerId);
     
-    // Access error directly to avoid deep type inference
-    const updateError = response.error;
-    
-    if (updateError) {
-      console.error("Error clearing image reference:", updateError);
+    // Destructure manually to avoid type inference issues
+    if (response.error) {
+      console.error("Error clearing image reference:", response.error);
       return false;
     }
     
@@ -46,14 +44,14 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
-    // Access properties directly to avoid deep type inference
-    const countError = countResponse.error;
-    const beforeCount = countResponse.count || 0;
-    
-    if (countError) {
-      console.error("Error counting player images:", countError);
+    // Manually handle the response to avoid deep inference
+    if (countResponse.error) {
+      console.error("Error counting player images:", countResponse.error);
       return { success: false, clearedCount: 0 };
     }
+    
+    // Safely access the count with fallback
+    const beforeCount = typeof countResponse.count === 'number' ? countResponse.count : 0;
 
     // Update all players to set image to null
     const updateResponse = await supabase
@@ -61,11 +59,9 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .update({ image: null })
       .not('image', 'is', null);
     
-    // Access error directly to avoid deep type inference
-    const updateError = updateResponse.error;
-    
-    if (updateError) {
-      console.error("Error clearing all image references:", updateError);
+    // Manually handle the response
+    if (updateResponse.error) {
+      console.error("Error clearing all image references:", updateResponse.error);
       return { success: false, clearedCount: 0 };
     }
     
