@@ -87,14 +87,15 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Simple cache check without complex type operations
+    // Check cache with a completely simplified approach
     if (Date.now() - cacheTimeStamp < CACHE_DURATION) {
-      // Use a simple loop to avoid complex type operations
-      const matchCacheKeys = Object.keys(matchesCache);
-      for (let i = 0; i < matchCacheKeys.length; i++) {
-        const key = matchCacheKeys[i];
-        const matches = matchesCache[key] || [];
+      // Manual iteration through cache keys
+      const keys = Object.keys(matchesCache);
+      for (let i = 0; i < keys.length; i++) {
+        const matches = matchesCache[keys[i]];
+        if (!matches) continue;
         
+        // Manual array search
         for (let j = 0; j < matches.length; j++) {
           if (matches[j].id === matchId) {
             return matches[j];
@@ -104,7 +105,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
@@ -114,20 +115,24 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, error);
       
       // Try with gameid as fallback
-      const { data: matchData, error: matchError } = await supabase
+      const result = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .single();
         
-      if (matchError) {
+      if (result.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError: error, gameidError: matchError });
+          { idError: error, gameidError: result.error });
         toast.error("Match not found");
         return null;
       }
       
-      data = matchData;
+      if (!result.data) {
+        return null;
+      }
+      
+      return adaptMatchFromDatabase(result.data as RawDatabaseMatch);
     }
     
     if (!data) {
