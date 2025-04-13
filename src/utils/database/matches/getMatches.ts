@@ -49,23 +49,20 @@ export const getMatches = async (
       query = query.eq('tournament', tournamentFilter);
     }
     
-    // Execute query
-    const response = await query;
-    const data = response.data;
-    const error = response.error;
+    // Execute query with explicit result handling
+    const queryResult = await query;
     
-    if (error) {
-      console.error("Error fetching matches:", error);
+    if (queryResult.error) {
+      console.error("Error fetching matches:", queryResult.error);
       toast.error("Failed to load matches");
       return [];
     }
     
     // Convert data to Match objects using our adapter
     const matches: Match[] = [];
-    if (data) {
-      for (let i = 0; i < data.length; i++) {
-        const matchData = data[i];
-        matches.push(adaptMatchFromDatabase(matchData as RawDatabaseMatch));
+    if (queryResult.data) {
+      for (let i = 0; i < queryResult.data.length; i++) {
+        matches.push(adaptMatchFromDatabase(queryResult.data[i] as RawDatabaseMatch));
       }
     }
     
@@ -94,11 +91,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Check in cache first
     const now = Date.now();
     if (now - cacheTimeStamp < CACHE_DURATION) {
-      // Search in all cache entries
       const cacheKeys = Object.keys(matchesCache);
       for (let i = 0; i < cacheKeys.length; i++) {
-        const key = cacheKeys[i];
-        const matchList = matchesCache[key] || [];
+        const matchList = matchesCache[cacheKeys[i]] || [];
         for (let j = 0; j < matchList.length; j++) {
           if (matchList[j].id === matchId) {
             return matchList[j];
@@ -108,50 +103,44 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    const idResponse = await supabase
+    const idQueryResult = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .single();
-    
-    const idData = idResponse.data;
-    const idError = idResponse.error;
       
-    if (idError) {
-      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
+    if (idQueryResult.error) {
+      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idQueryResult.error);
       
       // Try with gameid as fallback
-      const gameidResponse = await supabase
+      const gameIdQueryResult = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .single();
-      
-      const gameidData = gameidResponse.data;
-      const gameidError = gameidResponse.error;
         
-      if (gameidError) {
+      if (gameIdQueryResult.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError, gameidError });
+          { idError: idQueryResult.error, gameidError: gameIdQueryResult.error });
         toast.error("Match not found");
         return null;
       }
       
-      if (!gameidData) {
+      if (!gameIdQueryResult.data) {
         return null;
       }
       
-      return adaptMatchFromDatabase(gameidData as RawDatabaseMatch);
+      return adaptMatchFromDatabase(gameIdQueryResult.data as RawDatabaseMatch);
     }
     
-    if (!idData) {
+    if (!idQueryResult.data) {
       console.error(`No data found for match ${matchId}`);
       toast.error("Match not found");
       return null;
     }
     
     // Convert to Match object
-    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
+    return adaptMatchFromDatabase(idQueryResult.data as RawDatabaseMatch);
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
     toast.error("Server error");
@@ -178,26 +167,22 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     }
     
     // Try different possible team ID column names
-    const response = await supabase
+    const queryResult = await supabase
       .from('matches')
       .select('*')
       .or(`team1_id.eq.${teamId},team2_id.eq.${teamId},team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`);
     
-    const data = response.data;
-    const error = response.error;
-    
-    if (error) {
-      console.error(`Error fetching matches for team ${teamId}:`, error);
+    if (queryResult.error) {
+      console.error(`Error fetching matches for team ${teamId}:`, queryResult.error);
       toast.error("Failed to load team matches");
       return [];
     }
     
     // Convert data to Match objects
     const matches: Match[] = [];
-    if (data) {
-      for (let i = 0; i < data.length; i++) {
-        const matchData = data[i];
-        matches.push(adaptMatchFromDatabase(matchData as RawDatabaseMatch));
+    if (queryResult.data) {
+      for (let i = 0; i < queryResult.data.length; i++) {
+        matches.push(adaptMatchFromDatabase(queryResult.data[i] as RawDatabaseMatch));
       }
     }
     
