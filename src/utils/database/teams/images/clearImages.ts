@@ -8,6 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const clearInvalidImageReference = async (playerId: string): Promise<boolean> => {
   try {
+    if (!playerId) {
+      console.error("No player ID provided");
+      return false;
+    }
+    
     const { error } = await supabase
       .from('players')
       .update({ image: null })
@@ -32,7 +37,7 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean, clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const { count: beforeCount, error: countError } = await supabase
+    const { count, error: countError } = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
@@ -41,6 +46,8 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       console.error("Error counting player images:", countError);
       return { success: false, clearedCount: 0 };
     }
+
+    const beforeCount = count || 0;
 
     // Update all players to set image to null
     const { error: updateError } = await supabase
@@ -55,7 +62,7 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     
     return { 
       success: true, 
-      clearedCount: beforeCount || 0
+      clearedCount: beforeCount
     };
   } catch (error) {
     console.error("Exception clearing all image references:", error);

@@ -50,7 +50,8 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
       } else {
         formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
       }
-    } else if (match.date instanceof Date) {
+    } else if (match.date && typeof match.date.getTime === 'function') {
+      // Vérifie si l'objet a une méthode getTime (caractéristique d'un objet Date)
       matchDate = match.date;
       formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
     } else {

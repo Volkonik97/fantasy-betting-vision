@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 // Cache system for matches
-let matchesCache: Record<string, Match> = {};
+let matchesCache: Record<string, Match[]> = {};
 let matchesByTeamCache: Record<string, Match[]> = {};
 let cacheTimeStamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -34,7 +34,7 @@ export const getMatches = async (
       matchesCache[cacheKey] && 
       Date.now() - cacheTimeStamp < CACHE_DURATION
     ) {
-      return matchesCache[cacheKey] as unknown as Match[]; // Cast required due to TypeScript confusion
+      return matchesCache[cacheKey];
     }
     
     // Build query
@@ -62,7 +62,7 @@ export const getMatches = async (
     const matches = (data || []).map(match => adaptMatchFromDatabase(match as RawDatabaseMatch));
     
     // Update cache
-    matchesCache[cacheKey] = matches as unknown as Match; // Cast required due to TypeScript confusion
+    matchesCache[cacheKey] = matches;
     cacheTimeStamp = Date.now();
     
     return matches;
@@ -84,11 +84,12 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Check cache first
-    if (
-      matchesCache[matchId] && 
-      Date.now() - cacheTimeStamp < CACHE_DURATION
-    ) {
-      return matchesCache[matchId];
+    for (const cacheKey in matchesCache) {
+      const cachedMatches = matchesCache[cacheKey];
+      const cachedMatch = cachedMatches.find(m => m.id === matchId);
+      if (cachedMatch && Date.now() - cacheTimeStamp < CACHE_DURATION) {
+        return cachedMatch;
+      }
     }
     
     // Try to fetch by ID first
@@ -126,12 +127,6 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     
     // Convert to Match object
     const match = adaptMatchFromDatabase(data as RawDatabaseMatch);
-    
-    // Update cache
-    matchesCache[match.id] = match;
-    if (Date.now() > cacheTimeStamp) {
-      cacheTimeStamp = Date.now() + CACHE_DURATION;
-    }
     
     return match;
   } catch (error) {
@@ -176,9 +171,7 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     
     // Update cache
     matchesByTeamCache[teamId] = matches;
-    if (Date.now() > cacheTimeStamp) {
-      cacheTimeStamp = Date.now() + CACHE_DURATION;
-    }
+    cacheTimeStamp = Date.now();
     
     return matches;
   } catch (error) {
