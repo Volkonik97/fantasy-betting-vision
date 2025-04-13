@@ -22,32 +22,46 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    // Avoid type inference by using a non-typed approach
-    const idResponse = await supabase
-      .from('matches')
-      .select('*')
-      .eq('id', matchId)
-      .maybeSingle();
+    // Execute the query without type inference
+    let response: any;
+    
+    try {
+      response = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .maybeSingle();
+    } catch (e) {
+      console.error("Error executing ID query:", e);
+      return null;
+    }
     
     // Manually extract and type the response parts
-    const idData = idResponse.data as any;
-    const idError = idResponse.error;
+    const idData = response.data as any;
+    const idError = response.error as any;
     
     // Handle by ID response
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      // Use non-typed approach
-      const gameIdResponse = await supabase
-        .from('matches')
-        .select('*')
-        .eq('gameid', matchId)
-        .maybeSingle();
+      // Execute the query without type inference
+      let gameIdResponse: any;
+      
+      try {
+        gameIdResponse = await supabase
+          .from('matches')
+          .select('*')
+          .eq('gameid', matchId)
+          .maybeSingle();
+      } catch (e) {
+        console.error("Error executing gameid query:", e);
+        return null;
+      }
       
       // Manually extract and type
       const gameIdData = gameIdResponse.data as any;
-      const gameIdError = gameIdResponse.error;
+      const gameIdError = gameIdResponse.error as any;
       
       // Handle gameid response
       if (gameIdError) {
