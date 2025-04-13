@@ -63,7 +63,12 @@ export const getMatches = async (
     }
     
     // Convert data to Match objects using our adapter
-    const matches = (data || []).map(match => adaptMatchFromDatabase(match as RawDatabaseMatch));
+    const matches: Match[] = [];
+    if (data) {
+      for (let i = 0; i < data.length; i++) {
+        matches.push(adaptMatchFromDatabase(data[i] as RawDatabaseMatch));
+      }
+    }
     
     // Update cache
     matchesCache[cacheKey] = matches;
@@ -87,15 +92,19 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Simplified cache checking approach
-    if (Date.now() - cacheTimeStamp < CACHE_DURATION) {
-      for (const key in matchesCache) {
-        const matches = matchesCache[key];
-        if (!matches) continue;
+    // Manual cache check to avoid complex type inference
+    const currentTime = Date.now();
+    if (currentTime - cacheTimeStamp < CACHE_DURATION) {
+      const cacheKeys = Object.keys(matchesCache);
+      for (let keyIndex = 0; keyIndex < cacheKeys.length; keyIndex++) {
+        const key = cacheKeys[keyIndex];
+        const matchList = matchesCache[key];
         
-        for (let i = 0; i < matches.length; i++) {
-          if (matches[i].id === matchId) {
-            return matches[i];
+        if (!matchList) continue;
+        
+        for (let matchIndex = 0; matchIndex < matchList.length; matchIndex++) {
+          if (matchList[matchIndex].id === matchId) {
+            return matchList[matchIndex];
           }
         }
       }
@@ -112,24 +121,25 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, error);
       
       // Try with gameid as fallback
-      const fallbackResult = await supabase
+      const fallbackResponse = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .single();
         
-      if (fallbackResult.error) {
+      if (fallbackResponse.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError: error, gameidError: fallbackResult.error });
+          { idError: error, gameidError: fallbackResponse.error });
         toast.error("Match not found");
         return null;
       }
       
-      if (!fallbackResult.data) {
+      if (!fallbackResponse.data) {
         return null;
       }
       
-      return adaptMatchFromDatabase(fallbackResult.data as RawDatabaseMatch);
+      const match = adaptMatchFromDatabase(fallbackResponse.data as RawDatabaseMatch);
+      return match;
     }
     
     if (!data) {
@@ -178,7 +188,12 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     }
     
     // Convert data to Match objects
-    const matches = (data || []).map(match => adaptMatchFromDatabase(match as RawDatabaseMatch));
+    const matches: Match[] = [];
+    if (data) {
+      for (let i = 0; i < data.length; i++) {
+        matches.push(adaptMatchFromDatabase(data[i] as RawDatabaseMatch));
+      }
+    }
     
     // Update cache
     matchesByTeamCache[teamId] = matches;
