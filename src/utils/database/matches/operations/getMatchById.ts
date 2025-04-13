@@ -22,21 +22,23 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    const response = await supabase
+    // Use any to bypass deep type instantiation
+    const idResponse: any = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
     
-    const idData = response.data;
-    const idError = response.error;
+    const idData = idResponse.data;
+    const idError = idResponse.error;
     
     // Handle by ID response
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      const gameIdResponse = await supabase
+      // Use any to bypass deep type instantiation
+      const gameIdResponse: any = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
@@ -58,7 +60,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
-      // Use type casting to avoid deep type inference
+      // Use direct type casting to avoid deep inference
       return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
     }
     
@@ -69,7 +71,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Use type casting to avoid deep type inference
+    // Use direct type casting to avoid deep inference
     return adaptMatchFromDatabase(idData as RawDatabaseMatch);
     
   } catch (error) {

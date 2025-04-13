@@ -14,7 +14,8 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   
   try {
     // Update player record to set image to null
-    const response = await supabase
+    // Use any to bypass deep type instantiation
+    const response: any = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
@@ -41,7 +42,8 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    const countResponse = await supabase
+    // Use any to bypass deep type instantiation
+    const countResponse: any = await supabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
@@ -59,7 +61,8 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = typeof count === 'number' ? count : 0;
 
     // Update all players to set image to null
-    const updateResponse = await supabase
+    // Use any to bypass deep type instantiation
+    const updateResponse: any = await supabase
       .from('players')
       .update({ image: null })
       .not('image', 'is', null);
