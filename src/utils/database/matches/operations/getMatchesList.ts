@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { toast } from "sonner";
-import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/matchAdapter";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/match";
 import { 
   getMatchesFromCache, 
   storeMatchesInCache 
@@ -37,7 +37,9 @@ export const getMatches = async (
     }
     
     // Execute query
-    const { data, error } = await query;
+    const response = await query;
+    const data = response.data;
+    const error = response.error;
     
     if (error) {
       console.error("Error fetching matches:", error);

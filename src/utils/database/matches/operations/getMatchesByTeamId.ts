@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { toast } from "sonner";
-import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/matchAdapter";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/match";
 import { 
   getTeamMatchesFromCache, 
   storeTeamMatchesInCache 
@@ -25,10 +25,13 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     }
     
     // Try different possible team ID column names
-    const { data, error } = await supabase
+    const response = await supabase
       .from('matches')
       .select('*')
       .or(`team1_id.eq.${teamId},team2_id.eq.${teamId},team_blue_id.eq.${teamId},team_red_id.eq.${teamId}`);
+    
+    const data = response.data;
+    const error = response.error;
     
     if (error) {
       console.error(`Error fetching matches for team ${teamId}:`, error);

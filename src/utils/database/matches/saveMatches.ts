@@ -1,9 +1,10 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { chunk } from "../../dataConverter";
 import { toast } from "sonner";
-import { clearMatchCache } from './getMatches';
-import { adaptMatchForDatabase } from "../adapters/matchAdapter";
+import { clearMatchCache } from './cache/matchesCache';
+import { adaptMatchForDatabase } from "../adapters/match";
 
 /**
  * Save matches to the database

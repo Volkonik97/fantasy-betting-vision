@@ -13,12 +13,13 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   }
   
   try {
-    // Explicitly define response handling to avoid deep type inference
+    // Update player record to set image to null
     const response = await supabase
       .from('players')
       .update({ image: null })
       .eq('id', playerId);
     
+    // Explicitly extract error
     const updateError = response.error;
     
     if (updateError) {
@@ -45,6 +46,7 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .select('*', { count: 'exact', head: true })
       .not('image', 'is', null);
     
+    // Explicitly extract error and count
     const countError = countResponse.error;
     const beforeCount = countResponse.count || 0;
     
@@ -59,6 +61,7 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       .update({ image: null })
       .not('image', 'is', null);
     
+    // Explicitly extract error
     const updateError = updateResponse.error;
     
     if (updateError) {

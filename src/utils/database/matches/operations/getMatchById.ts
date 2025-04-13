@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { toast } from "sonner";
-import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/matchAdapter";
+import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/match";
 import { findMatchInCache } from "../cache/matchesCache";
 
 /**
@@ -22,21 +22,27 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    const { data: idData, error: idError } = await supabase
+    const idResponse = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
+    
+    const idData = idResponse.data;
+    const idError = idResponse.error;
       
     if (idError) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      const { data: gameIdData, error: gameIdError } = await supabase
+      const gameIdResponse = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .maybeSingle();
+      
+      const gameIdData = gameIdResponse.data;
+      const gameIdError = gameIdResponse.error;
         
       if (gameIdError) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
