@@ -87,18 +87,15 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Check cache with a completely simplified approach
+    // Simplified cache checking approach
     if (Date.now() - cacheTimeStamp < CACHE_DURATION) {
-      // Manual iteration through cache keys
-      const keys = Object.keys(matchesCache);
-      for (let i = 0; i < keys.length; i++) {
-        const matches = matchesCache[keys[i]];
+      for (const key in matchesCache) {
+        const matches = matchesCache[key];
         if (!matches) continue;
         
-        // Manual array search
-        for (let j = 0; j < matches.length; j++) {
-          if (matches[j].id === matchId) {
-            return matches[j];
+        for (let i = 0; i < matches.length; i++) {
+          if (matches[i].id === matchId) {
+            return matches[i];
           }
         }
       }
@@ -115,24 +112,24 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, error);
       
       // Try with gameid as fallback
-      const result = await supabase
+      const fallbackResult = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .single();
         
-      if (result.error) {
+      if (fallbackResult.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError: error, gameidError: result.error });
+          { idError: error, gameidError: fallbackResult.error });
         toast.error("Match not found");
         return null;
       }
       
-      if (!result.data) {
+      if (!fallbackResult.data) {
         return null;
       }
       
-      return adaptMatchFromDatabase(result.data as RawDatabaseMatch);
+      return adaptMatchFromDatabase(fallbackResult.data as RawDatabaseMatch);
     }
     
     if (!data) {
