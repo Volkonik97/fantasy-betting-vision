@@ -5,12 +5,8 @@ import { toast } from "sonner";
 import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 // Cache system for matches
-interface CacheMap {
-  [key: string]: Match[];
-}
-
-let matchesCache: CacheMap = {};
-let matchesByTeamCache: CacheMap = {};
+let matchesCache: Record<string, Match[]> = {};
+let matchesByTeamCache: Record<string, Match[]> = {};
 let cacheTimeStamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -65,8 +61,8 @@ export const getMatches = async (
     // Convert data to Match objects using our adapter
     const matches: Match[] = [];
     if (data) {
-      for (let i = 0; i < data.length; i++) {
-        matches.push(adaptMatchFromDatabase(data[i] as RawDatabaseMatch));
+      for (const matchData of data) {
+        matches.push(adaptMatchFromDatabase(matchData as RawDatabaseMatch));
       }
     }
     
@@ -92,19 +88,20 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Manual cache check to avoid complex type inference
-    const currentTime = Date.now();
-    if (currentTime - cacheTimeStamp < CACHE_DURATION) {
-      const cacheKeys = Object.keys(matchesCache);
-      for (let keyIndex = 0; keyIndex < cacheKeys.length; keyIndex++) {
-        const key = cacheKeys[keyIndex];
-        const matchList = matchesCache[key];
+    // Check cache manually to avoid complex type inference
+    const now = Date.now();
+    const isCacheValid = now - cacheTimeStamp < CACHE_DURATION;
+    
+    if (isCacheValid) {
+      // Manually iterate through cache entries
+      const keys = Object.keys(matchesCache);
+      for (const key of keys) {
+        const cachedMatches = matchesCache[key];
+        if (!cachedMatches) continue;
         
-        if (!matchList) continue;
-        
-        for (let matchIndex = 0; matchIndex < matchList.length; matchIndex++) {
-          if (matchList[matchIndex].id === matchId) {
-            return matchList[matchIndex];
+        for (const match of cachedMatches) {
+          if (match.id === matchId) {
+            return match;
           }
         }
       }
@@ -190,8 +187,8 @@ export const getMatchesByTeamId = async (teamId: string): Promise<Match[]> => {
     // Convert data to Match objects
     const matches: Match[] = [];
     if (data) {
-      for (let i = 0; i < data.length; i++) {
-        matches.push(adaptMatchFromDatabase(data[i] as RawDatabaseMatch));
+      for (const matchData of data) {
+        matches.push(adaptMatchFromDatabase(matchData as RawDatabaseMatch));
       }
     }
     
