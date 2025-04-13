@@ -7,12 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
  * @returns Boolean indicating if operation was successful
  */
 export const clearInvalidImageReference = async (playerId: string): Promise<boolean> => {
+  if (!playerId) {
+    console.error("No player ID provided");
+    return false;
+  }
+  
   try {
-    if (!playerId) {
-      console.error("No player ID provided");
-      return false;
-    }
-    
     const { error } = await supabase
       .from('players')
       .update({ image: null })
