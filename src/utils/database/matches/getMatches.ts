@@ -5,8 +5,12 @@ import { toast } from "sonner";
 import { adaptMatchFromDatabase, RawDatabaseMatch } from "../adapters/matchAdapter";
 
 // Cache system for matches
-let matchesCache: Record<string, Match[]> = {};
-let matchesByTeamCache: Record<string, Match[]> = {};
+interface CacheMap {
+  [key: string]: Match[];
+}
+
+let matchesCache: CacheMap = {};
+let matchesByTeamCache: CacheMap = {};
 let cacheTimeStamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -83,11 +87,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       return null;
     }
     
-    // Check cache first
+    // Check cache first - improved type safety
     for (const cacheKey in matchesCache) {
-      const cachedMatches = matchesCache[cacheKey];
+      const cachedMatches = matchesCache[cacheKey] || [];
       const cachedMatch = cachedMatches.find(m => m.id === matchId);
-      if (cachedMatch && Date.now() - cacheTimeStamp < CACHE_DURATION) {
+      if (cachedMatch && (Date.now() - cacheTimeStamp < CACHE_DURATION)) {
         return cachedMatch;
       }
     }
@@ -126,9 +130,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Convert to Match object
-    const match = adaptMatchFromDatabase(data as RawDatabaseMatch);
-    
-    return match;
+    return adaptMatchFromDatabase(data as RawDatabaseMatch);
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
     toast.error("Server error");

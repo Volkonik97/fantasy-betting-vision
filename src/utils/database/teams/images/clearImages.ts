@@ -32,9 +32,9 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 
 /**
  * Clear all player image references in the database
- * @returns Boolean indicating if operation was successful and count of cleared references
+ * @returns Object containing success status and count of cleared references
  */
-export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean, clearedCount: number }> => {
+export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
     const { count, error: countError } = await supabase

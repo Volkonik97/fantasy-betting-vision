@@ -34,8 +34,8 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     : null;
   
   // S'assurer que la date est correctement gérée
-  let matchDate;
-  let formattedDate;
+  let matchDate: Date = new Date();
+  let formattedDate: string = "Date invalide";
   
   try {
     // Essayer de parser la date dans différents formats possibles
@@ -50,9 +50,9 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
       } else {
         formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
       }
-    } else if (match.date && typeof match.date.getTime === 'function') {
-      // Vérifie si l'objet a une méthode getTime (caractéristique d'un objet Date)
-      matchDate = match.date;
+    } else if (match.date && typeof match.date === 'object' && 'getTime' in match.date) {
+      // Vérifier si l'objet a une méthode getTime de manière sûre pour TypeScript
+      matchDate = match.date as Date;
       formattedDate = format(matchDate, "dd/MM/yyyy", { locale: fr });
     } else {
       console.warn(`Format de date non reconnu pour le match ${match.id}: ${match.date}`);
