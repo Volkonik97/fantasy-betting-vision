@@ -16,6 +16,45 @@ export const getAllPlayers = async (page?: number, pageSize?: number): Promise<P
 };
 
 /**
+ * Load all players by making multiple paginated requests
+ * This is necessary when we need to load more than 1000 players
+ */
+export const loadAllPlayersInBatches = async (): Promise<Player[]> => {
+  try {
+    const batchSize = 1000; // Supabase's max limit
+    let allPlayers: Player[] = [];
+    let currentPage = 1;
+    let hasMoreData = true;
+    
+    console.log("Loading all players in batches...");
+    
+    while (hasMoreData) {
+      const batch = await getPlayers(currentPage, batchSize);
+      console.log(`Loaded batch ${currentPage} with ${batch.length} players`);
+      
+      if (batch.length === 0) {
+        hasMoreData = false;
+      } else {
+        allPlayers = [...allPlayers, ...batch];
+        currentPage++;
+      }
+      
+      // Safety check to prevent infinite loops
+      if (currentPage > 10) {
+        console.warn("Reached maximum number of batches (10), stopping the loading process");
+        hasMoreData = false;
+      }
+    }
+    
+    console.log(`Successfully loaded ${allPlayers.length} players in total`);
+    return allPlayers;
+  } catch (error) {
+    console.error("Error loading all players in batches:", error);
+    return [];
+  }
+};
+
+/**
  * Get player by ID
  */
 export const getPlayerByID = async (id: string): Promise<Player | null> => {

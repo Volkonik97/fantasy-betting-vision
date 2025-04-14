@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -5,7 +6,7 @@ import { Player } from "@/utils/models/types";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { getAllPlayers, searchPlayers, filterPlayers } from "@/services/playerService";
+import { getAllPlayers, loadAllPlayersInBatches, searchPlayers, filterPlayers } from "@/services/playerService";
 import { getAllTeams } from "@/services/teamService";
 import { getPlayersCount } from "@/utils/database/players/playersService";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ const Players = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const [loading, setIsLoading] = useState(true);
+  const [loadingAllPlayers, setLoadingAllPlayers] = useState(false);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
@@ -119,11 +121,13 @@ const Players = () => {
 
   const loadAllPlayersForFiltering = async () => {
     try {
+      setLoadingAllPlayers(true);
       setIsLoading(true);
+      toast.info("Chargement de tous les joueurs pour le filtrage...");
       console.log("Loading all players for filtering...");
       
       const [playersData, teamsData] = await Promise.all([
-        getAllPlayers(), // No pagination parameters = get all players
+        loadAllPlayersInBatches(), // Use our new batch loading function
         getAllTeams()
       ]);
       
@@ -132,6 +136,7 @@ const Players = () => {
       if (playersData.length === 0) {
         toast.error("Aucun joueur trouvé dans la base de données");
         setIsLoading(false);
+        setLoadingAllPlayers(false);
         return;
       }
       
@@ -152,6 +157,7 @@ const Players = () => {
       const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
       setAvailableRegions(uniqueRegions);
       
+      toast.success(`${enrichedPlayers.length} joueurs chargés`);
       applyFiltersAndSearch();
       
     } catch (error) {
@@ -159,6 +165,7 @@ const Players = () => {
       toast.error("Erreur lors du chargement des données des joueurs");
     } finally {
       setIsLoading(false);
+      setLoadingAllPlayers(false);
     }
   };
 
@@ -216,9 +223,14 @@ const Players = () => {
     setSearchTerm(term);
     setCurrentPage(1);
     
-    if ((term.trim() !== '' || selectedRole !== "All" || selectedRegion !== "All" || 
-         selectedSubRegion !== "All" || selectedCategory !== "All") && 
-        allPlayers.length <= pageSize) {
+    const hasActiveFilters = 
+      term.trim() !== '' || 
+      selectedRole !== "All" || 
+      selectedRegion !== "All" || 
+      selectedSubRegion !== "All" || 
+      selectedCategory !== "All";
+      
+    if (hasActiveFilters && allPlayers.length <= pageSize) {
       loadAllPlayersForFiltering();
     }
   };
@@ -241,7 +253,14 @@ const Players = () => {
         break;
     }
     
-    if (allPlayers.length <= pageSize) {
+    const hasActiveFilters = 
+      searchTerm.trim() !== '' || 
+      (type === 'role' ? value !== "All" : selectedRole !== "All") || 
+      (type === 'region' ? value !== "All" : selectedRegion !== "All") || 
+      (type === 'subRegion' ? value !== "All" : selectedSubRegion !== "All") || 
+      (type === 'category' ? value !== "All" : selectedCategory !== "All");
+      
+    if (hasActiveFilters && allPlayers.length <= pageSize) {
       loadAllPlayersForFiltering();
     }
   };
@@ -300,7 +319,11 @@ const Players = () => {
         />
 
         <div className="mb-4 text-sm text-gray-500">
-          {loading ? "Chargement..." : `Affichage de ${displayedPlayers.length} sur ${displayFilterCount()} trouvés`}
+          {loading ? "Chargement..." : (
+            loadingAllPlayers ? 
+            "Chargement de tous les joueurs en cours..." : 
+            `Affichage de ${displayedPlayers.length} sur ${displayFilterCount()} trouvés`
+          )}
         </div>
 
         <PlayersList players={displayedPlayers} loading={loading} />
