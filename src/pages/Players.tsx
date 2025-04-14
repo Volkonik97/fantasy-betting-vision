@@ -28,6 +28,7 @@ const Players = () => {
   const [filteredPlayers, setFilteredPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const pageSize = 100;
 
+  // Définition des rôles pour le filtrage
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
@@ -105,6 +106,14 @@ const Players = () => {
       });
       
       console.log(`Processed ${enrichedPlayers.length} enriched players`);
+      
+      // Log pour vérifier les rôles des joueurs
+      const roleCount: Record<string, number> = {};
+      enrichedPlayers.forEach(player => {
+        roleCount[player.role] = (roleCount[player.role] || 0) + 1;
+      });
+      console.log("Players by role:", roleCount);
+      
       setAllPlayers(enrichedPlayers);
       setDisplayedPlayers(enrichedPlayers);
       
@@ -127,7 +136,7 @@ const Players = () => {
       console.log("Loading all players for filtering...");
       
       const [playersData, teamsData] = await Promise.all([
-        loadAllPlayersInBatches(), // Use our new batch loading function
+        loadAllPlayersInBatches(), // Use our batch loading function
         getAllTeams()
       ]);
       
@@ -151,6 +160,13 @@ const Players = () => {
         };
       });
       
+      // Log pour vérifier les rôles des joueurs
+      const roleCount: Record<string, number> = {};
+      enrichedPlayers.forEach(player => {
+        roleCount[player.role] = (roleCount[player.role] || 0) + 1;
+      });
+      console.log("All players by role:", roleCount);
+      
       console.log(`Processed ${enrichedPlayers.length} enriched players for filtering`);
       setAllPlayers(enrichedPlayers);
       
@@ -171,6 +187,9 @@ const Players = () => {
 
   const applyFiltersAndSearch = async () => {
     try {
+      console.log(`Applying filters - Role: ${selectedRole}, Region: ${selectedRegion}, SubRegion: ${selectedSubRegion}, Category: ${selectedCategory}`);
+      
+      // Appliquer le filtrage
       let filtered = filterPlayers(
         allPlayers, 
         selectedRole, 
@@ -179,6 +198,17 @@ const Players = () => {
         selectedCategory,
         regionCategories
       ) as (Player & { teamName: string; teamRegion: string })[];
+      
+      console.log(`Filtered players count: ${filtered.length}`);
+      
+      // Log pour vérifier les rôles après filtrage
+      if (selectedRole !== "All") {
+        const roleCount: Record<string, number> = {};
+        filtered.forEach(player => {
+          roleCount[player.role] = (roleCount[player.role] || 0) + 1;
+        });
+        console.log("Filtered players by role:", roleCount);
+      }
       
       setFilteredPlayers(filtered);
       
@@ -236,6 +266,9 @@ const Players = () => {
   };
 
   const handleFilterChange = (type: string, value: string) => {
+    // Log le changement de filtre pour vérification
+    console.log(`Filter change: ${type} = ${value}`);
+    
     setCurrentPage(1);
     
     switch(type) {

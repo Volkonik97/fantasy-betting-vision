@@ -26,7 +26,10 @@ const PlayerRoleFilter = ({ selectedRole, setSelectedRole, roles }: PlayerRoleFi
         {roles.map(role => (
           <button
             key={role}
-            onClick={() => setSelectedRole(role)}
+            onClick={() => {
+              console.log(`Setting role to: ${role}`);
+              setSelectedRole(role);
+            }}
             className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               selectedRole === role
                 ? `${roleColors[role] || "bg-gray-600"} text-white`

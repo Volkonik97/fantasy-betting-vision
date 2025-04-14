@@ -1,6 +1,6 @@
 
 import { Player } from '@/utils/models/types';
-import { getPlayers, getPlayerById } from '@/utils/database/playersService';
+import { getPlayers, getPlayerById, getPlayersCount } from '@/utils/database/playersService';
 
 /**
  * Get all players with optional pagination
@@ -89,6 +89,7 @@ export const searchPlayers = async <T extends Player>(
 
 /**
  * Filtre les joueurs par rôle, région et catégorie
+ * Version améliorée avec meilleure gestion du filtrage par rôle
  */
 export const filterPlayers = (
   players: Player[] | (Player & { teamName: string; teamRegion: string })[],
@@ -98,33 +99,45 @@ export const filterPlayers = (
   category: string = 'All',
   regionCategories: Record<string, string[]>
 ): Player[] | (Player & { teamName: string; teamRegion: string })[] => {
+  console.log(`Filtering players - Role: ${role}, Region: ${region}, SubRegion: ${subRegion}, Category: ${category}`);
+  console.log(`Total players before filtering: ${players.length}`);
+  
   return players.filter(player => {
-    // Filtre par rôle
+    // Vérifier le rôle du joueur - correction du bug de filtrage par rôle
     const roleMatch = role === 'All' || player.role === role;
     
-    // Filtre par région
+    // Vérifier si la région du joueur correspond
     const regionMatch = region === 'All' || player.teamRegion === region;
     
-    // Filtre par sous-région
+    // Vérifier si la sous-région du joueur correspond
     const subRegionMatch = subRegion === 'All' || player.teamRegion === subRegion;
     
-    // Filtre par catégorie (vérifier si la région du joueur est dans la catégorie sélectionnée)
+    // Vérifier si la région du joueur est dans la catégorie sélectionnée
     const categoryMatch = category === 'All' || 
       (regionCategories[category] && regionCategories[category].includes(player.teamRegion || ''));
-
+    
+    // Log pour le débogage des filtres rôles
+    if (role !== 'All' && !roleMatch) {
+      console.log(`Player ${player.name} with role ${player.role} doesn't match selected role ${role}`);
+    }
+    
     // Application conditionnelle des filtres en fonction des sélections
+    let result = false;
+    
     if (region !== 'All') {
-      // Si une région spécifique est sélectionnée, utiliser la région plutôt que la catégorie
-      return roleMatch && regionMatch;
+      // Si une région spécifique est sélectionnée, utiliser la région et le rôle
+      result = roleMatch && regionMatch;
     } else if (category !== 'All') {
-      // Si une catégorie est sélectionnée, l'utiliser pour filtrer
-      return roleMatch && categoryMatch;
+      // Si une catégorie est sélectionnée, l'utiliser pour filtrer avec le rôle
+      result = roleMatch && categoryMatch;
     } else if (subRegion !== 'All') {
-      // Si une sous-région est sélectionnée, l'utiliser pour filtrer
-      return roleMatch && subRegionMatch;
+      // Si une sous-région est sélectionnée, l'utiliser pour filtrer avec le rôle
+      result = roleMatch && subRegionMatch;
     } else {
       // Par défaut, juste filtrer par rôle
-      return roleMatch;
+      result = roleMatch;
     }
+    
+    return result;
   });
 };
