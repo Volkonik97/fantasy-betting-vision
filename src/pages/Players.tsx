@@ -6,7 +6,7 @@ import { Player } from "@/utils/models/types";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { getAllPlayers } from "@/services/playerService";
+import { getAllPlayers, searchPlayers, filterPlayers } from "@/services/playerService";
 import { getAllTeams } from "@/services/teamService";
 import { getPlayersCount } from "@/utils/database/players/playersService";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ const Players = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [displayedPlayers, setDisplayedPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const pageSize = 100; // Nombre de joueurs par page
 
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
@@ -45,15 +46,8 @@ const Players = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    // Réinitialiser la page lors du changement de filtres
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      // Si déjà sur la page 1, recharger manuellement les données
-      loadPlayersData();
-    }
-    setSelectedSubRegion("All");
-  }, [selectedRole, selectedRegion, selectedCategory]);
+    applyFiltersAndSearch();
+  }, [allPlayers, searchTerm, selectedRole, selectedRegion, selectedSubRegion, selectedCategory]);
 
   const fetchPlayersCount = async () => {
     try {
@@ -112,26 +106,45 @@ const Players = () => {
     }
   };
 
-  const filteredPlayers = allPlayers.filter(player => {
-    const searchTermLower = searchTerm.toLowerCase();
-    const playerNameLower = player.name.toLowerCase();
-    const teamNameLower = player.teamName.toLowerCase();
-
-    const searchMatch = playerNameLower.includes(searchTermLower) || teamNameLower.includes(searchTermLower);
-    const roleMatch = selectedRole === "All" || player.role === selectedRole;
-    const regionMatch = selectedRegion === "All" || player.teamRegion === selectedRegion;
-    const subRegionMatch = selectedSubRegion === "All" || (subRegions[selectedRegion]?.includes(selectedSubRegion) && player.teamRegion === selectedSubRegion);
-    const categoryMatch = selectedCategory === "All" || regionCategories[selectedCategory]?.includes(player.teamRegion);
-
-    return searchMatch && roleMatch && regionMatch && (selectedRegion in subRegions ? subRegionMatch : categoryMatch);
-  });
+  const applyFiltersAndSearch = async () => {
+    try {
+      // Première étape: appliquer les filtres
+      let filtered = filterPlayers(
+        allPlayers, 
+        selectedRole, 
+        selectedRegion, 
+        selectedSubRegion, 
+        selectedCategory,
+        regionCategories
+      );
+      
+      // Deuxième étape: appliquer la recherche sur les résultats filtrés
+      if (searchTerm.trim() !== '') {
+        const searchResults = await searchPlayers(filtered, searchTerm);
+        filtered = searchResults;
+      }
+      
+      console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères`);
+      setDisplayedPlayers(filtered);
+    } catch (error) {
+      console.error("Error applying filters:", error);
+    }
+  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    // La recherche sera appliquée via le useEffect
   };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
+    // Réinitialiser les filtres lors du changement de page
+    setSelectedRole("All");
+    setSelectedCategory("All");
+    setSelectedRegion("All");
+    setSelectedSubRegion("All");
+    setSearchTerm("");
+    
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -146,7 +159,7 @@ const Players = () => {
         </div>
 
         <div className="mb-8">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} value={searchTerm} />
         </div>
 
         <PlayerFilters
@@ -163,7 +176,7 @@ const Players = () => {
           subRegions={subRegions}
         />
 
-        <PlayersList players={filteredPlayers} loading={loading} />
+        <PlayersList players={displayedPlayers} loading={loading} />
 
         {!loading && totalPages > 1 && (
           <div className="mt-8">
