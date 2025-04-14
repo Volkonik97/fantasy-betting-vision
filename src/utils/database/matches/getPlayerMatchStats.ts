@@ -36,8 +36,8 @@ export const getPlayerStats = async (playerId: string) => {
       return null;
     }
     
-    // Find the specific player
-    const playerData = result.data.find(player => player.id === playerId);
+    // Find the specific player - use playerid which is the key in the players table
+    const playerData = result.data.find(player => player.playerid === playerId);
     return playerData || null;
   } catch (error) {
     console.error('Error fetching player stats:', error);

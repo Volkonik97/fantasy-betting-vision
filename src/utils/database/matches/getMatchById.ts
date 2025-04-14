@@ -21,7 +21,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     const idResult = await supabase.from("matches").select("*");
     
     // Filter manually after fetching the data
-    const idMatch = idResult.data?.find(match => match.id === matchId);
+    const idMatch = idResult.data?.find(match => match.gameid === matchId);
       
     if (idResult.error || !idMatch) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}, tentative avec gameid:`, idResult.error);
