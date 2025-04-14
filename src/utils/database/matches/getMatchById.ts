@@ -17,31 +17,24 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Create the query without chaining to avoid type instantiation issues
+    // Get reference to the table
     const matchesTable = supabase.from("matches");
-    const matchQuery = matchesTable.select("*");
-    // Apply the filter as a separate step
-    const filteredMatchQuery = matchQuery.eq("id", matchId);
-    // Execute the query
-    const matchResponse = await filteredMatchQuery.single();
-      
-    // Access properties directly from response object
-    const matchData = matchResponse.data;
-    const matchError = matchResponse.error;
+    // Create the select query
+    const selectQuery = matchesTable.select("*");
     
+    // Execute with ID filter as a completely separate operation
+    const { data: matchData, error: matchError } = await selectQuery.eq("id", matchId).single();
+      
     if (matchError) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      // Use same step-by-step approach
+      // Similarly break this into more steps
       const matchesTableFallback = supabase.from("matches");
-      const gameIdQuery = matchesTableFallback.select("*");
-      const filteredGameIdQuery = gameIdQuery.eq("gameid", matchId);
-      const gameIdResponse = await filteredGameIdQuery.single();
+      const selectQueryFallback = matchesTableFallback.select("*");
       
-      // Access properties directly from response object
-      const gameIdData = gameIdResponse.data;
-      const gameIdError = gameIdResponse.error;
+      // Execute with gameID filter as a separate operation
+      const { data: gameIdData, error: gameIdError } = await selectQueryFallback.eq("gameid", matchId).single();
       
       if (gameIdError) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 

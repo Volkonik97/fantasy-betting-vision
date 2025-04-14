@@ -6,15 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Break up the query chain completely to avoid excessive type instantiation
+    // Get reference to the table
     const statsTable = supabase.from('player_match_stats');
-    const query = statsTable.select('*');
-    const filteredQuery = query.eq('player_id', playerId);
-    const response = await filteredQuery;
+    // Create the select query
+    const selectQuery = statsTable.select('*');
     
-    // Extract data and error properties
-    const data = response.data;
-    const error = response.error;
+    // Execute the query with filter in one step and destructure the result
+    const { data, error } = await selectQuery.eq('player_id', playerId);
     
     if (error) {
       console.error('Error fetching player match stats:', error);
@@ -33,15 +31,13 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Break up the query chain completely to avoid excessive type instantiation
+    // Get reference to the table
     const playersTable = supabase.from('players');
-    const query = playersTable.select('*');
-    const filteredQuery = query.eq('id', playerId);
-    const response = await filteredQuery.maybeSingle();
+    // Create the select query
+    const selectQuery = playersTable.select('*');
     
-    // Extract data and error properties
-    const data = response.data;
-    const error = response.error;
+    // Execute with filter and destructure in one step
+    const { data, error } = await selectQuery.eq('id', playerId).maybeSingle();
     
     if (error) {
       console.error('Error fetching player stats:', error);
@@ -85,16 +81,16 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Break up the query chain completely to avoid excessive type instantiation
+    // Get reference to the table
     const statsTable = supabase.from('player_match_stats');
-    const query = statsTable.select('*');
-    const playerFilteredQuery = query.eq('player_id', playerId);
-    const matchFilteredQuery = playerFilteredQuery.eq('match_id', matchId);
-    const response = await matchFilteredQuery.maybeSingle();
+    // Create the select query
+    const selectQuery = statsTable.select('*');
     
-    // Extract data and error properties
-    const data = response.data;
-    const error = response.error;
+    // Apply filters and execute in a single step with destructuring
+    const { data, error } = await selectQuery
+      .eq('player_id', playerId)
+      .eq('match_id', matchId)
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player match stats:', error);
