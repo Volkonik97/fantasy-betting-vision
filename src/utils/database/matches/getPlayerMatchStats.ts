@@ -33,7 +33,7 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Explicitly use any type to avoid deep type inference issues
+    // Explicitly use any type to avoid deep type inference issues completely
     const response: any = await supabase
       .from('players')
       .select('*')
@@ -86,7 +86,7 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Explicitly use any type to avoid deep type inference issues
+    // Explicitly use any type to avoid deep type inference issues completely
     const response: any = await supabase
       .from('player_match_stats')
       .select('*')
