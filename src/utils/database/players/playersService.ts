@@ -7,33 +7,40 @@ import { adaptPlayerFromDatabase, adaptPlayerForDatabase } from '../adapters/pla
 /**
  * Get players with pagination
  */
-export const getPlayers = async (page = 1, pageSize = 100): Promise<Player[]> => {
+export const getPlayers = async (page = 0, pageSize = 0): Promise<Player[]> => {
   try {
-    console.log(`Fetching players from Supabase (page ${page}, pageSize ${pageSize})`);
+    console.log(`Fetching players from Supabase ${page && pageSize ? `(page ${page}, pageSize ${pageSize})` : '(all players)'}`);
     
-    // Calculate range for pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+    let query = supabase.from('players').select('*');
     
-    // Utiliser un typage explicite pour éviter les erreurs d'inférence de type
-    const response = await supabase
-      .from('players')
-      .select('*')
-      .range(from, to) as { data: any[]; error: any };
+    // Apply pagination only if both parameters are provided and greater than 0
+    if (page > 0 && pageSize > 0) {
+      // Calculate range for pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+    }
     
-    if (response.error) {
-      console.error("Error fetching players:", response.error);
+    // Execute the query
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error("Error fetching players:", error);
       toast.error("Failed to load players");
       return [];
     }
 
-    if (!response.data || response.data.length === 0) {
+    if (!data || data.length === 0) {
       console.log("No players found in database");
       return [];
     }
 
-    console.log(`Found ${response.data.length} players in database (page ${page})`);
-    return response.data.map(adaptPlayerFromDatabase);
+    const logMessage = page > 0 && pageSize > 0
+      ? `Found ${data.length} players in database (page ${page})`
+      : `Found ${data.length} players in database (all players)`;
+    console.log(logMessage);
+    
+    return data.map(adaptPlayerFromDatabase);
   } catch (error) {
     console.error("Exception in getPlayers:", error);
     toast.error("An error occurred while fetching players");

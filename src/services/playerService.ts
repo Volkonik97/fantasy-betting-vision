@@ -7,6 +7,7 @@ import { getPlayers, getPlayerById } from '@/utils/database/playersService';
  */
 export const getAllPlayers = async (page?: number, pageSize?: number): Promise<Player[]> => {
   try {
+    // If page and pageSize are undefined, get all players with no pagination
     return await getPlayers(page, pageSize);
   } catch (error) {
     console.error("Error in getAllPlayers:", error);

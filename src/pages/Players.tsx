@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -24,6 +23,7 @@ const Players = () => {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [displayedPlayers, setDisplayedPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const pageSize = 100;
 
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
@@ -41,13 +41,27 @@ const Players = () => {
   };
 
   useEffect(() => {
-    loadPlayersData();
+    const hasActiveFilters = 
+      searchTerm.trim() !== '' || 
+      selectedRole !== "All" || 
+      selectedRegion !== "All" || 
+      selectedSubRegion !== "All" || 
+      selectedCategory !== "All";
+      
+    if (!hasActiveFilters) {
+      loadPlayersData(currentPage);
+    } else if (allPlayers.length === 0) {
+      loadAllPlayersForFiltering();
+    }
+    
     fetchPlayersCount();
   }, [currentPage]);
 
   useEffect(() => {
-    applyFiltersAndSearch();
-  }, [allPlayers, searchTerm, selectedRole, selectedRegion, selectedSubRegion, selectedCategory]);
+    if (allPlayers.length > 0) {
+      applyFiltersAndSearch();
+    }
+  }, [searchTerm, selectedRole, selectedRegion, selectedSubRegion, selectedCategory, allPlayers]);
 
   const fetchPlayersCount = async () => {
     try {
@@ -60,16 +74,16 @@ const Players = () => {
     }
   };
 
-  const loadPlayersData = async () => {
+  const loadPlayersData = async (page: number) => {
     try {
       setIsLoading(true);
       
       const [playersData, teamsData] = await Promise.all([
-        getAllPlayers(currentPage, pageSize),
+        getAllPlayers(page, pageSize),
         getAllTeams()
       ]);
       
-      console.log(`Loaded ${playersData.length} players (page ${currentPage}) and ${teamsData.length} teams`);
+      console.log(`Loaded ${playersData.length} players (page ${page}) and ${teamsData.length} teams`);
       
       if (playersData.length === 0) {
         toast.error("Aucun joueur trouvé dans la base de données");
@@ -90,12 +104,58 @@ const Players = () => {
       
       console.log(`Processed ${enrichedPlayers.length} enriched players`);
       setAllPlayers(enrichedPlayers);
+      setDisplayedPlayers(enrichedPlayers);
       
       const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
       setAvailableRegions(uniqueRegions);
       
     } catch (error) {
       console.error("Error loading players data:", error);
+      toast.error("Erreur lors du chargement des données des joueurs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAllPlayersForFiltering = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Loading all players for filtering...");
+      
+      const [playersData, teamsData] = await Promise.all([
+        getAllPlayers(), // No pagination parameters = get all players
+        getAllTeams()
+      ]);
+      
+      console.log(`Loaded ${playersData.length} players (all) and ${teamsData.length} teams for filtering`);
+      
+      if (playersData.length === 0) {
+        toast.error("Aucun joueur trouvé dans la base de données");
+        setIsLoading(false);
+        return;
+      }
+      
+      const teamsMap = new Map(teamsData.map(team => [team.id, team]));
+      
+      const enrichedPlayers = playersData.map(player => {
+        const team = teamsMap.get(player.team);
+        return {
+          ...player,
+          teamName: team?.name || "Équipe inconnue",
+          teamRegion: team?.region || "Région inconnue"
+        };
+      });
+      
+      console.log(`Processed ${enrichedPlayers.length} enriched players for filtering`);
+      setAllPlayers(enrichedPlayers);
+      
+      const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
+      setAvailableRegions(uniqueRegions);
+      
+      applyFiltersAndSearch();
+      
+    } catch (error) {
+      console.error("Error loading all players data:", error);
       toast.error("Erreur lors du chargement des données des joueurs");
     } finally {
       setIsLoading(false);
@@ -113,18 +173,40 @@ const Players = () => {
         regionCategories
       ) as (Player & { teamName: string; teamRegion: string })[];
       
+      setFilteredPlayers(filtered);
+      
       if (searchTerm.trim() !== '') {
-        // Use the generic type parameter with explicit type casting to preserve the full player type
         const searchResults = await searchPlayers<Player & { teamName: string; teamRegion: string }>(
           filtered, 
           searchTerm
         );
-        setDisplayedPlayers(searchResults);
+        
+        const totalFilteredPages = Math.ceil(searchResults.length / pageSize);
+        const currentFilteredPage = Math.min(currentPage, totalFilteredPages || 1);
+        
+        const startIndex = (currentFilteredPage - 1) * pageSize;
+        const paginatedResults = searchResults.slice(startIndex, startIndex + pageSize);
+        
+        setDisplayedPlayers(paginatedResults);
+        setTotalPages(totalFilteredPages);
+        if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
+          setCurrentPage(1);
+        }
       } else {
-        setDisplayedPlayers(filtered);
+        const totalFilteredPages = Math.ceil(filtered.length / pageSize);
+        const currentFilteredPage = Math.min(currentPage, totalFilteredPages || 1);
+        
+        const startIndex = (currentFilteredPage - 1) * pageSize;
+        const paginatedResults = filtered.slice(startIndex, startIndex + pageSize);
+        
+        setDisplayedPlayers(paginatedResults);
+        setTotalPages(totalFilteredPages);
+        if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
+          setCurrentPage(1);
+        }
       }
       
-      console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères`);
+      console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères, affichant page ${currentPage}`);
     } catch (error) {
       console.error("Error applying filters:", error);
     }
@@ -132,18 +214,62 @@ const Players = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setCurrentPage(1);
+    
+    if ((term.trim() !== '' || selectedRole !== "All" || selectedRegion !== "All" || 
+         selectedSubRegion !== "All" || selectedCategory !== "All") && 
+        allPlayers.length <= pageSize) {
+      loadAllPlayersForFiltering();
+    }
+  };
+
+  const handleFilterChange = (type: string, value: string) => {
+    setCurrentPage(1);
+    
+    switch(type) {
+      case 'role':
+        setSelectedRole(value);
+        break;
+      case 'region':
+        setSelectedRegion(value);
+        break;
+      case 'subRegion':
+        setSelectedSubRegion(value);
+        break;
+      case 'category':
+        setSelectedCategory(value);
+        break;
+    }
+    
+    if (allPlayers.length <= pageSize) {
+      loadAllPlayersForFiltering();
+    }
   };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
-    setSelectedRole("All");
-    setSelectedCategory("All");
-    setSelectedRegion("All");
-    setSelectedSubRegion("All");
-    setSearchTerm("");
-    
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    const hasActiveFilters = 
+      searchTerm.trim() !== '' || 
+      selectedRole !== "All" || 
+      selectedRegion !== "All" || 
+      selectedSubRegion !== "All" || 
+      selectedCategory !== "All";
+      
+    if (!hasActiveFilters) {
+      loadPlayersData(page);
+    } else {
+      applyFiltersAndSearch();
+    }
+  };
+
+  const displayFilterCount = () => {
+    if (filteredPlayers.length === 0) {
+      return `0 joueur`;
+    }
+    return `${filteredPlayers.length} joueurs`;
   };
 
   return (
@@ -161,17 +287,21 @@ const Players = () => {
 
         <PlayerFilters
           selectedRole={selectedRole}
-          setSelectedRole={setSelectedRole}
+          setSelectedRole={(role) => handleFilterChange('role', role)}
           selectedCategory={selectedCategory}
-          handleCategorySelect={setSelectedCategory}
+          handleCategorySelect={(category) => handleFilterChange('category', category)}
           selectedRegion={selectedRegion}
-          handleRegionSelect={setSelectedRegion}
+          handleRegionSelect={(region) => handleFilterChange('region', region)}
           selectedSubRegion={selectedSubRegion}
-          setSelectedSubRegion={setSelectedSubRegion}
+          setSelectedSubRegion={(subRegion) => handleFilterChange('subRegion', subRegion)}
           roles={roles}
           regionCategories={regionCategories}
           subRegions={subRegions}
         />
+
+        <div className="mb-4 text-sm text-gray-500">
+          {loading ? "Chargement..." : `Affichage de ${displayedPlayers.length} sur ${displayFilterCount()} trouvés`}
+        </div>
 
         <PlayersList players={displayedPlayers} loading={loading} />
 
@@ -199,7 +329,7 @@ const Players = () => {
               </PaginationContent>
             </Pagination>
             <div className="text-center text-sm text-gray-500 mt-2">
-              Total: {totalPlayers} joueurs
+              Total: {filteredPlayers.length > 0 ? filteredPlayers.length : totalPlayers} joueurs
             </div>
           </div>
         )}
