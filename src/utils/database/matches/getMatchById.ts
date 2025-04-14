@@ -17,18 +17,12 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Execute query without type annotations
-    let response;
-    try {
-      response = await supabase
-        .from("matches")
-        .select("*")
-        .eq("id", matchId)
-        .single();
-    } catch (e) {
-      console.error("Error in query execution:", e);
-      throw e;
-    }
+    // Use type assertion to avoid excessive type instantiation
+    const response = await supabase
+      .from("matches")
+      .select("*")
+      .eq("id", matchId)
+      .single();
       
     // Access properties directly from response object
     const matchData = response.data;
@@ -38,17 +32,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      let gameIdResponse;
-      try {
-        gameIdResponse = await supabase
-          .from("matches")
-          .select("*")
-          .eq("gameid", matchId)
-          .single();
-      } catch (e) {
-        console.error("Error in gameid query execution:", e);
-        throw e;
-      }
+      const gameIdResponse = await supabase
+        .from("matches")
+        .select("*")
+        .eq("gameid", matchId)
+        .single();
       
       // Access properties directly from response object
       const gameIdData = gameIdResponse.data;

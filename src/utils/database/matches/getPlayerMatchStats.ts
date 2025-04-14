@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -6,17 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Execute query without type annotations
-    let response;
-    try {
-      response = await supabase
-        .from('player_match_stats')
-        .select('*')
-        .eq('player_id', playerId);
-    } catch (e) {
-      console.error("Error executing player match stats query:", e);
-      throw e;
-    }
+    // Use type assertion to avoid excessive type instantiation
+    const response = await supabase
+      .from('player_match_stats')
+      .select('*')
+      .eq('player_id', playerId);
     
     // Extract data and error properties
     const data = response.data;
@@ -39,18 +32,12 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Execute query without type annotations
-    let response;
-    try {
-      response = await supabase
-        .from('players')
-        .select('*')
-        .eq('id', playerId)
-        .maybeSingle();
-    } catch (e) {
-      console.error("Error executing player stats query:", e);
-      throw e;
-    }
+    // Use type assertion to avoid excessive type instantiation
+    const response = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', playerId)
+      .maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
@@ -98,19 +85,13 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Execute query without type annotations
-    let response;
-    try {
-      response = await supabase
-        .from('player_match_stats')
-        .select('*')
-        .eq('player_id', playerId)
-        .eq('match_id', matchId)
-        .maybeSingle();
-    } catch (e) {
-      console.error("Error executing player match stats by player and match query:", e);
-      throw e;
-    }
+    // Use type assertion to avoid excessive type instantiation
+    const response = await supabase
+      .from('player_match_stats')
+      .select('*')
+      .eq('player_id', playerId)
+      .eq('match_id', matchId)
+      .maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
