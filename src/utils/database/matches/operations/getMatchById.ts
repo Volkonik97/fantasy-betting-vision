@@ -26,9 +26,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .from('matches')
       .select('*')
       .eq('id', matchId)
-      .maybeSingle() as { data: any; error: any };
+      .maybeSingle();
     
-    // Manually extract the response parts
+    // Safely extract data and error
     const idData = idResponse.data;
     const idError = idResponse.error;
     
@@ -41,9 +41,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
-        .maybeSingle() as { data: any; error: any };
+        .maybeSingle();
       
-      // Manually extract the response parts
+      // Safely extract data and error
       const gameIdData = gameIdResponse.data;
       const gameIdError = gameIdResponse.error;
       
