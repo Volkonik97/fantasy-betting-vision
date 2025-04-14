@@ -17,13 +17,14 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Use type assertion to avoid deep type inference - store response in a local variable
+    // Avoid deep type inference by using type assertion and avoiding property destructuring
     const response = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
       .single();
       
+    // Access properties after query to avoid deep type inference
     const matchData = response.data;
     const matchError = response.error;
     
@@ -37,6 +38,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq("gameid", matchId)
         .single();
       
+      // Access properties after query to avoid deep type inference
       const gameIdData = gameIdResponse.data;
       const gameIdError = gameIdResponse.error;
       

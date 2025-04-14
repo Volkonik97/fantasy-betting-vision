@@ -6,12 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Store the entire response and then extract parts to avoid deep type inference
-    const response = await supabase
+    // Explicitly use any type to avoid deep type inference issues
+    const response: any = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId);
     
+    // Extract data and error properties after the query
     const data = response.data;
     const error = response.error;
     
@@ -32,13 +33,14 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Store the response in a variable first to avoid deep type inference
-    const response = await supabase
+    // Explicitly use any type to avoid deep type inference issues
+    const response: any = await supabase
       .from('players')
       .select('*')
       .eq('id', playerId)
       .maybeSingle();
     
+    // Extract data and error properties after the query
     const data = response.data;
     const error = response.error;
     
@@ -84,14 +86,15 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Store response in a variable to avoid deep type inference
-    const response = await supabase
+    // Explicitly use any type to avoid deep type inference issues
+    const response: any = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId)
       .eq('match_id', matchId)
       .maybeSingle();
     
+    // Extract data and error properties after the query
     const data = response.data;
     const error = response.error;
     
