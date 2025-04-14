@@ -6,20 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Get reference to the table
-    const statsTable = supabase.from('player_match_stats');
-    // Create the select query
-    const selectQuery = statsTable.select('*');
+    // Fetch all player match stats and filter manually
+    const result = await supabase.from('player_match_stats').select('*');
     
-    // Execute the query with filter in one step and destructure the result
-    const { data, error } = await selectQuery.eq('player_id', playerId);
-    
-    if (error) {
-      console.error('Error fetching player match stats:', error);
+    if (result.error) {
+      console.error('Error fetching player match stats:', result.error);
       return null;
     }
     
-    return data;
+    // Filter the results after fetching
+    const playerStats = result.data.filter(stat => stat.player_id === playerId);
+    return playerStats;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;
@@ -31,20 +28,17 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Get reference to the table
-    const playersTable = supabase.from('players');
-    // Create the select query
-    const selectQuery = playersTable.select('*');
+    // Fetch all players data and filter manually
+    const result = await supabase.from('players').select('*');
     
-    // Execute with filter and destructure in one step
-    const { data, error } = await selectQuery.eq('id', playerId).maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching player stats:', error);
+    if (result.error) {
+      console.error('Error fetching player stats:', result.error);
       return null;
     }
     
-    return data;
+    // Find the specific player
+    const playerData = result.data.find(player => player.id === playerId);
+    return playerData || null;
   } catch (error) {
     console.error('Error fetching player stats:', error);
     return null;
@@ -81,23 +75,20 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Get reference to the table
-    const statsTable = supabase.from('player_match_stats');
-    // Create the select query
-    const selectQuery = statsTable.select('*');
+    // Fetch all relevant stats and filter manually
+    const result = await supabase.from('player_match_stats').select('*');
     
-    // Apply filters and execute in a single step with destructuring
-    const { data, error } = await selectQuery
-      .eq('player_id', playerId)
-      .eq('match_id', matchId)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('Error fetching player match stats:', error);
+    if (result.error) {
+      console.error('Error fetching player match stats:', result.error);
       return null;
     }
     
-    return data;
+    // Apply multiple filters after fetching
+    const playerMatchStat = result.data.find(
+      stat => stat.player_id === playerId && stat.match_id === matchId
+    );
+    
+    return playerMatchStat || null;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;

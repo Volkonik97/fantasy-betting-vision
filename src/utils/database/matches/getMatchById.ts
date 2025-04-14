@@ -17,35 +17,29 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Get reference to the table
-    const matchesTable = supabase.from("matches");
-    // Create the select query
-    const selectQuery = matchesTable.select("*");
+    // Try to fetch by ID first without chaining the eq method
+    const idResult = await supabase.from("matches").select("*");
     
-    // Execute with ID filter as a completely separate operation
-    const { data: matchData, error: matchError } = await selectQuery.eq("id", matchId).single();
+    // Filter manually after fetching the data
+    const idMatch = idResult.data?.find(match => match.id === matchId);
       
-    if (matchError) {
-      console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
+    if (idResult.error || !idMatch) {
+      console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}, tentative avec gameid:`, idResult.error);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      // Similarly break this into more steps
-      const matchesTableFallback = supabase.from("matches");
-      const selectQueryFallback = matchesTableFallback.select("*");
+      const gameIdResult = await supabase.from("matches").select("*");
+      const gameIdMatch = gameIdResult.data?.find(match => match.gameid === matchId);
       
-      // Execute with gameID filter as a separate operation
-      const { data: gameIdData, error: gameIdError } = await selectQueryFallback.eq("gameid", matchId).single();
-      
-      if (gameIdError) {
+      if (gameIdResult.error || !gameIdMatch) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 
-          { idError: matchError, gameidError: gameIdError });
+          { idError: idResult.error, gameidError: gameIdResult.error });
         toast.error("Échec du chargement du match");
         return null;
       }
       
-      data = gameIdData;
+      data = gameIdMatch;
     } else {
-      data = matchData;
+      data = idMatch;
     }
 
     if (!data) {
