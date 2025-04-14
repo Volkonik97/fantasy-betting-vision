@@ -49,7 +49,8 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
   if (loading) {
     return (
       <div className="text-center py-10">
-        <p className="text-gray-500">Loading players...</p>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+        <p className="text-gray-500">Chargement des joueurs...</p>
       </div>
     );
   }
@@ -57,7 +58,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
   if (players.length === 0) {
     return (
       <div className="col-span-full py-10 text-center">
-        <p className="text-gray-500">No players found matching your filters.</p>
+        <p className="text-gray-500">Aucun joueur trouvé correspondant à vos filtres.</p>
       </div>
     );
   }

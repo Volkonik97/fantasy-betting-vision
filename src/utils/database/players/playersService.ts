@@ -5,16 +5,21 @@ import { toast } from 'sonner';
 import { adaptPlayerFromDatabase, adaptPlayerForDatabase } from '../adapters/playerAdapter';
 
 /**
- * Get all players from database
+ * Get players with pagination
  */
-export const getPlayers = async (): Promise<Player[]> => {
+export const getPlayers = async (page = 1, pageSize = 100): Promise<Player[]> => {
   try {
-    console.log("Fetching all players from Supabase");
+    console.log(`Fetching players from Supabase (page ${page}, pageSize ${pageSize})`);
+    
+    // Calculate range for pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
     
     // Utiliser un typage explicite pour éviter les erreurs d'inférence de type
     const response = await supabase
       .from('players')
-      .select('*') as { data: any[]; error: any };
+      .select('*')
+      .range(from, to) as { data: any[]; error: any };
     
     if (response.error) {
       console.error("Error fetching players:", response.error);
@@ -27,12 +32,33 @@ export const getPlayers = async (): Promise<Player[]> => {
       return [];
     }
 
-    console.log(`Found ${response.data.length} players in database`);
+    console.log(`Found ${response.data.length} players in database (page ${page})`);
     return response.data.map(adaptPlayerFromDatabase);
   } catch (error) {
     console.error("Exception in getPlayers:", error);
     toast.error("An error occurred while fetching players");
     return [];
+  }
+};
+
+/**
+ * Get total count of players (for pagination)
+ */
+export const getPlayersCount = async (): Promise<number> => {
+  try {
+    const response = await supabase
+      .from('players')
+      .select('playerid', { count: 'exact', head: true }) as { count: number; error: any };
+    
+    if (response.error) {
+      console.error("Error counting players:", response.error);
+      return 0;
+    }
+    
+    return response.count || 0;
+  } catch (error) {
+    console.error("Exception in getPlayersCount:", error);
+    return 0;
   }
 };
 
@@ -115,6 +141,7 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
 
 export default {
   getPlayers,
+  getPlayersCount,
   getPlayerById,
   savePlayers
 };

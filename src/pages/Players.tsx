@@ -5,8 +5,10 @@ import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { getAllPlayers } from "@/services/playerService";
 import { getAllTeams } from "@/services/teamService";
+import { getPlayersCount } from "@/utils/database/players/playersService";
 import { toast } from "sonner";
 
 const Players = () => {
@@ -18,6 +20,10 @@ const Players = () => {
   const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const [loading, setIsLoading] = useState(true);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPlayers, setTotalPlayers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 100; // Nombre de joueurs par page
 
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
@@ -35,11 +41,30 @@ const Players = () => {
 
   useEffect(() => {
     loadPlayersData();
-  }, []);
+    fetchPlayersCount();
+  }, [currentPage]);
 
   useEffect(() => {
+    // Réinitialiser la page lors du changement de filtres
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      // Si déjà sur la page 1, recharger manuellement les données
+      loadPlayersData();
+    }
     setSelectedSubRegion("All");
-  }, [selectedRegion]);
+  }, [selectedRole, selectedRegion, selectedCategory]);
+
+  const fetchPlayersCount = async () => {
+    try {
+      const count = await getPlayersCount();
+      setTotalPlayers(count);
+      setTotalPages(Math.ceil(count / pageSize));
+      console.log(`Total players: ${count}, Total pages: ${Math.ceil(count / pageSize)}`);
+    } catch (error) {
+      console.error("Error fetching players count:", error);
+    }
+  };
 
   const loadPlayersData = async () => {
     try {
@@ -47,11 +72,11 @@ const Players = () => {
       
       // Load players and teams in parallel for efficiency
       const [playersData, teamsData] = await Promise.all([
-        getAllPlayers(),
+        getAllPlayers(currentPage, pageSize),
         getAllTeams()
       ]);
       
-      console.log(`Loaded ${playersData.length} players and ${teamsData.length} teams`);
+      console.log(`Loaded ${playersData.length} players (page ${currentPage}) and ${teamsData.length} teams`);
       
       if (playersData.length === 0) {
         toast.error("Aucun joueur trouvé dans la base de données");
@@ -105,6 +130,12 @@ const Players = () => {
     setSearchTerm(term);
   };
 
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -133,6 +164,35 @@ const Players = () => {
         />
 
         <PlayersList players={filteredPlayers} loading={loading} />
+
+        {!loading && totalPages > 1 && (
+          <div className="mt-8">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                
+                <PaginationItem className="flex items-center mx-2">
+                  <span>Page {currentPage} sur {totalPages}</span>
+                </PaginationItem>
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+            <div className="text-center text-sm text-gray-500 mt-2">
+              Total: {totalPlayers} joueurs
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
