@@ -1,6 +1,7 @@
 
 import { Player } from '@/utils/models/types';
-import { getPlayers, getPlayerById, getPlayersCount } from '@/utils/database/playersService';
+import { getPlayers, getPlayerById } from '@/utils/database/playersService';
+import { getPlayersCount } from '@/utils/database/players/playersService';
 
 /**
  * Get all players with optional pagination
