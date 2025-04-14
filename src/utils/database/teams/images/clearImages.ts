@@ -50,8 +50,8 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
       return { success: false, clearedCount: 0 };
     }
     
-    // Extract count with explicit type checking
-    const beforeCount = typeof countResponse.count === 'number' ? countResponse.count : 0;
+    // Extract count 
+    const beforeCount = countResponse.count !== null ? countResponse.count : 0;
 
     // Update all players to set image to null
     const updateResponse = await supabase

@@ -28,13 +28,9 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .eq('id', matchId)
       .maybeSingle();
     
-    // Safely extract data and error
-    const idData = idResponse.data;
-    const idError = idResponse.error;
-    
     // Handle by ID response
-    if (idError) {
-      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
+    if (idResponse.error) {
+      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idResponse.error);
       
       // Try with gameid as fallback
       const gameIdResponse = await supabase
@@ -43,36 +39,32 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Safely extract data and error
-      const gameIdData = gameIdResponse.data;
-      const gameIdError = gameIdResponse.error;
-      
       // Handle gameid response
-      if (gameIdError) {
+      if (gameIdResponse.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError, gameidError: gameIdError });
+          { idError: idResponse.error, gameidError: gameIdResponse.error });
         toast.error("Match not found");
         return null;
       }
       
       // Check if we have data
-      if (!gameIdData) {
+      if (!gameIdResponse.data) {
         return null;
       }
       
       // Convert to our application model
-      return adaptMatchFromDatabase(gameIdData as RawDatabaseMatch);
+      return adaptMatchFromDatabase(gameIdResponse.data as RawDatabaseMatch);
     }
     
     // Check if we have data from ID query
-    if (!idData) {
+    if (!idResponse.data) {
       console.error(`No data found for match ${matchId}`);
       toast.error("Match not found");
       return null;
     }
     
     // Convert to our application model
-    return adaptMatchFromDatabase(idData as RawDatabaseMatch);
+    return adaptMatchFromDatabase(idResponse.data as RawDatabaseMatch);
     
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
