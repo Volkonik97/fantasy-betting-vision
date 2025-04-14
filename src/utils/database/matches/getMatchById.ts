@@ -17,12 +17,12 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Use `any` to bypass TypeScript's deep type inference completely
-    const response: any = await supabase
+    // Bypass TypeScript's type checking completely by using any
+    const response = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
-      .single();
+      .single() as any;
       
     // Access properties after query to avoid deep type inference
     const matchData = response.data;
@@ -32,11 +32,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const gameIdResponse: any = await supabase
+      const gameIdResponse = await supabase
         .from("matches")
         .select("*")
         .eq("gameid", matchId)
-        .single();
+        .single() as any;
       
       // Access properties after query to avoid deep type inference
       const gameIdData = gameIdResponse.data;
