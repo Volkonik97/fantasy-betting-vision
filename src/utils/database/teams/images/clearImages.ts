@@ -14,19 +14,10 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   
   try {
     // Update player record to set image to null
-    // Use explicit typing to avoid deep inference issues
-    let response: { error: any };
-    
-    try {
-      // Break the type inference with explicit typing
-      response = await supabase
-        .from('players')
-        .update({ image: null })
-        .eq('id', playerId) as { error: any };
-    } catch (e) {
-      console.error("Error executing update query:", e);
-      return false;
-    }
+    const response = await supabase
+      .from('players')
+      .update({ image: null })
+      .eq('id', playerId) as { error: any };
     
     // Handle error case explicitly
     if (response.error !== null) {
@@ -48,19 +39,10 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 export const clearAllPlayerImageReferences = async (): Promise<{ success: boolean; clearedCount: number }> => {
   try {
     // Get count of players with images before clearing
-    // Use explicit typing to avoid deep inference issues
-    let countResponse: { error: any; count: number | null };
-    
-    try {
-      // Break the type inference with explicit typing
-      countResponse = await supabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-        .not('image', 'is', null) as { error: any; count: number | null };
-    } catch (e) {
-      console.error("Error executing count query:", e);
-      return { success: false, clearedCount: 0 };
-    }
+    const countResponse = await supabase
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+      .not('image', 'is', null) as { error: any; count: number | null };
     
     // Handle count response error
     if (countResponse.error !== null) {
@@ -72,19 +54,10 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     const beforeCount = typeof countResponse.count === 'number' ? countResponse.count : 0;
 
     // Update all players to set image to null
-    // Use explicit typing to avoid deep inference issues
-    let updateResponse: { error: any };
-    
-    try {
-      // Break the type inference with explicit typing
-      updateResponse = await supabase
-        .from('players')
-        .update({ image: null })
-        .not('image', 'is', null) as { error: any };
-    } catch (e) {
-      console.error("Error executing update query:", e);
-      return { success: false, clearedCount: 0 };
-    }
+    const updateResponse = await supabase
+      .from('players')
+      .update({ image: null })
+      .not('image', 'is', null) as { error: any };
     
     // Handle update response error
     if (updateResponse.error !== null) {

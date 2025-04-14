@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -43,50 +44,53 @@ const Players = () => {
     try {
       setIsLoading(true);
       
-      // 🧹 Vide le cache pour éviter d'avoir des données périmées
+      // Vider le cache pour éviter d'avoir des données périmées
       clearTeamsCache();
+      console.log("Fetching teams from Supabase...");
       const teams = await getTeams();
+      console.log(`Received ${teams.length} teams from database`);
       
-      // 🔍 Log détaillé de Gen.G dans Players.tsx
-      teams
-        .filter(t => t.name.toLowerCase().includes("gen.g"))
-        .forEach(t => {
-          console.warn("🔍 Gen.G dans Players.tsx :", {
-            id: t.id,
-            playersCount: t.players?.length,
-            playerNames: t.players?.map(p => p.name)
-          });
-        });
-
+      // Log des équipes pour débogage
+      if (teams.length === 0) {
+        toast.warning("Aucune équipe trouvée dans la base de données");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Team regions:", teams.map(t => t.region).filter(Boolean));
+      
+      // Préparer un tableau pour stocker tous les joueurs avec leurs infos d'équipe
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
 
+      // Traiter chaque équipe pour extraire ses joueurs
       teams.forEach(team => {
-        if (!Array.isArray(team.players) || team.players.length === 0) return;
-        if (team.name.toLowerCase().includes("gen.g")) {
-          console.warn(`🧪 Gen.G team.id = ${team.id}`);
-          team.players?.forEach((p) => {
-            console.warn("➡️ Player in Gen.G (raw):", p);
-          });
+        if (!team.players || !Array.isArray(team.players) || team.players.length === 0) {
+          console.log(`L'équipe ${team.name} n'a pas de joueurs ou un format invalide`);
+          return;
         }
 
-        team.players.forEach((player, playerIndex) => {
+        console.log(`Traitement de l'équipe ${team.name} avec ${team.players.length} joueurs`);
+
+        // Ajouter chaque joueur au tableau avec les infos de son équipe
+        team.players.forEach(player => {
           if (!player.id || !player.name) {
-            console.warn(`⚠️ Joueur ignoré dans ${team.name} :`, player);
+            console.warn(`⚠️ Joueur ignoré dans ${team.name} car données incomplètes:`, player);
             return;
           }
 
-          console.log(`✅ Ajout du joueur ${player.name} (ID: ${player.id}) depuis ${team.name}`);
-
           playersWithTeamInfo.push({
             ...player,
-            teamName: team.name || "Unknown",
-            teamRegion: team.region || "Unknown",
+            teamName: team.name || "Équipe inconnue",
+            teamRegion: team.region || "Région inconnue",
           });
         });
       });
 
+      console.log(`Total de ${playersWithTeamInfo.length} joueurs traités`);
       setAllPlayers(playersWithTeamInfo);
-      const uniqueRegions = [...new Set(teams.map(team => team.region))].filter(Boolean);
+      
+      // Extraire les régions uniques pour les filtres
+      const uniqueRegions = [...new Set(teams.map(team => team.region).filter(Boolean))];
       setAvailableRegions(uniqueRegions);
 
       if (playersWithTeamInfo.length === 0) {

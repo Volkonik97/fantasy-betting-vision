@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -33,6 +34,8 @@ const PlayerDetails = () => {
       
       setIsLoading(true);
       try {
+        console.log(`Chargement des données pour le joueur ${id}`);
+        
         // Get player data
         const playerData = await getPlayerById(id);
         if (!playerData) {
@@ -41,26 +44,32 @@ const PlayerDetails = () => {
           return;
         }
         
-        console.log("Player data:", playerData);
+        console.log("Données du joueur récupérées:", playerData);
         setPlayer(playerData);
         
         // Get team name
         if (playerData.team) {
+          console.log(`Récupération des détails de l'équipe ${playerData.team}`);
           const team = await getTeamById(playerData.team);
           if (team) {
             setTeamName(team.name);
+            console.log(`Nom de l'équipe trouvé: ${team.name}`);
+          } else {
+            console.warn(`Équipe ${playerData.team} non trouvée dans la base de données`);
           }
         }
         
         // Get match statistics directly for this player
+        console.log(`Récupération des statistiques de match pour le joueur ${id}`);
         const stats = await getPlayerStats(id);
-        console.log("Player match stats:", stats);
-        setMatchStats(stats);
+        console.log("Statistiques de match récupérées:", stats);
+        setMatchStats(stats || []);
         
         // Get timeline statistics for this player
         try {
+          console.log(`Récupération des statistiques timeline pour le joueur ${id}`);
           const timeline = await getPlayerTimelineStats(id);
-          console.log("Player timeline stats:", timeline);
+          console.log("Statistiques timeline récupérées:", timeline);
           setTimelineStats(timeline);
         } catch (timelineError) {
           console.error("Erreur lors du chargement des statistiques timeline:", timelineError);

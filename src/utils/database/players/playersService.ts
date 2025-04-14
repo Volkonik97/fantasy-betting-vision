@@ -9,21 +9,26 @@ import { adaptPlayerFromDatabase, adaptPlayerForDatabase } from '../adapters/pla
  */
 export const getPlayers = async (): Promise<Player[]> => {
   try {
-    const { data: playersData, error } = await supabase
+    console.log("Fetching all players from Supabase");
+    
+    // Utiliser un typage explicite pour éviter les erreurs d'inférence de type
+    const response = await supabase
       .from('players')
-      .select('*');
-
-    if (error) {
-      console.error("Error fetching players:", error);
+      .select('*') as { data: any[]; error: any };
+    
+    if (response.error) {
+      console.error("Error fetching players:", response.error);
       toast.error("Failed to load players");
       return [];
     }
 
-    if (!playersData || playersData.length === 0) {
+    if (!response.data || response.data.length === 0) {
+      console.log("No players found in database");
       return [];
     }
 
-    return playersData.map(adaptPlayerFromDatabase);
+    console.log(`Found ${response.data.length} players in database`);
+    return response.data.map(adaptPlayerFromDatabase);
   } catch (error) {
     console.error("Exception in getPlayers:", error);
     toast.error("An error occurred while fetching players");
@@ -36,23 +41,33 @@ export const getPlayers = async (): Promise<Player[]> => {
  */
 export const getPlayerById = async (playerId: string): Promise<Player | null> => {
   try {
-    const { data: playerData, error } = await supabase
+    if (!playerId) {
+      console.error("No player ID provided");
+      return null;
+    }
+    
+    console.log(`Fetching player details for ID: ${playerId}`);
+    
+    // Utiliser un typage explicite pour éviter les erreurs d'inférence de type
+    const response = await supabase
       .from('players')
       .select('*')
       .eq('playerid', playerId)
-      .single();
+      .single() as { data: any; error: any };
 
-    if (error) {
-      console.error("Error fetching player:", error);
+    if (response.error) {
+      console.error("Error fetching player:", response.error);
       toast.error("Failed to load player details");
       return null;
     }
 
-    if (!playerData) {
+    if (!response.data) {
+      console.log(`No player found with ID: ${playerId}`);
       return null;
     }
 
-    return adaptPlayerFromDatabase(playerData);
+    console.log(`Successfully fetched player: ${response.data.playername}`);
+    return adaptPlayerFromDatabase(response.data);
   } catch (error) {
     console.error("Exception in getPlayerById:", error);
     toast.error("An error occurred while fetching player details");
@@ -76,16 +91,15 @@ export const savePlayers = async (players: Player[]): Promise<boolean> => {
     const dbPlayers = players.map(player => adaptPlayerForDatabase(player));
 
     // Perform upsert operation with explicit cast to bypass type checking
-    // Supabase will map the fields correctly at runtime
-    const { error } = await supabase
+    const response = await supabase
       .from('players')
       .upsert(dbPlayers as any, {
         onConflict: 'playerid',
         ignoreDuplicates: false
-      });
+      }) as { error: any };
 
-    if (error) {
-      console.error("Error saving players:", error);
+    if (response.error) {
+      console.error("Error saving players:", response.error);
       toast.error("Failed to save players to database");
       return false;
     }

@@ -22,20 +22,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    // Use explicit typing to avoid deep inference issues
-    let idResponse: { data: any; error: any };
-    
-    try {
-      // Break the type inference with explicit typing
-      idResponse = await supabase
-        .from('matches')
-        .select('*')
-        .eq('id', matchId)
-        .maybeSingle() as { data: any; error: any };
-    } catch (e) {
-      console.error("Error executing ID query:", e);
-      return null;
-    }
+    const idResponse = await supabase
+      .from('matches')
+      .select('*')
+      .eq('id', matchId)
+      .maybeSingle() as { data: any; error: any };
     
     // Manually extract the response parts
     const idData = idResponse.data;
@@ -46,20 +37,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
       
       // Try with gameid as fallback
-      // Use explicit typing to avoid deep inference issues
-      let gameIdResponse: { data: any; error: any };
-      
-      try {
-        // Break the type inference with explicit typing
-        gameIdResponse = await supabase
-          .from('matches')
-          .select('*')
-          .eq('gameid', matchId)
-          .maybeSingle() as { data: any; error: any };
-      } catch (e) {
-        console.error("Error executing gameid query:", e);
-        return null;
-      }
+      const gameIdResponse = await supabase
+        .from('matches')
+        .select('*')
+        .eq('gameid', matchId)
+        .maybeSingle() as { data: any; error: any };
       
       // Manually extract the response parts
       const gameIdData = gameIdResponse.data;

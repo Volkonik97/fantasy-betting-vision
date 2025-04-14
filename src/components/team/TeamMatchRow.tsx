@@ -1,10 +1,10 @@
+
 import React from "react";
 import { Match, Team } from "@/utils/models/types";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { format, parseISO, isValid } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TeamMatchRowProps {
   match: Match;
@@ -15,6 +15,7 @@ interface TeamMatchRowProps {
 const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
   const [opponentLogo, setOpponentLogo] = React.useState<string | null>(null);
   const [logoError, setLogoError] = React.useState(false);
+  const logoLoadAttempted = React.useRef(false);
 
   if (!match.teamBlue || !match.teamRed) {
     console.error(`Données de match incomplètes pour le match ${match.id}`);
@@ -58,13 +59,26 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
   React.useEffect(() => {
     const loadOpponentLogo = async () => {
       try {
-        if (!opponent.logo && opponent.id) {
+        // Éviter les tentatives multiples de chargement si une erreur s'est déjà produite
+        if (logoError || logoLoadAttempted.current) {
+          return;
+        }
+        
+        logoLoadAttempted.current = true;
+        
+        // Utiliser le logo si déjà disponible
+        if (opponent.logo) {
+          setOpponentLogo(opponent.logo);
+          return;
+        }
+        
+        // Sinon tenter de le récupérer
+        if (opponent.id) {
+          console.log(`Chargement du logo pour l'équipe ${opponent.name} (${opponent.id})`);
           const logo = await getTeamLogoUrl(opponent.id);
           if (logo) {
             setOpponentLogo(logo);
           }
-        } else if (opponent.logo) {
-          setOpponentLogo(opponent.logo);
         }
       } catch (error) {
         console.error(`Erreur lors du chargement du logo pour ${opponent.name}:`, error);
@@ -73,7 +87,7 @@ const TeamMatchRow = ({ match, teamId, teamName }: TeamMatchRowProps) => {
     };
 
     loadOpponentLogo();
-  }, [opponent.id, opponent.logo, opponent.name]);
+  }, [opponent.id, opponent.logo, opponent.name, logoError]);
 
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50">
