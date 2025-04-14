@@ -17,22 +17,28 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Avoid deep type instantiation by using any and handling the response manually
-    const { data: matchData, error: matchError } = await supabase
+    // Use type assertion to avoid deep type inference - store response in a local variable
+    const response = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
       .single();
+      
+    const matchData = response.data;
+    const matchError = response.error;
     
     if (matchError) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const { data: gameIdData, error: gameIdError } = await supabase
+      const gameIdResponse = await supabase
         .from("matches")
         .select("*")
         .eq("gameid", matchId)
         .single();
+      
+      const gameIdData = gameIdResponse.data;
+      const gameIdError = gameIdResponse.error;
       
       if (gameIdError) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 
