@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/models/types';
 import { getPlayers, getPlayerById } from '@/utils/database/playersService';
 import { getPlayersCount } from '@/utils/database/players/playersService';
@@ -89,6 +88,18 @@ export const searchPlayers = async <T extends Player>(
 };
 
 /**
+ * Maps normalized role names (UI display names) to database role values
+ */
+const roleMapping: Record<string, string[]> = {
+  'All': ['top', 'jng', 'mid', 'bot', 'sup'], // All roles
+  'Top': ['top'],
+  'Jungle': ['jng'],
+  'Mid': ['mid'],
+  'ADC': ['bot', 'adc'], // Match both "bot" and "adc" values
+  'Support': ['sup', 'support'] // Match both "sup" and "support" values
+};
+
+/**
  * Filtre les joueurs par rôle, région et catégorie
  * Version améliorée avec meilleure gestion du filtrage par rôle
  */
@@ -103,9 +114,16 @@ export const filterPlayers = (
   console.log(`Filtering players - Role: ${role}, Region: ${region}, SubRegion: ${subRegion}, Category: ${category}`);
   console.log(`Total players before filtering: ${players.length}`);
   
+  // Get the list of database role values that match the selected role filter
+  const validRoles = roleMapping[role] || [];
+  
+  if (role !== 'All') {
+    console.log(`Role filter "${role}" maps to database values: [${validRoles.join(', ')}]`);
+  }
+  
   return players.filter(player => {
-    // Vérifier le rôle du joueur - correction du bug de filtrage par rôle
-    const roleMatch = role === 'All' || player.role === role;
+    // Check if player's role matches any of the valid roles for the selected filter
+    const roleMatch = role === 'All' || (player.role && validRoles.includes(player.role.toLowerCase()));
     
     // Vérifier si la région du joueur correspond
     const regionMatch = region === 'All' || player.teamRegion === region;

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -28,7 +27,7 @@ const Players = () => {
   const [filteredPlayers, setFilteredPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
   const pageSize = 100;
 
-  // Définition des rôles pour le filtrage
+  // Définition des rôles pour le filtrage - using consistent role names
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
   const regionCategories = {
@@ -188,6 +187,12 @@ const Players = () => {
   const applyFiltersAndSearch = async () => {
     try {
       console.log(`Applying filters - Role: ${selectedRole}, Region: ${selectedRegion}, SubRegion: ${selectedSubRegion}, Category: ${selectedCategory}`);
+      
+      // Log for debugging the database values
+      if (allPlayers.length > 0) {
+        const roleValues = [...new Set(allPlayers.map(p => p.role))];
+        console.log("Actual role values in data:", roleValues);
+      }
       
       // Appliquer le filtrage
       let filtered = filterPlayers(
