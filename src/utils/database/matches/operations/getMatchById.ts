@@ -25,44 +25,40 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     let matchData = null;
     
     // Try to fetch by ID first
-    const idQuery = await supabase
-      .from('matches')
-      .select('*')
-      .eq('id', matchId);
-      
-    if (idQuery.error) {
-      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idQuery.error);
+    const idResult = await supabase.from('matches').select('*');
+    const idFiltered = idResult.data?.filter(match => match.id === matchId);
+    
+    if (idResult.error) {
+      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idResult.error);
       
       // Try with gameid as fallback
-      const gameIdQuery = await supabase
-        .from('matches')
-        .select('*')
-        .eq('gameid', matchId);
+      const gameIdResult = await supabase.from('matches').select('*');
+      const gameIdFiltered = gameIdResult.data?.filter(match => match.gameid === matchId);
       
-      if (gameIdQuery.error) {
+      if (gameIdResult.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError: idQuery.error, gameIdError: gameIdQuery.error });
+          { idError: idResult.error, gameIdError: gameIdResult.error });
         toast.error("Match not found");
         return null;
       }
       
       // Check if we have data
-      if (!gameIdQuery.data || gameIdQuery.data.length === 0) {
+      if (!gameIdFiltered || gameIdFiltered.length === 0) {
         console.error(`No data found for match with gameid ${matchId}`);
         toast.error("Match not found");
         return null;
       }
       
-      matchData = gameIdQuery.data[0];
+      matchData = gameIdFiltered[0];
     } else {
       // Check if we have data
-      if (!idQuery.data || idQuery.data.length === 0) {
+      if (!idFiltered || idFiltered.length === 0) {
         console.error(`No data found for match with id ${matchId}`);
         toast.error("Match not found");
         return null;
       }
       
-      matchData = idQuery.data[0];
+      matchData = idFiltered[0];
     }
     
     // Convert to our application model

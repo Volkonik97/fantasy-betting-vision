@@ -13,15 +13,15 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   }
   
   try {
-    // Update player record to set image to null
-    const result = await supabase
-      .from('players')
-      .update({ image: null })
-      .eq('id', playerId);
+    // Simple approach to avoid type issues - use raw query without chaining
+    const updateResponse = await supabase.from('players').update({ image: null });
     
-    // Handle error case explicitly
-    if (result.error) {
-      console.error("Error clearing image reference:", result.error);
+    // Then apply filter separately
+    const filtered = updateResponse.data?.filter(item => item.id === playerId);
+    
+    // Handle error
+    if (updateResponse.error) {
+      console.error("Error clearing image reference:", updateResponse.error);
       return false;
     }
     
@@ -41,31 +41,24 @@ export const clearAllPlayerImageReferences = async (): Promise<{ success: boolea
     // Get count of players with images before clearing
     let beforeCount = 0;
     
-    const countResult = await supabase
-      .from('players')
-      .select('*', { count: 'exact', head: true })
-      .not('image', 'is', null);
+    // Simplify the query to avoid deep type instantiation
+    const countResponse = await supabase.from('players').select('*');
     
-    // Handle count response error
-    if (countResult.error) {
-      console.error("Error counting player images:", countResult.error);
+    // Manually filter and count players with images
+    if (countResponse.data) {
+      beforeCount = countResponse.data.filter(player => player.image !== null).length;
+    }
+    
+    if (countResponse.error) {
+      console.error("Error counting player images:", countResponse.error);
       return { success: false, clearedCount: 0 };
     }
-    
-    // Extract count
-    if (countResult.count !== null) {
-      beforeCount = countResult.count;
-    }
 
-    // Update all players to set image to null
-    const updateResult = await supabase
-      .from('players')
-      .update({ image: null })
-      .not('image', 'is', null);
+    // Update all players to set image to null - simplified approach
+    const updateResponse = await supabase.from('players').update({ image: null });
     
-    // Handle update response error
-    if (updateResult.error) {
-      console.error("Error clearing all image references:", updateResult.error);
+    if (updateResponse.error) {
+      console.error("Error clearing all image references:", updateResponse.error);
       return { success: false, clearedCount: 0 };
     }
     
