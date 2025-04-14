@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
-import { Player } from "@/utils/models/types";
+import { Player, PlayerRole } from "@/utils/models/types";
 import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
-import { getPlayers } from "@/utils/database/playersService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
@@ -42,40 +41,51 @@ const Players = () => {
     setSelectedSubRegion("All");
   }, [selectedRegion]);
 
+  const mapStringToPlayerRole = (roleStr: string): PlayerRole => {
+    switch (roleStr) {
+      case "Top": return "Top";
+      case "Jungle": return "Jungle";
+      case "Mid": return "Mid";
+      case "ADC": return "ADC";
+      case "Support": return "Support";
+      default: return "Unknown";
+    }
+  };
+
   const fetchPlayersData = async () => {
     try {
       setIsLoading(true);
       
       // Récupérer directement les joueurs depuis la table players de Supabase
-      console.log("Fetching players directly from Supabase players table...");
+      console.log("Chargement des joueurs depuis la table players de Supabase...");
       
       const { data: playersData, error: playersError } = await supabase
         .from('players')
         .select('*');
       
       if (playersError) {
-        console.error("Error fetching players from database:", playersError);
+        console.error("Erreur lors du chargement des joueurs:", playersError);
         toast.error("Erreur lors du chargement des joueurs");
         setIsLoading(false);
         return;
       }
       
-      console.log(`Received ${playersData?.length || 0} players directly from database`);
+      console.log(`Nombre de joueurs récupérés: ${playersData?.length || 0}`);
       
-      // Récupérer également les équipes pour enrichir les données des joueurs
+      // Récupérer les équipes pour enrichir les données des joueurs
       clearTeamsCache();
       const teams = await getTeams();
-      console.log(`Retrieved ${teams.length} teams for player enrichment`);
+      console.log(`Nombre d'équipes récupérées pour enrichir les données: ${teams.length}`);
       
       if (playersData && playersData.length > 0) {
-        // Enrichir les données des joueurs avec les informations des équipes
+        // Mapper les données des joueurs avec les informations d'équipe
         const enrichedPlayers = playersData.map(player => {
           const team = teams.find(t => t.id === player.teamid);
           return {
-            id: player.playerid,
-            name: player.playername,
-            role: player.position || "Unknown",
-            image: player.image,
+            id: player.playerid || "",
+            name: player.playername || "",
+            role: mapStringToPlayerRole(player.position || ""),
+            image: player.image || "",
             team: player.teamid || "",
             teamName: team?.name || "Équipe inconnue",
             teamRegion: team?.region || "Région inconnue",
@@ -98,7 +108,7 @@ const Players = () => {
             avg_firstblood_kill: player.avg_firstblood_kill || 0,
             avg_firstblood_assist: player.avg_firstblood_assist || 0,
             avg_firstblood_victim: player.avg_firstblood_victim || 0
-          };
+          } as Player & { teamName: string; teamRegion: string };
         });
         
         setAllPlayers(enrichedPlayers);
@@ -107,10 +117,9 @@ const Players = () => {
         const uniqueRegions = [...new Set(teams.map(team => team.region).filter(Boolean))];
         setAvailableRegions(uniqueRegions);
         
-        console.log(`Successfully processed ${enrichedPlayers.length} players`);
+        console.log(`Traitement terminé: ${enrichedPlayers.length} joueurs chargés`);
       } else {
-        // Si aucun joueur trouvé, essayer de récupérer via les équipes
-        console.log("No players found directly, trying via teams...");
+        console.log("Aucun joueur trouvé dans la table players, essai via les équipes...");
         await fetchPlayersViaTeams();
       }
     } catch (error) {
@@ -125,17 +134,16 @@ const Players = () => {
     try {
       // Vider le cache pour éviter d'avoir des données périmées
       clearTeamsCache();
-      console.log("Fetching teams from Supabase...");
+      console.log("Chargement des équipes depuis Supabase...");
       const teams = await getTeams();
-      console.log(`Received ${teams.length} teams from database`);
+      console.log(`${teams.length} équipes récupérées`);
       
-      // Log des équipes pour débogage
       if (teams.length === 0) {
         toast.warning("Aucune équipe trouvée dans la base de données");
         return;
       }
       
-      console.log("Team regions:", teams.map(t => t.region).filter(Boolean));
+      console.log("Régions des équipes:", teams.map(t => t.region).filter(Boolean));
       
       // Préparer un tableau pour stocker tous les joueurs avec leurs infos d'équipe
       const playersWithTeamInfo: (Player & { teamName: string; teamRegion: string })[] = [];
@@ -143,7 +151,7 @@ const Players = () => {
       // Traiter chaque équipe pour extraire ses joueurs
       teams.forEach(team => {
         if (!team.players || !Array.isArray(team.players) || team.players.length === 0) {
-          console.log(`L'équipe ${team.name} n'a pas de joueurs ou un format invalide`);
+          console.log(`L'équipe ${team.name} n'a pas de joueurs ou format invalide`);
           return;
         }
 
@@ -164,7 +172,7 @@ const Players = () => {
         });
       });
 
-      console.log(`Total de ${playersWithTeamInfo.length} joueurs traités`);
+      console.log(`Total de ${playersWithTeamInfo.length} joueurs traités via les équipes`);
       setAllPlayers(playersWithTeamInfo);
       
       // Extraire les régions uniques pour les filtres

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Match } from "@/utils/models/types";
 import { toast } from "sonner";
-import { adaptMatchFromDatabase, RawDatabaseMatch } from "@/utils/database/adapters/match";
+import { adaptMatchFromDatabase } from "@/utils/database/adapters/match";
 import { findMatchInCache } from "../cache/matchesCache";
 
 /**
