@@ -17,7 +17,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Bypass TypeScript's type checking completely by using any
+    // Execute query without type annotations
     let response;
     try {
       response = await supabase
