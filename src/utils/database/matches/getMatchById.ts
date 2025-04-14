@@ -18,13 +18,19 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     let data = null;
     
     // Bypass TypeScript's type checking completely by using any
-    const response = await supabase
-      .from("matches")
-      .select("*")
-      .eq("id", matchId)
-      .single() as any;
+    let response;
+    try {
+      response = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", matchId)
+        .single();
+    } catch (e) {
+      console.error("Error in query execution:", e);
+      throw e;
+    }
       
-    // Access properties after query to avoid deep type inference
+    // Access properties directly from response object
     const matchData = response.data;
     const matchError = response.error;
     
@@ -32,13 +38,19 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const gameIdResponse = await supabase
-        .from("matches")
-        .select("*")
-        .eq("gameid", matchId)
-        .single() as any;
+      let gameIdResponse;
+      try {
+        gameIdResponse = await supabase
+          .from("matches")
+          .select("*")
+          .eq("gameid", matchId)
+          .single();
+      } catch (e) {
+        console.error("Error in gameid query execution:", e);
+        throw e;
+      }
       
-      // Access properties after query to avoid deep type inference
+      // Access properties directly from response object
       const gameIdData = gameIdResponse.data;
       const gameIdError = gameIdResponse.error;
       

@@ -6,13 +6,19 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Bypass TypeScript type checking completely
-    const response = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId) as any;
+    // Execute query without type annotations
+    let response;
+    try {
+      response = await supabase
+        .from('player_match_stats')
+        .select('*')
+        .eq('player_id', playerId);
+    } catch (e) {
+      console.error("Error executing player match stats query:", e);
+      throw e;
+    }
     
-    // Extract data and error properties after the query
+    // Extract data and error properties
     const data = response.data;
     const error = response.error;
     
@@ -33,14 +39,20 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Bypass TypeScript type checking completely
-    const response = await supabase
-      .from('players')
-      .select('*')
-      .eq('id', playerId)
-      .maybeSingle() as any;
+    // Execute query without type annotations
+    let response;
+    try {
+      response = await supabase
+        .from('players')
+        .select('*')
+        .eq('id', playerId)
+        .maybeSingle();
+    } catch (e) {
+      console.error("Error executing player stats query:", e);
+      throw e;
+    }
     
-    // Extract data and error properties after the query
+    // Extract data and error properties
     const data = response.data;
     const error = response.error;
     
@@ -86,15 +98,21 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Bypass TypeScript type checking completely
-    const response = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId)
-      .eq('match_id', matchId)
-      .maybeSingle() as any;
+    // Execute query without type annotations
+    let response;
+    try {
+      response = await supabase
+        .from('player_match_stats')
+        .select('*')
+        .eq('player_id', playerId)
+        .eq('match_id', matchId)
+        .maybeSingle();
+    } catch (e) {
+      console.error("Error executing player match stats by player and match query:", e);
+      throw e;
+    }
     
-    // Extract data and error properties after the query
+    // Extract data and error properties
     const data = response.data;
     const error = response.error;
     
