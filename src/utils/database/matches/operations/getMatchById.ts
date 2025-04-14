@@ -22,49 +22,47 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Try to fetch by ID first
-    const { data: idData, error: idError } = await supabase
+    const response = await supabase
       .from('matches')
       .select('*')
       .eq('id', matchId)
       .maybeSingle();
     
-    // Handle by ID response
-    if (idError) {
-      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idError);
+    if (response.error) {
+      console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, response.error);
       
       // Try with gameid as fallback
-      const { data: gameIdData, error: gameIdError } = await supabase
+      const gameIdResponse = await supabase
         .from('matches')
         .select('*')
         .eq('gameid', matchId)
         .maybeSingle();
       
-      // Handle gameid response
-      if (gameIdError) {
+      if (gameIdResponse.error) {
         console.error(`All attempts to fetch match ${matchId} failed:`, 
-          { idError, gameIdError });
+          { idError: response.error, gameIdError: gameIdResponse.error });
         toast.error("Match not found");
         return null;
       }
       
       // Check if we have data
-      if (!gameIdData) {
+      if (!gameIdResponse.data) {
         return null;
       }
       
       // Convert to our application model
-      return adaptMatchFromDatabase(gameIdData);
+      return adaptMatchFromDatabase(gameIdResponse.data);
     }
     
     // Check if we have data from ID query
-    if (!idData) {
+    if (!response.data) {
       console.error(`No data found for match ${matchId}`);
       toast.error("Match not found");
       return null;
     }
     
     // Convert to our application model
-    return adaptMatchFromDatabase(idData);
+    return adaptMatchFromDatabase(response.data);
     
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
