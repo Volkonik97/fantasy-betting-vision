@@ -15,11 +15,14 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
 
     // Essayer d'abord avec la table matches directement
-    const { data, error } = await supabase
+    let data;
+    const { data: initialData, error } = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
       .maybeSingle();
+    
+    data = initialData;
 
     if (error) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, error);

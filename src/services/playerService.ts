@@ -30,12 +30,12 @@ export const getPlayerByID = async (id: string): Promise<Player | null> => {
  * Get player search results - effectue une recherche côté client
  * pour permettre une recherche instantanée sans requêtes supplémentaires
  */
-export const searchPlayers = async (
-  players: Player[], 
+export const searchPlayers = async <T extends Player>(
+  players: T[], 
   query: string
-): Promise<Player[]> => {
+): Promise<T[]> => {
   try {
-    if (!query || query.trim() === "") return [];
+    if (!query || query.trim() === "") return players;
 
     const lowercaseQuery = query.toLowerCase();
     return players.filter(player => 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -113,12 +114,14 @@ const Players = () => {
       );
       
       if (searchTerm.trim() !== '') {
+        // Use the generic type parameter to maintain the type through the search operation
         const searchResults = await searchPlayers(filtered, searchTerm);
-        filtered = searchResults as (Player & { teamName: string; teamRegion: string })[];
+        setDisplayedPlayers(searchResults);
+      } else {
+        setDisplayedPlayers(filtered);
       }
       
       console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères`);
-      setDisplayedPlayers(filtered);
     } catch (error) {
       console.error("Error applying filters:", error);
     }
