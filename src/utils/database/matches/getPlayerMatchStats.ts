@@ -9,7 +9,7 @@ export const getPlayerMatchStats = async (playerId: string) => {
     const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
-      .eq('player_id', playerId) as { data: any; error: any }; // Use explicit type casting
+      .eq('player_id', playerId);
     
     if (error) {
       console.error('Error fetching player match stats:', error);
@@ -32,7 +32,7 @@ export const getPlayerStats = async (playerId: string) => {
       .from('players')
       .select('*')
       .eq('id', playerId)
-      .maybeSingle() as { data: any; error: any }; // Use explicit type casting
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player stats:', error);
@@ -81,7 +81,7 @@ export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matc
       .select('*')
       .eq('player_id', playerId)
       .eq('match_id', matchId)
-      .maybeSingle() as { data: any; error: any }; // Use explicit type casting
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player match stats:', error);

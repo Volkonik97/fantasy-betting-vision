@@ -20,7 +20,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       .from("matches")
       .select("*")
       .eq("id", matchId)
-      .single() as { data: any; error: any }; // Use explicit type casting to avoid deep instantiation
+      .single();
     
     data = initialData;
 
@@ -32,7 +32,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .from("matches")
         .select("*")
         .eq("gameid", matchId)
-        .single() as { data: any; error: any }; // Use explicit type casting
+        .single();
       
       if (matchError) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 
