@@ -17,9 +17,13 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Avoid type instantiation by not chaining methods
-    const matchQuery = supabase.from("matches").select("*");
-    const matchResponse = await matchQuery.eq("id", matchId).single();
+    // Create the query without chaining to avoid type instantiation issues
+    const matchesTable = supabase.from("matches");
+    const matchQuery = matchesTable.select("*");
+    // Apply the filter as a separate step
+    const filteredMatchQuery = matchQuery.eq("id", matchId);
+    // Execute the query
+    const matchResponse = await filteredMatchQuery.single();
       
     // Access properties directly from response object
     const matchData = matchResponse.data;
@@ -29,8 +33,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const gameIdQuery = supabase.from("matches").select("*");
-      const gameIdResponse = await gameIdQuery.eq("gameid", matchId).single();
+      // Use same step-by-step approach
+      const matchesTableFallback = supabase.from("matches");
+      const gameIdQuery = matchesTableFallback.select("*");
+      const filteredGameIdQuery = gameIdQuery.eq("gameid", matchId);
+      const gameIdResponse = await filteredGameIdQuery.single();
       
       // Access properties directly from response object
       const gameIdData = gameIdResponse.data;

@@ -6,9 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Break up the query chain to avoid excessive type instantiation
-    const query = supabase.from('player_match_stats').select('*');
-    const response = await query.eq('player_id', playerId);
+    // Break up the query chain completely to avoid excessive type instantiation
+    const statsTable = supabase.from('player_match_stats');
+    const query = statsTable.select('*');
+    const filteredQuery = query.eq('player_id', playerId);
+    const response = await filteredQuery;
     
     // Extract data and error properties
     const data = response.data;
@@ -31,9 +33,11 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Break up the query chain to avoid excessive type instantiation
-    const query = supabase.from('players').select('*');
-    const response = await query.eq('id', playerId).maybeSingle();
+    // Break up the query chain completely to avoid excessive type instantiation
+    const playersTable = supabase.from('players');
+    const query = playersTable.select('*');
+    const filteredQuery = query.eq('id', playerId);
+    const response = await filteredQuery.maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
@@ -81,10 +85,12 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Break up the query chain to avoid excessive type instantiation
-    const query = supabase.from('player_match_stats').select('*');
-    const filteredQuery = query.eq('player_id', playerId);
-    const response = await filteredQuery.eq('match_id', matchId).maybeSingle();
+    // Break up the query chain completely to avoid excessive type instantiation
+    const statsTable = supabase.from('player_match_stats');
+    const query = statsTable.select('*');
+    const playerFilteredQuery = query.eq('player_id', playerId);
+    const matchFilteredQuery = playerFilteredQuery.eq('match_id', matchId);
+    const response = await matchFilteredQuery.maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
