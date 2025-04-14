@@ -26,12 +26,14 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     
     // Try to fetch by ID first
     const idResult = await supabase.from('matches').select('*');
-    const idFiltered = idResult.data?.filter(match => match.id === matchId);
+    
+    // Filter after getting the data - use 'gameid' instead of 'id' since that's the actual field name in the DB
+    const idFiltered = idResult.data?.filter(match => match.gameid === matchId);
     
     if (idResult.error) {
       console.log(`Failed to load match with ID=${matchId}, trying with gameid:`, idResult.error);
       
-      // Try with gameid as fallback
+      // Try with gameid as fallback (though this is redundant now since we're already using gameid)
       const gameIdResult = await supabase.from('matches').select('*');
       const gameIdFiltered = gameIdResult.data?.filter(match => match.gameid === matchId);
       

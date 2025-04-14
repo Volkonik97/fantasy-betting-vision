@@ -16,8 +16,11 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
     // Simple approach to avoid type issues - use raw query without chaining
     const updateResponse = await supabase.from('players').update({ image: null });
     
-    // Then apply filter separately
-    const filtered = updateResponse.data?.filter(item => item.id === playerId);
+    // Handle case when data is null
+    if (updateResponse.data) {
+      // Then apply filter separately
+      const filtered = updateResponse.data.filter(item => item.id === playerId);
+    }
     
     // Handle error
     if (updateResponse.error) {
