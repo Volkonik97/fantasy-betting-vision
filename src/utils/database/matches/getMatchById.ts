@@ -17,26 +17,20 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     // Essayer d'abord avec la table matches directement
     let data = null;
     
-    // Use type assertion to avoid excessive type instantiation
-    const response = await supabase
-      .from("matches")
-      .select("*")
-      .eq("id", matchId)
-      .single();
+    // Avoid type instantiation by not chaining methods
+    const matchQuery = supabase.from("matches").select("*");
+    const matchResponse = await matchQuery.eq("id", matchId).single();
       
     // Access properties directly from response object
-    const matchData = response.data;
-    const matchError = response.error;
+    const matchData = matchResponse.data;
+    const matchError = matchResponse.error;
     
     if (matchError) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, matchError);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const gameIdResponse = await supabase
-        .from("matches")
-        .select("*")
-        .eq("gameid", matchId)
-        .single();
+      const gameIdQuery = supabase.from("matches").select("*");
+      const gameIdResponse = await gameIdQuery.eq("gameid", matchId).single();
       
       // Access properties directly from response object
       const gameIdData = gameIdResponse.data;

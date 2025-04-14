@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -5,11 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Use type assertion to avoid excessive type instantiation
-    const response = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId);
+    // Break up the query chain to avoid excessive type instantiation
+    const query = supabase.from('player_match_stats').select('*');
+    const response = await query.eq('player_id', playerId);
     
     // Extract data and error properties
     const data = response.data;
@@ -32,12 +31,9 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Use type assertion to avoid excessive type instantiation
-    const response = await supabase
-      .from('players')
-      .select('*')
-      .eq('id', playerId)
-      .maybeSingle();
+    // Break up the query chain to avoid excessive type instantiation
+    const query = supabase.from('players').select('*');
+    const response = await query.eq('id', playerId).maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
@@ -85,13 +81,10 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Use type assertion to avoid excessive type instantiation
-    const response = await supabase
-      .from('player_match_stats')
-      .select('*')
-      .eq('player_id', playerId)
-      .eq('match_id', matchId)
-      .maybeSingle();
+    // Break up the query chain to avoid excessive type instantiation
+    const query = supabase.from('player_match_stats').select('*');
+    const filteredQuery = query.eq('player_id', playerId);
+    const response = await filteredQuery.eq('match_id', matchId).maybeSingle();
     
     // Extract data and error properties
     const data = response.data;
