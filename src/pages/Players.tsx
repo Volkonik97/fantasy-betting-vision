@@ -111,7 +111,7 @@ const Players = () => {
         selectedSubRegion, 
         selectedCategory,
         regionCategories
-      );
+      ) as (Player & { teamName: string; teamRegion: string })[];
       
       if (searchTerm.trim() !== '') {
         // Use the generic type parameter with explicit type casting to preserve the full player type

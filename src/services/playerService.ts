@@ -51,13 +51,13 @@ export const searchPlayers = async <T extends Player>(
  * Filtre les joueurs par rôle, région et catégorie
  */
 export const filterPlayers = (
-  players: Player[],
+  players: Player[] | (Player & { teamName: string; teamRegion: string })[],
   role: string = 'All',
   region: string = 'All',
   subRegion: string = 'All',
   category: string = 'All',
   regionCategories: Record<string, string[]>
-): Player[] => {
+): Player[] | (Player & { teamName: string; teamRegion: string })[] => {
   return players.filter(player => {
     // Filtre par rôle
     const roleMatch = role === 'All' || player.role === role;
