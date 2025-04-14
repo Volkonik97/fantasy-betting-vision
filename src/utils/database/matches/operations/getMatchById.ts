@@ -53,7 +53,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
       }
       
       // Convert to our application model
-      return adaptMatchFromDatabase(gameIdResponse.data as RawDatabaseMatch);
+      return adaptMatchFromDatabase(gameIdResponse.data);
     }
     
     // Check if we have data from ID query
@@ -64,7 +64,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
     
     // Convert to our application model
-    return adaptMatchFromDatabase(idResponse.data as RawDatabaseMatch);
+    return adaptMatchFromDatabase(idResponse.data);
     
   } catch (error) {
     console.error(`Unexpected error in getMatchById(${matchId}):`, error);
