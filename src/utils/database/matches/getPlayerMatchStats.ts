@@ -6,18 +6,18 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    // Use simpler approach to avoid deep type instantiation
-    const query = await supabase
+    // Avoid deep type instantiation by destructuring response directly
+    const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId);
     
-    if (query.error) {
-      console.error('Error fetching player match stats:', query.error);
+    if (error) {
+      console.error('Error fetching player match stats:', error);
       return null;
     }
     
-    return query.data;
+    return data;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;
@@ -29,19 +29,19 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    // Use simpler approach to avoid deep type instantiation
-    const query = await supabase
+    // Avoid deep type instantiation by destructuring response directly
+    const { data, error } = await supabase
       .from('players')
       .select('*')
       .eq('id', playerId)
       .maybeSingle();
     
-    if (query.error) {
-      console.error('Error fetching player stats:', query.error);
+    if (error) {
+      console.error('Error fetching player stats:', error);
       return null;
     }
     
-    return query.data;
+    return data;
   } catch (error) {
     console.error('Error fetching player stats:', error);
     return null;
@@ -78,20 +78,20 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    // Use simpler approach to avoid deep type instantiation
-    const query = await supabase
+    // Avoid deep type instantiation by destructuring response directly
+    const { data, error } = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId)
       .eq('match_id', matchId)
       .maybeSingle();
     
-    if (query.error) {
-      console.error('Error fetching player match stats:', query.error);
+    if (error) {
+      console.error('Error fetching player match stats:', error);
       return null;
     }
     
-    return query.data;
+    return data;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;
