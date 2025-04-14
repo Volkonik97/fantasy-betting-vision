@@ -114,8 +114,11 @@ const Players = () => {
       );
       
       if (searchTerm.trim() !== '') {
-        // Use the generic type parameter to maintain the type through the search operation
-        const searchResults = await searchPlayers(filtered, searchTerm);
+        // Use the generic type parameter with explicit type casting to preserve the full player type
+        const searchResults = await searchPlayers<Player & { teamName: string; teamRegion: string }>(
+          filtered, 
+          searchTerm
+        );
         setDisplayedPlayers(searchResults);
       } else {
         setDisplayedPlayers(filtered);
