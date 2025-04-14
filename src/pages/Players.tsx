@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
 import { Player } from "@/utils/models/types";
 import { getTeams, clearTeamsCache } from "@/utils/database/teamsService";
+import { getPlayers } from "@/utils/database/playersService";
 import PlayerFilters from "@/components/players/PlayerFilters";
 import PlayersList from "@/components/players/PlayersList";
 import { toast } from "sonner";
@@ -33,17 +34,60 @@ const Players = () => {
   };
 
   useEffect(() => {
-    fetchPlayers();
+    fetchPlayersData();
   }, []);
 
   useEffect(() => {
     setSelectedSubRegion("All");
   }, [selectedRegion]);
 
-  const fetchPlayers = async () => {
+  const fetchPlayersData = async () => {
     try {
       setIsLoading(true);
       
+      // Récupérer directement les joueurs depuis la table players
+      console.log("Fetching players directly from Supabase...");
+      const playersData = await getPlayers();
+      console.log(`Received ${playersData.length} players directly from database`);
+      
+      // Si on n'a pas de joueurs, on tente de les récupérer via les équipes
+      if (playersData.length === 0) {
+        console.log("No players found directly, trying via teams...");
+        await fetchPlayersViaTeams();
+      } else {
+        // Récupérer les équipes pour avoir les noms et régions
+        clearTeamsCache();
+        const teams = await getTeams();
+        console.log(`Retrieved ${teams.length} teams for player enrichment`);
+        
+        // Associer les joueurs à leurs équipes pour avoir les noms et régions
+        const enrichedPlayers = playersData.map(player => {
+          const team = teams.find(t => t.id === player.team);
+          return {
+            ...player,
+            teamName: team?.name || "Équipe inconnue",
+            teamRegion: team?.region || "Région inconnue"
+          };
+        });
+        
+        setAllPlayers(enrichedPlayers);
+        
+        // Extraire les régions uniques pour les filtres
+        const uniqueRegions = [...new Set(teams.map(team => team.region).filter(Boolean))];
+        setAvailableRegions(uniqueRegions);
+        
+        console.log(`Successfully processed ${enrichedPlayers.length} players`);
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des données :", error);
+      toast.error("Erreur lors du chargement des données des joueurs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const fetchPlayersViaTeams = async () => {
+    try {
       // Vider le cache pour éviter d'avoir des données périmées
       clearTeamsCache();
       console.log("Fetching teams from Supabase...");
@@ -53,7 +97,6 @@ const Players = () => {
       // Log des équipes pour débogage
       if (teams.length === 0) {
         toast.warning("Aucune équipe trouvée dans la base de données");
-        setIsLoading(false);
         return;
       }
       
@@ -97,10 +140,8 @@ const Players = () => {
         toast.warning("Aucun joueur trouvé dans la base de données");
       }
     } catch (error) {
-      console.error("❌ Erreur lors du chargement des données :", error);
+      console.error("❌ Erreur lors du chargement des données via équipes :", error);
       toast.error("Erreur lors du chargement des données des joueurs");
-    } finally {
-      setIsLoading(false);
     }
   };
 
