@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -24,7 +23,7 @@ const Players = () => {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [displayedPlayers, setDisplayedPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
-  const pageSize = 100; // Nombre de joueurs par page
+  const pageSize = 100;
 
   const roles = ["All", "Top", "Jungle", "Mid", "ADC", "Support"];
 
@@ -64,7 +63,6 @@ const Players = () => {
     try {
       setIsLoading(true);
       
-      // Load players and teams in parallel for efficiency
       const [playersData, teamsData] = await Promise.all([
         getAllPlayers(currentPage, pageSize),
         getAllTeams()
@@ -78,10 +76,8 @@ const Players = () => {
         return;
       }
       
-      // Create a map of team IDs to team details for quick lookup
       const teamsMap = new Map(teamsData.map(team => [team.id, team]));
       
-      // Enrich players with team information
       const enrichedPlayers = playersData.map(player => {
         const team = teamsMap.get(player.team);
         return {
@@ -94,7 +90,6 @@ const Players = () => {
       console.log(`Processed ${enrichedPlayers.length} enriched players`);
       setAllPlayers(enrichedPlayers);
       
-      // Extract unique regions for filters
       const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
       setAvailableRegions(uniqueRegions);
       
@@ -108,7 +103,6 @@ const Players = () => {
 
   const applyFiltersAndSearch = async () => {
     try {
-      // Première étape: appliquer les filtres
       let filtered = filterPlayers(
         allPlayers, 
         selectedRole, 
@@ -118,10 +112,9 @@ const Players = () => {
         regionCategories
       );
       
-      // Deuxième étape: appliquer la recherche sur les résultats filtrés
       if (searchTerm.trim() !== '') {
         const searchResults = await searchPlayers(filtered, searchTerm);
-        filtered = searchResults;
+        filtered = searchResults as (Player & { teamName: string; teamRegion: string })[];
       }
       
       console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères`);
@@ -133,12 +126,10 @@ const Players = () => {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    // La recherche sera appliquée via le useEffect
   };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
-    // Réinitialiser les filtres lors du changement de page
     setSelectedRole("All");
     setSelectedCategory("All");
     setSelectedRegion("All");

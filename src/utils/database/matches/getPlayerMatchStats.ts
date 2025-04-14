@@ -32,7 +32,7 @@ export const getPlayerStats = async (playerId: string) => {
       .from('players')
       .select('*')
       .eq('id', playerId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player stats:', error);
@@ -81,7 +81,7 @@ export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matc
       .select('*')
       .eq('player_id', playerId)
       .eq('match_id', matchId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error fetching player match stats:', error);

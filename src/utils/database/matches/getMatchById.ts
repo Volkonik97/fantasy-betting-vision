@@ -15,11 +15,11 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
     }
 
     // Essayer d'abord avec la table matches directement
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, error);
@@ -29,7 +29,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         .from("matches")
         .select("*")
         .eq("gameid", matchId)
-        .single();
+        .maybeSingle();
       
       if (matchError) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 
