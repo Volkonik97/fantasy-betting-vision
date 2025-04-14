@@ -6,17 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const getPlayerMatchStats = async (playerId: string) => {
   try {
-    const { data, error } = await supabase
+    const response = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId);
     
-    if (error) {
-      console.error('Error fetching player match stats:', error);
+    if (response.error) {
+      console.error('Error fetching player match stats:', response.error);
       return null;
     }
     
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;
@@ -28,18 +28,18 @@ export const getPlayerMatchStats = async (playerId: string) => {
  */
 export const getPlayerStats = async (playerId: string) => {
   try {
-    const { data, error } = await supabase
+    const response = await supabase
       .from('players')
       .select('*')
       .eq('id', playerId)
       .maybeSingle();
     
-    if (error) {
-      console.error('Error fetching player stats:', error);
+    if (response.error) {
+      console.error('Error fetching player stats:', response.error);
       return null;
     }
     
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Error fetching player stats:', error);
     return null;
@@ -76,19 +76,19 @@ export const clearPlayerStatsCache = () => {
  */
 export const getPlayerMatchStatsByPlayerAndMatch = async (playerId: string, matchId: string) => {
   try {
-    const { data, error } = await supabase
+    const response = await supabase
       .from('player_match_stats')
       .select('*')
       .eq('player_id', playerId)
       .eq('match_id', matchId)
       .maybeSingle();
     
-    if (error) {
-      console.error('Error fetching player match stats:', error);
+    if (response.error) {
+      console.error('Error fetching player match stats:', response.error);
       return null;
     }
     
-    return data;
+    return response.data;
   } catch (error) {
     console.error('Error fetching player match stats:', error);
     return null;

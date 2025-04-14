@@ -16,23 +16,26 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
 
     // Essayer d'abord avec la table matches directement
     let data;
-    const { data: initialData, error } = await supabase
+    const response = await supabase
       .from("matches")
       .select("*")
       .eq("id", matchId)
       .single();
     
-    data = initialData;
+    const error = response.error;
+    data = response.data;
 
     if (error) {
       console.log(`❌ Erreur lors du chargement du match avec ID=${matchId}:`, error);
       
       // Essai avec gameid si l'ID direct ne fonctionne pas
-      const { data: matchData, error: matchError } = await supabase
+      const matchResponse = await supabase
         .from("matches")
         .select("*")
         .eq("gameid", matchId)
         .single();
+      
+      const matchError = matchResponse.error;
       
       if (matchError) {
         console.error("❌ Toutes les tentatives de récupération du match ont échoué:", 
@@ -41,7 +44,7 @@ export const getMatchById = async (matchId: string): Promise<Match | null> => {
         return null;
       }
       
-      data = matchData;
+      data = matchResponse.data;
     }
 
     if (!data) {
