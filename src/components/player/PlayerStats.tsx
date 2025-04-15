@@ -43,8 +43,6 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
     return '0%';
   };
 
-  console.log(`PlayerStats rendering with damageShare:`, damageShare, `formatted as:`, formatDamageShare(damageShare));
-
   return (
     <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-3 gap-2 text-center">
       <div>
