@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
@@ -38,6 +39,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     );
   }
 
+  // Calculate KDA totals based on averages and game count
   const totalKills = Math.round(averageStats.kills * averageStats.games);
   const totalDeaths = Math.round(averageStats.deaths * averageStats.games);
   const totalAssists = Math.round(averageStats.assists * averageStats.games);

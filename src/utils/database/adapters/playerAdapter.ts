@@ -118,8 +118,8 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gold_share_percent field:`, dbPlayer.gold_share_percent, 'converted to:', goldSharePercent);
   }
   
-  // Extract match_count if available - ensure it's handled as a number
-  let matchCount: number = 0; // Default to 0 instead of undefined
+  // Extract match_count if available - ensure it's handled correctly as a number
+  let matchCount: number = 0;
   if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
     // Try to parse as number regardless of source format (string or number)
     const matchCountValue = parseInt(String(dbPlayer.match_count));

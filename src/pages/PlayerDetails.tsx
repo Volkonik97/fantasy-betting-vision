@@ -48,6 +48,7 @@ const PlayerDetails = () => {
         // Log the damage share value for debugging
         console.log(`Player ${playerData.name} damageShare:`, playerData.damageShare, typeof playerData.damageShare);
         console.log(`Player ${playerData.name} goldShare:`, playerData.gold_share_percent, typeof playerData.gold_share_percent);
+        console.log(`Player ${playerData.name} match_count:`, playerData.match_count, typeof playerData.match_count);
         
         setPlayer(playerData);
         
@@ -111,12 +112,11 @@ const PlayerDetails = () => {
     goldShare: player.gold_share_percent || player.earned_gold_share || 0,
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
-    // Use match_count from database if available (now always a number, never undefined)
-    // Fall back to calculated matches from championStats if needed
+    // Use match_count from database if available
     games: player.match_count && player.match_count > 0 ? player.match_count : totalMatches,
     // Calculate wins from total games and the player win rate if match_count is available
     // Otherwise use win count from champion stats
-    wins: player.match_count && player.kda > 0 ? Math.round((player.match_count * 0.5)) : totalWins,
+    wins: player.match_count && player.match_count > 0 ? Math.round((player.match_count * 0.5)) : totalWins,
     // Calculate win rate based on available data
     winRate: player.match_count && player.match_count > 0 
       ? 50 // Default win rate of 50% when we only have match_count but no detailed win data
