@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -104,7 +105,8 @@ const PlayerDetails = () => {
     csPerMin: player.cspm || player.csPerMin || 0,
     damageShare: player.damageShare || 0, // Using the correct property name from Player type
     goldShare: player.earned_gold_share || 0,
-    visionScore: player.vspm || 0,
+    visionScore: player.vspm || 0, // Using vspm for Vision Score Per Minute
+    wardsCleared: player.wcpm || 0, // Adding wards cleared per minute from wcpm
     games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,
     wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
     winRate: championStats.length > 0 
@@ -120,9 +122,8 @@ const PlayerDetails = () => {
       csPerMin: averageStats.csPerMin,
       damageShare: averageStats.damageShare,
       damageShareType: typeof averageStats.damageShare,
-      damageShareFormatted: averageStats.damageShare >= 0 && averageStats.damageShare <= 1 
-        ? `${Math.round(averageStats.damageShare * 100)}%` 
-        : `${Math.round(averageStats.damageShare)}%`
+      visionScore: averageStats.visionScore,
+      wardsCleared: averageStats.wardsCleared
     });
   }
   
