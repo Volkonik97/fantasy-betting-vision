@@ -43,11 +43,12 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     formatPercent(averageStats.winRate) : 
     'N/A';
     
-  // Format kill participation for display - FIX: Display as percentage properly
-  // Check if killParticipation is already a percentage or needs to be multiplied by 100
+  // Format kill participation for display - FIXED: Display as percentage properly
   const killParticipationValue = averageStats.killParticipation || 0;
-  // If the value is already in percentage form (e.g., 14.5 for 14.5%)
-  const displayKillParticipation = `${killParticipationValue.toFixed(1)}%`;
+  // Convert to proper percentage display format (ensure we multiply by 100 if it's in decimal form)
+  const displayKillParticipation = killParticipationValue < 1 ? 
+    `${(killParticipationValue * 100).toFixed(1)}%` : 
+    `${killParticipationValue.toFixed(1)}%`;
   console.log(`PlayerStatsOverview killParticipation: ${averageStats.killParticipation} formatted as: ${displayKillParticipation}`);
   
   // Format dmg per gold (ensure we display it with sufficient decimal places)
