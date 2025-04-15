@@ -1,6 +1,7 @@
+
 import { Team, Player, Match, Tournament } from '../models/types';
 import { getTeams, saveTeams } from './teams/teamsService';
-import { getPlayers, savePlayers } from './playersService';
+import { getPlayers, savePlayers } from './players/playersService';
 import { getMatches } from './matches/getMatches';
 import { getTournaments } from './tournamentsService';
 import { saveMatches } from './matches/saveMatches';
