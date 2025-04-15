@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -123,7 +124,8 @@ const PlayerDetails = () => {
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
     dmgPerGold: player.dmg_per_gold || 0,
-    killParticipation: player.kill_participation_pct || 0,
+    // Important: DO NOT modify the kill participation value here
+    killParticipation: player.kill_participation_pct,
     efficiency: player.efficiency_score || 0,
     aggression: player.aggression_score || 0,
     earlyGame: player.earlygame_score || 0,

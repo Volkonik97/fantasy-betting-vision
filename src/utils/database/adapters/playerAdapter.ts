@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -168,11 +169,10 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   // Extract kill participation (new field in player_summary_view)
   let killParticipation: number = 0;
   if (dbPlayer.kill_participation_pct !== undefined && dbPlayer.kill_participation_pct !== null) {
-    // Parse the participation value and handle different formats
     const participationValue = parseFloat(String(dbPlayer.kill_participation_pct));
     if (!isNaN(participationValue)) {
-      // Store the raw value (whether it's decimal like 0.145 or already percentage like 14.5)
-      // In our display logic we'll check the range to determine how to format it
+      // Important: Store the raw value exactly as received from the database
+      // DO NOT convert or transform this value here
       killParticipation = participationValue;
     }
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kill_participation_pct field:`, 
