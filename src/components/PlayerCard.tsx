@@ -24,9 +24,20 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     imageUrl: player.image
   });
   
+  // If the image URL is from Supabase storage but doesn't include the full path, fix it
+  let imageUrl = player.image;
+  if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+    // If it's just a filename, assume it's in the player-images bucket
+    if (!imageUrl.includes('/')) {
+      imageUrl = `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/${imageUrl}`;
+      console.log(`Fixed image URL for ${player.name}: ${imageUrl}`);
+    }
+  }
+  
   // Ensure required properties exist with meaningful defaults
   const normalizedPlayer = {
     ...player,
+    image: imageUrl,
     role: player.role || 'Mid', // Fallback role if missing
     teamName: player.teamName || "", 
     teamRegion: player.teamRegion || "",

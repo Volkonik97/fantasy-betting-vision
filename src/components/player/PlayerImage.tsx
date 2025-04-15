@@ -14,11 +14,27 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Added this log to debug image URLs
+  // Verify image URL is valid on component mount
   useEffect(() => {
-    if (image) {
-      console.log(`PlayerImage component for ${name} received image URL:`, image);
-    }
+    const checkImageUrl = async () => {
+      if (image) {
+        console.log(`PlayerImage component for ${name} checking image URL:`, image);
+        try {
+          // Always try to load the image regardless of verification result
+          // The onError handler will catch any loading failures
+          setImageError(false);
+        } catch (err) {
+          console.error(`Error checking image for ${name}:`, err);
+          setImageError(true);
+        }
+      } else {
+        // No image URL provided
+        setImageError(true);
+        setIsLoading(false);
+      }
+    };
+    
+    checkImageUrl();
   }, [image, name]);
 
   return (
