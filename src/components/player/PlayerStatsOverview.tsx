@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
@@ -39,9 +38,19 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     );
   }
 
-  const totalKills = averageStats.kills * averageStats.games;
-  const totalDeaths = averageStats.deaths * averageStats.games;
-  const totalAssists = averageStats.assists * averageStats.games;
+  const totalKills = Math.round(averageStats.kills * averageStats.games);
+  const totalDeaths = Math.round(averageStats.deaths * averageStats.games);
+  const totalAssists = Math.round(averageStats.assists * averageStats.games);
+
+  console.log("Calculated total KDA:", {
+    games: averageStats.games,
+    avgKills: averageStats.kills,
+    avgDeaths: averageStats.deaths,
+    avgAssists: averageStats.assists,
+    totalKills,
+    totalDeaths,
+    totalAssists
+  });
 
   const formatDamageShare = (value: number): string => {
     if (isNaN(value) || value === 0) return "0%";
@@ -111,7 +120,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
                   <span className="text-xs font-bold">{averageStats.assists.toFixed(1)}</span>
                 </div>
                 <div className="mt-1 pt-1 border-t border-gray-100 text-xs text-gray-500">
-                  Total: {Math.round(totalKills)} / {Math.round(totalDeaths)} / {Math.round(totalAssists)}
+                  Total: {totalKills} / {totalDeaths} / {totalAssists}
                 </div>
               </div>
             }

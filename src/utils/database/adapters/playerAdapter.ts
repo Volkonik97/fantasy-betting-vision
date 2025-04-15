@@ -118,10 +118,11 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gold_share_percent field:`, dbPlayer.gold_share_percent, 'converted to:', goldSharePercent);
   }
   
-  // Extract match_count if available
-  let matchCount: number | undefined = undefined;
+  // Extract match_count if available - ensure it's handled as a number
+  let matchCount: number = 0; // Default to 0 instead of undefined
   if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
-    const matchCountValue = parseInt(dbPlayer.match_count);
+    // Try to parse as number regardless of source format (string or number)
+    const matchCountValue = parseInt(String(dbPlayer.match_count));
     if (!isNaN(matchCountValue)) {
       matchCount = matchCountValue;
     }
@@ -167,7 +168,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     vspm: vspm,
     wcpm: wcpm,
     
-    // Match count
+    // Match count - now properly set to a number (never undefined)
     match_count: matchCount,
     
     // Early game
