@@ -67,7 +67,7 @@ export type RawDatabasePlayer = Partial<DatabasePlayer>;
  * Adapter to convert database player format to application Player model
  */
 export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
-  // Safely handle and log damage share for debugging
+  // Safely handle damage share - prioritize the damage_share field from player_summary_view
   let damageShare: number = 0;
   
   if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
