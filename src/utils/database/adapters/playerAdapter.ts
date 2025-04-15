@@ -173,7 +173,11 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     if (!isNaN(participationValue)) {
       killParticipation = participationValue;
     }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kill_participation_pct field:`, dbPlayer.kill_participation_pct, 'converted to:', killParticipation);
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kill_participation_pct field:`, 
+      dbPlayer.kill_participation_pct,
+      `type:`, typeof dbPlayer.kill_participation_pct, 
+      `converted to:`, killParticipation,
+      `type after conversion:`, typeof killParticipation);
   }
   
   // Extract dmg_per_gold (new field in player_summary_view) with improved logging
