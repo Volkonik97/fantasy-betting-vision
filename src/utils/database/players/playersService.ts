@@ -81,15 +81,15 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     console.log(`Fetching player details for ID: ${playerId}`);
     
-    // Utiliser un typage explicite pour éviter les erreurs d'inférence de type
+    // Use explicit typing to avoid type inference errors
     const response = await supabase
       .from('players')
       .select('*')
       .eq('playerid', playerId)
-      .single() as { data: any; error: any };
+      .maybeSingle() as { data: any; error: any }; // Changed from .single() to .maybeSingle()
 
     if (response.error) {
-      console.error("Error fetching player:", response.error);
+      console.error(`Error fetching player (ID: ${playerId}):`, response.error);
       toast.error("Failed to load player details");
       return null;
     }
@@ -102,7 +102,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     console.log(`Successfully fetched player: ${response.data.playername}`);
     return adaptPlayerFromDatabase(response.data);
   } catch (error) {
-    console.error("Exception in getPlayerById:", error);
+    console.error(`Exception in getPlayerById (ID: ${playerId}):`, error);
     toast.error("An error occurred while fetching player details");
     return null;
   }

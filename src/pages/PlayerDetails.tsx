@@ -39,6 +39,7 @@ const PlayerDetails = () => {
         // Get player data
         const playerData = await getPlayerById(id);
         if (!playerData) {
+          console.error(`Player not found with ID: ${id}`);
           toast.error("Joueur non trouvé");
           setIsLoading(false);
           return;

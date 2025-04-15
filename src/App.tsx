@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   createBrowserRouter,
@@ -27,7 +28,7 @@ function App() {
 
 export default App;
 
-// Update the router to include the Admin page
+// Update the router to ensure consistent routes for player details
 const router = createBrowserRouter([
   {
     path: "/",
@@ -47,7 +48,11 @@ const router = createBrowserRouter([
     element: <Players />,
   },
   {
-    path: "/player/:id",
+    path: "/players/:id",
+    element: <PlayerDetails />,
+  },
+  {
+    path: "/player/:id", // Add this route as a fallback for older links
     element: <PlayerDetails />,
   },
   {
