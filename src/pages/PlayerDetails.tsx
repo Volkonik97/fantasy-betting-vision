@@ -88,9 +88,14 @@ const PlayerDetails = () => {
     loadPlayerData();
   }, [id]);
   
-  // Calculate statistics
-  const averageStats = calculateAverages(matchStats);
-  const championStats = getChampionStats(matchStats, player?.team);
+  // Calculate statistics - with additional safety checks
+  const averageStats = Array.isArray(matchStats) && matchStats.length > 0 
+    ? calculateAverages(matchStats) 
+    : null;
+    
+  const championStats = Array.isArray(matchStats) && matchStats.length > 0 
+    ? getChampionStats(matchStats, player?.team) 
+    : [];
   
   // Handle loading state
   if (isLoading) {
@@ -120,6 +125,9 @@ const PlayerDetails = () => {
     return isWinForPlayer(stat, player.team);
   };
   
+  // Handle case when no match stats available
+  const hasMatchStats = Array.isArray(matchStats) && matchStats.length > 0;
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -141,6 +149,13 @@ const PlayerDetails = () => {
           cspmOverride={averageStats?.csPerMin}
           damageShareOverride={averageStats?.damageShare}
         />
+        
+        {!hasMatchStats && (
+          <div className="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 text-amber-700">
+            <p className="font-medium">Aucune statistique de match disponible pour ce joueur.</p>
+            <p className="text-sm mt-1">Les statistiques détaillées ne peuvent pas être affichées.</p>
+          </div>
+        )}
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -169,7 +184,7 @@ const PlayerDetails = () => {
             
             <TabsContent value="matches">
               <PlayerMatchStats 
-                matchStats={matchStats} 
+                matchStats={matchStats || []} 
                 isWinForPlayer={checkWinForPlayer} 
               />
             </TabsContent>

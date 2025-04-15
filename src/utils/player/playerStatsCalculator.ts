@@ -42,8 +42,10 @@ export const isWinForPlayer = (playerStat: any, playerTeamId?: string): boolean 
 /**
  * Calculate average statistics from player match data
  */
-export const calculateAverages = (matchStats: any[]): any => {
-  if (!matchStats || matchStats.length === 0) {
+export const calculateAverages = (matchStats: any[] | null | undefined): any => {
+  // Make sure matchStats is an array and has data
+  if (!matchStats || !Array.isArray(matchStats) || matchStats.length === 0) {
+    console.log("No valid match stats data to calculate averages");
     return null;
   }
   
@@ -80,14 +82,14 @@ export const calculateAverages = (matchStats: any[]): any => {
     }
     
     // Gold share
-    if (match.earned_gold_share) {
-      totalGoldShare += match.earned_gold_share;
+    if (match.earned_gold_share || match.earnedgoldshare) {
+      totalGoldShare += match.earned_gold_share || match.earnedgoldshare || 0;
       matchesWithGoldShare++;
     }
     
     // Vision score
-    if (match.vision_score) {
-      totalVisionScore += match.vision_score;
+    if (match.vision_score || match.visionscore) {
+      totalVisionScore += match.vision_score || match.visionscore || 0;
       matchesWithVisionScore++;
     }
     
@@ -103,13 +105,19 @@ export const calculateAverages = (matchStats: any[]): any => {
     ((totalKills + totalAssists) / totalDeaths).toFixed(2) : 
     ((totalKills + totalAssists)).toFixed(2);
   
+  // Get cspm safely
+  const totalCspm = matchStats.reduce((sum, match) => {
+    const cspm = match.cspm || 0;
+    return sum + (isNaN(cspm) ? 0 : cspm);
+  }, 0);
+  
   // Return calculated stats
   return {
     kills: totalKills / games,
     deaths: totalDeaths / games,
     assists: totalAssists / games,
     kda: parseFloat(kda),
-    csPerMin: matchStats.reduce((sum, match) => sum + (match.cspm || 0), 0) / games,
+    csPerMin: totalCspm / games,
     damageShare: matchesWithDamageShare > 0 ? totalDamageShare / matchesWithDamageShare : 0,
     goldShare: matchesWithGoldShare > 0 ? totalGoldShare / matchesWithGoldShare : 0,
     visionScore: matchesWithVisionScore > 0 ? totalVisionScore / matchesWithVisionScore : 0,
@@ -122,8 +130,10 @@ export const calculateAverages = (matchStats: any[]): any => {
 /**
  * Get champion statistics for a player
  */
-export const getChampionStats = (matchStats: any[], playerTeamId?: string): any[] => {
-  if (!matchStats || matchStats.length === 0) {
+export const getChampionStats = (matchStats: any[] | null | undefined, playerTeamId?: string): any[] => {
+  // Check if matchStats is valid
+  if (!matchStats || !Array.isArray(matchStats) || matchStats.length === 0) {
+    console.log("No valid match stats data to calculate champion stats");
     return [];
   }
   
