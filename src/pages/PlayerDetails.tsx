@@ -18,7 +18,7 @@ import PlayerStatsOverview from "@/components/player/PlayerStatsOverview";
 import PlayerChampionStats from "@/components/player/PlayerChampionStats";
 import PlayerMatchStats from "@/components/player/PlayerMatchStats";
 import PlayerTimelineStats from "@/components/player/PlayerTimelineStats";
-import { isWinForPlayer, calculateAverages, getChampionStats } from "@/utils/player/playerStatsCalculator";
+import { isWinForPlayer, getChampionStats } from "@/utils/player/playerStatsCalculator";
 
 const PlayerDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +36,7 @@ const PlayerDetails = () => {
       try {
         console.log(`Chargement des données pour le joueur ${id}`);
         
-        // Get player data
+        // Get player data from the database
         const playerData = await getPlayerById(id);
         if (!playerData) {
           console.error(`Player not found with ID: ${id}`);
@@ -60,7 +60,7 @@ const PlayerDetails = () => {
           }
         }
         
-        // Get match statistics directly for this player
+        // Get match statistics for champion stats calculation
         console.log(`Récupération des statistiques de match pour le joueur ${id}`);
         const stats = await getPlayerStats(id);
         console.log("Statistiques de match récupérées:", stats);
@@ -87,12 +87,8 @@ const PlayerDetails = () => {
     
     loadPlayerData();
   }, [id]);
-  
-  // Calculate statistics - with additional safety checks
-  const averageStats = Array.isArray(matchStats) && matchStats.length > 0 
-    ? calculateAverages(matchStats) 
-    : null;
-    
+
+  // Use champion stats calculation from match data
   const championStats = Array.isArray(matchStats) && matchStats.length > 0 
     ? getChampionStats(matchStats, player?.team) 
     : [];
@@ -125,6 +121,24 @@ const PlayerDetails = () => {
     return isWinForPlayer(stat, player.team);
   };
   
+  // Create average stats directly from the player object
+  const averageStats = player ? {
+    kills: player.avg_kills || 0,
+    deaths: player.avg_deaths || 0,
+    assists: player.avg_assists || 0,
+    kda: player.kda || 0,
+    csPerMin: player.cspm || player.csPerMin || 0,
+    damageShare: player.damage_share || player.damageShare || 0,
+    goldShare: player.earned_gold_share || 0,
+    visionScore: player.vspm || 0,
+    games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,
+    wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
+    winRate: championStats.length > 0 
+      ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 
+         championStats.reduce((total, champ) => total + champ.games, 0)) * 100
+      : 0
+  } : null;
+  
   // Handle case when no match stats available
   const hasMatchStats = Array.isArray(matchStats) && matchStats.length > 0;
   
@@ -141,19 +155,16 @@ const PlayerDetails = () => {
           <span>Retour aux joueurs</span>
         </Link>
         
-        {/* Player Header - Pass calculated stats if available */}
+        {/* Player Header - Use player data directly from the database */}
         <PlayerHeader 
           player={player} 
           teamName={teamName} 
-          kdaOverride={averageStats?.kda}
-          cspmOverride={averageStats?.csPerMin}
-          damageShareOverride={averageStats?.damageShare}
         />
         
         {!hasMatchStats && (
           <div className="mt-6 bg-amber-50 border-l-4 border-amber-400 p-4 text-amber-700">
             <p className="font-medium">Aucune statistique de match disponible pour ce joueur.</p>
-            <p className="text-sm mt-1">Les statistiques détaillées ne peuvent pas être affichées.</p>
+            <p className="text-sm mt-1">Statistiques générales issues de la base de données sont affichées.</p>
           </div>
         )}
         
