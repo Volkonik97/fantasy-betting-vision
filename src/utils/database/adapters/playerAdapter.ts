@@ -1,4 +1,3 @@
-
 import { Player } from "@/utils/models/types";
 
 /**
@@ -176,14 +175,18 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kill_participation_pct field:`, dbPlayer.kill_participation_pct, 'converted to:', killParticipation);
   }
   
-  // Extract dmg_per_gold (new field in player_summary_view)
+  // Extract dmg_per_gold (new field in player_summary_view) with improved logging
   let dmgPerGold: number = 0;
   if (dbPlayer.dmg_per_gold !== undefined && dbPlayer.dmg_per_gold !== null) {
     const dmgPerGoldValue = parseFloat(String(dbPlayer.dmg_per_gold));
     if (!isNaN(dmgPerGoldValue)) {
       dmgPerGold = dmgPerGoldValue;
     }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: dmg_per_gold field:`, dbPlayer.dmg_per_gold, 'converted to:', dmgPerGold);
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: dmg_per_gold field:`, 
+      dbPlayer.dmg_per_gold,
+      `type:`, typeof dbPlayer.dmg_per_gold, 
+      `converted to:`, dmgPerGold,
+      `type after conversion:`, typeof dmgPerGold);
   }
   
   // Extract gpm (gold per minute) from player_summary_view
@@ -196,7 +199,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gpm field:`, dbPlayer.gpm, 'converted to:', gpmValue);
   }
   
-  // Log final values for debugging
+  // Log final values for debugging including dmg_per_gold
   console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, { 
     vspm, 
     wcpm, 
@@ -261,7 +264,8 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     kill_participation_pct: killParticipation,
     efficiency_score: efficiencyScore,
     aggression_score: aggressionScore,
-    earlygame_score: earlyGameScore
+    earlygame_score: earlyGameScore,
+    dmg_per_gold: dmgPerGold
   };
 };
 

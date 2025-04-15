@@ -69,8 +69,18 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     return `${Math.round(value)}%`;
   };
 
+  // Modifié pour utiliser plus de décimales pour les petites valeurs
   const formatNumber = (value: number, decimals: number = 1): string => {
-    return isNaN(value) ? "0" : value.toFixed(decimals);
+    if (isNaN(value)) return "0";
+    
+    // Pour les très petites valeurs, utiliser 2 ou 3 décimales
+    if (value > 0 && value < 0.1) {
+      return value.toFixed(3);
+    } else if (value >= 0.1 && value < 1) {
+      return value.toFixed(2);
+    }
+    
+    return value.toFixed(decimals);
   };
 
   console.log(`PlayerStatsOverview damageShare:`, averageStats.damageShare, 
@@ -83,9 +93,10 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     `wins:`, averageStats.wins,
     `winRate:`, averageStats.winRate);
 
-  // Log the dmgPerGold value for debugging
+  // Log the dmgPerGold value with more detailed formatting for debugging
   console.log(`PlayerStatsOverview dmgPerGold:`, averageStats.dmgPerGold,
-    `formatted as: ${averageStats.dmgPerGold ? formatNumber(averageStats.dmgPerGold) : "N/A"}`);
+    `raw value type:`, typeof averageStats.dmgPerGold,
+    `formatted as:`, averageStats.dmgPerGold ? formatNumber(averageStats.dmgPerGold) : "N/A");
 
   return (
     <Card className="shadow-md bg-white">
@@ -169,7 +180,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             value={formatPercentage(averageStats.goldShare)}
           />
           
-          {/* New separate card for DMG/GOLD */}
+          {/* New separate card for DMG/GOLD with improved formatting */}
           <StatCard
             icon={<TrendingDown className="h-5 w-5 text-purple-500" />}
             title="DMG / GOLD"
