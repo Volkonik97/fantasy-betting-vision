@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -93,6 +92,24 @@ const PlayerDetails = () => {
     ? getChampionStats(matchStats, player?.team) 
     : [];
   
+  // Create average stats directly from the player object
+  const averageStats = player ? {
+    kills: player.avg_kills || 0,
+    deaths: player.avg_deaths || 0,
+    assists: player.avg_assists || 0,
+    kda: player.kda || 0,
+    csPerMin: player.cspm || player.csPerMin || 0,
+    damageShare: player.damageShare || 0,
+    goldShare: player.earned_gold_share || 0,
+    visionScore: player.vspm || 0,
+    games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,
+    wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
+    winRate: championStats.length > 0 
+      ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 
+         championStats.reduce((total, champ) => total + champ.games, 0)) * 100
+      : 0
+  } : null;
+  
   // Handle loading state
   if (isLoading) {
     return (
@@ -120,24 +137,6 @@ const PlayerDetails = () => {
   const checkWinForPlayer = (stat: any) => {
     return isWinForPlayer(stat, player.team);
   };
-  
-  // Create average stats directly from the player object
-  const averageStats = player ? {
-    kills: player.avg_kills || 0,
-    deaths: player.avg_deaths || 0,
-    assists: player.avg_assists || 0,
-    kda: player.kda || 0,
-    csPerMin: player.cspm || player.csPerMin || 0,
-    damageShare: player.damage_share || player.damageShare || 0,
-    goldShare: player.earned_gold_share || 0,
-    visionScore: player.vspm || 0,
-    games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,
-    wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
-    winRate: championStats.length > 0 
-      ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 
-         championStats.reduce((total, champ) => total + champ.games, 0)) * 100
-      : 0
-  } : null;
   
   // Handle case when no match stats available
   const hasMatchStats = Array.isArray(matchStats) && matchStats.length > 0;
