@@ -103,7 +103,7 @@ const PlayerDetails = () => {
     kda: player.kda || 0,
     csPerMin: player.cspm || player.csPerMin || 0,
     damageShare: player.damageShare || 0,
-    goldShare: player.gold_share_percent || 0,
+    goldShare: player.gold_share_percent || player.earned_gold_share || 0,
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
     games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,

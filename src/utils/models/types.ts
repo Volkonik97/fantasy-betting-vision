@@ -72,6 +72,7 @@ export interface Player {
   dpm?: number;
   earned_gpm?: number;
   earned_gold_share?: number;
+  gold_share_percent?: number; // Adding this property to match the player_summary_view column
   vspm?: number;
   wcpm?: number;
   
