@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -264,8 +265,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     kill_participation_pct: killParticipation,
     efficiency_score: efficiencyScore,
     aggression_score: aggressionScore,
-    earlygame_score: earlyGameScore,
-    dmg_per_gold: dmgPerGold
+    earlygame_score: earlyGameScore
   };
 };
 
