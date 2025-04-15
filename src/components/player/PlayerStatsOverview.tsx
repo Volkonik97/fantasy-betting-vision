@@ -52,6 +52,12 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
   
   console.log(`PlayerStatsOverview killParticipation: ${averageStats.killParticipation} raw value type: ${typeof averageStats.killParticipation} formatted as: ${displayKillParticipation}`);
   
+  // Format dpm (damage per minute) from player_summary_view
+  const dpmValue = averageStats.dpm || 0;
+  console.log(`PlayerStatsOverview dpm: ${dpmValue} raw value type: ${typeof dpmValue}`);
+  const displayDpm = Math.round(dpmValue);
+  console.log(`PlayerStatsOverview dpm formatted as: ${displayDpm}`);
+  
   // Format dmg per gold (ensure we display it with sufficient decimal places)
   const rawDmgPerGold = averageStats.dmgPerGold;
   console.log(`PlayerStatsOverview dmgPerGold: ${rawDmgPerGold} raw value type: ${typeof rawDmgPerGold}`);
@@ -136,7 +142,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             <div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Dégâts/Min</span>
-                <span className="font-bold">{averageStats.dpm ? Math.round(averageStats.dpm) : '0'}</span>
+                <span className="font-bold">{displayDpm}</span>
               </div>
               <div className="bg-gray-200 h-2 rounded-full mt-1">
                 <div 

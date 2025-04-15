@@ -54,6 +54,7 @@ const PlayerDetails = () => {
           kda: playerData.kda,
           vspm: playerData.vspm,
           wcpm: playerData.wcpm,
+          dpm: playerData.dpm,
           efficiency: playerData.efficiency_score,
           aggression: playerData.aggression_score,
           earlyGame: playerData.earlygame_score,
@@ -129,6 +130,8 @@ const PlayerDetails = () => {
     efficiency: player.efficiency_score || 0,
     aggression: player.aggression_score || 0,
     earlyGame: player.earlygame_score || 0,
+    // Use the dpm field from player_summary_view
+    dpm: player.dpm || 0,
     // Use match_count from database if available, otherwise use calculated matches
     games: player.match_count && player.match_count > 0 ? player.match_count : totalMatches,
     // Calculate wins - if we have match count but no actual win data, assume 50% win rate
@@ -143,11 +146,15 @@ const PlayerDetails = () => {
   if (player) {
     console.log(`Player ${player.name} kill_participation_pct:`, player.kill_participation_pct, 
                 `type:`, typeof player.kill_participation_pct);
+    console.log(`Player ${player.name} dpm:`, player.dpm, 
+                `type:`, typeof player.dpm);
   }
   
   if (averageStats) {
     console.log(`AverageStats killParticipation:`, averageStats.killParticipation, 
                 `type:`, typeof averageStats.killParticipation);
+    console.log(`AverageStats dpm:`, averageStats.dpm, 
+                `type:`, typeof averageStats.dpm);
   }
   
   // Handle loading state
