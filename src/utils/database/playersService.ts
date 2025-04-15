@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -8,7 +9,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
   try {
     console.log("Fetching player with ID:", playerId);
     
-    // First try fetching from player_summary_view which has the damage_share field
+    // First try fetching from player_summary_view which has the vspm, wcpm, and damage_share fields
     const { data: summaryData, error: summaryError } = await supabase
       .from('player_summary_view')
       .select('*')
@@ -17,6 +18,10 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     if (summaryData) {
       console.log("Found player in player_summary_view:", summaryData);
+      console.log("Vision stats from view:", { 
+        vspm: summaryData.vspm, 
+        wcpm: summaryData.wcpm 
+      });
       return adaptPlayerFromDatabase(summaryData);
     }
     
@@ -66,7 +71,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       return cachedPlayers;
     }
     
-    // Prepare the query
+    // Prepare the query to player_summary_view which has vspm and wcpm fields
     let query = supabase.from('player_summary_view').select('*');
     
     // Apply pagination if provided
@@ -121,7 +126,16 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     const adaptedPlayers = data.map(player => adaptPlayerFromDatabase(player));
-    console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view`);
+    console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view with vision stats`);
+    
+    // Log some samples of vision stats
+    if (adaptedPlayers.length > 0) {
+      console.log("Sample vision stats:", {
+        player: adaptedPlayers[0].name,
+        vspm: adaptedPlayers[0].vspm,
+        wcpm: adaptedPlayers[0].wcpm
+      });
+    }
     
     // Only update cache if we fetched all players (no pagination)
     if (page === undefined || pageSize === undefined) {

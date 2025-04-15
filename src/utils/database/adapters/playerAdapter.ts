@@ -86,8 +86,29 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
   }
   
-  // Log the final damageShare value for debugging
-  console.log(`Final damageShare value for ${dbPlayer.playername || dbPlayer.playerid}:`, damageShare, typeof damageShare);
+  // Extract vspm (Vision Score Per Minute) from the correct field
+  let vspm: number = 0;
+  if (dbPlayer.vspm !== undefined && dbPlayer.vspm !== null) {
+    const vspmValue = parseFloat(dbPlayer.vspm);
+    if (!isNaN(vspmValue)) {
+      vspm = vspmValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: vspm field:`, dbPlayer.vspm, 'converted to:', vspm);
+  }
+  
+  // Extract wcpm (Wards Cleared Per Minute) from the correct field
+  let wcpm: number = 0;
+  if (dbPlayer.wcpm !== undefined && dbPlayer.wcpm !== null) {
+    const wcpmValue = parseFloat(dbPlayer.wcpm);
+    if (!isNaN(wcpmValue)) {
+      wcpm = wcpmValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: wcpm field:`, dbPlayer.wcpm, 'converted to:', wcpm);
+  }
+  
+  // Log the final vision-related values for debugging
+  console.log(`Final vision stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
+    { vspm: vspm, wcpm: wcpm });
   
   return {
     id: dbPlayer.playerid || '',
@@ -115,9 +136,9 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     dpm: dbPlayer.dpm || 0,
     damageShare: damageShare,
     
-    // Vision
-    vspm: dbPlayer.vspm || 0,
-    wcpm: dbPlayer.wcpm || 0,
+    // Vision - using the extracted values with fallbacks
+    vspm: vspm,
+    wcpm: wcpm,
     
     // Early game
     avg_golddiffat15: dbPlayer.avg_golddiffat15 || 0,

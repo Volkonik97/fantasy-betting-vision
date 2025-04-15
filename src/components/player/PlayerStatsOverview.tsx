@@ -1,6 +1,7 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass } from "lucide-react";
+import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
 
 interface PlayerAverageStats {
   kills: number;
@@ -10,6 +11,7 @@ interface PlayerAverageStats {
   csPerMin: number;
   damageShare: number;
   visionScore: number;
+  wardsCleared: number;
   goldShare: number;
   games: number;
   wins: number;
@@ -170,11 +172,19 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             }
           />
           
-          {/* Vision Score Card */}
+          {/* Vision Score Card - UPDATED */}
           <StatCard
-            icon={<Compass className="h-5 w-5 text-indigo-500" />}
-            title="Vision Score"
-            value={Math.round(averageStats.visionScore || 0).toString()}
+            icon={<Eye className="h-5 w-5 text-indigo-500" />}
+            title="Vision Score par min"
+            value={averageStats.visionScore.toFixed(1)}
+            footer={
+              <div className="mt-2 pt-1 border-t border-gray-100">
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Wards détruites par min:</span>
+                  <span className="font-semibold">{averageStats.wardsCleared.toFixed(1)}</span>
+                </div>
+              </div>
+            }
           />
           
           {/* Gold Share Card */}
