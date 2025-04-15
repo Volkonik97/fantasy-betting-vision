@@ -9,7 +9,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
   try {
     console.log("Fetching player with ID:", playerId);
     
-    // First try fetching from player_summary_view which has the vspm, wcpm, and damage_share fields
+    // First try fetching from player_summary_view which has the vspm, wcpm, damage_share and match_count fields
     const { data: summaryData, error: summaryError } = await supabase
       .from('player_summary_view')
       .select('*')
@@ -18,16 +18,33 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     if (summaryData) {
       console.log("Found player in player_summary_view:", summaryData);
-      console.log("Vision stats from view:", { 
+      console.log("Stats from view:", { 
         vspm: summaryData.vspm, 
-        wcpm: summaryData.wcpm 
+        wcpm: summaryData.wcpm,
+        damage_share: summaryData.damage_share,
+        match_count: summaryData.match_count
       });
       return adaptPlayerFromDatabase(summaryData);
     }
     
-    console.log("Player not found in player_summary_view, trying players table");
+    console.log("Player not found in player_summary_view, trying player_stats view");
     
-    // Fall back to the players table if not found in the view
+    // Try the player_stats view which should have match_count
+    const { data: statsData, error: statsError } = await supabase
+      .from('player_stats')
+      .select('*')
+      .eq('playerid', playerId)
+      .single();
+      
+    if (statsData) {
+      console.log("Found player in player_stats:", statsData);
+      console.log("Match count from player_stats:", statsData.match_count);
+      return adaptPlayerFromDatabase(statsData);
+    }
+    
+    console.log("Player not found in player_stats, trying players table");
+    
+    // Fall back to the players table if not found in the views
     const { data, error } = await supabase
       .from('players')
       .select('*')

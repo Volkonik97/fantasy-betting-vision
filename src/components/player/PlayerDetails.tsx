@@ -48,6 +48,7 @@ const PlayerDetails = () => {
         console.log("Données du joueur récupérées:", playerData);
         // Log the damage share value for debugging
         console.log(`Player ${playerData.name} damageShare:`, playerData.damageShare, typeof playerData.damageShare);
+        console.log(`Player ${playerData.name} match_count:`, playerData.match_count, typeof playerData.match_count);
         
         setPlayer(playerData);
         
@@ -107,7 +108,7 @@ const PlayerDetails = () => {
     goldShare: player.gold_share_percent || player.earned_gold_share || 0,
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
-    games: player.match_count || championStats.reduce((total, champ) => total + champ.games, 0) || 0, // Updated this line
+    games: player.match_count || 0, // Primary source from database
     wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
     winRate: championStats.length > 0 
       ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 
@@ -123,7 +124,9 @@ const PlayerDetails = () => {
       damageShare: averageStats.damageShare,
       goldShare: averageStats.goldShare,
       visionScore: averageStats.visionScore,
-      wardsCleared: averageStats.wardsCleared
+      wardsCleared: averageStats.wardsCleared,
+      games: averageStats.games,
+      matchCount: player?.match_count
     });
   }
   

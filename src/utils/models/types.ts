@@ -23,7 +23,7 @@ export interface Team {
   redFirstHerald?: number;
   blueFirstTower?: number;
   redFirstTower?: number;
-  blueFirstBaron?: number;
+  blueFirstBaron?: number;  
   redFirstBaron?: number;
   
   // Stats fields that are being used in the code
@@ -86,7 +86,7 @@ export interface Player {
   avg_firstblood_assist?: number;
   avg_firstblood_victim?: number;
   
-  match_count?: number; // Add this line to include match_count
+  match_count?: number; // Number of matches played by the player
 }
 
 export interface Match {
