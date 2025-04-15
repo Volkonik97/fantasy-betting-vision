@@ -46,6 +46,14 @@ const PlayerHeader = ({
     fetchTeamLogo();
   }, [player.team]);
   
+  // Log the damageShare value for debugging
+  console.log("PlayerHeader damageShare:", 
+    player.damageShare, 
+    typeof player.damageShare, 
+    "Override:", 
+    damageShareOverride
+  );
+  
   const playerKda = kdaOverride !== null ? kdaOverride : 
     (typeof player.kda === 'number' ? player.kda : parseFloat(String(player.kda) || '0'));
   
@@ -54,6 +62,17 @@ const PlayerHeader = ({
   
   const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
+  
+  // Format damage share for display
+  const formattedDamageShare = (() => {
+    if (playerDamageShare === 0) return "0%";
+    if (playerDamageShare >= 0 && playerDamageShare <= 1) {
+      // Value is a decimal (0.25 = 25%)
+      return `${Math.round(playerDamageShare * 100)}%`;
+    }
+    // Value is already a percentage (25 = 25%)
+    return `${Math.round(playerDamageShare)}%`;
+  })();
 
   return (
     <motion.div 
@@ -130,7 +149,7 @@ const PlayerHeader = ({
             <div className="flex justify-center mb-1">
               <Award size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{Math.round(playerDamageShare * 100)}%</p>
+            <p className="text-2xl font-bold">{formattedDamageShare}</p>
             <p className="text-xs text-gray-500">Damage Share</p>
           </div>
         </div>

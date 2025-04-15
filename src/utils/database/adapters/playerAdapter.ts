@@ -71,17 +71,17 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   let damageShare = 0;
   
   if (dbPlayer.damage_share !== undefined) {
-    // Handle player_summary_view format (might be directly there)
+    // Handle player_summary_view format (damage_share field)
     damageShare = dbPlayer.damage_share;
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share);
   } else if (dbPlayer.damageshare !== undefined) {
     // Handle alternate field name that might be used
     damageShare = dbPlayer.damageshare;
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare);
   }
   
-  console.log(`Adapting player ${dbPlayer.playername || dbPlayer.playerid} with damage_share:`, 
-    dbPlayer.damage_share, 
-    typeof dbPlayer.damage_share, 
-    `Final damageShare value:`, damageShare);
+  // Log the final damageShare value for debugging
+  console.log(`Final damageShare value for ${dbPlayer.playername || dbPlayer.playerid}:`, damageShare, typeof damageShare);
   
   return {
     id: dbPlayer.playerid || '',

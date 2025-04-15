@@ -46,6 +46,9 @@ const PlayerDetails = () => {
         }
         
         console.log("Données du joueur récupérées:", playerData);
+        // Log the damage share value for debugging
+        console.log(`Player ${playerData.name} damageShare:`, playerData.damageShare, typeof playerData.damageShare);
+        
         setPlayer(playerData);
         
         // Get team name
@@ -110,6 +113,16 @@ const PlayerDetails = () => {
          championStats.reduce((total, champ) => total + champ.games, 0)) * 100
       : 0
   } : null;
+  
+  // Log averageStats for debugging
+  if (averageStats) {
+    console.log("Average stats calculated:", {
+      kda: averageStats.kda,
+      csPerMin: averageStats.csPerMin,
+      damageShare: averageStats.damageShare,
+      damageShareType: typeof averageStats.damageShare
+    });
+  }
   
   // Handle loading state
   if (isLoading) {

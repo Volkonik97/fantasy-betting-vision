@@ -17,11 +17,13 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     return null;
   }
   
-  // Log player data including image URL for debugging
+  // Log player data including damage share for debugging
   console.log(`Rendering PlayerCard for ${player.name}`, {
     id: player.id,
     role: player.role,
-    imageUrl: player.image
+    imageUrl: player.image,
+    damageShare: player.damageShare,
+    damageShareType: typeof player.damageShare
   });
   
   // If the image URL is from Supabase storage but doesn't include the full path, fix it
