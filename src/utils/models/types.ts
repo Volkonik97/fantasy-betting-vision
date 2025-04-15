@@ -85,6 +85,8 @@ export interface Player {
   avg_firstblood_kill?: number;
   avg_firstblood_assist?: number;
   avg_firstblood_victim?: number;
+  
+  match_count?: number; // Add this line to include match_count
 }
 
 export interface Match {

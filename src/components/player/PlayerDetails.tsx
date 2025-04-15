@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -106,7 +107,7 @@ const PlayerDetails = () => {
     goldShare: player.gold_share_percent || player.earned_gold_share || 0,
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
-    games: championStats.reduce((total, champ) => total + champ.games, 0) || 0,
+    games: player.match_count || championStats.reduce((total, champ) => total + champ.games, 0) || 0, // Updated this line
     wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
     winRate: championStats.length > 0 
       ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 

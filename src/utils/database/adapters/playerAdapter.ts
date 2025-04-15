@@ -147,7 +147,10 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     // First blood stats
     avg_firstblood_kill: dbPlayer.avg_firstblood_kill || 0,
     avg_firstblood_assist: dbPlayer.avg_firstblood_assist || 0,
-    avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0
+    avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0,
+    
+    // Add match_count mapping
+    match_count: dbPlayer.match_count || 0
   };
 };
 
