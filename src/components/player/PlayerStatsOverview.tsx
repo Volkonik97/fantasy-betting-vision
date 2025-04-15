@@ -38,38 +38,30 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     );
   }
 
-  // Calculate the actual total values for display
   const totalKills = averageStats.kills * averageStats.games;
   const totalDeaths = averageStats.deaths * averageStats.games;
   const totalAssists = averageStats.assists * averageStats.games;
 
-  // Format damage share for display - handle decimal or percentage format
   const formatDamageShare = (value: number): string => {
     if (isNaN(value) || value === 0) return "0%";
     
-    // If it's a small decimal (0.XX), assume it's already in decimal form and convert to percentage
     if (value >= 0 && value <= 1) {
       return `${Math.round(value * 100)}%`;
     }
     
-    // Otherwise assume it's already a percentage
     return `${Math.round(value)}%`;
   };
 
-  // Format gold share for display
   const formatGoldShare = (value: number): string => {
     if (isNaN(value) || value === 0) return "0%";
     
-    // If it's a small decimal (0.XX), assume it's already in decimal form and convert to percentage
     if (value >= 0 && value <= 1) {
       return `${Math.round(value * 100)}%`;
     }
     
-    // Otherwise assume it's already a percentage
     return `${Math.round(value)}%`;
   };
 
-  // Log the damage share and gold share for debugging
   console.log(`PlayerStatsOverview damageShare:`, averageStats.damageShare, 
     `formatted as: ${formatDamageShare(averageStats.damageShare)}`);
     
@@ -86,7 +78,6 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
       </CardHeader>
       <CardContent className="pt-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* KDA Card - Improved */}
           <StatCard
             icon={<TrendingUp className="h-5 w-5 text-emerald-500" />}
             title="KDA"
@@ -121,21 +112,18 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             }
           />
           
-          {/* CS per minute Card */}
           <StatCard
             icon={<PieChart className="h-5 w-5 text-amber-500" />}
             title="CS par minute"
             value={averageStats.csPerMin.toFixed(1)}
           />
           
-          {/* Damage Share Card */}
           <StatCard
             icon={<BarChart className="h-5 w-5 text-rose-500" />}
             title="Part des dégâts"
             value={formatDamageShare(averageStats.damageShare)}
           />
           
-          {/* Win Rate Card - Enhanced */}
           <StatCard
             icon={<Award className="h-5 w-5 text-lol-blue" />}
             title="Win Rate"
@@ -187,7 +175,6 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             }
           />
           
-          {/* Vision Score Card - UPDATED */}
           <StatCard
             icon={<Eye className="h-5 w-5 text-indigo-500" />}
             title="Vision Score par min"
@@ -202,14 +189,12 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             }
           />
           
-          {/* Gold Share Card - Updated to use gold_share_percent */}
           <StatCard
             icon={<Award className="h-5 w-5 text-yellow-500" />}
             title="Part de l'or"
             value={formatGoldShare(averageStats.goldShare)}
           />
           
-          {/* Matches Played Card */}
           <StatCard
             title="Matchs joués"
             value={averageStats.games.toString()}
@@ -221,7 +206,6 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
   );
 };
 
-// Enhanced StatCard component
 const StatCard = ({ icon, title, value, subtitle, footer, isWide = false }: StatCardProps) => {
   return (
     <div className={`bg-gradient-to-br from-white to-gray-50 p-4 rounded-lg border border-gray-100 hover:shadow-md transition-all ${isWide ? 'col-span-2' : ''}`}>

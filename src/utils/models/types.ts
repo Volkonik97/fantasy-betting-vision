@@ -1,4 +1,3 @@
-
 // Common types used across the application
 export interface Team {
   id: string;
@@ -73,7 +72,7 @@ export interface Player {
   dpm?: number;
   earned_gpm?: number;
   earned_gold_share?: number;
-  gold_share_percent?: number; // Adding this property to match the player_summary_view column
+  gold_share_percent?: number; // Using gold_share_percent from player_summary_view
   vspm?: number;
   wcpm?: number;
   match_count?: number; // For tracking the number of matches played
