@@ -1,7 +1,6 @@
 
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
 
@@ -11,38 +10,23 @@ interface PlayersListProps {
 }
 
 const PlayersList = ({ players, loading }: PlayersListProps) => {
-  // Log players info on initial render and when players change 
+  // Log for debugging image URLs in player data
   useEffect(() => {
     console.log(`PlayersList: Received ${players.length} players`);
     
-    // Log players by region
-    const regionCounts = players.reduce((acc, player) => {
-      const region = player.teamRegion || 'Unknown';
-      acc[region] = (acc[region] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    console.log("Players by region:", regionCounts);
-    
-    // Log players by role
-    const roleCounts = players.reduce((acc, player) => {
-      const role = player.role || 'Unknown';
-      acc[role] = (acc[role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    console.log("Players by role:", roleCounts);
-    
-    // Vérifier si des joueurs ont des données manquantes
-    const playersWithMissingData = players.filter(p => 
-      !p.id || !p.name || !p.role || !p.teamName || !p.teamRegion
-    );
-    
-    if (playersWithMissingData.length > 0) {
-      console.warn(`⚠️ ${playersWithMissingData.length} joueurs avec des données manquantes`);
-      playersWithMissingData.slice(0, 3).forEach(p => 
-        console.warn(`  - Joueur incomplet: ${p.name || 'Sans nom'}, ID: ${p.id || 'Sans ID'}, Équipe: ${p.teamName || 'Inconnue'}`)
+    // Log sample of players to check image URLs
+    if (players.length > 0) {
+      console.log("Sample players with image URLs:", 
+        players.slice(0, 3).map(p => ({
+          name: p.name,
+          imageUrl: p.image,
+          role: p.role
+        }))
       );
+      
+      // Count players with images vs without
+      const withImages = players.filter(p => p.image).length;
+      console.log(`Players with images: ${withImages}/${players.length}`);
     }
   }, [players]);
   

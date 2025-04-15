@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
@@ -17,6 +17,13 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     return null;
   }
   
+  // Log player data including image URL for debugging
+  console.log(`Rendering PlayerCard for ${player.name}`, {
+    id: player.id,
+    role: player.role,
+    imageUrl: player.image
+  });
+  
   // Ensure required properties exist with meaningful defaults
   const normalizedPlayer = {
     ...player,
@@ -27,26 +34,6 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     csPerMin: player.csPerMin || 0,
     damageShare: player.damageShare || 0,
   };
-  
-  // Add debug information for this specific player
-  useEffect(() => {
-    console.log(`PlayerCard mounted for: ${player.name}, Role: ${player.role}, Team: ${player.team}, TeamName: ${player.teamName || 'not set'}, Region: ${player.teamRegion || 'unknown'}, ID: ${player.id}`);
-    console.log(`Player stats - KDA: ${player.kda}, CS/min: ${player.csPerMin}, Damage Share: ${player.damageShare}`);
-    console.log(`Player image URL: ${player.image || 'no image'}`);
-    
-    // Verify if the player has all required properties
-    if (!player.role || !player.teamName || !player.teamRegion) {
-      console.warn(`⚠️ PlayerCard: Player ${player.name} missing properties: ` +
-        `${!player.role ? 'role ' : ''}` +
-        `${!player.teamName ? 'teamName ' : ''}` +
-        `${!player.teamRegion ? 'teamRegion ' : ''}`
-      );
-    }
-    
-    return () => {
-      console.log(`PlayerCard unmounted for: ${player.name}`);
-    };
-  }, [player]);
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
