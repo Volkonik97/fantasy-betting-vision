@@ -30,7 +30,6 @@ export interface DatabasePlayer {
   avg_firstblood_kill?: number;
   avg_firstblood_assist?: number;
   avg_firstblood_victim?: number;
-  match_count?: number; // Added match_count field
 }
 
 // For player data in player_summary_view
@@ -58,7 +57,6 @@ export interface PlayerSummaryViewData {
   avg_xpdiffat10?: number;
   avg_csdiffat10?: number;
   efficiency_score?: number;
-  match_count?: number; // Added match_count field
 }
 
 // For RawDatabasePlayer
@@ -107,19 +105,9 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: wcpm field:`, dbPlayer.wcpm, 'converted to:', wcpm);
   }
   
-  // Extract match_count with proper logging
-  let matchCount: number = 0;
-  if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
-    const matchCountValue = parseInt(dbPlayer.match_count, 10);
-    if (!isNaN(matchCountValue)) {
-      matchCount = matchCountValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: match_count field:`, dbPlayer.match_count, 'converted to:', matchCount);
-  }
-  
   // Log the final vision-related values for debugging
-  console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
-    { vspm: dbPlayer.vspm, wcpm: wcpm, matchCount: matchCount });
+  console.log(`Final vision stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
+    { vspm: vspm, wcpm: wcpm });
   
   return {
     id: dbPlayer.playerid || '',
@@ -141,8 +129,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     csPerMin: dbPlayer.cspm || 0,
     cspm: dbPlayer.cspm || 0,
     earned_gpm: dbPlayer.earned_gpm || 0,
-    earned_gold_share: dbPlayer.earned_gold_share || 0,
-    gold_share_percent: dbPlayer.gold_share_percent || 0,
+    earned_gold_share: dbPlayer.gold_share_percent || 0,
     
     // Damage
     dpm: dbPlayer.dpm || 0,
@@ -160,10 +147,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     // First blood stats
     avg_firstblood_kill: dbPlayer.avg_firstblood_kill || 0,
     avg_firstblood_assist: dbPlayer.avg_firstblood_assist || 0,
-    avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0,
-    
-    // Match count - using the extracted value
-    match_count: matchCount
+    avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0
   };
 };
 
@@ -210,7 +194,6 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     avg_csdiffat15: player.avg_csdiffat15 || 0,
     avg_firstblood_kill: player.avg_firstblood_kill || 0,
     avg_firstblood_assist: player.avg_firstblood_assist || 0,
-    avg_firstblood_victim: player.avg_firstblood_victim || 0,
-    match_count: player.match_count || 0
+    avg_firstblood_victim: player.avg_firstblood_victim || 0
   };
 };
