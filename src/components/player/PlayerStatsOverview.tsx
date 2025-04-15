@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
@@ -191,7 +190,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
           <StatCard
             icon={<Award className="h-5 w-5 text-yellow-500" />}
             title="Part de l'or"
-            value={formatDamageShare(averageStats.goldShare)}
+            value={`${Math.round(averageStats.goldShare)}%`}
           />
           
           {/* Matches Played Card */}

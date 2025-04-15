@@ -1,4 +1,3 @@
-
 import { Player } from "@/utils/models/types";
 
 /**
@@ -130,7 +129,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     csPerMin: dbPlayer.cspm || 0,
     cspm: dbPlayer.cspm || 0,
     earned_gpm: dbPlayer.earned_gpm || 0,
-    earned_gold_share: dbPlayer.earned_gold_share || 0,
+    earned_gold_share: dbPlayer.gold_share_percent || 0,
     
     // Damage
     dpm: dbPlayer.dpm || 0,
