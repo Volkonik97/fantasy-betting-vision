@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -185,6 +186,16 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: dmg_per_gold field:`, dbPlayer.dmg_per_gold, 'converted to:', dmgPerGold);
   }
   
+  // Extract gpm (gold per minute) from player_summary_view
+  let gpmValue: number = 0;
+  if (dbPlayer.gpm !== undefined && dbPlayer.gpm !== null) {
+    const parsedGpm = parseFloat(String(dbPlayer.gpm));
+    if (!isNaN(parsedGpm)) {
+      gpmValue = parsedGpm;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gpm field:`, dbPlayer.gpm, 'converted to:', gpmValue);
+  }
+  
   // Log final values for debugging
   console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, { 
     vspm, 
@@ -197,7 +208,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     earlyGameScore,
     killParticipation,
     dmgPerGold,
-    gpm
+    gpmValue
   });
   
   return {
@@ -222,7 +233,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     earned_gpm: parseFloat(String(dbPlayer.earned_gpm || dbPlayer.gpm || 0)),
     earned_gold_share: parseFloat(String(dbPlayer.earned_gold_share || 0)),
     gold_share_percent: goldSharePercent,
-    gpm: gpm,
+    gpm: gpmValue,
     
     // Damage
     dpm: parseFloat(String(dbPlayer.dpm || 0)),
