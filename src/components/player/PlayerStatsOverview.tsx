@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye, Target, Zap, Clock } from "lucide-react";
 
 interface PlayerAverageStats {
   kills: number;
@@ -13,6 +13,11 @@ interface PlayerAverageStats {
   visionScore: number;
   wardsCleared: number;
   goldShare: number;
+  dmgPerGold?: number;
+  killParticipation?: number;
+  efficiency?: number;
+  aggression?: number;
+  earlyGame?: number;
   games: number;
   wins: number;
   winRate: number;
@@ -54,7 +59,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     totalAssists
   });
 
-  const formatDamageShare = (value: number): string => {
+  const formatPercentage = (value: number): string => {
     if (isNaN(value) || value === 0) return "0%";
     
     if (value >= 0 && value <= 1) {
@@ -64,21 +69,15 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     return `${Math.round(value)}%`;
   };
 
-  const formatGoldShare = (value: number): string => {
-    if (isNaN(value) || value === 0) return "0%";
-    
-    if (value >= 0 && value <= 1) {
-      return `${Math.round(value * 100)}%`;
-    }
-    
-    return `${Math.round(value)}%`;
+  const formatNumber = (value: number, decimals: number = 1): string => {
+    return isNaN(value) ? "0" : value.toFixed(decimals);
   };
 
   console.log(`PlayerStatsOverview damageShare:`, averageStats.damageShare, 
-    `formatted as: ${formatDamageShare(averageStats.damageShare)}`);
+    `formatted as: ${formatPercentage(averageStats.damageShare)}`);
     
   console.log(`PlayerStatsOverview goldShare:`, averageStats.goldShare, 
-    `formatted as: ${formatGoldShare(averageStats.goldShare)}`);
+    `formatted as: ${formatPercentage(averageStats.goldShare)}`);
   
   console.log(`PlayerStatsOverview games:`, averageStats.games,
     `wins:`, averageStats.wins,
@@ -137,11 +136,56 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
           <StatCard
             icon={<BarChart className="h-5 w-5 text-rose-500" />}
             title="Part des dégâts"
-            value={formatDamageShare(averageStats.damageShare)}
+            value={formatPercentage(averageStats.damageShare)}
           />
           
           <StatCard
-            icon={<Award className="h-5 w-5 text-lol-blue" />}
+            icon={<Target className="h-5 w-5 text-violet-500" />}
+            title="Participation aux kills"
+            value={formatPercentage(averageStats.killParticipation || 0)}
+          />
+          
+          <StatCard
+            icon={<Eye className="h-5 w-5 text-indigo-500" />}
+            title="Vision Score par min"
+            value={averageStats.visionScore.toFixed(1)}
+            footer={
+              <div className="mt-2 pt-1 border-t border-gray-100">
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Wards détruites par min:</span>
+                  <span className="font-semibold">{averageStats.wardsCleared.toFixed(1)}</span>
+                </div>
+              </div>
+            }
+          />
+          
+          <StatCard
+            icon={<Award className="h-5 w-5 text-yellow-500" />}
+            title="Part de l'or"
+            value={formatPercentage(averageStats.goldShare)}
+            subtitle={averageStats.dmgPerGold ? `${formatNumber(averageStats.dmgPerGold)} dmg/gold` : undefined}
+          />
+          
+          <StatCard
+            icon={<Zap className="h-5 w-5 text-orange-500" />}
+            title="Efficacité"
+            value={formatNumber(averageStats.efficiency || 0)}
+            footer={
+              <div className="mt-2">
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Aggression:</span>
+                  <span className="font-semibold">{formatNumber(averageStats.aggression || 0)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>Early Game:</span>
+                  <span className="font-semibold">{formatNumber(averageStats.earlyGame || 0)}</span>
+                </div>
+              </div>
+            }
+          />
+          
+          <StatCard
+            icon={<Clock className="h-5 w-5 text-lol-blue" />}
             title="Win Rate"
             value={`${Math.round(averageStats.winRate)}%`}
             footer={
@@ -189,32 +233,6 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
                 </div>
               </div>
             }
-          />
-          
-          <StatCard
-            icon={<Eye className="h-5 w-5 text-indigo-500" />}
-            title="Vision Score par min"
-            value={averageStats.visionScore.toFixed(1)}
-            footer={
-              <div className="mt-2 pt-1 border-t border-gray-100">
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>Wards détruites par min:</span>
-                  <span className="font-semibold">{averageStats.wardsCleared.toFixed(1)}</span>
-                </div>
-              </div>
-            }
-          />
-          
-          <StatCard
-            icon={<Award className="h-5 w-5 text-yellow-500" />}
-            title="Part de l'or"
-            value={formatGoldShare(averageStats.goldShare)}
-          />
-          
-          <StatCard
-            title="Matchs joués"
-            value={averageStats.games.toString()}
-            isWide={true}
           />
         </div>
       </CardContent>

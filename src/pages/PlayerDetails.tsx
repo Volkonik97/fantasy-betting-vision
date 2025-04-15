@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -45,10 +46,19 @@ const PlayerDetails = () => {
         }
         
         console.log("Données du joueur récupérées:", playerData);
-        // Log the damage share value for debugging
-        console.log(`Player ${playerData.name} damageShare:`, playerData.damageShare, typeof playerData.damageShare);
-        console.log(`Player ${playerData.name} goldShare:`, playerData.gold_share_percent, typeof playerData.gold_share_percent);
-        console.log(`Player ${playerData.name} match_count:`, playerData.match_count, typeof playerData.match_count);
+        // Log key values for debugging
+        console.log(`Player ${playerData.name} key stats:`, {
+          damageShare: playerData.damageShare,
+          goldShare: playerData.gold_share_percent,
+          match_count: playerData.match_count,
+          kda: playerData.kda,
+          vspm: playerData.vspm,
+          wcpm: playerData.wcpm,
+          efficiency: playerData.efficiency_score,
+          aggression: playerData.aggression_score,
+          earlyGame: playerData.earlygame_score,
+          killParticipation: playerData.kill_participation_pct
+        });
         
         setPlayer(playerData);
         
@@ -112,25 +122,33 @@ const PlayerDetails = () => {
     goldShare: player.gold_share_percent || player.earned_gold_share || 0,
     visionScore: player.vspm || 0,
     wardsCleared: player.wcpm || 0,
-    // Use match_count from database if available
+    dmgPerGold: player.dmg_per_gold || 0,
+    killParticipation: player.kill_participation_pct || 0,
+    efficiency: player.efficiency_score || 0,
+    aggression: player.aggression_score || 0,
+    earlyGame: player.earlygame_score || 0,
+    // Use match_count from database if available, otherwise use calculated matches
     games: player.match_count && player.match_count > 0 ? player.match_count : totalMatches,
-    // Calculate wins from total games and the player win rate if match_count is available
-    // Otherwise use win count from champion stats
+    // Calculate wins - if we have match count but no actual win data, assume 50% win rate
     wins: player.match_count && player.match_count > 0 ? Math.round((player.match_count * 0.5)) : totalWins,
-    // Calculate win rate based on available data
+    // Calculate win rate
     winRate: player.match_count && player.match_count > 0 
       ? 50 // Default win rate of 50% when we only have match_count but no detailed win data
       : totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0
   } : null;
   
-  // Log averageStats for debugging with more details
+  // Log averageStats for debugging
   if (averageStats) {
     console.log("Average stats calculated:", {
       kda: averageStats.kda,
       csPerMin: averageStats.csPerMin,
       damageShare: averageStats.damageShare,
       goldShare: averageStats.goldShare,
-      goldShareType: typeof averageStats.goldShare,
+      dmgPerGold: averageStats.dmgPerGold,
+      killParticipation: averageStats.killParticipation,
+      efficiency: averageStats.efficiency,
+      aggression: averageStats.aggression,
+      earlyGame: averageStats.earlyGame,
       visionScore: averageStats.visionScore,
       wardsCleared: averageStats.wardsCleared,
       games: averageStats.games,

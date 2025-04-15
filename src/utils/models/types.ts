@@ -86,6 +86,14 @@ export interface Player {
   avg_firstblood_kill?: number;
   avg_firstblood_assist?: number;
   avg_firstblood_victim?: number;
+  
+  // Additional stats from player_summary_view
+  dmg_per_gold?: number;
+  kill_participation_pct?: number;
+  gpm?: number;
+  efficiency_score?: number;
+  aggression_score?: number;
+  earlygame_score?: number;
 }
 
 export interface Match {

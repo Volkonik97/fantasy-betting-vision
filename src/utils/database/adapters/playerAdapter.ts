@@ -69,56 +69,7 @@ export type RawDatabasePlayer = Partial<DatabasePlayer>;
  * Adapter to convert database player format to application Player model
  */
 export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
-  // Safely handle damage share - prioritize the damage_share field from player_summary_view
-  let damageShare: number = 0;
-  
-  if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
-    // Handle player_summary_view format (damage_share field)
-    const damageShareValue = parseFloat(dbPlayer.damage_share);
-    if (!isNaN(damageShareValue)) {
-      damageShare = damageShareValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share, 'converted to:', damageShare);
-  } else if (dbPlayer.damageshare !== undefined && dbPlayer.damageshare !== null) {
-    // Handle alternate field name that might be used
-    const damageShareValue = parseFloat(dbPlayer.damageshare);
-    if (!isNaN(damageShareValue)) {
-      damageShare = damageShareValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
-  }
-  
-  // Extract vspm (Vision Score Per Minute) from the correct field
-  let vspm: number = 0;
-  if (dbPlayer.vspm !== undefined && dbPlayer.vspm !== null) {
-    const vspmValue = parseFloat(dbPlayer.vspm);
-    if (!isNaN(vspmValue)) {
-      vspm = vspmValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: vspm field:`, dbPlayer.vspm, 'converted to:', vspm);
-  }
-  
-  // Extract wcpm (Wards Cleared Per Minute) from the correct field
-  let wcpm: number = 0;
-  if (dbPlayer.wcpm !== undefined && dbPlayer.wcpm !== null) {
-    const wcpmValue = parseFloat(dbPlayer.wcpm);
-    if (!isNaN(wcpmValue)) {
-      wcpm = wcpmValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: wcpm field:`, dbPlayer.wcpm, 'converted to:', wcpm);
-  }
-  
-  // Extract gold_share_percent from player_summary_view
-  let goldSharePercent: number = 0;
-  if (dbPlayer.gold_share_percent !== undefined && dbPlayer.gold_share_percent !== null) {
-    const goldShareValue = parseFloat(dbPlayer.gold_share_percent);
-    if (!isNaN(goldShareValue)) {
-      goldSharePercent = goldShareValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gold_share_percent field:`, dbPlayer.gold_share_percent, 'converted to:', goldSharePercent);
-  }
-  
-  // Extract match_count if available - ensure it's handled correctly as a number
+  // Extract match_count - ensuring it's correctly handled as a number
   let matchCount: number = 0;
   if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
     // Try to parse as number regardless of source format (string or number)
@@ -129,12 +80,135 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: match_count field:`, dbPlayer.match_count, 'converted to:', matchCount);
   }
   
-  // Log the final values for debugging
+  // Extract damage_share - prioritize the damage_share field from player_summary_view
+  let damageShare: number = 0;
+  if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
+    const damageShareValue = parseFloat(String(dbPlayer.damage_share));
+    if (!isNaN(damageShareValue)) {
+      damageShare = damageShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share, 'converted to:', damageShare);
+  } else if (dbPlayer.damageshare !== undefined && dbPlayer.damageshare !== null) {
+    const damageShareValue = parseFloat(String(dbPlayer.damageshare));
+    if (!isNaN(damageShareValue)) {
+      damageShare = damageShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
+  }
+  
+  // Extract vspm (Vision Score Per Minute)
+  let vspm: number = 0;
+  if (dbPlayer.vspm !== undefined && dbPlayer.vspm !== null) {
+    const vspmValue = parseFloat(String(dbPlayer.vspm));
+    if (!isNaN(vspmValue)) {
+      vspm = vspmValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: vspm field:`, dbPlayer.vspm, 'converted to:', vspm);
+  }
+  
+  // Extract wcpm (Wards Cleared Per Minute)
+  let wcpm: number = 0;
+  if (dbPlayer.wcpm !== undefined && dbPlayer.wcpm !== null) {
+    const wcpmValue = parseFloat(String(dbPlayer.wcpm));
+    if (!isNaN(wcpmValue)) {
+      wcpm = wcpmValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: wcpm field:`, dbPlayer.wcpm, 'converted to:', wcpm);
+  }
+  
+  // Extract gold_share_percent from player_summary_view
+  let goldSharePercent: number = 0;
+  if (dbPlayer.gold_share_percent !== undefined && dbPlayer.gold_share_percent !== null) {
+    const goldShareValue = parseFloat(String(dbPlayer.gold_share_percent));
+    if (!isNaN(goldShareValue)) {
+      goldSharePercent = goldShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gold_share_percent field:`, dbPlayer.gold_share_percent, 'converted to:', goldSharePercent);
+  }
+  
+  // Extract KDA
+  let kda: number = 0;
+  if (dbPlayer.kda !== undefined && dbPlayer.kda !== null) {
+    const kdaValue = parseFloat(String(dbPlayer.kda));
+    if (!isNaN(kdaValue)) {
+      kda = kdaValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kda field:`, dbPlayer.kda, 'converted to:', kda);
+  }
+  
+  // Extract efficiency score (new field in player_summary_view)
+  let efficiencyScore: number = 0;
+  if (dbPlayer.efficiency_score !== undefined && dbPlayer.efficiency_score !== null) {
+    const scoreValue = parseFloat(String(dbPlayer.efficiency_score));
+    if (!isNaN(scoreValue)) {
+      efficiencyScore = scoreValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: efficiency_score field:`, dbPlayer.efficiency_score, 'converted to:', efficiencyScore);
+  }
+  
+  // Extract aggression score (new field in player_summary_view)
+  let aggressionScore: number = 0;
+  if (dbPlayer.aggression_score !== undefined && dbPlayer.aggression_score !== null) {
+    const scoreValue = parseFloat(String(dbPlayer.aggression_score));
+    if (!isNaN(scoreValue)) {
+      aggressionScore = scoreValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: aggression_score field:`, dbPlayer.aggression_score, 'converted to:', aggressionScore);
+  }
+  
+  // Extract early game score (new field in player_summary_view)
+  let earlyGameScore: number = 0;
+  if (dbPlayer.earlygame_score !== undefined && dbPlayer.earlygame_score !== null) {
+    const scoreValue = parseFloat(String(dbPlayer.earlygame_score));
+    if (!isNaN(scoreValue)) {
+      earlyGameScore = scoreValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: earlygame_score field:`, dbPlayer.earlygame_score, 'converted to:', earlyGameScore);
+  }
+  
+  // Extract kill participation (new field in player_summary_view)
+  let killParticipation: number = 0;
+  if (dbPlayer.kill_participation_pct !== undefined && dbPlayer.kill_participation_pct !== null) {
+    const participationValue = parseFloat(String(dbPlayer.kill_participation_pct));
+    if (!isNaN(participationValue)) {
+      killParticipation = participationValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: kill_participation_pct field:`, dbPlayer.kill_participation_pct, 'converted to:', killParticipation);
+  }
+  
+  // Extract dmg_per_gold (new field in player_summary_view)
+  let dmgPerGold: number = 0;
+  if (dbPlayer.dmg_per_gold !== undefined && dbPlayer.dmg_per_gold !== null) {
+    const dmgPerGoldValue = parseFloat(String(dbPlayer.dmg_per_gold));
+    if (!isNaN(dmgPerGoldValue)) {
+      dmgPerGold = dmgPerGoldValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: dmg_per_gold field:`, dbPlayer.dmg_per_gold, 'converted to:', dmgPerGold);
+  }
+  
+  // Extract gpm (new field in player_summary_view)
+  let gpm: number = 0;
+  if (dbPlayer.gpm !== undefined && dbPlayer.gpm !== null) {
+    const gpmValue = parseFloat(String(dbPlayer.gpm));
+    if (!isNaN(gpmValue)) {
+      gpm = gpmValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gpm field:`, dbPlayer.gpm, 'converted to:', gpm);
+  }
+  
+  // Log final values for debugging
   console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, { 
     vspm, 
     wcpm, 
     goldSharePercent,
-    matchCount
+    matchCount,
+    kda,
+    efficiencyScore,
+    aggressionScore,
+    earlyGameScore,
+    killParticipation,
+    dmgPerGold,
+    gpm
   });
   
   return {
@@ -145,41 +219,49 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     team: dbPlayer.teamid || '',
     
     // Performance stats
-    kda: dbPlayer.kda || 0,
-    avg_kills: dbPlayer.avg_kills || 0,
-    avg_deaths: dbPlayer.avg_deaths || 0,
-    avg_assists: dbPlayer.avg_assists || 0,
+    kda: kda,
+    avg_kills: parseFloat(String(dbPlayer.avg_kills || 0)),
+    avg_deaths: parseFloat(String(dbPlayer.avg_deaths || 0)),
+    avg_assists: parseFloat(String(dbPlayer.avg_assists || 0)),
     
     // Champion info
     championPool: dbPlayer.champion_pool ? String(dbPlayer.champion_pool) : '0',
     
     // Farm and gold
-    csPerMin: dbPlayer.cspm || 0,
-    cspm: dbPlayer.cspm || 0,
-    earned_gpm: dbPlayer.earned_gpm || 0,
-    earned_gold_share: dbPlayer.earned_gold_share || 0,
-    gold_share_percent: goldSharePercent, // Using the extracted gold_share_percent
+    csPerMin: parseFloat(String(dbPlayer.cspm || 0)),
+    cspm: parseFloat(String(dbPlayer.cspm || 0)),
+    earned_gpm: parseFloat(String(dbPlayer.earned_gpm || dbPlayer.gpm || 0)),
+    earned_gold_share: parseFloat(String(dbPlayer.earned_gold_share || 0)),
+    gold_share_percent: goldSharePercent,
+    gpm: gpm,
     
     // Damage
-    dpm: dbPlayer.dpm || 0,
+    dpm: parseFloat(String(dbPlayer.dpm || 0)),
     damageShare: damageShare,
+    dmg_per_gold: dmgPerGold,
     
-    // Vision - using the extracted values with fallbacks
+    // Vision
     vspm: vspm,
     wcpm: wcpm,
     
-    // Match count - now properly set to a number (never undefined)
+    // Match statistics
     match_count: matchCount,
     
     // Early game
-    avg_golddiffat15: dbPlayer.avg_golddiffat15 || 0,
-    avg_xpdiffat15: dbPlayer.avg_xpdiffat15 || 0,
-    avg_csdiffat15: dbPlayer.avg_csdiffat15 || 0,
+    avg_golddiffat15: parseFloat(String(dbPlayer.avg_golddiffat15 || dbPlayer.avg_golddiffat10 || 0)),
+    avg_xpdiffat15: parseFloat(String(dbPlayer.avg_xpdiffat15 || dbPlayer.avg_xpdiffat10 || 0)),
+    avg_csdiffat15: parseFloat(String(dbPlayer.avg_csdiffat15 || dbPlayer.avg_csdiffat10 || 0)),
     
     // First blood stats
-    avg_firstblood_kill: dbPlayer.avg_firstblood_kill || 0,
-    avg_firstblood_assist: dbPlayer.avg_firstblood_assist || 0,
-    avg_firstblood_victim: dbPlayer.avg_firstblood_victim || 0
+    avg_firstblood_kill: parseFloat(String(dbPlayer.avg_firstblood_kill || 0)),
+    avg_firstblood_assist: parseFloat(String(dbPlayer.avg_firstblood_assist || 0)),
+    avg_firstblood_victim: parseFloat(String(dbPlayer.avg_firstblood_victim || 0)),
+    
+    // Additional metrics from player_summary_view
+    kill_participation_pct: killParticipation,
+    efficiency_score: efficiencyScore,
+    aggression_score: aggressionScore,
+    earlygame_score: earlyGameScore
   };
 };
 
@@ -216,8 +298,8 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     damage_share: damageShare,
     totalgold: 0, // Not mapping this from Player model for now
     total_cs: 0, // Not mapping this from Player model for now
-    earned_gpm: player.earned_gpm || 0,
-    earned_gold_share: player.earned_gold_share || 0,
+    earned_gpm: player.earned_gpm || player.gpm || 0,
+    earned_gold_share: player.earned_gold_share || player.gold_share_percent || 0,
     vspm: player.vspm || 0,
     wcpm: player.wcpm || 0,
     control_wards_bought: 0, // Not mapping this from Player model for now
