@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -138,27 +137,15 @@ const PlayerDetails = () => {
       : totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0
   } : null;
   
-  // Log averageStats for debugging
+  // Log specific values for debugging kill participation
+  if (player) {
+    console.log(`Player ${player.name} kill_participation_pct:`, player.kill_participation_pct, 
+                `type:`, typeof player.kill_participation_pct);
+  }
+  
   if (averageStats) {
-    console.log("Average stats calculated:", {
-      kda: averageStats.kda,
-      csPerMin: averageStats.csPerMin,
-      damageShare: averageStats.damageShare,
-      goldShare: averageStats.goldShare,
-      dmgPerGold: averageStats.dmgPerGold,
-      killParticipation: averageStats.killParticipation,
-      efficiency: averageStats.efficiency,
-      aggression: averageStats.aggression,
-      earlyGame: averageStats.earlyGame,
-      visionScore: averageStats.visionScore,
-      wardsCleared: averageStats.wardsCleared,
-      games: averageStats.games,
-      playerMatchCount: player?.match_count,
-      totalMatchesFromChampStats: totalMatches,
-      wins: averageStats.wins,
-      totalWinsFromChampStats: totalWins,
-      winRate: averageStats.winRate
-    });
+    console.log(`AverageStats killParticipation:`, averageStats.killParticipation, 
+                `type:`, typeof averageStats.killParticipation);
   }
   
   // Handle loading state
