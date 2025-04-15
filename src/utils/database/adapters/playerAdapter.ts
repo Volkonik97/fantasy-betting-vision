@@ -1,4 +1,3 @@
-
 import { Player } from "@/utils/models/types";
 
 /**
@@ -120,7 +119,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   
   // Log the final vision-related values for debugging
   console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
-    { vspm: vspm, wcpm: wcpm, matchCount: matchCount });
+    { vspm: dbPlayer.vspm, wcpm: wcpm, matchCount: matchCount });
   
   return {
     id: dbPlayer.playerid || '',

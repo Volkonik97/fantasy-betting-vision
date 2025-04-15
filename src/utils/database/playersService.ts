@@ -18,12 +18,21 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     if (summaryData) {
       console.log("Found player in player_summary_view:", summaryData);
-      console.log("Stats from view:", { 
-        vspm: summaryData.vspm, 
-        wcpm: summaryData.wcpm,
-        damage_share: summaryData.damage_share,
-        match_count: summaryData.match_count
-      });
+      // Check if match_count exists in the response - it might not be in the type but could be in the actual data
+      if ('match_count' in summaryData) {
+        console.log("Stats from view:", { 
+          vspm: summaryData.vspm, 
+          wcpm: summaryData.wcpm,
+          damage_share: summaryData.damage_share,
+          match_count: summaryData.match_count
+        });
+      } else {
+        console.log("Stats from view (no match_count):", { 
+          vspm: summaryData.vspm, 
+          wcpm: summaryData.wcpm,
+          damage_share: summaryData.damage_share
+        });
+      }
       return adaptPlayerFromDatabase(summaryData);
     }
     
@@ -38,7 +47,11 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       
     if (statsData) {
       console.log("Found player in player_stats:", statsData);
-      console.log("Match count from player_stats:", statsData.match_count);
+      if ('match_count' in statsData) {
+        console.log("Match count from player_stats:", statsData.match_count);
+      } else {
+        console.log("No match_count field in player_stats data");
+      }
       return adaptPlayerFromDatabase(statsData);
     }
     
@@ -150,7 +163,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       console.log("Sample vision stats:", {
         player: adaptedPlayers[0].name,
         vspm: adaptedPlayers[0].vspm,
-        wcpm: adaptedPlayers[0].wcpm
+        wcpm: adaptedPlayers[0].wcpm,
+        matchCount: adaptedPlayers[0].match_count
       });
     }
     
