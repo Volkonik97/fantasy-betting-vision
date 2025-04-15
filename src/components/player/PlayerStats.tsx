@@ -13,8 +13,9 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
     // Add debugging to trace the value
     console.log(`Formatting damageShare value:`, value, `of type:`, typeof value);
     
-    // If value is explicitly 0 or undefined/null, show 0%
-    if (value === 0 || value === undefined || value === null || value === '') {
+    // If value is NaN, undefined, null, or empty string, show '0%'
+    if (value === undefined || value === null || value === '' || 
+        (typeof value === 'number' && isNaN(value))) {
       return '0%';
     }
     

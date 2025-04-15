@@ -60,12 +60,19 @@ const PlayerHeader = ({
   const playerCsPerMin = cspmOverride !== null ? cspmOverride : 
     (typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0'));
   
-  const playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
+  // Get the damageShare value and handle potential NaN cases
+  let playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
+  
+  // Handle NaN value after parsing
+  if (isNaN(playerDamageShare)) {
+    console.warn(`Invalid damageShare value detected: ${player.damageShare}, defaulting to 0`);
+    playerDamageShare = 0;
+  }
   
   // Format damage share for display
   const formattedDamageShare = (() => {
-    if (playerDamageShare === 0) return "0%";
+    if (playerDamageShare === 0 || isNaN(playerDamageShare)) return "0%";
     if (playerDamageShare >= 0 && playerDamageShare <= 1) {
       // Value is a decimal (0.25 = 25%)
       return `${Math.round(playerDamageShare * 100)}%`;
@@ -73,6 +80,9 @@ const PlayerHeader = ({
     // Value is already a percentage (25 = 25%)
     return `${Math.round(playerDamageShare)}%`;
   })();
+
+  // Log the formatted value for debugging
+  console.log(`PlayerHeader ${player.name} formatted damageShare: ${formattedDamageShare} from ${playerDamageShare}`);
 
   return (
     <motion.div 

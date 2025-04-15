@@ -68,16 +68,22 @@ export type RawDatabasePlayer = Partial<DatabasePlayer>;
  */
 export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   // Safely handle and log damage share for debugging
-  let damageShare = 0;
+  let damageShare: number = 0;
   
-  if (dbPlayer.damage_share !== undefined) {
+  if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
     // Handle player_summary_view format (damage_share field)
-    damageShare = dbPlayer.damage_share;
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share);
-  } else if (dbPlayer.damageshare !== undefined) {
+    const damageShareValue = parseFloat(dbPlayer.damage_share);
+    if (!isNaN(damageShareValue)) {
+      damageShare = damageShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share, 'converted to:', damageShare);
+  } else if (dbPlayer.damageshare !== undefined && dbPlayer.damageshare !== null) {
     // Handle alternate field name that might be used
-    damageShare = dbPlayer.damageshare;
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare);
+    const damageShareValue = parseFloat(dbPlayer.damageshare);
+    if (!isNaN(damageShareValue)) {
+      damageShare = damageShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
   }
   
   // Log the final damageShare value for debugging
@@ -129,6 +135,19 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
  * Adapter to convert application Player model to database format
  */
 export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
+  // Ensure damageShare is properly formatted for database storage
+  let damageShare = 0;
+  if (player.damageShare !== undefined && player.damageShare !== null) {
+    if (typeof player.damageShare === 'string') {
+      const parsed = parseFloat(player.damageShare);
+      if (!isNaN(parsed)) {
+        damageShare = parsed;
+      }
+    } else if (typeof player.damageShare === 'number' && !isNaN(player.damageShare)) {
+      damageShare = player.damageShare;
+    }
+  }
+
   return {
     playerid: player.id,
     playername: player.name,
@@ -142,7 +161,7 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     champion_pool: typeof player.championPool === 'string' ? parseInt(player.championPool, 10) : (Array.isArray(player.championPool) ? player.championPool.length : 0),
     cspm: player.cspm || player.csPerMin || 0,
     dpm: player.dpm || 0,
-    damage_share: player.damageShare || 0,
+    damage_share: damageShare,
     totalgold: 0, // Not mapping this from Player model for now
     total_cs: 0, // Not mapping this from Player model for now
     earned_gpm: player.earned_gpm || 0,

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass } from "lucide-react";
@@ -42,6 +41,23 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
   const totalKills = averageStats.kills * averageStats.games;
   const totalDeaths = averageStats.deaths * averageStats.games;
   const totalAssists = averageStats.assists * averageStats.games;
+
+  // Format damage share for display - handle decimal or percentage format
+  const formatDamageShare = (value: number): string => {
+    if (isNaN(value) || value === 0) return "0%";
+    
+    // If it's a small decimal (0.XX), assume it's already in decimal form and convert to percentage
+    if (value >= 0 && value <= 1) {
+      return `${Math.round(value * 100)}%`;
+    }
+    
+    // Otherwise assume it's already a percentage
+    return `${Math.round(value)}%`;
+  };
+
+  // Log the damage share for debugging
+  console.log(`PlayerStatsOverview damageShare:`, averageStats.damageShare, 
+    `formatted as: ${formatDamageShare(averageStats.damageShare)}`);
 
   return (
     <Card className="shadow-md bg-white">
@@ -99,7 +115,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
           <StatCard
             icon={<BarChart className="h-5 w-5 text-rose-500" />}
             title="Part des dégâts"
-            value={`${Math.round(averageStats.damageShare * 100)}%`}
+            value={formatDamageShare(averageStats.damageShare)}
           />
           
           {/* Win Rate Card - Enhanced */}
@@ -165,7 +181,7 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
           <StatCard
             icon={<Award className="h-5 w-5 text-yellow-500" />}
             title="Part de l'or"
-            value={`${Math.round(averageStats.goldShare * 100)}%`}
+            value={formatDamageShare(averageStats.goldShare)}
           />
           
           {/* Matches Played Card */}

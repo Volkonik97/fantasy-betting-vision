@@ -23,8 +23,24 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     role: player.role,
     imageUrl: player.image,
     damageShare: player.damageShare,
-    damageShareType: typeof player.damageShare
+    damageShareType: typeof player.damageShare,
+    damageShareParsed: typeof player.damageShare === 'string' ? parseFloat(player.damageShare) : player.damageShare
   });
+  
+  // Handle damageShare to ensure it's a valid number or string
+  let normalizedDamageShare = player.damageShare;
+  if (normalizedDamageShare === null || normalizedDamageShare === undefined) {
+    normalizedDamageShare = 0;
+  } else if (typeof normalizedDamageShare === 'string') {
+    const parsed = parseFloat(normalizedDamageShare);
+    if (!isNaN(parsed)) {
+      normalizedDamageShare = parsed;
+    } else {
+      normalizedDamageShare = 0;
+    }
+  } else if (typeof normalizedDamageShare === 'number' && isNaN(normalizedDamageShare)) {
+    normalizedDamageShare = 0;
+  }
   
   // If the image URL is from Supabase storage but doesn't include the full path, fix it
   let imageUrl = player.image;
@@ -45,7 +61,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     teamRegion: player.teamRegion || "",
     kda: player.kda || 0,
     csPerMin: player.csPerMin || 0,
-    damageShare: player.damageShare || 0,
+    damageShare: normalizedDamageShare,
   };
   
   return (
