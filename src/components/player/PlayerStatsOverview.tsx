@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye, Target, Zap, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye, Target, Zap, Clock, TrendingDown } from "lucide-react";
 
 interface PlayerAverageStats {
   kills: number;
@@ -83,6 +83,10 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     `wins:`, averageStats.wins,
     `winRate:`, averageStats.winRate);
 
+  // Log the dmgPerGold value for debugging
+  console.log(`PlayerStatsOverview dmgPerGold:`, averageStats.dmgPerGold,
+    `formatted as: ${averageStats.dmgPerGold ? formatNumber(averageStats.dmgPerGold) : "N/A"}`);
+
   return (
     <Card className="shadow-md bg-white">
       <CardHeader className="border-b border-gray-100 pb-4">
@@ -163,7 +167,14 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             icon={<Award className="h-5 w-5 text-yellow-500" />}
             title="Part de l'or"
             value={formatPercentage(averageStats.goldShare)}
-            subtitle={averageStats.dmgPerGold ? `${formatNumber(averageStats.dmgPerGold)} dmg/gold` : undefined}
+          />
+          
+          {/* New separate card for DMG/GOLD */}
+          <StatCard
+            icon={<TrendingDown className="h-5 w-5 text-purple-500" />}
+            title="DMG / GOLD"
+            value={averageStats.dmgPerGold ? formatNumber(averageStats.dmgPerGold) : "0.0"}
+            subtitle="efficacité des dégâts"
           />
           
           <StatCard

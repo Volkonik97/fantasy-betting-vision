@@ -1,4 +1,3 @@
-
 import { Player } from "@/utils/models/types";
 
 /**
@@ -184,16 +183,6 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
       dmgPerGold = dmgPerGoldValue;
     }
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: dmg_per_gold field:`, dbPlayer.dmg_per_gold, 'converted to:', dmgPerGold);
-  }
-  
-  // Extract gpm (new field in player_summary_view)
-  let gpm: number = 0;
-  if (dbPlayer.gpm !== undefined && dbPlayer.gpm !== null) {
-    const gpmValue = parseFloat(String(dbPlayer.gpm));
-    if (!isNaN(gpmValue)) {
-      gpm = gpmValue;
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gpm field:`, dbPlayer.gpm, 'converted to:', gpm);
   }
   
   // Log final values for debugging

@@ -57,7 +57,8 @@ const PlayerDetails = () => {
           efficiency: playerData.efficiency_score,
           aggression: playerData.aggression_score,
           earlyGame: playerData.earlygame_score,
-          killParticipation: playerData.kill_participation_pct
+          killParticipation: playerData.kill_participation_pct,
+          dmgPerGold: playerData.dmg_per_gold
         });
         
         setPlayer(playerData);
