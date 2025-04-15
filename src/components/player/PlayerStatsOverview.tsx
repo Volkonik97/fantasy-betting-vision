@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, Award, BarChart, PieChart, TrendingUp, Compass, Eye } from "lucide-react";
@@ -67,6 +68,10 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     
   console.log(`PlayerStatsOverview goldShare:`, averageStats.goldShare, 
     `formatted as: ${formatGoldShare(averageStats.goldShare)}`);
+  
+  console.log(`PlayerStatsOverview games:`, averageStats.games,
+    `wins:`, averageStats.wins,
+    `winRate:`, averageStats.winRate);
 
   return (
     <Card className="shadow-md bg-white">

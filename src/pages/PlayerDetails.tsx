@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -96,6 +97,10 @@ const PlayerDetails = () => {
     ? getChampionStats(matchStats, player?.team) 
     : [];
   
+  // Calculate total matches and wins from champion stats
+  const totalMatches = championStats.reduce((total, champ) => total + champ.games, 0);
+  const totalWins = championStats.reduce((total, champ) => total + champ.wins, 0);
+  
   // Create average stats directly from the player object
   const averageStats = player ? {
     kills: player.avg_kills || 0,
@@ -103,16 +108,16 @@ const PlayerDetails = () => {
     assists: player.avg_assists || 0,
     kda: player.kda || 0,
     csPerMin: player.cspm || player.csPerMin || 0,
-    damageShare: player.damageShare || 0, // Using the correct property name from Player type
-    goldShare: player.gold_share_percent || player.earned_gold_share || 0, // Prioritize gold_share_percent from player_summary_view
-    visionScore: player.vspm || 0, // Using vspm for Vision Score Per Minute
-    wardsCleared: player.wcpm || 0, // Adding wards cleared per minute from wcpm
-    games: player.match_count || championStats.reduce((total, champ) => total + champ.games, 0) || 0, // Prioritize match_count from database
-    wins: championStats.reduce((total, champ) => total + champ.wins, 0) || 0,
-    winRate: championStats.length > 0 
-      ? (championStats.reduce((total, champ) => total + champ.wins, 0) / 
-         championStats.reduce((total, champ) => total + champ.games, 0)) * 100
-      : 0
+    damageShare: player.damageShare || 0,
+    goldShare: player.gold_share_percent || player.earned_gold_share || 0,
+    visionScore: player.vspm || 0,
+    wardsCleared: player.wcpm || 0,
+    // Prioritize match_count from database, fallback to calculated total from championStats
+    games: player.match_count || totalMatches || 0,
+    // Use wins from championStats or calculate based on win rate if available
+    wins: totalWins || 0,
+    // Calculate win rate from wins and games or use default 0
+    winRate: (totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0)
   } : null;
   
   // Log averageStats for debugging
@@ -125,7 +130,9 @@ const PlayerDetails = () => {
       goldShareType: typeof averageStats.goldShare,
       visionScore: averageStats.visionScore,
       wardsCleared: averageStats.wardsCleared,
-      games: averageStats.games
+      games: averageStats.games,
+      wins: averageStats.wins,
+      winRate: averageStats.winRate
     });
   }
   

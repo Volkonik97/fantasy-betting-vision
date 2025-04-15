@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -30,6 +31,7 @@ export interface DatabasePlayer {
   avg_firstblood_kill?: number;
   avg_firstblood_assist?: number;
   avg_firstblood_victim?: number;
+  match_count?: number;
 }
 
 // For player data in player_summary_view
@@ -126,9 +128,13 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: match_count field:`, dbPlayer.match_count, 'converted to:', matchCount);
   }
   
-  // Log the final vision-related values for debugging
-  console.log(`Final vision stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
-    { vspm: vspm, wcpm: wcpm });
+  // Log the final values for debugging
+  console.log(`Final stats for ${dbPlayer.playername || dbPlayer.playerid}:`, { 
+    vspm, 
+    wcpm, 
+    goldSharePercent,
+    matchCount
+  });
   
   return {
     id: dbPlayer.playerid || '',
@@ -219,6 +225,7 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     avg_csdiffat15: player.avg_csdiffat15 || 0,
     avg_firstblood_kill: player.avg_firstblood_kill || 0,
     avg_firstblood_assist: player.avg_firstblood_assist || 0,
-    avg_firstblood_victim: player.avg_firstblood_victim || 0
+    avg_firstblood_victim: player.avg_firstblood_victim || 0,
+    match_count: player.match_count || 0
   };
 };
