@@ -1,3 +1,4 @@
+
 // Common types used across the application
 export interface Team {
   id: string;
@@ -23,7 +24,7 @@ export interface Team {
   redFirstHerald?: number;
   blueFirstTower?: number;
   redFirstTower?: number;
-  blueFirstBaron?: number;
+  blueFirstBaron?: number;  
   redFirstBaron?: number;
   
   // Stats fields that are being used in the code
@@ -75,6 +76,7 @@ export interface Player {
   gold_share_percent?: number; // Adding this property to match the player_summary_view column
   vspm?: number;
   wcpm?: number;
+  match_count?: number; // For tracking the number of matches played
   
   // Early game stats
   avg_golddiffat15?: number;

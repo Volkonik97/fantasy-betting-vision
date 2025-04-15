@@ -56,9 +56,25 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
     return `${Math.round(value)}%`;
   };
 
-  // Log the damage share for debugging
+  // Format gold share for display
+  const formatGoldShare = (value: number): string => {
+    if (isNaN(value) || value === 0) return "0%";
+    
+    // If it's a small decimal (0.XX), assume it's already in decimal form and convert to percentage
+    if (value >= 0 && value <= 1) {
+      return `${Math.round(value * 100)}%`;
+    }
+    
+    // Otherwise assume it's already a percentage
+    return `${Math.round(value)}%`;
+  };
+
+  // Log the damage share and gold share for debugging
   console.log(`PlayerStatsOverview damageShare:`, averageStats.damageShare, 
     `formatted as: ${formatDamageShare(averageStats.damageShare)}`);
+    
+  console.log(`PlayerStatsOverview goldShare:`, averageStats.goldShare, 
+    `formatted as: ${formatGoldShare(averageStats.goldShare)}`);
 
   return (
     <Card className="shadow-md bg-white">
@@ -186,11 +202,11 @@ const PlayerStatsOverview = ({ averageStats }: PlayerStatsOverviewProps) => {
             }
           />
           
-          {/* Gold Share Card */}
+          {/* Gold Share Card - Updated to use gold_share_percent */}
           <StatCard
             icon={<Award className="h-5 w-5 text-yellow-500" />}
             title="Part de l'or"
-            value={`${Math.round(averageStats.goldShare)}%`}
+            value={formatGoldShare(averageStats.goldShare)}
           />
           
           {/* Matches Played Card */}

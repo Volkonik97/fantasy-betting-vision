@@ -22,6 +22,9 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
         vspm: summaryData.vspm, 
         wcpm: summaryData.wcpm 
       });
+      console.log("Gold share stats from view:", {
+        gold_share_percent: summaryData.gold_share_percent
+      });
       return adaptPlayerFromDatabase(summaryData);
     }
     
@@ -71,7 +74,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       return cachedPlayers;
     }
     
-    // Prepare the query to player_summary_view which has vspm and wcpm fields
+    // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
     let query = supabase.from('player_summary_view').select('*');
     
     // Apply pagination if provided
@@ -128,12 +131,13 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     const adaptedPlayers = data.map(player => adaptPlayerFromDatabase(player));
     console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view with vision stats`);
     
-    // Log some samples of vision stats
+    // Log some samples of vision stats and gold share
     if (adaptedPlayers.length > 0) {
-      console.log("Sample vision stats:", {
+      console.log("Sample stats:", {
         player: adaptedPlayers[0].name,
         vspm: adaptedPlayers[0].vspm,
-        wcpm: adaptedPlayers[0].wcpm
+        wcpm: adaptedPlayers[0].wcpm,
+        gold_share_percent: adaptedPlayers[0].gold_share_percent
       });
     }
     

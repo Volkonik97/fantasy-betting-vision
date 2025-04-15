@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -57,6 +58,7 @@ export interface PlayerSummaryViewData {
   avg_xpdiffat10?: number;
   avg_csdiffat10?: number;
   efficiency_score?: number;
+  match_count?: number;
 }
 
 // For RawDatabasePlayer
@@ -105,6 +107,26 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: wcpm field:`, dbPlayer.wcpm, 'converted to:', wcpm);
   }
   
+  // Extract gold_share_percent from player_summary_view
+  let goldSharePercent: number = 0;
+  if (dbPlayer.gold_share_percent !== undefined && dbPlayer.gold_share_percent !== null) {
+    const goldShareValue = parseFloat(dbPlayer.gold_share_percent);
+    if (!isNaN(goldShareValue)) {
+      goldSharePercent = goldShareValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: gold_share_percent field:`, dbPlayer.gold_share_percent, 'converted to:', goldSharePercent);
+  }
+  
+  // Extract match_count if available
+  let matchCount: number | undefined = undefined;
+  if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
+    const matchCountValue = parseInt(dbPlayer.match_count);
+    if (!isNaN(matchCountValue)) {
+      matchCount = matchCountValue;
+    }
+    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: match_count field:`, dbPlayer.match_count, 'converted to:', matchCount);
+  }
+  
   // Log the final vision-related values for debugging
   console.log(`Final vision stats for ${dbPlayer.playername || dbPlayer.playerid}:`, 
     { vspm: vspm, wcpm: wcpm });
@@ -129,7 +151,8 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     csPerMin: dbPlayer.cspm || 0,
     cspm: dbPlayer.cspm || 0,
     earned_gpm: dbPlayer.earned_gpm || 0,
-    earned_gold_share: dbPlayer.gold_share_percent || 0,
+    earned_gold_share: dbPlayer.earned_gold_share || 0,
+    gold_share_percent: goldSharePercent, // Using the extracted gold_share_percent
     
     // Damage
     dpm: dbPlayer.dpm || 0,
@@ -138,6 +161,9 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     // Vision - using the extracted values with fallbacks
     vspm: vspm,
     wcpm: wcpm,
+    
+    // Match count
+    match_count: matchCount,
     
     // Early game
     avg_golddiffat15: dbPlayer.avg_golddiffat15 || 0,
