@@ -10,6 +10,54 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   try {
     console.log(`Clearing image reference for player: ${playerId}`);
     
+    // First, get the current image reference
+    const { data: player, error: selectError } = await supabase
+      .from('players')
+      .select('image')
+      .eq('playerid', playerId)
+      .single();
+    
+    if (selectError) {
+      console.error("Error getting player image:", selectError);
+      return false;
+    }
+    
+    // If the player has an image reference, try to delete it from storage
+    if (player?.image) {
+      try {
+        // Extract filename from URL if it's a Supabase storage URL
+        let filename = null;
+        if (player.image.includes('player-images')) {
+          const matches = player.image.match(/player-images\/([^?]+)/);
+          if (matches && matches[1]) {
+            filename = matches[1];
+          } else if (!player.image.includes('/')) {
+            // If it's just a filename without path separators
+            filename = player.image;
+          }
+          
+          if (filename) {
+            console.log(`Attempting to delete file from storage: ${filename}`);
+            const { error: deleteError } = await supabase
+              .storage
+              .from('player-images')
+              .remove([filename]);
+            
+            if (deleteError) {
+              console.warn(`Unable to delete file from storage: ${deleteError.message}`);
+              // Continue even if file deletion fails
+            } else {
+              console.log(`Successfully deleted file from storage: ${filename}`);
+            }
+          }
+        }
+      } catch (storageError) {
+        console.warn("Error during storage file deletion:", storageError);
+        // Continue to update the database even if file deletion fails
+      }
+    }
+    
+    // Update the player record to clear the image reference
     const { error } = await supabase
       .from('players')
       .update({ image: null })
@@ -45,29 +93,33 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
       if (!selectError && playersWithImages && playersWithImages.length > 0) {
         console.log(`Found ${playersWithImages.length} players with images to remove from storage`);
         
-        // Get the list of files to delete from storage
+        // Collect all filenames to delete from storage
         const filesToDelete: string[] = [];
         
         for (const player of playersWithImages) {
           if (player.image) {
             try {
-              // Extract the filename from the full URL
-              const imageUrl = new URL(player.image);
-              const pathParts = imageUrl.pathname.split('/');
-              // The last part of the path should be the filename
-              const fileName = pathParts[pathParts.length - 1];
+              let filename = null;
               
-              if (fileName) {
-                filesToDelete.push(fileName);
-                console.log(`Added ${fileName} to deletion list for player ${player.playerid}`);
+              // Handle full URLs (extract filename)
+              if (player.image.includes('player-images')) {
+                const matches = player.image.match(/player-images\/([^?]+)/);
+                if (matches && matches[1]) {
+                  filename = matches[1];
+                  console.log(`Extracted filename from URL: ${filename}`);
+                }
+              } 
+              // Handle direct filenames
+              else if (!player.image.includes('/') && !player.image.startsWith('http')) {
+                filename = player.image;
+                console.log(`Using direct filename: ${filename}`);
+              }
+              
+              if (filename) {
+                filesToDelete.push(filename);
               }
             } catch (e) {
-              console.warn(`Could not parse URL for player ${player.playerid}: ${player.image}`);
-              // If the image is just a filename, add it directly
-              if (!player.image.includes('/') && !player.image.startsWith('http')) {
-                filesToDelete.push(player.image);
-                console.log(`Added ${player.image} to deletion list (direct filename)`);
-              }
+              console.warn(`Could not process image URL for player ${player.playerid}: ${player.image}`);
             }
           }
         }
@@ -99,20 +151,21 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
     }
     
     // Now clear all image references in the database
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('players')
       .update({ image: null })
-      .neq('playerid', ''); // This is a condition that will apply to all players
+      .not('image', 'is', null);
     
     if (error) {
       console.error("Error clearing all image references:", error);
       return { success: false, clearedCount: 0 };
     }
     
-    // Get the count of affected rows - we'll approximate with a count query
+    // Get the count of affected rows
     const { count, error: countError } = await supabase
       .from('players')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .is('image', null);
     
     if (countError) {
       console.error("Error counting players after clearing images:", countError);

@@ -21,50 +21,71 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
     // For absolute external URLs (not Supabase storage)
     if (imageUrl.startsWith('http') && !imageUrl.includes('supabase.co/storage')) {
       console.log(`External image URL: ${imageUrl}`);
-      return true; // We assume external URLs are valid
+      
+      // Attempt to fetch the image to verify it exists
+      try {
+        const response = await fetch(imageUrl, { method: 'HEAD' });
+        const exists = response.ok;
+        console.log(`External image exists: ${exists}`);
+        return exists;
+      } catch (error) {
+        console.error(`Error checking external image: ${error}`);
+        return false;
+      }
     }
     
-    // Check for direct storage.supabase.co URLs - these are valid public URLs
-    if (imageUrl.includes('storage.supabase.co')) {
-      console.log(`Direct storage.supabase.co URL: ${imageUrl}`);
-      return true;
-    }
-    
-    // For relative paths
-    if (!imageUrl.startsWith('http')) {
-      console.log(`Relative image path: ${imageUrl}`);
-      return true; // Relative paths should be valid
-    }
-    
-    // For player-images bucket URLs, specifically check if the file exists
-    if (imageUrl.includes('player-images')) {
-      console.log(`Checking player-images URL: ${imageUrl}`);
+    // For direct storage.supabase.co URLs from player-images bucket
+    if (imageUrl.includes('storage.supabase.co') && imageUrl.includes('player-images')) {
+      console.log(`Direct storage URL from player-images: ${imageUrl}`);
       
       // Extract the file path from the URL
-      // Example URL: https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/filename.jpg
-      const filePathMatch = imageUrl.match(/player-images\/(.+)$/);
-      if (filePathMatch && filePathMatch[1]) {
-        const filePath = filePathMatch[1];
-        console.log(`Checking if file exists in player-images bucket: ${filePath}`);
+      let filePath = '';
+      const regex = /player-images\/(.+)$/;
+      const match = imageUrl.match(regex);
+      
+      if (match && match[1]) {
+        filePath = match[1];
+        console.log(`Extracted file path: ${filePath}`);
         
+        // Check if the file exists in the player-images bucket
         const { data, error } = await supabase
           .storage
           .from('player-images')
           .download(filePath);
-          
+        
         if (error) {
-          console.error(`Error checking file in player-images bucket: ${error.message}`);
+          console.error(`File not found in player-images bucket: ${error.message}`);
           return false;
         }
         
-        console.log(`File exists in player-images bucket: ${filePath}`);
+        console.log(`File exists in player-images bucket`);
         return true;
+      } else {
+        console.error(`Could not extract file path from URL: ${imageUrl}`);
+        return false;
       }
     }
     
-    // If it's any other Supabase URL, assume it's valid
-    console.log(`Assuming Supabase storage URL is valid: ${imageUrl}`);
-    return true;
+    // For simple filenames - check directly in player-images bucket
+    if (!imageUrl.includes('/') && !imageUrl.startsWith('http')) {
+      console.log(`Checking simple filename in player-images bucket: ${imageUrl}`);
+      
+      const { data, error } = await supabase
+        .storage
+        .from('player-images')
+        .download(imageUrl);
+      
+      if (error) {
+        console.error(`File not found in player-images bucket: ${error.message}`);
+        return false;
+      }
+      
+      console.log(`File exists in player-images bucket`);
+      return true;
+    }
+    
+    console.log(`Unknown image format, cannot verify: ${imageUrl}`);
+    return false;
   } catch (error) {
     console.error("Error verifying image:", error);
     return false;

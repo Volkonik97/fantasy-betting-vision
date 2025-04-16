@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,7 @@ import {
   checkBucketRlsPermission 
 } from "@/utils/database/teams/imageUtils";
 
-// Import all the new components
+// Import all the components
 import PageHeader from "@/components/player/image-management/PageHeader";
 import BucketAccessAlert from "@/components/player/image-management/BucketAccessAlert";
 import ImageRefreshControls from "@/components/player/image-management/ImageRefreshControls";
