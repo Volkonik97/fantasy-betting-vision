@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trash2, SyncIcon } from "lucide-react";
+import { RefreshCw, Trash2, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface ImageRefreshControlsProps {
@@ -50,7 +50,7 @@ const ImageRefreshControls = ({
           size="sm"
           className="flex items-center gap-2"
         >
-          <SyncIcon className={`h-4 w-4 ${isSyncingReferences ? 'animate-spin' : ''}`} />
+          <RotateCcw className={`h-4 w-4 ${isSyncingReferences ? 'animate-spin' : ''}`} />
           {isSyncingReferences 
             ? 'Synchronisation en cours...' 
             : 'Synchroniser les références'}

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { verifyImageExists } from "./verifyImage";
 import { clearInvalidImageReference } from "./clearImages";
@@ -174,12 +173,10 @@ export const refreshImageReferences = async (): Promise<{
     
     // 5. Refresh the UI counts by checking again
     // Get updated counts after all operations
-    const { data: updatedPlayers } = await supabase
+    const { data: updatedPlayers, count: updatedPlayerCount } = await supabase
       .from('players')
       .select('playerid', { count: 'exact', head: true })
       .not('image', 'is', null);
-    
-    const updatedPlayerCount = updatedPlayers?.count || 0;
     
     const { data: updatedFiles } = await supabase
       .storage
@@ -188,7 +185,7 @@ export const refreshImageReferences = async (): Promise<{
     
     const updatedFileCount = updatedFiles?.length || 0;
     
-    console.log(`Après vérification: ${updatedFileCount} fichiers dans le stockage, ${updatedPlayerCount} joueurs avec références d'images`);
+    console.log(`Après vérification: ${updatedFileCount} fichiers dans le stockage, ${updatedPlayerCount || 0} joueurs avec références d'images`);
     
     return { 
       fixedCount, 
@@ -316,4 +313,3 @@ export const synchronizeReferences = async (): Promise<{
     return { addedCount: 0, removedCount: 0, completed: false };
   }
 };
-
