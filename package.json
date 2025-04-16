@@ -52,7 +52,7 @@
     "csv-parser": "^3.2.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.3.0",
-    "framer-motion": "^12.6.2",
+    "framer-motion": "^12.7.3",
     "input-otp": "^1.2.4",
     "inside": "^1.0.0",
     "lucide-react": "^0.462.0",

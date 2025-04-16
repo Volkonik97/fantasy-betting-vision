@@ -114,12 +114,14 @@ const PlayerImagesImport = ({
           uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
         />
 
-        <UnmatchedImagesList 
-          unmatched={unmatched}
-          playerOptions={playerImages}
-          onAssign={assignFileToPlayer}
-          disabled={uploadStatus.inProgress}
-        />
+        {unmatched.length > 0 && (
+          <UnmatchedImagesList 
+            unmatched={unmatched}
+            playerOptions={playerImages}
+            onAssign={assignFileToPlayer}
+            disabled={uploadStatus.inProgress}
+          />
+        )}
 
         <Separator className="my-4" />
 

@@ -3,7 +3,7 @@ import React from "react";
 import { PlayerWithImage } from "./types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ImageIcon, XCircle, CheckCircle } from "lucide-react";
+import { ImageIcon, XCircle, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
 interface PlayerStatsProps {
   playerImages: PlayerWithImage[];
@@ -16,7 +16,7 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ playerImages, className = "" 
   const playersWithoutImages = totalPlayers - playersWithImages;
   const pendingUploads = playerImages.filter(p => p.imageFile && !p.processed).length;
   const uploadedImages = playerImages.filter(p => p.processed).length;
-  const hasErrors = playerImages.some(p => p.error !== null);
+  const errorCount = playerImages.filter(p => p.error !== null).length;
   
   const coveragePercentage = totalPlayers > 0 
     ? Math.round((playersWithImages / totalPlayers) * 100) 
@@ -60,7 +60,7 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ playerImages, className = "" 
             
             {pendingUploads > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <ImageIcon className="h-4 w-4 text-amber-500" />
+                <Clock className="h-4 w-4 text-amber-500" />
                 <span>En attente:</span>
                 <span className="font-medium ml-auto">{pendingUploads}</span>
               </div>
@@ -74,13 +74,11 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ playerImages, className = "" 
               </div>
             )}
             
-            {hasErrors && (
+            {errorCount > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <XCircle className="h-4 w-4 text-red-500" />
+                <AlertCircle className="h-4 w-4 text-red-500" />
                 <span>Erreurs:</span>
-                <span className="font-medium ml-auto">
-                  {playerImages.filter(p => p.error !== null).length}
-                </span>
+                <span className="font-medium ml-auto">{errorCount}</span>
               </div>
             )}
           </div>

@@ -1,7 +1,8 @@
 
 import React, { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { ImageIcon, Upload } from "lucide-react";
+import { ImageIcon, Upload, FileUp } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
@@ -77,15 +78,25 @@ const DropZone: React.FC<DropZoneProps> = ({ onFileSelect, disabled = false }) =
       onClick={handleClick}
     >
       <div className="flex flex-col items-center justify-center space-y-2 text-center">
-        <div className="p-3 rounded-full bg-blue-100">
+        <motion.div 
+          className="p-3 rounded-full bg-blue-100"
+          animate={{ 
+            scale: isDragging ? [1, 1.1, 1] : 1,
+            rotate: isDragging ? [0, -5, 5, -5, 0] : 0
+          }}
+          transition={{ 
+            duration: isDragging ? 1.5 : 0.3, 
+            repeat: isDragging ? Infinity : 0
+          }}
+        >
           {isDragging ? (
-            <Upload className="h-6 w-6 text-blue-600" />
+            <FileUp className="h-6 w-6 text-blue-600" />
           ) : (
             <ImageIcon className="h-6 w-6 text-blue-600" />
           )}
-        </div>
+        </motion.div>
         
-        <div className="space-y-1">
+        <div className="space-y-2">
           <p className="font-medium text-sm">
             {isDragging 
               ? 'Déposez les images ici'
