@@ -26,12 +26,17 @@ const DatabaseConnectionStatus: React.FC<DatabaseConnectionStatusProps> = ({
     }
 
     try {
-      // Attempt a simple query to check connection
+      // Attempt a simple query to check connection with a AbortController for timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 5000); // 5 second timeout
+      
       const { data, error } = await supabase
         .from('data_updates')
         .select('updated_at')
         .limit(1)
-        .timeout(5000); // 5 second timeout
+        .abortSignal(abortController.signal);
+      
+      clearTimeout(timeoutId);
       
       if (error) {
         console.error("Erreur de connexion à la base de données:", error);
