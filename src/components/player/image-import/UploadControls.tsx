@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 
 interface UploadControlsProps {
   onUpload?: () => void;
-  disableUpload?: boolean;
+  disabled?: boolean;
   isUploading?: boolean;
   uploadProgress?: number;
   status?: "loading" | "exists" | "error";
@@ -13,12 +13,12 @@ interface UploadControlsProps {
 
 const UploadControls: React.FC<UploadControlsProps> = ({ 
   onUpload = () => {}, 
-  disableUpload = false, 
+  disabled = false, 
   isUploading = false, 
   uploadProgress = 0,
   status = "loading"
 }) => {
-  const isDisabled = disableUpload || isUploading || status !== "exists";
+  const isDisabled = disabled || isUploading || status !== "exists";
   
   return (
     <div className="space-y-2">

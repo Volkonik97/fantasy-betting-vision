@@ -1,6 +1,14 @@
 
 import { Player } from "@/utils/models/types";
 
+export interface PlayerImageUpload {
+  player: Player;
+  file: File | null;
+  url: string | null;
+  status: 'idle' | 'uploading' | 'success' | 'error';
+  error: string | null;
+}
+
 export interface PlayerWithImage {
   player: Player;
   imageFile: File | null;
