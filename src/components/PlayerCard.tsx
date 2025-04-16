@@ -4,7 +4,7 @@ import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
-import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, hasPlayerImage } from "@/utils/database/teams/images/imageUtils";
 
 interface PlayerCardProps {
   player: Player & { teamName?: string; teamRegion?: string };
@@ -18,15 +18,16 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     return null;
   }
   
-  // Normaliser l'URL de l'image avant de l'utiliser
-  const normalizedImageUrl = normalizeImageUrl(player.image);
+  // Vérifier et normaliser l'URL de l'image avant de l'utiliser
+  const playerImage = player.image;
+  console.log(`PlayerCard: Image originale pour ${player.name}:`, playerImage);
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
         <PlayerImage 
           name={player.name} 
-          image={normalizedImageUrl} 
+          image={playerImage} 
           role={player.role} 
         />
       </div>

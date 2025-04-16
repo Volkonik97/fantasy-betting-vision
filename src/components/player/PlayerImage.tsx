@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { verifyImageExists } from "@/utils/database/teams/images/imageUtils";
+import { hasPlayerImage, normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerImageProps {
   name: string;
@@ -26,40 +25,15 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         return;
       }
 
-      // Trim any whitespace that might cause inconsistency
-      const cleanImageUrl = image.trim();
-      console.log(`Traitement de l'image pour ${name}: ${cleanImageUrl}`);
-
       try {
-        // Si c'est une URL complète de Supabase storage, l'utiliser directement
-        if (cleanImageUrl.includes('supabase.co/storage') && cleanImageUrl.includes('player-images')) {
-          console.log(`URL Supabase storage détectée pour ${name}: ${cleanImageUrl}`);
-          setImageUrl(cleanImageUrl);
-        }
-        // Si c'est une URL complète externe, l'utiliser directement
-        else if (cleanImageUrl.startsWith('http')) {
-          console.log(`URL externe détectée pour ${name}: ${cleanImageUrl}`);
-          setImageUrl(cleanImageUrl);
-        }
-        // Si c'est un chemin relatif vers le dossier public, ajouter un / au début
-        else if (cleanImageUrl.startsWith('lovable-uploads/')) {
-          console.log(`Chemin relatif détecté pour ${name}: ${cleanImageUrl}`);
-          setImageUrl(`/${cleanImageUrl}`);
-        }
-        // Si c'est juste un nom de fichier, construire l'URL Supabase storage
-        else if (!cleanImageUrl.includes('/')) {
-          // Construire l'URL Supabase storage
-          const { data: publicUrl } = supabase
-            .storage
-            .from('player-images')
-            .getPublicUrl(cleanImageUrl);
-            
-          console.log(`URL Supabase construite pour ${name}: ${publicUrl.publicUrl}`);
-          setImageUrl(publicUrl.publicUrl);
-        }
-        // Pour tout autre format, utiliser tel quel
-        else {
-          setImageUrl(cleanImageUrl);
+        // Normaliser l'URL de l'image
+        const normalizedUrl = normalizeImageUrl(image);
+        console.log(`Image normalisée pour ${name}: ${normalizedUrl}`);
+        
+        if (normalizedUrl) {
+          setImageUrl(normalizedUrl);
+        } else {
+          setImageError(true);
         }
       } catch (error) {
         console.error(`Erreur lors du traitement de l'image pour ${name}:`, error);
@@ -89,7 +63,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onLoad={() => {
-            console.log(`Image pour joueur ${name} chargée avec succès`);
+            console.log(`Image pour joueur ${name} chargée avec succès: ${imageUrl}`);
             setIsLoading(false);
           }}
           onError={(e) => {

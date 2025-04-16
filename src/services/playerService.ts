@@ -3,7 +3,44 @@ import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
 import { getAllTeams } from "@/services/teamService";
-import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, hasPlayerImage, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
+
+// Cache pour les images des joueurs existantes dans le storage
+let playerImagesCache: string[] = [];
+let playerImagesCacheTimestamp = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Charge toutes les images disponibles dans le cache
+ */
+export const preloadPlayerImagesCache = async (): Promise<void> => {
+  const now = Date.now();
+  // Recharger le cache si nécessaire
+  if (playerImagesCache.length === 0 || (now - playerImagesCacheTimestamp) > CACHE_DURATION) {
+    console.log("Préchargement du cache des images de joueurs...");
+    playerImagesCache = await listAllPlayerImages();
+    playerImagesCacheTimestamp = now;
+    console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
+  }
+};
+
+/**
+ * Vérifie si une image existe dans le cache
+ */
+export const imageExistsInCache = (imageUrl: string | null): boolean => {
+  if (!imageUrl) return false;
+  
+  // Si c'est une URL complète, on considère qu'elle existe
+  if (imageUrl.startsWith('http')) return true;
+  
+  // Si c'est juste un nom de fichier, vérifier dans le cache
+  const filename = imageUrl.split('/').pop();
+  if (filename) {
+    return playerImagesCache.includes(filename);
+  }
+  
+  return false;
+};
 
 /**
  * Load all players in batches to bypass the 1000 record limit in Supabase
@@ -15,6 +52,9 @@ export const loadAllPlayersInBatches = async (
 ): Promise<Player[]> => {
   try {
     console.log("Starting batch loading of players");
+    
+    // Précharger le cache des images
+    await preloadPlayerImagesCache();
     
     // Get total count to determine number of batches
     const totalCount = await getPlayersCount();
@@ -40,10 +80,16 @@ export const loadAllPlayersInBatches = async (
         const batchPlayers = await getPlayers(batch, batchSize);
         
         // Normalize image URLs in players data
-        const normalizedPlayers = batchPlayers.map(player => ({
-          ...player,
-          image: normalizeImageUrl(player.image)
-        }));
+        const normalizedPlayers = batchPlayers.map(player => {
+          // Normaliser l'URL de l'image
+          const normalizedImageUrl = normalizeImageUrl(player.image);
+          console.log(`Joueur ${player.name}, image originale: ${player.image}, normalisée: ${normalizedImageUrl}`);
+          
+          return {
+            ...player,
+            image: normalizedImageUrl
+          };
+        });
         
         console.log(`Batch ${batch}: loaded ${normalizedPlayers.length} players`);
         
@@ -65,7 +111,10 @@ export const loadAllPlayersInBatches = async (
       }
     }
     
-    console.log(`Completed loading ${allPlayers.length} players in ${batches} batches`);
+    // Count players with images for debugging
+    const playersWithImages = allPlayers.filter(p => p.image).length;
+    console.log(`Completed loading ${allPlayers.length} players with ${playersWithImages} having images`);
+    
     return allPlayers;
   } catch (error) {
     console.error("Error in loadAllPlayersInBatches:", error);
@@ -80,13 +129,26 @@ export const loadAllPlayersInBatches = async (
 export const getAllPlayers = async (page: number, pageSize: number): Promise<Player[]> => {
   try {
     console.log(`Getting players for page ${page} with page size ${pageSize}`);
+    
+    // Précharger le cache des images
+    await preloadPlayerImagesCache();
+    
     const players = await getPlayers(page, pageSize);
     
     // Normalize image URLs
-    const normalizedPlayers = players.map(player => ({
-      ...player,
-      image: normalizeImageUrl(player.image)
-    }));
+    const normalizedPlayers = players.map(player => {
+      // Normaliser l'URL de l'image
+      const normalizedImageUrl = normalizeImageUrl(player.image);
+      
+      return {
+        ...player,
+        image: normalizedImageUrl
+      };
+    });
+    
+    // Log debugging info
+    const playersWithImages = normalizedPlayers.filter(p => p.image).length;
+    console.log(`Loaded ${normalizedPlayers.length} players, ${playersWithImages} with images`);
     
     return normalizedPlayers;
   } catch (error) {

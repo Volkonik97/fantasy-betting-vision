@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerCard from "@/components/PlayerCard";
+import { hasPlayerImage } from "@/utils/database/teams/images/imageUtils";
 
 interface PlayersListProps {
   players: (Player & { teamName: string; teamRegion: string })[];
@@ -20,12 +21,13 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
         players.slice(0, 3).map(p => ({
           name: p.name,
           imageUrl: p.image,
+          hasImage: hasPlayerImage(p.image),
           role: p.role
         }))
       );
       
       // Count players with images vs without
-      const withImages = players.filter(p => p.image).length;
+      const withImages = players.filter(p => hasPlayerImage(p.image)).length;
       console.log(`Players with images: ${withImages}/${players.length}`);
     }
   }, [players]);
