@@ -76,20 +76,21 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
       
       // Step 3: Set CORS policy for the bucket
       try {
-        const corsResponse = await supabase.storage.updateBucketCors(bucketId, {
-          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
-          allowedOrigins: ['*'],
-          allowedHeaders: ['*'],
-          maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        // Update bucket CORS using the updateBucket method instead of updateBucketCors
+        const corsResponse = await supabase.storage.updateBucket(bucketId, {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
+          // CORS configuration is now set via project-level settings in Supabase dashboard
         });
         
         if (corsResponse.error) {
-          console.warn("Warning: Could not set CORS policy:", corsResponse.error);
+          console.warn("Warning: Could not update bucket settings:", corsResponse.error);
         } else {
-          console.log("CORS policy set successfully");
+          console.log("Bucket settings updated successfully");
         }
       } catch (corsError) {
-        console.warn("Error setting CORS policy:", corsError);
+        console.warn("Error updating bucket settings:", corsError);
       }
       
       // Step 4: Verify bucket was created
