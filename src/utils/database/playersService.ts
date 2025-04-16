@@ -26,8 +26,8 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
         gold_share_percent: summaryData.gold_share_percent
       });
       
-      // Log image URL if present
-      if (summaryData.image) {
+      // Check if image property exists before logging
+      if ('image' in summaryData && summaryData.image) {
         console.log("Player image URL:", summaryData.image);
       }
       
@@ -55,8 +55,8 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     console.log("Found player in players table:", data);
     
-    // Log image URL if present
-    if (data.image) {
+    // Check if image property exists before logging
+    if ('image' in data && data.image) {
       console.log("Player image URL from players table:", data.image);
     }
     
