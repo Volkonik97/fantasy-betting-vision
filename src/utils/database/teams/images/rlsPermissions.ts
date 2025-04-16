@@ -33,7 +33,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
     if (!bucketExists) {
       console.error("player-images bucket does not exist");
-      result.errorMessage = "Bucket 'player-images' n'existe pas. Veuillez créer le bucket dans la console Supabase.";
+      result.errorMessage = "Le bucket 'player-images' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.";
       return result;
     }
     

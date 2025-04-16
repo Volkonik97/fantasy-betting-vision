@@ -23,8 +23,34 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
     setResult(null);
 
     try {
-      // Step 1: Create bucket
-      setProgress(20);
+      // Step 1: Check if bucket already exists
+      setProgress(15);
+      const { data: buckets, error: checkError } = await supabase.storage.listBuckets();
+      
+      if (checkError) {
+        console.error("Error checking buckets:", checkError);
+        setResult({
+          success: false,
+          message: `Erreur lors de la vérification des buckets: ${checkError.message}`,
+        });
+        toast.error(`Erreur lors de la vérification des buckets: ${checkError.message}`);
+        return;
+      }
+      
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketId);
+      if (bucketExists) {
+        setProgress(100);
+        setResult({
+          success: true,
+          message: "Le bucket existe déjà et est accessible.",
+        });
+        toast.success("Le bucket existe déjà et est accessible.");
+        onBucketCreated();
+        return;
+      }
+
+      // Step 2: Create bucket
+      setProgress(30);
       const { error: bucketError } = await supabase.storage.createBucket(bucketId, {
         public: true,
         fileSizeLimit: 5242880, // 5MB
@@ -40,12 +66,12 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         return;
       }
 
-      setProgress(60);
+      setProgress(70);
       
-      // Step 2: Verify bucket was created
-      const { data, error: checkError } = await supabase.storage.getBucket(bucketId);
+      // Step 3: Verify bucket was created
+      const { data, error: getBucketError } = await supabase.storage.getBucket(bucketId);
       
-      if (checkError || !data) {
+      if (getBucketError || !data) {
         setResult({
           success: false,
           message: "Le bucket a été créé mais n'est pas accessible",
@@ -80,7 +106,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         <h3 className="text-lg font-semibold">Créer le bucket de stockage</h3>
         <p className="text-sm text-gray-500">
           Le bucket de stockage "{bucketId}" n'existe pas ou n'est pas accessible. 
-          Créez-le pour pouvoir télécharger des images de joueurs.
+          Cliquez sur le bouton ci-dessous pour le créer et pouvoir télécharger des images de joueurs.
         </p>
       </div>
 

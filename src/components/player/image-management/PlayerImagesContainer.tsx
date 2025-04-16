@@ -8,6 +8,7 @@ import BucketStatusSection from "./BucketStatusSection";
 import DatabaseConnectionStatus from "./DatabaseConnectionStatus";
 import { checkBucketRlsPermission } from "@/utils/database/teams/images/rlsPermissions";
 import { toast } from "sonner";
+import BucketCreator from "../BucketCreator";
 
 const PlayerImagesContainer = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
@@ -127,11 +128,23 @@ const PlayerImagesContainer = () => {
     setHelpOpen(true);
   };
 
+  const handleBucketCreated = () => {
+    toast.success("Bucket créé avec succès!");
+    checkBucketAccess();
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <PageHeader onCheckBucket={checkBucketAccess} />
       
       <div className="grid gap-6 mt-6">
+        {bucketStatus === "error" && (
+          <BucketCreator 
+            bucketId="player-images" 
+            onBucketCreated={handleBucketCreated} 
+          />
+        )}
+
         <BucketStatusSection
           bucketStatus={bucketStatus}
           errorMessage={errorMessage}
