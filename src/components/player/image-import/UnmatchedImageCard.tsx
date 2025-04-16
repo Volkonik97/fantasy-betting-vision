@@ -49,7 +49,7 @@ const UnmatchedImageCard = ({
         >
           <option value="-1">Sélectionnez un joueur...</option>
           {playerOptions.map((playerData, idx) => (
-            <option key={playerData.player.id || playerData.player.playerid} value={idx}>
+            <option key={playerData.player.id} value={idx}>
               {playerData.player.name} ({playerData.player.role || 'Rôle inconnu'})
             </option>
           ))}
