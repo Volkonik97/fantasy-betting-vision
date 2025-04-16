@@ -2,7 +2,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Trash2 } from "lucide-react";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
 interface ImageRefreshControlsProps {
@@ -40,20 +39,16 @@ const ImageRefreshControls = ({
               : 'Vérifier et nettoyer les références d\'images'}
         </Button>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="flex items-center gap-2"
-              disabled={isProcessingClearAll || isRefreshingImages}
-              onClick={() => setShowConfirmClearAll(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer toutes les références d'images
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="flex items-center gap-2"
+          disabled={isProcessingClearAll || isRefreshingImages}
+          onClick={() => setShowConfirmClearAll(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Supprimer toutes les références d'images
+        </Button>
       </div>
 
       {isRefreshingImages && (

@@ -1,14 +1,16 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import PlayerImagesSection from "./PlayerImagesSection";
 import PageHeader from "./PageHeader";
 import HelpDialog from "./HelpDialog";
 import BucketStatusSection from "./BucketStatusSection";
 import DatabaseConnectionStatus from "./DatabaseConnectionStatus";
 import { checkBucketRlsPermission } from "@/utils/database/teams/images/rlsPermissions";
-import { toast } from "sonner";
 import BucketCreator from "../BucketCreator";
+import ClearImagesDialog from "./ClearImagesDialog";
+import { clearAllPlayerImageReferences } from "@/utils/database/teams/images/clearImages";
 
 const PlayerImagesContainer = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
@@ -165,6 +167,27 @@ const PlayerImagesContainer = () => {
     }, 500);
   };
 
+  const handleClearAllImages = async () => {
+    try {
+      setIsProcessingClearAll(true);
+      console.log("Clearing all player image references...");
+      
+      const result = await clearAllPlayerImageReferences(true);
+      
+      if (result.success) {
+        toast.success(`${result.clearedCount} références d'images ont été supprimées`);
+      } else {
+        toast.error("Échec de la suppression des références d'images");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de toutes les images:", error);
+      toast.error("Une erreur s'est produite lors de la suppression des images");
+    } finally {
+      setIsProcessingClearAll(false);
+      setShowConfirmClearAll(false);
+    }
+  };
+
   const showRlsHelp = () => {
     setHelpType("rls");
     setHelpOpen(true);
@@ -218,6 +241,13 @@ const PlayerImagesContainer = () => {
         onOpenChange={setHelpOpen} 
         type={helpType}
         rlsErrorMessage={rlsStatus.message}
+      />
+
+      <ClearImagesDialog 
+        open={showConfirmClearAll}
+        onOpenChange={setShowConfirmClearAll}
+        isProcessing={isProcessingClearAll}
+        onConfirm={handleClearAllImages}
       />
     </div>
   );
