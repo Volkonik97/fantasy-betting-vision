@@ -210,8 +210,8 @@ const PlayerImagesImport = ({
         <UploadControls 
           onUpload={uploadImages}
           disableUpload={disableUpload}
-          isUploading={uploadManager.isUploading}
-          uploadProgress={uploadManager.uploadProgress}
+          isUploading={uploadManager.isUploadingState}
+          uploadProgress={uploadManager.uploadProgressState}
         />
 
         <UnmatchedImagesList 
