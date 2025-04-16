@@ -20,13 +20,14 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   
   // Vérifier et normaliser l'URL de l'image avant de l'utiliser
   const playerImage = player.image;
-  console.log(`PlayerCard: Image originale pour ${player.name}:`, playerImage);
+  console.log(`PlayerCard: Image originale pour ${player.name} (ID: ${player.id}):`, playerImage);
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
         <PlayerImage 
           name={player.name} 
+          playerId={player.id}
           image={playerImage} 
           role={player.role} 
         />

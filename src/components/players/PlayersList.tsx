@@ -20,6 +20,7 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
       console.log("Sample players with image URLs:", 
         players.slice(0, 3).map(p => ({
           name: p.name,
+          id: p.id,
           imageUrl: p.image,
           hasImage: hasPlayerImage(p.image),
           role: p.role

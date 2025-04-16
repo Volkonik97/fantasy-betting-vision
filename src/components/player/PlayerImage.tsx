@@ -7,11 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerImageProps {
   name: string;
+  playerId?: string;
   image?: string | null;
   role?: string;
 }
 
-const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
+const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,7 +20,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
   useEffect(() => {
     const processImageUrl = async () => {
       if (!image) {
-        console.log(`Pas d'image fournie pour le joueur: ${name}`);
+        console.log(`Pas d'image fournie pour le joueur: ${name} (ID: ${playerId || 'non défini'})`);
         setImageError(true);
         setIsLoading(false);
         return;
@@ -28,7 +29,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
       try {
         // Normaliser l'URL de l'image
         const normalizedUrl = normalizeImageUrl(image);
-        console.log(`Image normalisée pour ${name}: ${normalizedUrl}`);
+        console.log(`Image normalisée pour ${name} (ID: ${playerId || 'non défini'}): ${normalizedUrl}`);
         
         if (normalizedUrl) {
           setImageUrl(normalizedUrl);
@@ -36,7 +37,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           setImageError(true);
         }
       } catch (error) {
-        console.error(`Erreur lors du traitement de l'image pour ${name}:`, error);
+        console.error(`Erreur lors du traitement de l'image pour ${name} (ID: ${playerId || 'non défini'}):`, error);
         setImageError(true);
       } finally {
         setIsLoading(false);
@@ -47,7 +48,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
     setImageError(false);
     setIsLoading(true);
     processImageUrl();
-  }, [image, name]);
+  }, [image, name, playerId]);
 
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
@@ -63,11 +64,11 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onLoad={() => {
-            console.log(`Image pour joueur ${name} chargée avec succès: ${imageUrl}`);
+            console.log(`Image pour joueur ${name} (ID: ${playerId || 'non défini'}) chargée avec succès: ${imageUrl}`);
             setIsLoading(false);
           }}
           onError={(e) => {
-            console.error(`Erreur de chargement d'image pour joueur ${name}: ${imageUrl}`);
+            console.error(`Erreur de chargement d'image pour joueur ${name} (ID: ${playerId || 'non défini'}): ${imageUrl}`);
             setImageError(true);
             setIsLoading(false);
           }}

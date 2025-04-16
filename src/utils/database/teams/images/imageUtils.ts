@@ -61,7 +61,7 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
       }
     }
     
-    // Pour les noms de fichiers simples
+    // Pour les noms de fichiers simples ou les IDs de joueurs
     if (!imageUrl.includes('/') && !imageUrl.startsWith('http')) {
       try {
         // Essayer avec le bucket player-images
@@ -71,6 +71,19 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
           .download(imageUrl);
         
         if (!error) {
+          return true;
+        }
+        
+        // Si ce n'est pas un nom de fichier direct, essayez de chercher des fichiers qui commencent par l'ID du joueur
+        const { data: listData, error: listError } = await supabase
+          .storage
+          .from('player-images')
+          .list('', {
+            search: imageUrl + '_'
+          });
+          
+        if (!listError && listData && listData.length > 0) {
+          console.log(`Trouvé des fichiers pour l'ID ${imageUrl}:`, listData);
           return true;
         }
       } catch (storageError) {
@@ -111,10 +124,38 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
     return `/${cleanUrl}`;
   }
   
-  // Si c'est juste un nom de fichier, construire l'URL Supabase storage
+  // Si c'est juste un nom de fichier ou un ID de joueur, chercher dans le stockage Supabase
   if (!cleanUrl.includes('/')) {
     try {
       console.log(`Construction de l'URL publique pour: ${cleanUrl}`);
+      
+      // Tenter de trouver si c'est un ID de joueur en cherchant des fichiers commençant par cet ID
+      const { data: listData, error: listError } = supabase
+        .storage
+        .from('player-images')
+        .list('', {
+          search: cleanUrl + '_'
+        });
+        
+      if (!listError && listData && listData.length > 0) {
+        // Prendre le fichier le plus récent (supposément avec la date la plus récente dans le nom)
+        const sortedFiles = listData
+          .filter(file => !file.id.endsWith('/'))
+          .sort((a, b) => b.name.localeCompare(a.name));
+          
+        if (sortedFiles.length > 0) {
+          const fileName = sortedFiles[0].name;
+          const { data } = supabase
+            .storage
+            .from('player-images')
+            .getPublicUrl(fileName);
+            
+          console.log(`URL publique générée pour l'ID ${cleanUrl}: ${data.publicUrl}`);
+          return data.publicUrl;
+        }
+      }
+      
+      // Si ce n'est pas un ID trouvable, essayer comme nom de fichier direct
       const { data } = supabase
         .storage
         .from('player-images')
@@ -153,7 +194,7 @@ export const hasPlayerImage = (imageUrl: string | null | undefined): boolean => 
     return true;
   }
   
-  // Considérer que c'est juste un nom de fichier dans le stockage
+  // Considérer que c'est juste un nom de fichier ou un ID dans le stockage
   return true;
 };
 

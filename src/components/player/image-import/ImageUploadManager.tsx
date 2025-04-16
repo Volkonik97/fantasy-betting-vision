@@ -1,4 +1,3 @@
-
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -208,7 +207,7 @@ class ImageUploadManager {
           };
         }
         
-        console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
+        console.log(`Updated player ${playerData.player.name} (ID: ${playerId}) with new image URL: ${publicUrl}`);
         
         const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
         if (playerIndex !== -1) {

@@ -1,4 +1,3 @@
-
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
@@ -21,25 +20,36 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
     playerImagesCache = await listAllPlayerImages();
     playerImagesCacheTimestamp = now;
     console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
+
+    // Log pour déboguer les noms de fichiers d'images
+    console.log("Échantillon de noms d'images dans le cache:", 
+      playerImagesCache.slice(0, 10));
+
+    // Analyser les noms de fichiers pour identifier les ID de joueurs
+    const playerIds = new Set<string>();
+    playerImagesCache.forEach(filename => {
+      // Extraire les ID de joueurs des noms de fichiers (supposant format ID_TIMESTAMP.ext)
+      const idMatch = filename.match(/^([^_]+)_\d+\./);
+      if (idMatch && idMatch[1]) {
+        playerIds.add(idMatch[1]);
+      }
+    });
+    
+    console.log(`IDs de joueurs identifiés depuis les noms de fichiers: ${playerIds.size}`);
+    console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
   }
 };
 
 /**
- * Vérifie si une image existe dans le cache
+ * Vérifie si une image existe dans le cache pour un ID de joueur spécifique
  */
-export const imageExistsInCache = (imageUrl: string | null): boolean => {
-  if (!imageUrl) return false;
+export const imageExistsForPlayer = (playerId: string): boolean => {
+  if (!playerId) return false;
   
-  // Si c'est une URL complète, on considère qu'elle existe
-  if (imageUrl.startsWith('http')) return true;
-  
-  // Si c'est juste un nom de fichier, vérifier dans le cache
-  const filename = imageUrl.split('/').pop();
-  if (filename) {
-    return playerImagesCache.includes(filename);
-  }
-  
-  return false;
+  return playerImagesCache.some(filename => {
+    // Vérifier si le nom du fichier commence par l'ID du joueur
+    return filename.startsWith(playerId + '_');
+  });
 };
 
 /**
@@ -137,8 +147,17 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     
     // Normalize image URLs
     const normalizedPlayers = players.map(player => {
+      // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
+      const hasImageInCache = imageExistsForPlayer(player.id);
+      
+      // Si le joueur a déjà une URL d'image, la normaliser
+      // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
+      const imageToNormalize = player.image || (hasImageInCache ? player.id : null);
+      
       // Normaliser l'URL de l'image
-      const normalizedImageUrl = normalizeImageUrl(player.image);
+      const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
+      
+      console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
       
       return {
         ...player,
