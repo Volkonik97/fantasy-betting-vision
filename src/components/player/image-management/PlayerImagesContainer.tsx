@@ -43,6 +43,8 @@ const PlayerImagesContainer = () => {
         return;
       }
       
+      console.log("Available buckets:", buckets?.map(b => `"${b.name}"`).join(", "));
+      
       const bucketExists = buckets?.some(bucket => bucket.name === 'Player Images');
       
       if (!bucketExists) {

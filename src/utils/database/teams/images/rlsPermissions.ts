@@ -22,6 +22,8 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
   const bucketName = 'Player Images'; // Using the correct bucket name with space
   
   try {
+    console.log(`Checking RLS permissions for bucket: "${bucketName}"`);
+    
     const { data: buckets, error: bucketError } = await supabase
       .storage
       .listBuckets();
@@ -32,15 +34,17 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
       return result;
     }
     
+    console.log("Available buckets:", buckets?.map(b => `"${b.name}"`).join(", "));
+    
     const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     if (!bucketExists) {
-      console.error(`${bucketName} bucket does not exist`);
+      console.error(`Bucket "${bucketName}" does not exist`);
       result.errorMessage = `Le bucket '${bucketName}' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.`;
       return result;
     }
     
     // Check listing permissions first
-    console.log("Checking RLS listing permissions");
+    console.log(`Checking RLS listing permissions for "${bucketName}"`);
     const { data: listData, error: listError } = await supabase
       .storage
       .from(bucketName)
@@ -55,7 +59,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     }
     
     // Next, check upload permissions using a tiny test file that we'll remove right away
-    console.log("Checking RLS upload permissions");
+    console.log(`Checking RLS upload permissions for "${bucketName}"`);
     const testBlob = new Blob(['test'], { type: 'text/plain' });
     const testFile = new File([testBlob], 'test-permissions.txt');
     

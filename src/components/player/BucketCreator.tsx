@@ -23,6 +23,8 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
     setResult(null);
 
     try {
+      console.log(`Attempting to create bucket: "${bucketId}"`);
+      
       // Step 1: Check if bucket already exists
       setProgress(15);
       const { data: buckets, error: checkError } = await supabase.storage.listBuckets();
@@ -34,6 +36,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
           message: `Erreur lors de la vérification des buckets: ${checkError.message}`,
         });
         toast.error(`Erreur lors de la vérification des buckets: ${checkError.message}`);
+        setIsCreating(false);
         return;
       }
       
@@ -46,11 +49,13 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         });
         toast.success("Le bucket existe déjà et est accessible.");
         onBucketCreated();
+        setIsCreating(false);
         return;
       }
 
       // Step 2: Create bucket
       setProgress(30);
+      console.log(`Creating bucket with ID: "${bucketId}"`);
       const { error: bucketError } = await supabase.storage.createBucket(bucketId, {
         public: true,
         fileSizeLimit: 5242880, // 5MB
@@ -63,20 +68,40 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
           message: `Erreur lors de la création du bucket: ${bucketError.message}`,
         });
         toast.error(`Erreur lors de la création du bucket: ${bucketError.message}`);
+        setIsCreating(false);
         return;
       }
 
       setProgress(70);
       
-      // Step 3: Verify bucket was created
+      // Step 3: Set CORS policy for the bucket
+      try {
+        const corsResponse = await supabase.storage.updateBucketCors(bucketId, {
+          allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['*'],
+          maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        });
+        
+        if (corsResponse.error) {
+          console.warn("Warning: Could not set CORS policy:", corsResponse.error);
+        } else {
+          console.log("CORS policy set successfully");
+        }
+      } catch (corsError) {
+        console.warn("Error setting CORS policy:", corsError);
+      }
+      
+      // Step 4: Verify bucket was created
       const { data, error: getBucketError } = await supabase.storage.getBucket(bucketId);
       
       if (getBucketError || !data) {
         setResult({
           success: false,
-          message: "Le bucket a été créé mais n'est pas accessible",
+          message: "Le bucket a été créé mais n'est pas accessible immédiatement. Veuillez rafraîchir la page dans quelques instants.",
         });
-        toast.error("Le bucket a été créé mais n'est pas accessible");
+        toast.error("Le bucket a été créé mais n'est pas accessible immédiatement");
+        setIsCreating(false);
         return;
       }
 
