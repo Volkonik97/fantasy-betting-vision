@@ -13,6 +13,7 @@ import PlayerImagesFilter from "./PlayerImagesFilter";
 import PlayerImagesList from "./PlayerImagesList";
 import { usePlayerImages } from "./usePlayerImages";
 import UploadSummary from "./UploadSummary";
+import PlayerStats from "./PlayerStats";
 
 interface PlayerImagesImportProps {
   bucketStatus?: "loading" | "exists" | "error";
@@ -83,10 +84,21 @@ const PlayerImagesImport = ({
       />
       
       <CardContent className="space-y-4">
-        <DropZone 
-          onFileSelect={handleFileSelect}
-          disabled={bucketExists === false || rlsEnabled || uploadStatus.inProgress}
-        />
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <DropZone 
+              onFileSelect={handleFileSelect}
+              disabled={bucketExists === false || rlsEnabled || uploadStatus.inProgress}
+            />
+          </div>
+          
+          <div className="md:col-span-1">
+            <PlayerStats 
+              playerImages={playerImages} 
+              className="h-full"
+            />
+          </div>
+        </div>
 
         {uploadStatus.failed > 0 && (
           <UploadSummary

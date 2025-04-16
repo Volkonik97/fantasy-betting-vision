@@ -1,15 +1,16 @@
 
-import React, { useRef, useState } from "react";
-import { CloudUpload, Upload } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Card } from "@/components/ui/card";
+import { ImageIcon, Upload } from "lucide-react";
 
 interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
-  disabled: boolean;
+  disabled?: boolean;
 }
 
-const DropZone = ({ onFileSelect, disabled }: DropZoneProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+const DropZone: React.FC<DropZoneProps> = ({ onFileSelect, disabled = false }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -18,8 +19,7 @@ const DropZone = ({ onFileSelect, disabled }: DropZoneProps) => {
     }
   };
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  const handleDragLeave = () => {
     setIsDragging(false);
   };
 
@@ -27,64 +27,90 @@ const DropZone = ({ onFileSelect, disabled }: DropZoneProps) => {
     e.preventDefault();
     setIsDragging(false);
     
-    if (!disabled && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      onFileSelect(Array.from(e.dataTransfer.files));
-    }
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      onFileSelect(Array.from(event.target.files));
+    if (disabled) return;
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const filesArray = Array.from(e.dataTransfer.files).filter(
+        file => file.type.startsWith('image/')
+      );
       
-      // Réinitialiser l'input pour permettre la sélection du même fichier
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (filesArray.length > 0) {
+        onFileSelect(filesArray);
       }
     }
   };
 
-  const triggerFileInput = () => {
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled || !e.target.files || e.target.files.length === 0) return;
+    
+    const filesArray = Array.from(e.target.files).filter(
+      file => file.type.startsWith('image/')
+    );
+    
+    if (filesArray.length > 0) {
+      onFileSelect(filesArray);
+    }
+    
+    // Reset the file input to allow selecting the same file again
     if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleClick = () => {
+    if (!disabled && fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
   return (
-    <div 
-      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
-        ${isDragging ? 'bg-blue-50 border-blue-300' : ''}
-        ${disabled ? 'border-red-300 bg-red-50 opacity-50 cursor-not-allowed' : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'}
+    <Card 
+      className={`
+        border-2 border-dashed rounded-lg p-6
+        ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-gray-300'} 
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-blue-500 hover:bg-blue-50'}
+        transition-colors duration-200
       `}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={disabled ? undefined : triggerFileInput}
-      style={{ pointerEvents: disabled ? 'none' : 'auto' }}
+      onClick={handleClick}
     >
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
-        onChange={handleFileSelect} 
-        multiple 
-        accept="image/*" 
-        disabled={disabled}
-      />
-      <div className="flex flex-col items-center">
-        <div className="mb-3 h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+      <div className="flex flex-col items-center justify-center space-y-2 text-center">
+        <div className="p-3 rounded-full bg-blue-100">
           {isDragging ? (
-            <CloudUpload className="h-8 w-8 text-blue-500" />
+            <Upload className="h-6 w-6 text-blue-600" />
           ) : (
-            <Upload className="h-8 w-8" />
+            <ImageIcon className="h-6 w-6 text-blue-600" />
           )}
         </div>
-        <p className="text-sm font-medium mb-2">{isDragging ? 'Déposez les fichiers ici' : 'Cliquez ou déposez des fichiers ici'}</p>
-        <p className="text-xs text-gray-500 max-w-sm mx-auto">
-          Formats acceptés: PNG, JPG ou WEBP jusqu'à 5MB. 
-          <br />Les noms de fichiers seront utilisés pour associer les images aux joueurs.
-        </p>
+        
+        <div className="space-y-1">
+          <p className="font-medium text-sm">
+            {isDragging 
+              ? 'Déposez les images ici'
+              : 'Glissez des images ou cliquez pour parcourir'
+            }
+          </p>
+          <p className="text-xs text-gray-500">
+            Formats acceptés: JPG, PNG, GIF, WEBP
+          </p>
+          <p className="text-xs text-gray-500">
+            <strong>Astuce:</strong> Pour associer automatiquement, nommez vos fichiers avec les noms des joueurs
+          </p>
+        </div>
       </div>
-    </div>
+      
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileInputChange}
+        className="hidden"
+        disabled={disabled}
+      />
+    </Card>
   );
 };
 

@@ -1,25 +1,25 @@
 
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import PlayerImageCard from "./PlayerImageCard";
 import { PlayerWithImage } from "./types";
+import PlayerImageCard from "./PlayerImageCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerImagesListProps {
-  isLoading: boolean;
   filteredPlayers: PlayerWithImage[];
+  isLoading: boolean;
 }
 
-const PlayerImagesList = ({ isLoading, filteredPlayers }: PlayerImagesListProps) => {
+const PlayerImagesList: React.FC<PlayerImagesListProps> = ({ filteredPlayers, isLoading }) => {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="border rounded-lg p-3 flex items-center space-x-3">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-3 w-2/3" />
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="space-y-3 border rounded-lg p-4">
+            <div className="flex justify-center">
+              <Skeleton className="w-20 h-20 rounded-full" />
             </div>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
         ))}
       </div>
@@ -29,19 +29,19 @@ const PlayerImagesList = ({ isLoading, filteredPlayers }: PlayerImagesListProps)
   if (filteredPlayers.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
-        Aucun joueur ne correspond aux critères sélectionnés
+        Aucun joueur trouvé dans cette catégorie
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {filteredPlayers
-        .sort((a, b) => a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' }))
-        .map((playerData) => (
-          <PlayerImageCard key={playerData.player.id} playerData={playerData} />
-        ))
-      }
+      {filteredPlayers.map((playerData) => (
+        <PlayerImageCard 
+          key={playerData.player.id} 
+          playerData={playerData} 
+        />
+      ))}
     </div>
   );
 };

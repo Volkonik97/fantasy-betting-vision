@@ -182,3 +182,65 @@ export const updatePlayerImageReference = async (playerId: string, imageUrl: str
     return false;
   }
 };
+
+/**
+ * Upload multiple images en parallèle avec une limite de concurrence
+ */
+export const uploadMultiplePlayerImages = async (
+  uploads: { playerId: string; file: File }[],
+  concurrencyLimit: number = 3
+): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: {} as Record<string, string>
+  };
+  
+  // Trier les fichiers par taille pour uploader les plus petits en premier
+  const sortedUploads = [...uploads].sort((a, b) => a.file.size - b.file.size);
+  
+  // Fonction pour traiter un lot d'uploads
+  const processBatch = async (batch: typeof uploads) => {
+    const promises = batch.map(async ({ playerId, file }) => {
+      try {
+        const result = await uploadPlayerImage(playerId, file, 60000);
+        
+        if (!result.success) {
+          results.failed++;
+          results.errors[playerId] = result.error || "Erreur inconnue";
+          return { success: false, playerId };
+        }
+        
+        const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
+        
+        if (!updateSuccess) {
+          results.failed++;
+          results.errors[playerId] = "Échec de la mise à jour dans la base de données";
+          return { success: false, playerId };
+        }
+        
+        results.success++;
+        return { success: true, playerId, imageUrl: result.publicUrl };
+      } catch (error) {
+        results.failed++;
+        results.errors[playerId] = error instanceof Error ? error.message : String(error);
+        return { success: false, playerId };
+      }
+    });
+    
+    return Promise.all(promises);
+  };
+  
+  // Diviser en lots pour limiter la concurrence
+  for (let i = 0; i < sortedUploads.length; i += concurrencyLimit) {
+    const batch = sortedUploads.slice(i, i + concurrencyLimit);
+    await processBatch(batch);
+    
+    // Petite pause entre les lots pour éviter de surcharger le réseau
+    if (i + concurrencyLimit < sortedUploads.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+  
+  return results;
+};
