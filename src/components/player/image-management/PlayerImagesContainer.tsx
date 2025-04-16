@@ -1,310 +1,212 @@
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import PlayerImagesSection from "./PlayerImagesSection";
-import PageHeader from "./PageHeader";
-import HelpDialog from "./HelpDialog";
-import BucketStatusSection from "./BucketStatusSection";
-import DatabaseConnectionStatus from "./DatabaseConnectionStatus";
-import { checkBucketRlsPermission } from "@/utils/database/teams/images/rlsPermissions";
-import BucketCreator from "../BucketCreator";
-import ClearImagesDialog from "./ClearImagesDialog";
-import { clearAllPlayerImageReferences } from "@/utils/database/teams/images/clearImages";
-import { refreshImageReferences, synchronizeReferences } from "@/utils/database/teams/images/refreshImages";
+import { 
+  refreshImageReferences, 
+  synchronizeReferences,
+  checkBucketRlsPermission,
+  clearAllPlayerImageReferences
+} from "@/utils/database/teams/images";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import BucketStatusInfo from "../image-import/BucketStatusInfo";
+import ImageRefreshControls from "./ImageRefreshControls";
+import PlayerImagesList from "../image-import/PlayerImagesList";
+import UnmatchedImagesList from "../image-import/UnmatchedImagesList";
+import UploadControls from "../image-import/UploadControls";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const PlayerImagesContainer = () => {
+  const [activeTab, setActiveTab] = useState("list");
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState<string>("");
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [helpType, setHelpType] = useState<"bucket" | "rls">("bucket");
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState(0);
   const [refreshComplete, setRefreshComplete] = useState(false);
+  const [isSyncingReferences, setIsSyncingReferences] = useState(false);
   const [isProcessingClearAll, setIsProcessingClearAll] = useState(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
-  const [totalImagesInBucket, setTotalImagesInBucket] = useState<number | null>(null);
-  const [totalPlayersWithImages, setTotalPlayersWithImages] = useState<number | null>(null);
-  const [isSyncingReferences, setIsSyncingReferences] = useState(false);
+  const [rlsEnabled, setRlsEnabled] = useState(false);
+  const [showRlsHelp, setShowRlsHelp] = useState(false);
   
-  const [rlsStatus, setRlsStatus] = useState({
-    checked: false,
-    canUpload: false,
-    canList: false,
-    canCreate: false,
-    message: null as string | null
-  });
-
-  // Check if the storage bucket exists and get image stats
-  const checkBucketAccess = async () => {
-    try {
-      setBucketStatus("loading");
-      
-      // First try to list files directly in the bucket
-      const { data: files, error: listError } = await supabase.storage
-        .from('player-images')
-        .list('');
-        
-      if (!listError) {
-        console.log("Successfully listed files in player-images bucket:", files?.length || 0);
-        setBucketStatus("exists");
-        toast.success("Bucket d'images accessible");
-        
-        // Update total images count
-        setTotalImagesInBucket(files?.length || 0);
-        
-        // If we can list files, we have access to the bucket
-        setRlsStatus(prev => ({
-          ...prev,
-          checked: true,
-          canList: true
-        }));
-        
-        // Also get count of players with images in DB
-        const { count: playersWithImagesCount, error: countError } = await supabase
-          .from('players')
-          .select('playerid', { count: 'exact', head: true })
-          .not('image', 'is', null);
-          
-        if (!countError && playersWithImagesCount !== null) {
-          setTotalPlayersWithImages(playersWithImagesCount);
-          console.log(`Found ${playersWithImagesCount} players with image references in database`);
-        }
-        
-        // Check upload permissions separately
-        try {
-          const rlsCheckResult = await checkBucketRlsPermission();
-          setRlsStatus({
-            checked: true,
-            canUpload: rlsCheckResult.canUpload,
-            canList: true, // We already know we can list
-            canCreate: rlsCheckResult.canCreate,
-            message: rlsCheckResult.errorMessage
-          });
-        } catch (rlsError) {
-          console.error("Error checking RLS for uploads:", rlsError);
-          setRlsStatus(prev => ({
-            ...prev,
-            checked: true,
-            canUpload: false,
-            message: rlsError instanceof Error ? rlsError.message : String(rlsError)
-          }));
-        }
-        return;
-      }
-      
-      console.error("Error listing files in bucket, fallback to checking buckets:", listError);
-      
-      // If listing files failed, try listing buckets as fallback
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      
-      if (bucketError) {
-        console.error("Error getting buckets:", bucketError);
-        setErrorMessage(`Erreur lors de la récupération des buckets: ${bucketError.message}`);
-        setBucketStatus("error");
-        return;
-      }
-      
-      console.log("Available buckets:", buckets?.map(b => `"${b.name}"`).join(", "));
-      
-      const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
-      
-      if (!bucketExists) {
-        console.error("Bucket 'player-images' not in list, but checking direct access");
-        
-        // Double-check by trying to list files
-        const { error: doubleCheckError } = await supabase.storage
-          .from('player-images')
-          .list('', { limit: 1 });
-          
-        if (doubleCheckError) {
-          console.error("Confirmed bucket doesn't exist or not accessible:", doubleCheckError);
-          setErrorMessage("Le bucket 'player-images' n'existe pas dans votre projet Supabase ou n'est pas accessible.");
-          setBucketStatus("error");
-        } else {
-          console.log("Bucket exists but not listed (RLS issue)");
-          setBucketStatus("exists");
-          toast.success("Bucket d'images accessible");
-        }
-      } else {
-        console.log("Bucket 'player-images' exists in list");
-        setBucketStatus("exists");
-        toast.success("Bucket d'images accessible");
-      }
-      
-      // Check RLS permissions separately
-      try {
-        const rlsCheckResult = await checkBucketRlsPermission();
-        setRlsStatus({
-          checked: true,
-          canUpload: rlsCheckResult.canUpload,
-          canList: rlsCheckResult.canList,
-          canCreate: rlsCheckResult.canCreate,
-          message: rlsCheckResult.errorMessage
-        });
-      } catch (rlsError) {
-        console.error("Error checking RLS:", rlsError);
-        setRlsStatus({
-          checked: true,
-          canUpload: false,
-          canList: false,
-          canCreate: false,
-          message: rlsError instanceof Error ? rlsError.message : String(rlsError)
-        });
-      }
-    } catch (error) {
-      console.error("Error checking bucket:", error);
-      setErrorMessage(error instanceof Error ? error.message : String(error));
-      setBucketStatus("error");
-    }
-  };
-
-  // Check bucket access on component mount
   useEffect(() => {
-    checkBucketAccess();
+    const checkBucketStatus = async () => {
+      setBucketStatus("loading");
+      try {
+        const rlsStatus = await checkBucketRlsPermission();
+        setRlsEnabled(rlsStatus.enabled);
+        
+        if (rlsStatus.canAccess) {
+          setBucketStatus("exists");
+        } else {
+          setBucketStatus("error");
+        }
+      } catch (error) {
+        console.error("Error checking bucket status:", error);
+        setBucketStatus("error");
+      }
+    };
+    
+    checkBucketStatus();
   }, []);
-
+  
   const handleRefreshImages = async () => {
+    if (isRefreshingImages) return;
+    
+    setIsRefreshingImages(true);
+    setRefreshComplete(false);
+    setRefreshProgress(10);
+    
     try {
-      setIsRefreshingImages(true);
-      setRefreshProgress(0);
-      
-      // Call the image refresh function
       const result = await refreshImageReferences();
       
       setRefreshProgress(100);
       setRefreshComplete(true);
       
-      // Update the counts after refresh
-      await checkBucketAccess();
-      
-      if (result.fixedCount > 0 || result.orphanedFilesCount > 0) {
-        toast.success(`${result.fixedCount} références d'images invalides ont été supprimées. ${result.orphanedFilesCount} fichiers orphelins détectés.`);
+      if (result.completed) {
+        toast.success(
+          `Vérification des images terminée: ${result.fixedCount} références corrigées, ${result.orphanedFilesCount} fichiers orphelins détectés`
+        );
       } else {
-        toast.info("Aucune référence d'image invalide trouvée");
+        toast.error("La vérification des images n'a pas pu être terminée");
       }
     } catch (error) {
-      console.error("Erreur lors du rafraîchissement des images:", error);
-      toast.error("Une erreur s'est produite lors de la vérification des images");
+      console.error("Error refreshing images:", error);
+      toast.error("Erreur lors de la vérification des images");
     } finally {
       setIsRefreshingImages(false);
     }
   };
-
+  
   const handleSynchronizeReferences = async () => {
+    if (isSyncingReferences) return;
+    
+    setIsSyncingReferences(true);
+    
     try {
-      setIsSyncingReferences(true);
-      
-      // Call the synchronization function
       const result = await synchronizeReferences();
       
-      // Update the counts after sync
-      await checkBucketAccess();
-      
-      if (result.addedCount > 0 || result.removedCount > 0) {
-        toast.success(`Synchronisation réussie! ${result.addedCount} références ajoutées, ${result.removedCount} références supprimées.`);
+      if (result.completed) {
+        toast.success(
+          `Synchronisation terminée: ${result.addedCount} références ajoutées, ${result.removedCount} références supprimées`
+        );
       } else {
-        toast.info("Aucune modification nécessaire, tout est déjà synchronisé.");
+        toast.error("La synchronisation n'a pas pu être terminée");
       }
     } catch (error) {
-      console.error("Erreur lors de la synchronisation des images:", error);
-      toast.error("Une erreur s'est produite lors de la synchronisation des images");
+      console.error("Error synchronizing references:", error);
+      toast.error("Erreur lors de la synchronisation des références");
     } finally {
       setIsSyncingReferences(false);
     }
   };
-
+  
   const handleClearAllImages = async () => {
+    setIsProcessingClearAll(true);
+    
     try {
-      setIsProcessingClearAll(true);
-      console.log("Clearing all player image references...");
-      
-      const result = await clearAllPlayerImageReferences(true);
+      const result = await clearAllPlayerImageReferences();
       
       if (result.success) {
-        console.log(`Suppression réussie: ${result.clearedCount} références`);
-        toast.success(`${result.clearedCount} références d'images ont été supprimées`);
-        
-        // Update the counts after deletion
-        await checkBucketAccess();
+        toast.success(`Toutes les références d'images ont été supprimées (${result.clearedCount})`);
       } else {
-        console.error("Échec de la suppression des références d'images");
-        toast.error("Échec de la suppression des références d'images");
+        toast.error("Erreur lors de la suppression des références d'images");
       }
     } catch (error) {
-      console.error("Erreur lors de la suppression de toutes les images:", error);
-      toast.error("Une erreur s'est produite lors de la suppression des images");
+      console.error("Error clearing all image references:", error);
+      toast.error("Erreur lors de la suppression des références d'images");
     } finally {
       setIsProcessingClearAll(false);
       setShowConfirmClearAll(false);
     }
   };
-
-  const showRlsHelp = () => {
-    setHelpType("rls");
-    setHelpOpen(true);
-  };
-
-  const showBucketHelp = () => {
-    setHelpType("bucket");
-    setHelpOpen(true);
-  };
-
-  const handleBucketCreated = () => {
-    toast.success("Bucket créé avec succès!");
-    checkBucketAccess();
-  };
-
+  
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <PageHeader onCheckBucket={checkBucketAccess} />
-      
-      <div className="grid gap-6 mt-6">
-        {bucketStatus === "error" && (
-          <BucketCreator 
-            bucketId="player-images" 
-            onBucketCreated={handleBucketCreated} 
-          />
-        )}
-
-        <BucketStatusSection
-          bucketStatus={bucketStatus}
-          errorMessage={errorMessage}
-          rlsStatus={rlsStatus}
-          isRefreshingImages={isRefreshingImages}
-          refreshProgress={refreshProgress}
-          refreshComplete={refreshComplete}
-          isProcessingClearAll={isProcessingClearAll}
-          isSyncingReferences={isSyncingReferences}
-          totalImagesInBucket={totalImagesInBucket}
-          totalPlayersWithImages={totalPlayersWithImages}
-          handleRefreshImages={handleRefreshImages}
-          handleSynchronizeReferences={handleSynchronizeReferences}
-          setShowConfirmClearAll={setShowConfirmClearAll}
-          setShowHelp={showBucketHelp}
-          setShowRlsHelp={showRlsHelp}
-        />
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Gestionnaire d'images des joueurs</h1>
+          <p className="text-gray-500">Gérer, synchroniser et vérifier les images des joueurs</p>
+        </div>
         
-        <PlayerImagesSection 
-          bucketStatus={bucketStatus}
-          rlsEnabled={!rlsStatus.canUpload || !rlsStatus.canList}
-          showRlsHelp={showRlsHelp}
+        <BucketStatusInfo 
+          status={bucketStatus} 
+          rlsEnabled={rlsEnabled} 
+          onRlsHelpClick={() => setShowRlsHelp(true)}
         />
       </div>
       
-      <HelpDialog 
-        open={helpOpen} 
-        onOpenChange={setHelpOpen} 
-        type={helpType}
-        rlsErrorMessage={rlsStatus.message}
+      <ImageRefreshControls
+        isRefreshingImages={isRefreshingImages}
+        refreshProgress={refreshProgress}
+        refreshComplete={refreshComplete}
+        isProcessingClearAll={isProcessingClearAll}
+        isSyncingReferences={isSyncingReferences}
+        handleRefreshImages={handleRefreshImages}
+        handleSynchronizeReferences={handleSynchronizeReferences}
+        setShowConfirmClearAll={setShowConfirmClearAll}
       />
-
-      <ClearImagesDialog 
-        open={showConfirmClearAll}
-        onOpenChange={setShowConfirmClearAll}
-        isProcessing={isProcessingClearAll}
-        onConfirm={handleClearAllImages}
-      />
+      
+      {bucketStatus === "error" && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erreur d'accès au stockage</AlertTitle>
+          <AlertDescription>
+            Impossible d'accéder au bucket de stockage "player-images". 
+            Vérifiez la configuration des droits d'accès ou créez le bucket s'il n'existe pas.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="list" className="flex-1">Liste des joueurs</TabsTrigger>
+          <TabsTrigger value="upload" className="flex-1">Téléchargement</TabsTrigger>
+          <TabsTrigger value="unmatched" className="flex-1">Images non associées</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list" className="mt-6">
+          <PlayerImagesList bucketExists={bucketStatus === "exists"} />
+        </TabsContent>
+        
+        <TabsContent value="upload" className="mt-6">
+          <UploadControls bucketExists={bucketStatus === "exists"} />
+        </TabsContent>
+        
+        <TabsContent value="unmatched" className="mt-6">
+          <UnmatchedImagesList bucketExists={bucketStatus === "exists"} />
+        </TabsContent>
+      </Tabs>
+      
+      <Dialog open={showConfirmClearAll} onOpenChange={setShowConfirmClearAll}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Voulez-vous vraiment supprimer toutes les références d'images des joueurs ?
+              Cette action supprimera également tous les fichiers du stockage.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter className="flex space-x-2 justify-end">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmClearAll(false)}
+              disabled={isProcessingClearAll}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleClearAllImages}
+              disabled={isProcessingClearAll}
+            >
+              {isProcessingClearAll ? 'Traitement en cours...' : 'Supprimer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

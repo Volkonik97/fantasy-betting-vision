@@ -32,6 +32,8 @@ export const synchronizeReferences = async (): Promise<{
       return { addedCount: 0, removedCount: 0, completed: false };
     }
     
+    console.log(`Trouvé ${allFiles?.length || 0} fichiers dans le bucket`);
+    
     // 2. Get all players from database
     const { data: players, error: playerError } = await supabase
       .from('players')
@@ -43,6 +45,8 @@ export const synchronizeReferences = async (): Promise<{
       return { addedCount: 0, removedCount: 0, completed: false };
     }
     
+    console.log(`Trouvé ${players?.length || 0} joueurs dans la base de données`);
+    
     let addedCount = 0;
     let removedCount = 0;
     
@@ -51,10 +55,12 @@ export const synchronizeReferences = async (): Promise<{
       const playerId = extractPlayerIdFromFilename(file.name);
       
       if (playerId) {
-        // Find corresponding player
-        const player = players.find(p => p.playerid === playerId);
+        console.log(`Traitement du fichier ${file.name} pour joueur ${playerId}`);
         
-        if (!player || !player.image) {
+        // Find corresponding player
+        const player = players?.find(p => p.playerid === playerId);
+        
+        if (player) {
           // Create public URL for this file
           const { data: publicUrlData } = supabase
             .storage
@@ -63,40 +69,54 @@ export const synchronizeReferences = async (): Promise<{
           
           const publicUrl = publicUrlData?.publicUrl;
           
-          if (publicUrl) {
-            // Update or insert player with image reference
-            const { error: upsertError } = await supabase
-              .from('players')
-              .upsert({ 
-                playerid: playerId, 
-                image: publicUrl 
-              }, { onConflict: 'playerid' });
+          // If player exists but has no image, update the reference
+          if (!player.image && publicUrl) {
+            console.log(`Mise à jour de la référence d'image pour joueur ${playerId}`);
             
-            if (!upsertError) {
-              console.log(`Ajouté référence d'image pour joueur ${playerId}`);
+            const { error: updateError } = await supabase
+              .from('players')
+              .update({ image: publicUrl })
+              .eq('playerid', playerId);
+            
+            if (updateError) {
+              console.error(`Erreur lors de la mise à jour de l'image pour ${playerId}:`, updateError);
+            } else {
+              console.log(`Image mise à jour pour joueur ${playerId}: ${publicUrl}`);
               addedCount++;
             }
+          }
+        } else {
+          console.log(`Joueur ${playerId} non trouvé dans la base de données`);
+        }
+      } else {
+        console.log(`Impossible d'extraire l'ID du joueur à partir du nom de fichier: ${file.name}`);
+      }
+    }
+    
+    // 4. Remove invalid image references from database
+    for (const player of (players || [])) {
+      if (player.image) {
+        const isValid = await verifyImageExists(player.image);
+        
+        if (!isValid) {
+          console.log(`Référence d'image invalide détectée pour joueur ${player.playerid}: ${player.image}`);
+          
+          const { error: clearError } = await supabase
+            .from('players')
+            .update({ image: null })
+            .eq('playerid', player.playerid);
+          
+          if (clearError) {
+            console.error(`Erreur lors de la suppression de la référence d'image pour ${player.playerid}:`, clearError);
+          } else {
+            console.log(`Référence d'image supprimée pour joueur ${player.playerid}`);
+            removedCount++;
           }
         }
       }
     }
     
-    // 4. Remove invalid image references from database
-    for (const player of players) {
-      if (player.image && !allFiles.some(file => player.image.includes(file.name))) {
-        const { error: clearError } = await supabase
-          .from('players')
-          .update({ image: null })
-          .eq('playerid', player.playerid);
-        
-        if (!clearError) {
-          console.log(`Supprimé référence d'image invalide pour joueur ${player.playerid}`);
-          removedCount++;
-        }
-      }
-    }
-    
-    console.log(`Synchronisation terminée: ${addedCount} ajoutés, ${removedCount} supprimés`);
+    console.log(`Synchronisation terminée: ${addedCount} références ajoutées, ${removedCount} références supprimées`);
     
     return { addedCount, removedCount, completed: true };
   } catch (error) {

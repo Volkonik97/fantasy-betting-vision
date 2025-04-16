@@ -1,163 +1,84 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-interface RlsPermissionsResult {
-  canUpload: boolean;
-  canList: boolean;
-  canCreate: boolean;
-  errorMessage: string | null;
-}
-
 /**
- * Check if the current user has proper RLS permissions for the player-images bucket
- * @returns Object with permission status
+ * Check if bucket exists and whether RLS is enabled
+ * @returns Object with access status and RLS configuration
  */
-export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> => {
-  const result: RlsPermissionsResult = {
-    canUpload: false,
-    canList: false,
-    canCreate: false,
-    errorMessage: null
-  };
-  
-  // Check if the bucket exists first
-  const bucketName = 'player-images';
-  
+export const checkBucketRlsPermission = async (): Promise<{
+  canAccess: boolean;
+  enabled: boolean;
+}> => {
   try {
-    console.log(`Checking RLS permissions for bucket: "${bucketName}"`);
-    
-    // First check if user has permission to list buckets (admin action)
-    const { data: buckets, error: bucketError } = await supabase
+    // Try to list files in the bucket
+    const { data, error } = await supabase
       .storage
-      .listBuckets();
-    
-    if (bucketError) {
-      console.error("Error checking for buckets:", bucketError);
-      
-      if (bucketError.message?.includes("policy") || bucketError.message?.includes("RLS")) {
-        result.errorMessage = "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour lister les buckets.";
-      } else {
-        result.errorMessage = `Error checking buckets: ${bucketError.message}`;
-      }
-      return result;
-    }
-    
-    console.log("Available buckets:", buckets?.map(b => `"${b.name}"`).join(", "));
-    
-    // User can list buckets, which suggests they might have create permission
-    result.canCreate = true;
-    
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-    if (!bucketExists) {
-      console.error(`Bucket "${bucketName}" does not exist in list of buckets, but it might be an RLS issue`);
-      
-      // Try listing files to double-check if the bucket exists but just isn't visible in the list
-      const { data: filesTest, error: filesTestError } = await supabase
-        .storage
-        .from(bucketName)
-        .list('');
-      
-      if (!filesTestError) {
-        console.log(`Bucket "${bucketName}" exists but wasn't listed (likely due to RLS)`);
-        // Continue checking permissions since we can access the bucket
-      } else {
-        console.error(`Confirmed bucket "${bucketName}" does not exist or is not accessible:`, filesTestError);
-        
-        // Try to create the bucket to check if user has permission
-        const { error: createError } = await supabase.storage.createBucket(bucketName, {
-          public: true,
-          fileSizeLimit: 5242880, // 5MB
-        });
-        
-        if (createError) {
-          console.error("Error creating bucket:", createError);
-          result.canCreate = false;
-          
-          if (createError.message?.includes("policy") || createError.message?.includes("RLS")) {
-            result.errorMessage = "Erreur de politique RLS: Vous n'avez pas la permission de créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.";
-          } else {
-            result.errorMessage = `Erreur lors de la création du bucket: ${createError.message}`;
-          }
-          return result;
-        }
-        
-        // If we get here, bucket was created successfully
-        console.log(`Successfully created bucket "${bucketName}"`);
-      }
-      result.canCreate = true;
-    }
-    
-    // Check listing permissions first
-    console.log(`Checking RLS listing permissions for "${bucketName}"`);
-    const { data: listData, error: listError } = await supabase
-      .storage
-      .from(bucketName)
+      .from('player-images')
       .list('', { limit: 1 });
     
-    if (listError) {
-      console.error("Error checking listing permissions:", listError);
+    if (error) {
+      // Check if the error is related to permissions (RLS)
+      const isRlsError = error.message.includes('permission') || 
+                         error.message.includes('not authorized') || 
+                         error.message.includes('403');
       
-      if (listError.message?.includes("policy") || listError.message?.includes("RLS")) {
-        result.errorMessage = "Erreur RLS: Vous n'avez pas la permission de lister les fichiers dans ce bucket.";
-      } else {
-        result.errorMessage = `Listing error: ${listError.message}`;
-      }
-    } else {
-      console.log("Listing permissions verified:", listData);
-      result.canList = true;
+      console.log("Erreur d'accès au bucket:", error.message, "RLS activé:", isRlsError);
+      
+      return {
+        canAccess: false,
+        enabled: isRlsError
+      };
     }
     
-    // Next, check upload permissions using a tiny test file that we'll remove right away
-    console.log(`Checking RLS upload permissions for "${bucketName}"`);
-    const testBlob = new Blob(['test'], { type: 'text/plain' });
-    const testFile = new File([testBlob], 'test-permissions.txt');
-    
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from(bucketName)
-      .upload(`test-rls-${Date.now()}.txt`, testFile, {
-        cacheControl: '0',
-        upsert: true
-      });
-    
-    if (uploadError) {
-      console.error("Error checking upload permissions:", uploadError);
+    // If we can list files, check if we can also upload/download to determine RLS status
+    try {
+      // Try to get a public URL as a test (this should work regardless of RLS)
+      const { data: publicUrlData } = supabase
+        .storage
+        .from('player-images')
+        .getPublicUrl('test-rls-check.txt');
       
-      if (uploadError.message?.includes("policy") || uploadError.message?.includes("RLS")) {
-        const errorMsg = "Erreur de politique RLS: Vous n'avez pas la permission d'uploader des fichiers dans ce bucket.";
-        result.errorMessage = !result.errorMessage ? errorMsg : `${result.errorMessage} | ${errorMsg}`;
-      } else {
-        const errorMsg = `Upload error: ${uploadError.message}`;
-        result.errorMessage = !result.errorMessage ? errorMsg : `${result.errorMessage} | ${errorMsg}`;
-      }
-    } else {
-      console.log("Upload permissions verified:", uploadData);
-      result.canUpload = true;
+      // Try to upload a small file
+      const testBlob = new Blob(['RLS test'], { type: 'text/plain' });
+      const testFile = new File([testBlob], 'test-rls-check.txt');
       
-      // Clean up the test file
-      if (uploadData?.path) {
-        try {
-          const { error: deleteError } = await supabase
-            .storage
-            .from(bucketName)
-            .remove([uploadData.path]);
-          
-          if (deleteError) {
-            console.warn("Failed to remove test file:", deleteError);
-          } else {
-            console.log("Test file successfully removed");
-          }
-        } catch (deleteError) {
-          console.warn("Exception removing test file:", deleteError);
-        }
+      const { error: uploadError } = await supabase
+        .storage
+        .from('player-images')
+        .upload('test-rls-check.txt', testFile, { upsert: true });
+      
+      // RLS might be enabled but allowing the current user to upload
+      const hasUploadRights = !uploadError;
+      
+      // Clean up test file if uploaded successfully
+      if (hasUploadRights) {
+        await supabase
+          .storage
+          .from('player-images')
+          .remove(['test-rls-check.txt']);
       }
+      
+      console.log("Test d'accès au bucket: upload possible:", hasUploadRights);
+      
+      return {
+        canAccess: true,
+        enabled: !hasUploadRights // If we can't upload, RLS is likely restricting it
+      };
+    } catch (testError) {
+      console.log("Test d'accès au bucket échoué:", testError);
+      
+      // We could still list files, so bucket exists but there might be restrictions
+      return {
+        canAccess: true,
+        enabled: true // Assume RLS is enabled if our test fails
+      };
     }
-    
-    return result;
   } catch (error) {
-    console.error("Exception during RLS permissions check:", error);
-    result.errorMessage = `Exception: ${error instanceof Error ? error.message : String(error)}`;
-    return result;
+    console.error("Erreur lors de la vérification des permissions:", error);
+    
+    return {
+      canAccess: false,
+      enabled: false
+    };
   }
 };
-
