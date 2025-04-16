@@ -1,15 +1,19 @@
+
 import { useState, useEffect, useCallback } from "react";
+import { PlayerWithImage, UploadStatus } from "./types";
 import { Player } from "@/utils/models/types";
 import { loadAllPlayersInBatches } from "@/services/playerService";
-import { PlayerWithImage, UploadStatus } from "./types";
-import { uploadPlayerImage, updatePlayerImageReference, uploadMultiplePlayerImages } from "@/utils/database/teams/images/uploader";
+import { uploadMultiplePlayerImagesWithProgress } from "@/utils/database/teams/images/uploader";
 import { toast } from "sonner";
 
 export const usePlayerImages = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [playerImages, setPlayerImages] = useState<PlayerWithImage[]>([]);
   const [unmatched, setUnmatched] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [loadingProgress, setLoadingProgress] = useState({
+    message: "Initialisation...",
+    percent: 0
+  });
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     total: 0,
     processed: 0,
@@ -17,33 +21,25 @@ export const usePlayerImages = () => {
     failed: 0,
     inProgress: false
   });
-  const [loadingProgress, setLoadingProgress] = useState<{percent: number, message: string}>({
-    percent: 0,
-    message: "Initialisation..."
-  });
+  const [filterTab, setFilterTab] = useState("all");
 
-  // Charger les joueurs avec pagination pour dépasser la limite de 1000
+  // Load player data
   useEffect(() => {
     const loadPlayers = async () => {
       setIsLoading(true);
-      setLoadingProgress({percent: 0, message: "Préparation du chargement des joueurs..."});
+      setLoadingProgress({ message: "Chargement des joueurs...", percent: 10 });
       
       try {
-        // Utiliser loadAllPlayersInBatches pour charger tous les joueurs avec callback de progression
-        const allPlayers = await loadAllPlayersInBatches((loaded, total, batch) => {
-          const percent = Math.round((loaded / total) * 100);
+        const players = await loadAllPlayersInBatches((progress, total) => {
           setLoadingProgress({
-            percent,
-            message: `Chargement des joueurs: ${loaded}/${total} (lot ${batch}/${Math.ceil(total/500)})`
+            message: `Chargement des joueurs (${progress}/${total})`,
+            percent: Math.min(90, (progress / total) * 100)
           });
         });
         
-        console.log(`Chargement de ${allPlayers.length} joueurs terminé (en lots)`);
-        setLoadingProgress({percent: 100, message: "Initialisation des données..."});
+        setLoadingProgress({ message: "Préparation de l'interface...", percent: 95 });
         
-        setPlayers(allPlayers);
-        
-        const initialPlayerImages: PlayerWithImage[] = allPlayers.map(player => ({
+        const mappedPlayers: PlayerWithImage[] = players.map(player => ({
           player,
           imageFile: null,
           newImageUrl: null,
@@ -52,81 +48,52 @@ export const usePlayerImages = () => {
           error: null
         }));
         
-        setPlayerImages(initialPlayerImages);
-        setLoadingProgress({percent: 100, message: "Chargement terminé"});
+        setPlayerImages(mappedPlayers);
+        setLoadingProgress({ message: "Terminé", percent: 100 });
       } catch (error) {
-        console.error("Erreur lors du chargement des joueurs:", error);
+        console.error("Error loading players:", error);
         toast.error("Erreur lors du chargement des joueurs");
-        setLoadingProgress({
-          percent: 0, 
-          message: `Erreur: ${error instanceof Error ? error.message : String(error)}`
-        });
       } finally {
         setIsLoading(false);
       }
     };
-
+    
     loadPlayers();
   }, []);
 
-  // Normaliser une chaîne pour la recherche de correspondance
-  const normalizeString = (str: string): string => {
-    return str
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "");
-  };
-
-  // Trouver un joueur correspondant au nom de fichier
-  const findMatchingPlayer = useCallback((fileName: string): number => {
-    const normalizedFileName = normalizeString(fileName);
-    
-    // Recherche de correspondance exacte d'abord
-    for (let i = 0; i < playerImages.length; i++) {
-      const normalizedPlayerName = normalizeString(playerImages[i].player.name);
-      if (normalizedPlayerName === normalizedFileName) {
-        return i;
-      }
-    }
-    
-    // Recherche de correspondance contenue
-    for (let i = 0; i < playerImages.length; i++) {
-      const normalizedPlayerName = normalizeString(playerImages[i].player.name);
-      if (normalizedFileName.includes(normalizedPlayerName) || 
-          normalizedPlayerName.includes(normalizedFileName)) {
-        return i;
-      }
-    }
-    
-    return -1;
-  }, [playerImages]);
-
-  // Gérer la sélection de fichiers
+  // Handle file selection from drag-and-drop or file picker
   const handleFileSelect = useCallback((files: File[]) => {
-    if (files.length === 0) return;
+    if (!files.length) return;
     
-    toast.info(`Traitement de ${files.length} fichiers...`);
-    
+    // Create a copy of the current player images
     const updatedPlayerImages = [...playerImages];
     const unmatchedFiles: File[] = [];
-    let matchedCount = 0;
     
+    // Process each file
     files.forEach(file => {
-      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
-      const matchIndex = findMatchingPlayer(fileName);
+      // Try to match file name with player name
+      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // Remove extension
+      const matchedPlayerIndex = updatedPlayerImages.findIndex(
+        p => p.player.name.toLowerCase().includes(fileName) || 
+             fileName.includes(p.player.name.toLowerCase())
+      );
       
-      if (matchIndex !== -1) {
-        const objectUrl = URL.createObjectURL(file);
+      if (matchedPlayerIndex !== -1) {
+        // File matched to a player
+        const playerImage = updatedPlayerImages[matchedPlayerIndex];
         
-        updatedPlayerImages[matchIndex] = {
-          ...updatedPlayerImages[matchIndex],
-          imageFile: file,
-          newImageUrl: objectUrl,
-          error: null
-        };
-        
-        matchedCount++;
+        // Only assign if player doesn't already have a file or the new file is bigger (presumably better quality)
+        if (!playerImage.imageFile || (playerImage.imageFile && file.size > playerImage.imageFile.size)) {
+          updatedPlayerImages[matchedPlayerIndex] = {
+            ...playerImage,
+            imageFile: file,
+            newImageUrl: URL.createObjectURL(file),
+            processed: false,
+            error: null
+          };
+        }
       } else {
+        // No match found, add to unmatched list
         unmatchedFiles.push(file);
       }
     });
@@ -134,215 +101,119 @@ export const usePlayerImages = () => {
     setPlayerImages(updatedPlayerImages);
     setUnmatched(prev => [...prev, ...unmatchedFiles]);
     
-    if (matchedCount > 0) {
-      toast.success(`${matchedCount} images associées automatiquement`);
-    }
-    
-    if (unmatchedFiles.length > 0) {
-      toast.warning(`${unmatchedFiles.length} images n'ont pas pu être associées à des joueurs`);
-    }
-  }, [playerImages, findMatchingPlayer]);
-
-  // Associer manuellement un fichier à un joueur
-  const assignFileToPlayer = useCallback((file: File, playerIndex: number) => {
-    const updatedPlayerImages = [...playerImages];
-    const objectUrl = URL.createObjectURL(file);
-    
-    updatedPlayerImages[playerIndex] = {
-      ...updatedPlayerImages[playerIndex],
-      imageFile: file,
-      newImageUrl: objectUrl,
-      error: null
-    };
-    
-    setPlayerImages(updatedPlayerImages);
-    setUnmatched(prev => prev.filter(f => f !== file));
+    toast.success(`${files.length} images importées, ${unmatchedFiles.length} non associées`);
   }, [playerImages]);
 
-  // Télécharger les images
+  // Assign a file to a player manually
+  const assignFileToPlayer = useCallback((file: File, playerIndex: number) => {
+    setPlayerImages(prev => {
+      const updated = [...prev];
+      updated[playerIndex] = {
+        ...updated[playerIndex],
+        imageFile: file,
+        newImageUrl: URL.createObjectURL(file),
+        processed: false,
+        error: null
+      };
+      return updated;
+    });
+    
+    setUnmatched(prev => prev.filter(f => f !== file));
+    
+    toast.success("Image associée avec succès");
+  }, []);
+
+  // Upload all images
   const uploadImages = useCallback(async (bucketExists: boolean) => {
     if (!bucketExists) {
-      toast.error("Le bucket de stockage n'est pas accessible. Impossible de télécharger les images.");
+      toast.error("Le bucket de stockage n'existe pas");
       return;
     }
     
-    const playersToUpdate = playerImages.filter(p => p.imageFile !== null && !p.processed);
+    const playersWithImages = playerImages.filter(p => p.imageFile && !p.processed);
     
-    if (playersToUpdate.length === 0) {
-      toast.info("Aucune nouvelle image à télécharger");
+    if (playersWithImages.length === 0) {
+      toast.info("Aucune image à télécharger");
       return;
     }
     
     setUploadStatus({
-      total: playersToUpdate.length,
+      total: playersWithImages.length,
       processed: 0,
       success: 0,
       failed: 0,
       inProgress: true
     });
     
-    // Marquer les joueurs comme étant en cours de téléchargement
-    const updatedPlayerImages = playerImages.map(p => {
-      if (p.imageFile && !p.processed) {
-        return { ...p, isUploading: true };
-      }
-      return p;
-    });
+    // Mark players as uploading
+    setPlayerImages(prev => prev.map(p => ({
+      ...p,
+      isUploading: p.imageFile && !p.processed ? true : p.isUploading
+    })));
     
-    setPlayerImages(updatedPlayerImages);
-    
-    // Préparer les données pour l'upload multiple
-    const uploadsData = playersToUpdate.map(p => ({
-      playerId: p.player.id,
-      file: p.imageFile!
+    // Prepare uploads
+    const uploads = playersWithImages.map(p => ({
+      playerId: p.player.id || p.player.playerid,
+      file: p.imageFile as File
     }));
     
-    toast.info(`Début du téléchargement de ${uploadsData.length} images...`);
-    console.log(`Starting upload of ${uploadsData.length} images`);
-    
-    // Utiliser la fonction d'upload multiple avec limite de concurrence
     try {
-      // Utiliser une fonction qui supporte les mises à jour de progression
-      const results = await uploadMultiplePlayerImagesWithProgress(
-        uploadsData, 
-        3,
-        (processed, total) => {
-          console.log(`Upload progress: ${processed}/${total}`);
-          setUploadStatus(prev => ({
-            ...prev,
-            processed
-          }));
-        }
-      );
-      
-      // Mettre à jour les statuts des joueurs avec les résultats
-      const finalPlayerImages = updatedPlayerImages.map(p => {
-        if (p.imageFile && !p.processed) {
-          const error = results.errors[p.player.id];
-          return {
-            ...p,
-            isUploading: false,
-            processed: !error,
-            error: error || null
-          };
-        }
-        return p;
+      const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
+        setUploadStatus(prev => ({
+          ...prev,
+          processed
+        }));
       });
       
-      setPlayerImages(finalPlayerImages);
+      // Update player states based on results
+      setPlayerImages(prev => prev.map(p => {
+        const playerId = p.player.id || p.player.playerid;
+        
+        if (p.imageFile && !p.processed) {
+          const hasError = results.errors[playerId];
+          
+          return {
+            ...p,
+            processed: !hasError,
+            isUploading: false,
+            error: hasError || null
+          };
+        }
+        
+        return p;
+      }));
       
-      setUploadStatus({
-        total: playersToUpdate.length,
-        processed: playersToUpdate.length,
+      setUploadStatus(prev => ({
+        ...prev,
         success: results.success,
         failed: results.failed,
         inProgress: false
-      });
+      }));
       
-      if (results.success > 0) {
+      if (results.failed === 0) {
         toast.success(`${results.success} images téléchargées avec succès`);
-      }
-      
-      if (results.failed > 0) {
-        toast.error(`${results.failed} images n'ont pas pu être téléchargées`);
+      } else {
+        toast.error(`${results.success} images téléchargées, ${results.failed} échecs`);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Erreur lors du téléchargement des images:", errorMessage);
+      console.error("Upload error:", error);
       
-      // Mise à jour de tous les joueurs en erreur
-      const errorPlayerImages = updatedPlayerImages.map(p => {
-        if (p.isUploading) {
-          return {
-            ...p,
-            isUploading: false,
-            error: errorMessage
-          };
-        }
-        return p;
-      });
+      // Mark all as failed
+      setPlayerImages(prev => prev.map(p => ({
+        ...p,
+        isUploading: false,
+        error: p.imageFile && !p.processed ? "Erreur lors du téléchargement" : p.error
+      })));
       
-      setPlayerImages(errorPlayerImages);
-      
-      setUploadStatus({
-        total: playersToUpdate.length,
-        processed: playersToUpdate.length,
-        success: 0,
-        failed: playersToUpdate.length,
+      setUploadStatus(prev => ({
+        ...prev,
+        failed: prev.total,
         inProgress: false
-      });
+      }));
       
       toast.error("Erreur lors du téléchargement des images");
     }
   }, [playerImages]);
-
-  // Version améliorée de uploadMultiplePlayerImages avec support de progression
-  const uploadMultiplePlayerImagesWithProgress = async (
-    uploads: { playerId: string; file: File }[],
-    concurrencyLimit: number = 3,
-    progressCallback?: (processed: number, total: number) => void
-  ): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: {} as Record<string, string>
-    };
-    
-    // Trier les fichiers par taille pour uploader les plus petits en premier
-    const sortedUploads = [...uploads].sort((a, b) => a.file.size - b.file.size);
-    let processed = 0;
-    const total = sortedUploads.length;
-    
-    // Fonction pour traiter un lot d'uploads
-    const processBatch = async (batch: typeof uploads) => {
-      const promises = batch.map(async ({ playerId, file }) => {
-        try {
-          const result = await uploadPlayerImage(playerId, file);
-          
-          if (!result.success) {
-            results.failed++;
-            results.errors[playerId] = result.error || "Erreur inconnue";
-            return { success: false, playerId };
-          }
-          
-          const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
-          
-          if (!updateSuccess) {
-            results.failed++;
-            results.errors[playerId] = "Échec de la mise à jour dans la base de données";
-            return { success: false, playerId };
-          }
-          
-          results.success++;
-          return { success: true, playerId, imageUrl: result.publicUrl };
-        } catch (error) {
-          results.failed++;
-          results.errors[playerId] = error instanceof Error ? error.message : String(error);
-          return { success: false, playerId };
-        } finally {
-          processed++;
-          if (progressCallback) {
-            progressCallback(processed, total);
-          }
-        }
-      });
-      
-      return Promise.all(promises);
-    };
-    
-    // Diviser en lots pour limiter la concurrence
-    for (let i = 0; i < sortedUploads.length; i += concurrencyLimit) {
-      const batch = sortedUploads.slice(i, i + concurrencyLimit);
-      await processBatch(batch);
-      
-      // Petite pause entre les lots pour éviter de surcharger le réseau
-      if (i + concurrencyLimit < sortedUploads.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
-    
-    return results;
-  };
 
   return {
     playerImages,
@@ -352,6 +223,8 @@ export const usePlayerImages = () => {
     loadingProgress,
     handleFileSelect,
     assignFileToPlayer,
-    uploadImages
+    uploadImages,
+    filterTab,
+    setFilterTab
   };
 };

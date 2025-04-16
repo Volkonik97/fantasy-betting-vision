@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import ImportHeader from "./ImportHeader";
 import DropZone from "./DropZone";
@@ -30,7 +30,9 @@ const PlayerImagesImport = ({
     loadingProgress,
     handleFileSelect,
     assignFileToPlayer,
-    uploadImages
+    uploadImages,
+    filterTab,
+    setFilterTab
   } = usePlayerImages();
 
   const handleUpload = () => {
@@ -104,11 +106,32 @@ const PlayerImagesImport = ({
           />
         )}
 
-        <PlayerImagesList 
-          isLoading={isLoading} 
-          filteredPlayers={playerImages} 
-          status={bucketStatus}
-        />
+        <PlayerImagesFilter 
+          activeTab={filterTab} 
+          setActiveTab={setFilterTab} 
+          playerImages={playerImages}
+        >
+          <PlayerImagesList 
+            isLoading={isLoading} 
+            filteredPlayers={playerImages.filter(player => {
+              switch(filterTab) {
+                case 'no-image':
+                  return !player.player.image && !player.newImageUrl;
+                case 'with-image':
+                  return player.player.image || player.newImageUrl;
+                case 'pending':
+                  return player.imageFile && !player.processed;
+                case 'processed':
+                  return player.processed;
+                case 'errors':
+                  return player.error !== null;
+                default:
+                  return true; // 'all' tab
+              }
+            })} 
+            status={bucketStatus}
+          />
+        </PlayerImagesFilter>
       </CardContent>
     </Card>
   );
