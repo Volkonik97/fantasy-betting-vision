@@ -2,7 +2,8 @@ import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
 import { getAllTeams } from "@/services/teamService";
-import { normalizeImageUrl, hasPlayerImage, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 // Cache pour les images des joueurs existantes dans le storage
 let playerImagesCache: string[] = [];
@@ -13,32 +14,47 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
  * Charge toutes les images disponibles dans le cache
  */
 export const preloadPlayerImagesCache = async (): Promise<void> => {
-  const now = Date.now();
-  // Recharger le cache si nécessaire
-  if (playerImagesCache.length === 0 || (now - playerImagesCacheTimestamp) > CACHE_DURATION) {
-    console.log("Préchargement du cache des images de joueurs...");
-    playerImagesCache = await listAllPlayerImages();
-    playerImagesCacheTimestamp = now;
-    console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
-
-    // Log pour déboguer les noms de fichiers d'images
-    console.log("Échantillon de noms d'images dans le cache:", 
-      playerImagesCache.slice(0, 10));
-
-    // Analyser les noms de fichiers pour identifier les ID de joueurs
-    const playerIds = new Set<string>();
-    playerImagesCache.forEach(filename => {
-      // Format attendu: playeridXXXX où XXXX est l'ID du joueur
-      if (filename.startsWith('playerid')) {
-        const playerId = filename.replace('playerid', '').split('_')[0];
-        if (playerId) {
-          playerIds.add(playerId);
-        }
+  try {
+    const now = Date.now();
+    // Recharger le cache si nécessaire
+    if (playerImagesCache.length === 0 || (now - playerImagesCacheTimestamp) > CACHE_DURATION) {
+      console.log("Préchargement du cache des images de joueurs...");
+      
+      // Lister tous les fichiers dans le bucket player-images
+      const { data, error } = await supabase
+        .storage
+        .from('player-images')
+        .list('');
+      
+      if (error) {
+        console.error("Erreur lors du chargement des images:", error);
+        return;
       }
-    });
-    
-    console.log(`IDs de joueurs identifiés depuis les noms de fichiers: ${playerIds.size}`);
-    console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
+      
+      // Extraire les noms de fichiers
+      playerImagesCache = data ? data.map(item => item.name) : [];
+      playerImagesCacheTimestamp = now;
+      
+      console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
+      console.log("Échantillon de noms d'images dans le cache:", playerImagesCache.slice(0, 10));
+      
+      // Analyser les noms de fichiers pour identifier les ID de joueurs
+      const playerIds = new Set<string>();
+      playerImagesCache.forEach(filename => {
+        // Format attendu: playeridXXXX où XXXX est l'ID du joueur
+        if (filename.startsWith('playerid')) {
+          const playerId = filename.replace('playerid', '').split('_')[0];
+          if (playerId) {
+            playerIds.add(playerId);
+          }
+        }
+      });
+      
+      console.log(`IDs de joueurs identifiés depuis les noms de fichiers: ${playerIds.size}`);
+      console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
+    }
+  } catch (error) {
+    console.error("Erreur lors du préchargement du cache des images:", error);
   }
 };
 
@@ -93,9 +109,17 @@ export const loadAllPlayersInBatches = async (
         
         // Normalize image URLs in players data
         const normalizedPlayers = batchPlayers.map(player => {
+          // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
+          const hasImageInCache = imageExistsForPlayer(player.id);
+          
+          // Si le joueur a déjà une URL d'image, la normaliser
+          // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
+          const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
+          
           // Normaliser l'URL de l'image
-          const normalizedImageUrl = normalizeImageUrl(player.image);
-          console.log(`Joueur ${player.name}, image originale: ${player.image}, normalisée: ${normalizedImageUrl}`);
+          const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
+          
+          console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
           
           return {
             ...player,

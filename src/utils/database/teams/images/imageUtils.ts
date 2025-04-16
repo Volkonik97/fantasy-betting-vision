@@ -32,7 +32,7 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
       console.log(`Vérification de l'URL Supabase: ${imageUrl}`);
       
       // Extraire le bucket et le chemin du fichier depuis l'URL
-      const storageUrlPattern = /storage\/v1\/object\/public\/([^/]+)\/([^?]+)/;
+      const storageUrlPattern = /storage\/v1\/object\/public\/([^/]+)\/(.+)/;
       const match = imageUrl.match(storageUrlPattern);
       
       if (match && match[1] && match[2]) {
@@ -75,15 +75,15 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
         }
         
         // Si ce n'est pas un nom de fichier direct, essayez de chercher des fichiers qui commencent par l'ID du joueur
-        const { data: listData, error: listError } = await supabase
+        const listResponse = await supabase
           .storage
           .from('player-images')
           .list('', {
             search: imageUrl + '_'
           });
           
-        if (!listError && listData && listData.length > 0) {
-          console.log(`Trouvé des fichiers pour l'ID ${imageUrl}:`, listData);
+        if (!listResponse.error && listResponse.data && listResponse.data.length > 0) {
+          console.log(`Trouvé des fichiers pour l'ID ${imageUrl}:`, listResponse.data);
           return true;
         }
       } catch (storageError) {
@@ -132,7 +132,7 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       // Vérifier si c'est un ID de joueur en cherchant des fichiers commençant par cet ID
       // Cette recherche utilise l'ID comme préfixe, comme on le voit dans l'image partagée
       if (cleanUrl.startsWith('playerid')) {
-        // Utiliser l'API list pour trouver tous les fichiers correspondant à l'ID du joueur
+        // Générer l'URL publique pour le bucket player-images
         const { data: publicUrlData } = supabase
           .storage
           .from('player-images')
@@ -212,7 +212,7 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
   
   try {
     while (hasMore) {
-      // Correction ici - nous utilisons await pour obtenir les données du résultat de la promesse
+      // Utiliser await directement sur l'appel à list() - ne pas attribuer la promesse à une variable
       const response = await supabase
         .storage
         .from('player-images')
@@ -222,7 +222,6 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
           sortBy: { column: 'name', order: 'asc' }
         });
       
-      // Extraire data et error de la réponse
       const { data, error } = response;
       
       if (error) {
@@ -236,7 +235,7 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
       }
       
       // Récupérer les noms de fichiers
-      const fileNames = data.filter(item => !item.id.endsWith('/')).map(item => item.name);
+      const fileNames = data.map(item => item.name);
       console.log(`Liste des images récupérées (${fileNames.length}):`, fileNames.slice(0, 5));
       allImages.push(...fileNames);
       
@@ -255,4 +254,3 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
     return [];
   }
 };
-

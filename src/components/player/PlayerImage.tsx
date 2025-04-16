@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { hasPlayerImage, normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlayerImageProps {
@@ -19,44 +19,53 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
 
   useEffect(() => {
     const processImageUrl = async () => {
+      setIsLoading(true);
+      setImageError(false);
+      
       // Si pas d'image mais un ID de joueur, essayer de construire l'URL à partir de l'ID
-      if (!image && playerId) {
+      if ((!image || image === "") && playerId) {
         console.log(`Tentative de construction d'URL pour le joueur ${name} avec ID: ${playerId}`);
-        // Utiliser directement l'ID du joueur pour chercher une image
-        const playerIdUrl = `playerid${playerId}`;
-        setImageUrl(normalizeImageUrl(playerIdUrl));
+        // Construire le nom de fichier avec le préfixe playerid
+        const playerIdFilename = `playerid${playerId}`;
+        
+        // Obtenir l'URL publique via supabase
+        try {
+          const normalizedUrl = normalizeImageUrl(playerIdFilename);
+          console.log(`Image construite pour ${name} (ID: ${playerId}): ${normalizedUrl}`);
+          setImageUrl(normalizedUrl);
+        } catch (err) {
+          console.error(`Erreur lors de la construction de l'URL pour ${name} (ID: ${playerId}):`, err);
+          setImageError(true);
+        }
+        
         setIsLoading(false);
         return;
       }
       
-      if (!image) {
-        console.log(`Pas d'image fournie pour le joueur: ${name} (ID: ${playerId || 'non défini'})`);
-        setImageError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Normaliser l'URL de l'image
-        const normalizedUrl = normalizeImageUrl(image);
-        console.log(`Image normalisée pour ${name} (ID: ${playerId || 'non défini'}): ${normalizedUrl}`);
-        
-        if (normalizedUrl) {
-          setImageUrl(normalizedUrl);
-        } else {
+      // Si on a une image, normaliser son URL
+      if (image) {
+        try {
+          const normalizedUrl = normalizeImageUrl(image);
+          console.log(`Image normalisée pour ${name} (ID: ${playerId || 'non défini'}): ${normalizedUrl}`);
+          
+          if (normalizedUrl) {
+            setImageUrl(normalizedUrl);
+          } else {
+            console.warn(`URL d'image nulle après normalisation pour ${name}`);
+            setImageError(true);
+          }
+        } catch (error) {
+          console.error(`Erreur lors du traitement de l'image pour ${name} (ID: ${playerId || 'non défini'}):`, error);
           setImageError(true);
         }
-      } catch (error) {
-        console.error(`Erreur lors du traitement de l'image pour ${name} (ID: ${playerId || 'non défini'}):`, error);
+      } else {
+        console.log(`Pas d'image fournie pour le joueur: ${name} (ID: ${playerId || 'non défini'})`);
         setImageError(true);
-      } finally {
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
     };
 
-    // Réinitialiser les états quand l'image change
-    setImageError(false);
-    setIsLoading(true);
     processImageUrl();
   }, [image, name, playerId]);
 
