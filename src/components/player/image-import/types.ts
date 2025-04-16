@@ -9,6 +9,23 @@ export interface PlayerImageUpload {
   error?: string | null;
 }
 
+export interface PlayerWithImage {
+  player: Player;
+  imageFile: File | null;
+  newImageUrl: string | null;
+  processed: boolean;
+  isUploading: boolean;
+  error: string | null;
+}
+
+export interface UploadStatus {
+  total: number;
+  processed: number;
+  success: number;
+  failed: number;
+  inProgress: boolean;
+}
+
 export const hasPlayerImage = (player: Player): boolean => {
   return Boolean(player.image && typeof player.image === 'string' && player.image.trim() !== '');
 };

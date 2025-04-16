@@ -1,94 +1,64 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { Download } from "lucide-react";
 import { Player } from "@/utils/models/types";
-import { toast } from "sonner";
-import { getTeamNameFromCache } from "@/utils/database/teams/teamCache";
+import { hasPlayerImage } from "../image-import/types";
 
 interface MissingImagesCsvExportProps {
   players: Player[];
-  isDisabled?: boolean;
+  isDisabled: boolean;
 }
 
-const MissingImagesCsvExport = ({ players, isDisabled = false }: MissingImagesCsvExportProps) => {
-  // Ensure all players have team names assigned
-  useEffect(() => {
-    players.forEach(player => {
-      if (!player.teamName && player.team) {
-        // Try to find team name from cache
-        const teamName = getTeamNameFromCache(player.team);
-        if (teamName) {
-          player.teamName = teamName;
-        }
-      }
-    });
-  }, [players]);
-
-  const handleExportCsv = () => {
-    try {
-      // Filter players without images
-      const playersWithoutImages = players.filter(player => !player.image);
-      
-      if (playersWithoutImages.length === 0) {
-        toast.info("Tous les joueurs ont des images associées.");
-        return;
-      }
-      
-      // Create CSV content
-      const headers = ["ID", "Nom", "Role", "Équipe"];
-      const csvRows = [
-        headers.join(","), // CSV header row
-        ...playersWithoutImages.map(player => {
-          // Get team name, prioritizing existing teamName, or fetching from cache as fallback
-          let teamName = player.teamName;
-          if (!teamName && player.team) {
-            teamName = getTeamNameFromCache(player.team) || player.team;
-          }
-          
-          return [
-            player.id,
-            `"${player.name}"`, // Wrapping with quotes to handle commas in names
-            player.role,
-            `"${teamName || 'Équipe inconnue'}"` // Always use team name, fallback to 'Équipe inconnue'
-          ].join(",");
-        })
-      ];
-      
-      const csvContent = csvRows.join("\n");
-      
-      // Create a downloadable blob
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      
-      // Create temporary link and trigger download
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `joueurs_sans_images_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success(`CSV exporté contenant ${playersWithoutImages.length} joueurs sans images`);
-    } catch (error) {
-      console.error("Error exporting CSV:", error);
-      toast.error("Erreur lors de l'exportation du CSV");
+const MissingImagesCsvExport = ({ players, isDisabled }: MissingImagesCsvExportProps) => {
+  // Fonction pour générer un fichier CSV des joueurs sans images
+  const exportMissingPlayersToCsv = () => {
+    const missingImagePlayers = players.filter(player => !hasPlayerImage(player));
+    
+    if (missingImagePlayers.length === 0) {
+      alert("Tous les joueurs ont déjà une image associée.");
+      return;
     }
+    
+    // Créer l'en-tête du CSV
+    let csvContent = "Nom,ID,Équipe,Rôle\n";
+    
+    // Ajouter chaque joueur au CSV
+    missingImagePlayers.forEach(player => {
+      const line = [
+        player.name.replace(/,/g, ' '),
+        player.id,
+        player.team || 'N/A',
+        player.role || 'N/A'
+      ].map(val => `"${val}"`).join(',');
+      
+      csvContent += line + "\n";
+    });
+    
+    // Créer un Blob et le télécharger
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'joueurs_sans_images.csv');
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <Button
-      onClick={handleExportCsv}
-      variant="default"
-      size="lg" 
+      variant="outline"
+      size="sm"
+      onClick={exportMissingPlayersToCsv}
       disabled={isDisabled}
-      className="w-full flex items-center justify-center gap-2"
+      className="flex items-center gap-2"
     >
-      <FileDown className="h-5 w-5" />
-      Télécharger la liste des joueurs sans images (CSV)
+      <Download className="h-4 w-4" />
+      Exporter CSV
     </Button>
   );
 };

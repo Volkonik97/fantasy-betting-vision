@@ -36,18 +36,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     
     // Essayer d'extraire le nom du fichier depuis l'URL de stockage Supabase
     if (cleanUrl.includes('supabase.co/storage') && cleanUrl.includes('player-images')) {
-      const regex = /player-images\/([^?]+)/;
-      const match = cleanUrl.match(regex);
-      
-      if (match && match[1]) {
-        try {
-          // Retourner le nom du fichier décodé sans l'URL complète
-          return decodeURIComponent(match[1]);
-        } catch (e) {
-          console.error("Erreur lors du décodage de l'URL:", e);
-          return cleanUrl;
-        }
-      }
+      // For player images from Supabase, just return the full URL as is
+      return cleanUrl;
     }
     
     return cleanUrl;
@@ -58,11 +48,6 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     ...player,
     image: normalizeImageUrl(player.image)
   };
-  
-  // Log the normalized image for debugging
-  if (playerWithNormalizedImage.image !== player.image) {
-    console.log(`Image normalisée pour ${player.name}: ${playerWithNormalizedImage.image} (original: ${player.image})`);
-  }
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">

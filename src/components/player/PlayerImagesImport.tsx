@@ -5,7 +5,17 @@ import { Button } from "@/components/ui/button";
 import { usePlayerImageUpload } from "./image-import/usePlayerImageUpload";
 import { hasPlayerImage } from "./image-import/types";
 
-const PlayerImagesImport = () => {
+interface PlayerImagesImportProps {
+  bucketStatus?: "loading" | "exists" | "error";
+  rlsEnabled?: boolean;
+  showRlsHelp?: () => void;
+}
+
+const PlayerImagesImport = ({
+  bucketStatus = "loading",
+  rlsEnabled = false,
+  showRlsHelp = () => {}
+}: PlayerImagesImportProps) => {
   const { 
     players, 
     isLoading, 

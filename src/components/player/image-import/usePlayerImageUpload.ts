@@ -31,10 +31,23 @@ export const usePlayerImageUpload = () => {
 
   const uploadPlayerImage = useCallback(async (playerUpload: PlayerImageUpload) => {
     if (!playerUpload.file) return;
+    
+    // Create a copy of the players array to avoid mutating state directly
+    const updatedPlayers = [...players];
+    const playerIndex = updatedPlayers.findIndex(p => p.player.id === playerUpload.player.id);
+    
+    if (playerIndex === -1) return;
+    
+    // Update the player's status to uploading
+    updatedPlayers[playerIndex] = {
+      ...updatedPlayers[playerIndex],
+      status: 'uploading',
+      error: null
+    };
+    
+    setPlayers(updatedPlayers);
 
     try {
-      playerUpload.status = 'uploading';
-      
       const fileName = `${playerUpload.player.id}_${Date.now()}.${playerUpload.file.name.split('.').pop()}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -61,17 +74,36 @@ export const usePlayerImageUpload = () => {
         throw updateError;
       }
 
-      playerUpload.status = 'success';
-      playerUpload.url = publicUrl;
+      // Update the player's status to success
+      const finalPlayers = [...updatedPlayers];
+      finalPlayers[playerIndex] = {
+        ...finalPlayers[playerIndex],
+        status: 'success',
+        url: publicUrl,
+        player: {
+          ...finalPlayers[playerIndex].player,
+          image: publicUrl
+        }
+      };
+      
+      setPlayers(finalPlayers);
       
       toast.success(`Image téléchargée pour ${playerUpload.player.name}`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
-      playerUpload.status = 'error';
-      playerUpload.error = error instanceof Error ? error.message : String(error);
+      
+      const errorPlayers = [...updatedPlayers];
+      errorPlayers[playerIndex] = {
+        ...errorPlayers[playerIndex],
+        status: 'error',
+        error: error instanceof Error ? error.message : String(error)
+      };
+      
+      setPlayers(errorPlayers);
+      
       toast.error(`Échec du téléchargement pour ${playerUpload.player.name}`);
     }
-  }, []);
+  }, [players]);
 
   const assignImageToPlayer = useCallback((file: File, playerIndex: number) => {
     const updatedPlayers = [...players];
