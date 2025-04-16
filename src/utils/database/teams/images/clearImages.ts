@@ -77,7 +77,7 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
 
 /**
  * Clear all player image references and optionally remove files from storage
- * @param deleteFromStorage Whether to also delete the files from storage
+ * @param deleteFromStorage Whether to also delete the files from storage (optional, defaults to false)
  * @returns Object with success status and count of cleared references
  */
 export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean = false): Promise<{ success: boolean, clearedCount: number }> => {
