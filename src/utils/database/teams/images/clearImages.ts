@@ -134,7 +134,7 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
             const batch = filesToDelete.slice(i, i + batchSize);
             console.log(`Traitement du lot ${Math.floor(i / batchSize) + 1}/${Math.ceil(filesToDelete.length / batchSize)}, ${batch.length} fichiers`);
             
-            // Fix: Use a single array parameter for remove function
+            // Fix: The remove method expects an array of file paths, not separate arguments
             const { error: deleteError } = await supabase
               .storage
               .from('player-images')
