@@ -9,7 +9,7 @@ interface RlsPermissionsResult {
 }
 
 /**
- * Check if the current user has proper RLS permissions for the Player Images bucket
+ * Check if the current user has proper RLS permissions for the player-images bucket
  * @returns Object with permission status
  */
 export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> => {
@@ -21,7 +21,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
   };
   
   // Check if the bucket exists first
-  const bucketName = 'Player Images'; // Using the correct bucket name with space
+  const bucketName = 'player-images';
   
   try {
     console.log(`Checking RLS permissions for bucket: "${bucketName}"`);

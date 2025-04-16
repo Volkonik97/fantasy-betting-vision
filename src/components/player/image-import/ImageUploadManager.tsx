@@ -19,7 +19,7 @@ class ImageUploadManager {
   private setUploadErrors: (errors: { count: number, lastError: string | null }) => void;
   private setPlayerImages: (images: PlayerWithImage[]) => void;
   private uploadTimeoutMs: number = 60000;
-  private bucketName: string = 'Player Images';
+  private bucketName: string = 'player-images';
 
   constructor(props: ImageUploadManagerProps) {
     this.setIsUploading = props.setIsUploading;

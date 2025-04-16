@@ -34,14 +34,14 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
               
               <div className="text-sm space-y-2">
                 <p>
-                  Pour résoudre ce problème, un administrateur doit créer le bucket "Player Images" dans le dashboard Supabase:
+                  Pour résoudre ce problème, un administrateur doit créer le bucket "player-images" dans le dashboard Supabase:
                 </p>
                 
                 <ol className="list-decimal pl-5 space-y-1">
                   <li>Connectez-vous au dashboard Supabase</li>
                   <li>Naviguer vers "Storage" dans le menu</li>
                   <li>Cliquer sur "New Bucket"</li>
-                  <li>Créer un bucket nommé exactement "Player Images" (avec l'espace)</li>
+                  <li>Créer un bucket nommé exactement "player-images"</li>
                   <li>Définir le bucket comme public</li>
                 </ol>
                 
@@ -73,14 +73,14 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
                 </p>
                 
                 <p>
-                  Pour résoudre ce problème, un administrateur doit modifier les politiques RLS du bucket "Player Images" 
+                  Pour résoudre ce problème, un administrateur doit modifier les politiques RLS du bucket "player-images" 
                   dans la console Supabase pour permettre les actions suivantes :
                 </p>
                 
                 <ol className="list-decimal pl-5 space-y-1">
                   <li>Ouvrir le dashboard Supabase</li>
                   <li>Aller dans "Storage"</li>
-                  <li>Sélectionner le bucket "Player Images"</li>
+                  <li>Sélectionner le bucket "player-images"</li>
                   <li>Cliquer sur l'onglet "Policies"</li>
                   <li>Créer des politiques pour:
                     <ul className="list-disc pl-5 mt-1">
@@ -95,8 +95,8 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
                 <div className="bg-amber-50 border border-amber-200 rounded p-3 my-3">
                   <p className="font-medium">Exemple de politique simple</p>
                   <p className="text-xs font-mono mt-1">
-                    Pour SELECT: <code>(bucket_id = 'Player Images')::</code> défini sur TRUE<br />
-                    Pour INSERT: <code>(bucket_id = 'Player Images')::</code> défini sur TRUE
+                    Pour SELECT: <code>(bucket_id = 'player-images')::</code> défini sur TRUE<br />
+                    Pour INSERT: <code>(bucket_id = 'player-images')::</code> défini sur TRUE
                   </p>
                 </div>
                 
