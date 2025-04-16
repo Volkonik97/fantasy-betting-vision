@@ -99,7 +99,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   };
   
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
+    <Card className="overflow-hidden h-full flex flex-col group">
       <div className="aspect-square w-full relative bg-gray-100 flex items-center justify-center">
         {displayUrl && !loadError ? (
           <img 
@@ -131,15 +131,15 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
         )}
 
         {hasExistingImage && (
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button 
                   variant="destructive" 
                   size="sm"
-                  className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 h-7 px-2"
+                  className="bg-red-500 hover:bg-red-600 h-7 px-2"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 mr-1" /> Supprimer
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
