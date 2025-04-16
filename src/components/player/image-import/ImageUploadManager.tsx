@@ -133,7 +133,7 @@ class ImageUploadManager {
       const playerId = playerData.player.id;
       const file = playerData.imageFile;
       
-      const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
+      const fileName = `playerid${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
       
       console.log(`Uploading file ${fileName} to ${this.bucketName} bucket for player ${playerId}`);
       

@@ -129,40 +129,42 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
     try {
       console.log(`Construction de l'URL publique pour: ${cleanUrl}`);
       
-      // Tenter de trouver si c'est un ID de joueur en cherchant des fichiers commençant par cet ID
-      const { data: listData, error: listError } = supabase
-        .storage
-        .from('player-images')
-        .list('', {
-          search: cleanUrl + '_'
-        });
-        
-      if (!listError && listData && listData.length > 0) {
-        // Prendre le fichier le plus récent (supposément avec la date la plus récente dans le nom)
-        const sortedFiles = listData
-          .filter(file => !file.id.endsWith('/'))
-          .sort((a, b) => b.name.localeCompare(a.name));
-          
-        if (sortedFiles.length > 0) {
-          const fileName = sortedFiles[0].name;
-          const { data } = supabase
-            .storage
-            .from('player-images')
-            .getPublicUrl(fileName);
+      // Vérifier si c'est un ID de joueur en cherchant des fichiers commençant par cet ID
+      // Cette recherche utilise l'ID comme préfixe, comme on le voit dans l'image partagée
+      if (cleanUrl.startsWith('playerid')) {
+        // Utiliser l'API list pour trouver tous les fichiers correspondant à l'ID du joueur
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('player-images')
+          .getPublicUrl(cleanUrl);
             
-          console.log(`URL publique générée pour l'ID ${cleanUrl}: ${data.publicUrl}`);
-          return data.publicUrl;
-        }
+        console.log(`URL publique directe générée pour l'ID ${cleanUrl}: ${publicUrlData.publicUrl}`);
+        return publicUrlData.publicUrl;
+      }
+      
+      // Construction spécifique pour les ID de joueurs commençant par "playerid"
+      if (!cleanUrl.startsWith('playerid') && cleanUrl) {
+        // Si ce n'est pas déjà un ID au format "playerid", le formater
+        const playerId = `playerid${cleanUrl}`;
+        
+        // Générer l'URL publique directement avec cet ID
+        const { data: publicUrlData } = supabase
+          .storage
+          .from('player-images')
+          .getPublicUrl(playerId);
+          
+        console.log(`URL publique générée pour l'ID transformé ${playerId}: ${publicUrlData.publicUrl}`);
+        return publicUrlData.publicUrl;
       }
       
       // Si ce n'est pas un ID trouvable, essayer comme nom de fichier direct
-      const { data } = supabase
+      const { data: directUrlData } = supabase
         .storage
         .from('player-images')
         .getPublicUrl(cleanUrl);
       
-      console.log(`URL publique générée: ${data.publicUrl}`);  
-      return data.publicUrl;
+      console.log(`URL publique générée directement: ${directUrlData.publicUrl}`);  
+      return directUrlData.publicUrl;
     } catch (error) {
       console.error("Erreur lors de la construction de l'URL:", error);
       return cleanUrl; // Retourner l'URL originale en cas d'erreur
@@ -210,7 +212,8 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
   
   try {
     while (hasMore) {
-      const { data, error } = await supabase
+      // Correction ici - nous utilisons await pour obtenir les données du résultat de la promesse
+      const response = await supabase
         .storage
         .from('player-images')
         .list('', {
@@ -218,6 +221,9 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
           offset: lastOffset,
           sortBy: { column: 'name', order: 'asc' }
         });
+      
+      // Extraire data et error de la réponse
+      const { data, error } = response;
       
       if (error) {
         console.error("Erreur lors de la récupération des images:", error);
@@ -231,6 +237,7 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
       
       // Récupérer les noms de fichiers
       const fileNames = data.filter(item => !item.id.endsWith('/')).map(item => item.name);
+      console.log(`Liste des images récupérées (${fileNames.length}):`, fileNames.slice(0, 5));
       allImages.push(...fileNames);
       
       lastOffset += data.length;
@@ -248,3 +255,4 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
     return [];
   }
 };
+

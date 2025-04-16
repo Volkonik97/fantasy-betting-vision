@@ -28,10 +28,12 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
     // Analyser les noms de fichiers pour identifier les ID de joueurs
     const playerIds = new Set<string>();
     playerImagesCache.forEach(filename => {
-      // Extraire les ID de joueurs des noms de fichiers (supposant format ID_TIMESTAMP.ext)
-      const idMatch = filename.match(/^([^_]+)_\d+\./);
-      if (idMatch && idMatch[1]) {
-        playerIds.add(idMatch[1]);
+      // Format attendu: playeridXXXX où XXXX est l'ID du joueur
+      if (filename.startsWith('playerid')) {
+        const playerId = filename.replace('playerid', '').split('_')[0];
+        if (playerId) {
+          playerIds.add(playerId);
+        }
       }
     });
     
@@ -46,9 +48,9 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
 export const imageExistsForPlayer = (playerId: string): boolean => {
   if (!playerId) return false;
   
+  // Vérifier si un fichier commence par 'playerid' + ID du joueur
   return playerImagesCache.some(filename => {
-    // Vérifier si le nom du fichier commence par l'ID du joueur
-    return filename.startsWith(playerId + '_');
+    return filename.startsWith(`playerid${playerId}`);
   });
 };
 
@@ -152,7 +154,7 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
       
       // Si le joueur a déjà une URL d'image, la normaliser
       // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
-      const imageToNormalize = player.image || (hasImageInCache ? player.id : null);
+      const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
       
       // Normaliser l'URL de l'image
       const normalizedImageUrl = normalizeImageUrl(imageToNormalize);

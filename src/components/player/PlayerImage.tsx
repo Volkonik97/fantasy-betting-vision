@@ -19,6 +19,16 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
 
   useEffect(() => {
     const processImageUrl = async () => {
+      // Si pas d'image mais un ID de joueur, essayer de construire l'URL à partir de l'ID
+      if (!image && playerId) {
+        console.log(`Tentative de construction d'URL pour le joueur ${name} avec ID: ${playerId}`);
+        // Utiliser directement l'ID du joueur pour chercher une image
+        const playerIdUrl = `playerid${playerId}`;
+        setImageUrl(normalizeImageUrl(playerIdUrl));
+        setIsLoading(false);
+        return;
+      }
+      
       if (!image) {
         console.log(`Pas d'image fournie pour le joueur: ${name} (ID: ${playerId || 'non défini'})`);
         setImageError(true);
