@@ -1,98 +1,64 @@
-
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
-import { getAllTeams } from "@/services/teamService";
 import { normalizeImageUrl, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { getAllTeams } from "@/services/teamService";
+import { imageExistsForPlayer as checkImageExistsForPlayer } from "@/utils/database/teams/images/imageUtils";
 
-// Cache pour les images des joueurs existantes dans le storage
+// Cache for player images in storage
 let playerImagesCache: string[] = [];
 let playerImagesCacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Charge toutes les images disponibles dans le cache
+ * Preload the player images cache
  */
 export const preloadPlayerImagesCache = async (): Promise<void> => {
   try {
     const now = Date.now();
-    // Recharger le cache si nécessaire
+    // Reload cache if needed
     if (playerImagesCache.length === 0 || (now - playerImagesCacheTimestamp) > CACHE_DURATION) {
-      console.log("Préchargement du cache des images de joueurs...");
+      console.log("Preloading player images cache...");
       
-      // Méthode 1: Utiliser listAllPlayerImages
-      const allImages = await listAllPlayerImages();
-      playerImagesCache = allImages;
+      const { data, error } = await supabase
+        .storage
+        .from('player-images')
+        .list('');
       
-      // Méthode 2 (fallback): Lister directement les fichiers
-      if (playerImagesCache.length === 0) {
-        console.log("Utilisation de la méthode de secours pour charger les images...");
-        const { data, error } = await supabase
-          .storage
-          .from('player-images')
-          .list('');
-        
-        if (error) {
-          console.error("Erreur lors du chargement des images:", error);
-          return;
-        }
-        
-        playerImagesCache = data ? data.map(item => item.name) : [];
+      if (error) {
+        console.error("Error loading player images:", error);
+        return;
       }
       
+      playerImagesCache = data ? data.map(item => item.name) : [];
       playerImagesCacheTimestamp = now;
       
-      console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
-      if (playerImagesCache.length > 0) {
-        console.log("Échantillon de noms d'images dans le cache:", playerImagesCache.slice(0, 10));
-      } else {
-        console.warn("Aucune image trouvée dans le bucket!");
-      }
-      
-      // Analyser les noms de fichiers pour identifier les ID de joueurs
-      const playerIds = new Set<string>();
-      playerImagesCache.forEach(filename => {
-        // Format attendu: playeridXXXX où XXXX est l'ID du joueur
-        if (filename.startsWith('playerid')) {
-          // Extraire l'ID en enlevant le préfixe "playerid" et en arrêtant au premier underscore
-          const filenameParts = filename.replace('playerid', '').split('_');
-          const playerId = filenameParts[0];
-          if (playerId) {
-            playerIds.add(playerId);
-          }
-        }
-      });
-      
-      console.log(`IDs de joueurs identifiés depuis les noms de fichiers: ${playerIds.size}`);
-      if (playerIds.size > 0) {
-        console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
-      }
+      console.log(`Player images cache updated: ${playerImagesCache.length} images`);
     }
   } catch (error) {
-    console.error("Erreur lors du préchargement du cache des images:", error);
+    console.error("Error preloading images cache:", error);
   }
 };
 
 /**
- * Vérifie si une image existe dans le cache pour un ID de joueur spécifique
+ * Check if an image exists for a player ID
  */
 export const imageExistsForPlayer = (playerId: string): boolean => {
   if (!playerId) return false;
   
-  // Vérifier si un fichier commence par 'playerid' + ID du joueur
-  const imageExists = playerImagesCache.some(filename => {
-    return filename.startsWith(`playerid${playerId}`);
-  });
-  
-  console.log(`Vérification d'image pour le joueur ${playerId}: ${imageExists ? 'Trouvée' : 'Non trouvée'}`);
-  return imageExists;
+  // Check if any file starts with 'playerid' + playerId
+  return playerImagesCache.some(filename => 
+    filename === `playerid${playerId}.webp` || 
+    filename === `playerid${playerId}.jpg` || 
+    filename === `playerid${playerId}.jpeg` || 
+    filename === `playerid${playerId}.png` ||
+    filename.startsWith(`playerid${playerId}.`)
+  );
 };
 
 /**
- * Load all players in batches to bypass the 1000 record limit in Supabase
- * @param progressCallback Optional callback to report loading progress
- * @returns Array of all players
+ * Load all players in batches
  */
 export const loadAllPlayersInBatches = async (
   progressCallback?: (loaded: number, total: number, batchNumber: number) => void
@@ -100,10 +66,10 @@ export const loadAllPlayersInBatches = async (
   try {
     console.log("Starting batch loading of players");
     
-    // Précharger le cache des images
+    // Preload images cache
     await preloadPlayerImagesCache();
     
-    // Get total count to determine number of batches
+    // Get total count
     const totalCount = await getPlayersCount();
     console.log(`Total player count: ${totalCount}`);
     
@@ -112,68 +78,72 @@ export const loadAllPlayersInBatches = async (
       return [];
     }
     
-    const batchSize = 500; // Smaller batch size for more frequent updates
+    const batchSize = 500;
     const batches = Math.ceil(totalCount / batchSize);
     console.log(`Will load ${batches} batches of ${batchSize} players`);
     
     let allPlayers: Player[] = [];
     let loadedCount = 0;
     
-    // Load each batch and combine results
+    // Process each batch
     for (let batch = 1; batch <= batches; batch++) {
       console.log(`Loading batch ${batch}/${batches}`);
       
       try {
         const batchPlayers = await getPlayers(batch, batchSize);
         
-        // Normalize image URLs in players data
+        // Process each player's image
         const normalizedPlayers = batchPlayers.map(player => {
-          // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
-          const hasImageInCache = imageExistsForPlayer(player.id);
+          // Check if player has an image in cache
+          const hasImage = imageExistsForPlayer(player.id);
           
-          // Si le joueur a déjà une URL d'image, la normaliser
-          // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
-          const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
+          // Use existing image URL or generate one from player ID if image exists in cache
+          let imageUrl = player.image;
           
-          // Normaliser l'URL de l'image
-          const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
-          
-          console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
+          if (!imageUrl && hasImage) {
+            // Create URL from player ID
+            const { data } = supabase
+              .storage
+              .from('player-images')
+              .getPublicUrl(`playerid${player.id}.webp`);
+            
+            imageUrl = data.publicUrl;
+          } else if (imageUrl) {
+            // Normalize existing URL
+            imageUrl = normalizeImageUrl(imageUrl);
+          }
           
           return {
             ...player,
-            image: normalizedImageUrl
+            image: imageUrl
           };
         });
-        
-        console.log(`Batch ${batch}: loaded ${normalizedPlayers.length} players`);
         
         allPlayers = [...allPlayers, ...normalizedPlayers];
         loadedCount += normalizedPlayers.length;
         
-        // Report progress if callback provided
+        // Report progress
         if (progressCallback) {
           progressCallback(loadedCount, totalCount, batch);
         }
         
-        // Small delay between batches to avoid overwhelming the database
+        // Small delay between batches
         if (batch < batches) {
           await new Promise(resolve => setTimeout(resolve, 300));
         }
       } catch (error) {
         console.error(`Error loading batch ${batch}:`, error);
-        toast.error(`Erreur lors du chargement du lot ${batch}`);
+        toast.error(`Error loading batch ${batch}`);
       }
     }
     
-    // Count players with images for debugging
     const playersWithImages = allPlayers.filter(p => p.image).length;
-    console.log(`Completed loading ${allPlayers.length} players with ${playersWithImages} having images`);
+    console.log(`Loaded ${allPlayers.length} players with ${playersWithImages} having images`);
     
     return allPlayers;
   } catch (error) {
     console.error("Error in loadAllPlayersInBatches:", error);
-    toast.error("Erreur lors du chargement des joueurs");
+    toast.error("Error loading players");
     throw error;
   }
 };

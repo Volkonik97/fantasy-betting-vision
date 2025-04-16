@@ -1,15 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-interface UploadResult {
-  success: boolean;
-  publicUrl?: string;
-  error?: string;
-}
 
 /**
- * Compresse une image avant de l'uploader pour réduire sa taille
+ * Compress an image before uploading to reduce its size
  */
 export const compressImage = async (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
@@ -21,7 +14,7 @@ export const compressImage = async (file: File): Promise<File> => {
       let width = img.width;
       let height = img.height;
       
-      // Calculer les nouvelles dimensions en maintenant le ratio
+      // Calculate new dimensions maintaining aspect ratio
       const maxDimension = 1200;
       if (width > height && width > maxDimension) {
         height = Math.round(height * (maxDimension / width));
@@ -36,20 +29,20 @@ export const compressImage = async (file: File): Promise<File> => {
       
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        reject(new Error("Impossible d'obtenir le contexte du canvas"));
+        reject(new Error("Could not get canvas context"));
         return;
       }
       
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Obtenir l'extension du fichier
+      // Get the file extension
       const fileType = file.type || 'image/jpeg';
-      const quality = 0.8; // 80% de qualité
+      const quality = 0.8; // 80% quality
       
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            reject(new Error("Échec de la création du blob depuis le canvas"));
+            reject(new Error("Failed to create blob from canvas"));
             return;
           }
           
@@ -59,7 +52,6 @@ export const compressImage = async (file: File): Promise<File> => {
             { type: fileType }
           );
           
-          console.log(`Image compressée de ${file.size} à ${compressedFile.size} octets`);
           resolve(compressedFile);
         },
         fileType,
@@ -68,103 +60,73 @@ export const compressImage = async (file: File): Promise<File> => {
     };
     
     img.onerror = () => {
-      reject(new Error("Échec du chargement de l'image pour la compression"));
+      reject(new Error("Failed to load image for compression"));
     };
   });
 };
 
 /**
- * Upload une image vers Supabase Storage
+ * Upload an image to Supabase Storage using a consistent naming format
  */
 export const uploadPlayerImage = async (
   playerId: string, 
-  file: File, 
-  timeout: number = 30000
-): Promise<UploadResult> => {
+  file: File
+): Promise<{ success: boolean; publicUrl?: string; error?: string }> => {
   try {
-    console.log(`Téléchargement d'image pour le joueur ${playerId}`);
-    
-    // Vérifier l'accès au bucket avant l'upload
-    const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
+    // Check bucket access before upload
+    const { error: bucketError } = await supabase
+      .storage
+      .from('player-images')
+      .list('', { limit: 1 });
     
     if (bucketError) {
-      console.error("Erreur d'accès au bucket:", bucketError);
       return { 
         success: false, 
-        error: `Erreur d'accès au bucket: ${bucketError.message}` 
+        error: `Bucket access error: ${bucketError.message}` 
       };
     }
     
-    // Comprimer l'image si elle est trop grande
+    // Compress the image if it's large
     let fileToUpload = file;
     if (file.size > 2 * 1024 * 1024) { // > 2MB
       try {
         fileToUpload = await compressImage(file);
       } catch (compressionError) {
-        console.warn("Échec de la compression, utilisation de l'original:", compressionError);
+        console.warn("Compression failed, using original file");
       }
     }
     
-    // Créer un nom de fichier unique
-    const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
+    // Use a consistent filename format with playerid prefix
+    // This ensures we can easily find images by player ID later
+    const fileExtension = file.name.split('.').pop() || 'webp';
+    const fileName = `playerid${playerId}.${fileExtension}`;
     
-    // Controller pour le timeout
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), timeout);
+    // Upload the file with upsert to replace any existing file
+    const { error: uploadError } = await supabase
+      .storage
+      .from('player-images')
+      .upload(fileName, fileToUpload, {
+        cacheControl: '3600',
+        upsert: true // Overwrite if exists
+      });
     
-    try {
-      // Lancer l'upload avec un timeout
-      try {
-        // Utiliser directement supabase storage pour le téléchargement
-        const { data, error } = await supabase.storage
-          .from('player-images')
-          .upload(fileName, fileToUpload, {
-            cacheControl: '3600',
-            upsert: true
-          });
-      
-        clearTimeout(timeoutId);
-        
-        if (error) {
-          console.error("Erreur lors du téléchargement:", error);
-          
-          let errorMsg = error.message;
-          if (errorMsg.includes("violates row-level security policy")) {
-            errorMsg = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
-          }
-          
-          return { success: false, error: errorMsg };
-        }
-        
-        if (!data) {
-          return { success: false, error: "Aucune donnée retournée par l'upload" };
-        }
-      } catch (error) {
-        clearTimeout(timeoutId);
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return { 
-            success: false,
-            error: `Délai d'attente dépassé lors du téléchargement. Vérifiez votre connexion internet.`
-          };
-        }
-        throw error;
-      }
-      
-      // Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage.from('player-images').getPublicUrl(fileName);
-      
+    if (uploadError) {
       return { 
-        success: true,
-        publicUrl
-      };
-    } catch (error) {
-      clearTimeout(timeoutId);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return { 
-        success: false,
-        error: errorMessage
+        success: false, 
+        error: uploadError.message 
       };
     }
+    
+    // Get the public URL
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('player-images')
+      .getPublicUrl(fileName);
+    
+    return { 
+      success: true,
+      publicUrl
+    };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { 
@@ -175,91 +137,23 @@ export const uploadPlayerImage = async (
 };
 
 /**
- * Met à jour la référence d'image d'un joueur dans la base de données
+ * Update a player's image reference in the database
  */
 export const updatePlayerImageReference = async (playerId: string, imageUrl: string): Promise<boolean> => {
   try {
-    console.log(`Mise à jour de la référence d'image pour le joueur ${playerId}: ${imageUrl}`);
-    
     const { error } = await supabase
       .from('players')
       .update({ image: imageUrl })
       .eq('playerid', playerId);
     
     if (error) {
-      console.error("Erreur lors de la mise à jour du joueur:", error);
+      console.error("Error updating player image reference:", error);
       return false;
     }
     
-    console.log(`Référence d'image mise à jour avec succès pour le joueur ${playerId}`);
     return true;
   } catch (error) {
-    console.error("Erreur lors de la mise à jour de la référence d'image:", error);
+    console.error("Error updating player image reference:", error);
     return false;
   }
-};
-
-/**
- * Upload multiple images en parallèle avec une limite de concurrence
- */
-export const uploadMultiplePlayerImages = async (
-  uploads: { playerId: string; file: File }[],
-  concurrencyLimit: number = 3
-): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
-  const results = {
-    success: 0,
-    failed: 0,
-    errors: {} as Record<string, string>
-  };
-  
-  // Trier les fichiers par taille pour uploader les plus petits en premier
-  const sortedUploads = [...uploads].sort((a, b) => a.file.size - b.file.size);
-  
-  // Fonction pour traiter un lot d'uploads
-  const processBatch = async (batch: typeof uploads) => {
-    const promises = batch.map(async ({ playerId, file }) => {
-      try {
-        const result = await uploadPlayerImage(playerId, file, 60000);
-        
-        if (!result.success) {
-          results.failed++;
-          results.errors[playerId] = result.error || "Erreur inconnue";
-          return { success: false, playerId };
-        }
-        
-        const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
-        
-        if (!updateSuccess) {
-          results.failed++;
-          results.errors[playerId] = "Échec de la mise à jour dans la base de données";
-          return { success: false, playerId };
-        }
-        
-        results.success++;
-        return { success: true, playerId, imageUrl: result.publicUrl };
-      } catch (error) {
-        results.failed++;
-        results.errors[playerId] = error instanceof Error ? error.message : String(error);
-        return { success: false, playerId };
-      }
-    });
-    
-    return Promise.all(promises);
-  };
-  
-  // Diviser en lots pour limiter la concurrence
-  for (let i = 0; i < sortedUploads.length; i += concurrencyLimit) {
-    const batch = sortedUploads.slice(i, i + concurrencyLimit);
-    await processBatch(batch);
-    
-    // Petite pause entre les lots pour éviter de surcharger le réseau
-    if (i + concurrencyLimit < sortedUploads.length) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-    
-    // Log de progression
-    console.log(`Progression de l'upload: ${Math.min(i + concurrencyLimit, sortedUploads.length)}/${sortedUploads.length}`);
-  }
-  
-  return results;
 };
