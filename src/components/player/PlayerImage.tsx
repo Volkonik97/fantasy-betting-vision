@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
@@ -56,7 +55,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           try {
             const { data, error } = await supabase
               .storage
-              .from('player-images')
+              .from('Player Images')
               .download(cleanImageUrl);
               
             if (error) {

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ class ImageUploadManager {
   private setUploadErrors: (errors: { count: number, lastError: string | null }) => void;
   private setPlayerImages: (images: PlayerWithImage[]) => void;
   private uploadTimeoutMs: number = 60000;
+  private bucketName: string = 'Player Images';
 
   constructor(props: ImageUploadManagerProps) {
     this.setIsUploading = props.setIsUploading;
@@ -134,9 +136,9 @@ class ImageUploadManager {
       
       const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
       
-      console.log(`Uploading file ${fileName} to Player Images bucket for player ${playerId}`);
+      console.log(`Uploading file ${fileName} to ${this.bucketName} bucket for player ${playerId}`);
       
-      const { error: bucketError } = await supabase.storage.from('Player Images').list('', { limit: 1 });
+      const { error: bucketError } = await supabase.storage.from(this.bucketName).list('', { limit: 1 });
       
       if (bucketError) {
         console.error("Error accessing bucket before upload:", bucketError);
@@ -164,7 +166,7 @@ class ImageUploadManager {
         });
         
         const uploadPromise = supabase.storage
-          .from('Player Images')
+          .from(this.bucketName)
           .upload(fileName, fileToUpload, {
             cacheControl: '3600',
             upsert: true
@@ -187,7 +189,7 @@ class ImageUploadManager {
         
         const { data: { publicUrl } } = supabase
           .storage
-          .from('Player Images')
+          .from(this.bucketName)
           .getPublicUrl(fileName);
         
         console.log(`Public URL for player ${playerId}: ${publicUrl}`);

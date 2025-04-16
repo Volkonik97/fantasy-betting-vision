@@ -37,31 +37,34 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
       }
     }
     
+    // For Supabase URLs, make sure we're using the correct bucket name
+    const bucketName = 'Player Images';
+    
     // Pour les URLs directes depuis storage.supabase.co ou dtddoxxazhmfudrvpszu.supabase.co
-    if ((imageUrl.includes('supabase.co/storage') || imageUrl.includes('storage.supabase.co')) && imageUrl.includes('player-images')) {
-      console.log(`URL de stockage direct depuis player-images: ${imageUrl}`);
+    if ((imageUrl.includes('supabase.co/storage') || imageUrl.includes('storage.supabase.co')) && imageUrl.includes(bucketName)) {
+      console.log(`URL de stockage direct depuis ${bucketName}: ${imageUrl}`);
       
       // Extraire le chemin du fichier depuis l'URL
       let filePath = '';
-      const regex = /player-images\/([^?]+)/;
+      const regex = new RegExp(`${bucketName}\\/([^?]+)`);
       const match = imageUrl.match(regex);
       
       if (match && match[1]) {
         filePath = decodeURIComponent(match[1]);
         console.log(`Chemin du fichier extrait: ${filePath}`);
         
-        // Vérifier si le fichier existe dans le bucket player-images
+        // Vérifier si le fichier existe dans le bucket
         const { data, error } = await supabase
           .storage
-          .from('player-images')
+          .from(bucketName)
           .download(filePath);
         
         if (error) {
-          console.error(`Fichier non trouvé dans le bucket player-images: ${error.message}`);
+          console.error(`Fichier non trouvé dans le bucket ${bucketName}: ${error.message}`);
           return false;
         }
         
-        console.log(`Fichier existe dans le bucket player-images`);
+        console.log(`Fichier existe dans le bucket ${bucketName}`);
         return true;
       } else {
         console.error(`Impossible d'extraire le chemin du fichier depuis l'URL: ${imageUrl}`);
@@ -69,22 +72,22 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
       }
     }
     
-    // Pour les noms de fichiers simples - vérifier directement dans le bucket player-images
+    // Pour les noms de fichiers simples - vérifier directement dans le bucket
     if (!imageUrl.includes('/') && !imageUrl.startsWith('http')) {
-      console.log(`Vérification du nom de fichier simple dans le bucket player-images: ${imageUrl}`);
+      console.log(`Vérification du nom de fichier simple dans le bucket ${bucketName}: ${imageUrl}`);
       
       try {
         const { data, error } = await supabase
           .storage
-          .from('player-images')
+          .from(bucketName)
           .download(imageUrl);
         
         if (error) {
-          console.error(`Fichier non trouvé dans le bucket player-images: ${error.message}`);
+          console.error(`Fichier non trouvé dans le bucket ${bucketName}: ${error.message}`);
           return false;
         }
         
-        console.log(`Fichier existe dans le bucket player-images`);
+        console.log(`Fichier existe dans le bucket ${bucketName}`);
         return true;
       } catch (storageError) {
         console.error(`Erreur lors de l'accès au stockage: ${storageError}`);

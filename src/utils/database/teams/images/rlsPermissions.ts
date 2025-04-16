@@ -18,8 +18,10 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     errorMessage: null
   };
   
+  // Check if the bucket exists first
+  const bucketName = 'Player Images'; // Using the correct bucket name with space
+  
   try {
-    // Check if the bucket exists first
     const { data: buckets, error: bucketError } = await supabase
       .storage
       .listBuckets();
@@ -30,10 +32,10 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
       return result;
     }
     
-    const bucketExists = buckets?.some(bucket => bucket.name === 'Player Images');
+    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     if (!bucketExists) {
-      console.error("Player Images bucket does not exist");
-      result.errorMessage = "Le bucket 'Player Images' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.";
+      console.error(`${bucketName} bucket does not exist`);
+      result.errorMessage = `Le bucket '${bucketName}' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.`;
       return result;
     }
     
@@ -41,7 +43,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     console.log("Checking RLS listing permissions");
     const { data: listData, error: listError } = await supabase
       .storage
-      .from('Player Images')
+      .from(bucketName)
       .list('', { limit: 1 });
     
     if (listError) {
@@ -59,7 +61,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     const { data: uploadData, error: uploadError } = await supabase
       .storage
-      .from('Player Images')
+      .from(bucketName)
       .upload(`test-rls-${Date.now()}.txt`, testFile, {
         cacheControl: '0',
         upsert: true
@@ -82,7 +84,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
         try {
           const { error: deleteError } = await supabase
             .storage
-            .from('Player Images')
+            .from(bucketName)
             .remove([uploadData.path]);
           
           if (deleteError) {
