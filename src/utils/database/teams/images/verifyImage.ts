@@ -12,93 +12,129 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
   try {
     console.log(`Verifying image URL: ${imageUrl}`);
     
-    // Pour les images dans le dossier public (lovable-uploads)
+    // For images in public folder (lovable-uploads)
     if (imageUrl.includes('/lovable-uploads/')) {
-      console.log(`Image dans lovable-uploads: ${imageUrl}`);
-      return true; // Ces images sont dans le dossier public
+      console.log(`Image in lovable-uploads: ${imageUrl}`);
+      return true; // These images are in the public folder
     }
     
-    // Pour les URLs externes absolues (non Supabase storage)
+    // For absolute external URLs (non-Supabase storage)
     if (imageUrl.startsWith('http') && !imageUrl.includes('supabase.co/storage')) {
-      console.log(`URL d'image externe: ${imageUrl}`);
+      console.log(`External image URL: ${imageUrl}`);
       
       try {
         const response = await fetch(imageUrl, { 
           method: 'HEAD',
-          // Ajouter un timeout pour éviter les longues attentes
+          // Add timeout to avoid long waits
           signal: AbortSignal.timeout(5000)
         });
         const exists = response.ok;
-        console.log(`Image externe accessible: ${exists}`);
+        console.log(`External image accessible: ${exists}`);
         return exists;
       } catch (error) {
-        console.error(`Erreur lors de la vérification de l'image externe: ${error}`);
+        console.error(`Error checking external image: ${error}`);
         return false;
       }
     }
     
-    // For Supabase URLs, make sure we're using the correct bucket name
-    const bucketName = 'Player Images';
-    
-    // Pour les URLs directes depuis storage.supabase.co ou dtddoxxazhmfudrvpszu.supabase.co
-    if ((imageUrl.includes('supabase.co/storage') || imageUrl.includes('storage.supabase.co')) && imageUrl.includes(bucketName)) {
-      console.log(`URL de stockage direct depuis ${bucketName}: ${imageUrl}`);
+    // For Supabase URLs
+    if (imageUrl.includes('supabase.co/storage')) {
+      console.log(`Supabase storage URL: ${imageUrl}`);
       
-      // Extraire le chemin du fichier depuis l'URL
-      let filePath = '';
-      const regex = new RegExp(`${bucketName}\\/([^?]+)`);
-      const match = imageUrl.match(regex);
+      // Extract the bucket name and path from the URL
+      const storagePathRegex = /storage\/v1\/object\/public\/([^\/]+)\/(.+?)(\?.*)?$/;
+      const matches = imageUrl.match(storagePathRegex);
       
-      if (match && match[1]) {
-        filePath = decodeURIComponent(match[1]);
-        console.log(`Chemin du fichier extrait: ${filePath}`);
+      if (matches && matches.length >= 3) {
+        const bucketName = matches[1];
+        const filePath = decodeURIComponent(matches[2]);
         
-        // Vérifier si le fichier existe dans le bucket
-        const { data, error } = await supabase
-          .storage
-          .from(bucketName)
-          .download(filePath);
+        console.log(`Extracted bucket: ${bucketName}, path: ${filePath}`);
         
-        if (error) {
-          console.error(`Fichier non trouvé dans le bucket ${bucketName}: ${error.message}`);
+        // Check if file exists in the bucket
+        try {
+          const { data, error } = await supabase
+            .storage
+            .from(bucketName)
+            .download(filePath);
+          
+          if (error) {
+            console.error(`File not found in bucket ${bucketName}: ${error.message}`);
+            return false;
+          }
+          
+          console.log(`File exists in bucket ${bucketName}`);
+          return true;
+        } catch (storageError) {
+          console.error(`Error accessing storage: ${storageError}`);
           return false;
         }
-        
-        console.log(`Fichier existe dans le bucket ${bucketName}`);
-        return true;
       } else {
-        console.error(`Impossible d'extraire le chemin du fichier depuis l'URL: ${imageUrl}`);
+        console.error(`Could not extract path from URL: ${imageUrl}`);
         return false;
       }
     }
     
-    // Pour les noms de fichiers simples - vérifier directement dans le bucket
+    // For simple filenames - check directly in the 'player-images' bucket
     if (!imageUrl.includes('/') && !imageUrl.startsWith('http')) {
-      console.log(`Vérification du nom de fichier simple dans le bucket ${bucketName}: ${imageUrl}`);
+      console.log(`Checking simple filename in player-images bucket: ${imageUrl}`);
       
       try {
         const { data, error } = await supabase
           .storage
-          .from(bucketName)
+          .from('player-images')
           .download(imageUrl);
         
         if (error) {
-          console.error(`Fichier non trouvé dans le bucket ${bucketName}: ${error.message}`);
+          console.error(`File not found in player-images bucket: ${error.message}`);
           return false;
         }
         
-        console.log(`Fichier existe dans le bucket ${bucketName}`);
+        console.log(`File exists in player-images bucket`);
         return true;
       } catch (storageError) {
-        console.error(`Erreur lors de l'accès au stockage: ${storageError}`);
+        console.error(`Error accessing storage: ${storageError}`);
         return false;
       }
     }
     
-    console.log(`Format d'image inconnu, impossible de vérifier: ${imageUrl}`);
+    // For playerid-based filenames
+    const playerIdMatch = imageUrl.match(/playerid([^\.]+)/);
+    if (playerIdMatch) {
+      console.log(`Checking playerid-based filename: ${imageUrl}`);
+      
+      // List all files in the bucket to find matching ones
+      const { data: files, error: listError } = await supabase
+        .storage
+        .from('player-images')
+        .list('');
+        
+      if (listError) {
+        console.error(`Error listing files: ${listError.message}`);
+        return false;
+      }
+      
+      if (files) {
+        // Check if any file matches the playerid pattern
+        const playerIdValue = playerIdMatch[1];
+        const matchingFile = files.find(file => 
+          file.name.includes(`playerid${playerIdValue}`)
+        );
+        
+        if (matchingFile) {
+          console.log(`Found matching file in bucket: ${matchingFile.name}`);
+          return true;
+        }
+      }
+      
+      console.log(`No matching playerid file found`);
+      return false;
+    }
+    
+    console.log(`Unknown image format, cannot verify: ${imageUrl}`);
     return false;
   } catch (error) {
-    console.error("Erreur lors de la vérification de l'image:", error);
+    console.error("Error verifying image:", error);
     return false;
   }
 };

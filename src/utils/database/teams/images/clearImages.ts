@@ -11,7 +11,7 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
   try {
     console.log(`Suppression de la référence d'image pour le joueur: ${playerId}`);
     
-    // D'abord, obtenir la référence d'image actuelle
+    // First, get the current image reference
     const { data: player, error: selectError } = await supabase
       .from('players')
       .select('image')
@@ -23,42 +23,75 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
       return false;
     }
     
-    // Si le joueur a une référence d'image, essayer de la supprimer du stockage
+    // If the player has an image reference, try to delete it from storage
     if (player?.image) {
       try {
-        // Extraire le nom de fichier de l'URL si c'est une URL de stockage Supabase
+        // Extract filename from URL if it's a Supabase storage URL
         let filename = null;
+        
+        // Check if it's a standard player-images URL
         if (player.image.includes('player-images')) {
           const matches = player.image.match(/player-images\/([^?]+)/);
           if (matches && matches[1]) {
             filename = decodeURIComponent(matches[1]);
-          } else if (!player.image.includes('/')) {
-            // Si c'est juste un nom de fichier sans séparateurs de chemin
-            filename = player.image;
           }
-          
-          if (filename) {
-            console.log(`Tentative de suppression du fichier du stockage: ${filename}`);
-            const { error: deleteError } = await supabase
-              .storage
-              .from('player-images')
-              .remove([filename]);
+        }
+        
+        // Check if it's just a filename without path separators
+        if (!filename && !player.image.includes('/')) {
+          filename = player.image;
+        }
+        
+        // Check if it's a playerid-based filename
+        if (!filename && player.image.includes(`playerid${playerId}`)) {
+          const matches = player.image.match(/playerid[^\/]+\.\w+/);
+          if (matches && matches[0]) {
+            filename = matches[0];
+          }
+        }
+        
+        // Look for any file that might start with playerid{playerId}
+        if (!filename) {
+          const { data: files } = await supabase
+            .storage
+            .from('player-images')
+            .list();
             
-            if (deleteError) {
-              console.warn(`Impossible de supprimer le fichier du stockage: ${deleteError.message}`);
-              // Continuer même si la suppression du fichier échoue
-            } else {
-              console.log(`Fichier supprimé du stockage avec succès: ${filename}`);
+          if (files) {
+            const playerFile = files.find(f => 
+              f.name.startsWith(`playerid${playerId}.`) || 
+              f.name.includes(`playerid${playerId}_`)
+            );
+            
+            if (playerFile) {
+              filename = playerFile.name;
             }
           }
         }
+        
+        if (filename) {
+          console.log(`Tentative de suppression du fichier du stockage: ${filename}`);
+          const { error: deleteError } = await supabase
+            .storage
+            .from('player-images')
+            .remove([filename]);
+          
+          if (deleteError) {
+            console.warn(`Impossible de supprimer le fichier du stockage: ${deleteError.message}`);
+            // Continue even if file deletion fails
+          } else {
+            console.log(`Fichier supprimé du stockage avec succès: ${filename}`);
+          }
+        } else {
+          console.warn(`Impossible d'extraire le nom de fichier de l'URL: ${player.image}`);
+        }
       } catch (storageError) {
         console.warn("Erreur lors de la suppression du fichier du stockage:", storageError);
-        // Continuer à mettre à jour la base de données même si la suppression du fichier échoue
+        // Continue updating database even if file deletion fails
       }
     }
     
-    // Mettre à jour l'enregistrement du joueur pour effacer la référence d'image
+    // Update player record to clear image reference
     const { error } = await supabase
       .from('players')
       .update({ image: null })
@@ -83,9 +116,18 @@ export const clearInvalidImageReference = async (playerId: string): Promise<bool
  */
 export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean = true): Promise<{ success: boolean, clearedCount: number }> => {
   try {
+    // Get all players with image references for reporting
+    const { data: playersWithImages, error: countError } = await supabase
+      .from('players')
+      .select('playerid, image')
+      .not('image', 'is', null);
+    
+    const playerCount = playersWithImages?.length || 0;
+    console.log(`Trouvé ${playerCount} joueurs avec des références d'images à supprimer`);
+    
     let filesToDelete: string[] = [];
     
-    // Premièrement, lister TOUS les fichiers dans le bucket
+    // First, list ALL files in the bucket
     if (deleteFromStorage) {
       try {
         const { data: allFiles, error: listError } = await supabase
@@ -96,9 +138,9 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
         if (!listError && allFiles && allFiles.length > 0) {
           console.log(`Trouvé ${allFiles.length} fichiers dans le bucket player-images`);
           
-          // Ajouter tous les fichiers à la liste à supprimer
+          // Add all files to deletion list
           filesToDelete = allFiles.map(file => file.name);
-          console.log(`Fichiers à supprimer: ${filesToDelete.join(', ')}`);
+          console.log(`Fichiers à supprimer: ${filesToDelete.length > 0 ? filesToDelete.slice(0, 5).join(', ') + '...' : 'aucun'}`);
         } else if (listError) {
           console.error("Erreur lors de la liste des fichiers du bucket:", listError);
           toast.error("Erreur lors de la liste des fichiers du bucket");
@@ -110,47 +152,38 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
       }
     }
     
-    // Maintenant, récupérer tous les joueurs avec des images pour mettre à jour DB
-    const { data: playersWithImages, error: selectError } = await supabase
-      .from('players')
-      .select('playerid, image')
-      .not('image', 'is', null);
-    
-    let playerCount = 0;
-    if (!selectError && playersWithImages && playersWithImages.length > 0) {
-      playerCount = playersWithImages.length;
-      console.log(`Trouvé ${playerCount} joueurs avec des références d'images à supprimer`);
-    }
-    
-    // Supprimer les fichiers du stockage par lots
+    // Delete files from storage in batches
     if (deleteFromStorage && filesToDelete.length > 0) {
       console.log(`Suppression de ${filesToDelete.length} fichiers du bucket player-images`);
       
-      // Supprimer les fichiers par lots pour éviter de dépasser les limites de l'API
+      // Delete files in batches to avoid API limits
       const batchSize = 100;
       for (let i = 0; i < filesToDelete.length; i += batchSize) {
         const batch = filesToDelete.slice(i, i + batchSize);
-        console.log(`Traitement du lot ${Math.floor(i / batchSize) + 1}/${Math.ceil(filesToDelete.length / batchSize)}, ${batch.length} fichiers`);
+        const batchNumber = Math.floor(i / batchSize) + 1;
+        const totalBatches = Math.ceil(filesToDelete.length / batchSize);
+        
+        console.log(`Traitement du lot ${batchNumber}/${totalBatches}, ${batch.length} fichiers`);
         
         try {
-          const { error: deleteError, data } = await supabase
+          const { error: deleteError } = await supabase
             .storage
             .from('player-images')
             .remove(batch);
           
           if (deleteError) {
-            console.error(`Erreur lors de la suppression du lot ${Math.floor(i / batchSize) + 1}:`, deleteError);
+            console.error(`Erreur lors de la suppression du lot ${batchNumber}:`, deleteError);
             toast.error(`Erreur lors de la suppression des fichiers: ${deleteError.message}`);
           } else {
-            console.log(`Lot ${Math.floor(i / batchSize) + 1} supprimé avec succès (${batch.length} fichiers)`, data);
+            console.log(`Lot ${batchNumber} supprimé avec succès (${batch.length} fichiers)`);
           }
         } catch (e) {
-          console.error(`Exception lors de la suppression du lot ${Math.floor(i / batchSize) + 1}:`, e);
+          console.error(`Exception lors de la suppression du lot ${batchNumber}:`, e);
         }
       }
     }
     
-    // Vérifier l'état du bucket après suppression
+    // Check bucket status after deletion
     try {
       const { data: remainingFiles, error: checkError } = await supabase
         .storage
@@ -167,7 +200,7 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
       console.error("Erreur lors de la vérification des fichiers restants:", e);
     }
     
-    // Effacer toutes les références d'images dans la base de données
+    // Clear all image references in database
     const { error: updateError } = await supabase
       .from('players')
       .update({ image: null })
@@ -178,9 +211,11 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
       return { success: false, clearedCount: 0 };
     }
     
+    const totalDeleted = Math.max(playerCount, filesToDelete.length);
+    
     return { 
       success: true, 
-      clearedCount: playerCount || filesToDelete.length || 0 
+      clearedCount: totalDeleted
     };
   } catch (error) {
     console.error("Erreur lors de la suppression de toutes les références d'images:", error);

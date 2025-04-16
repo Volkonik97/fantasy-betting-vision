@@ -23,6 +23,8 @@ const PlayerImagesContainer = () => {
   const [refreshComplete, setRefreshComplete] = useState(false);
   const [isProcessingClearAll, setIsProcessingClearAll] = useState(false);
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
+  const [totalImagesInBucket, setTotalImagesInBucket] = useState<number | null>(null);
+  const [totalPlayersWithImages, setTotalPlayersWithImages] = useState<number | null>(null);
   
   const [rlsStatus, setRlsStatus] = useState({
     checked: false,
@@ -32,20 +34,23 @@ const PlayerImagesContainer = () => {
     message: null as string | null
   });
 
-  // Check if the storage bucket exists
+  // Check if the storage bucket exists and get image stats
   const checkBucketAccess = async () => {
     try {
       setBucketStatus("loading");
       
-      // First try to list files directly in the bucket, as this is more reliable
+      // First try to list files directly in the bucket
       const { data: files, error: listError } = await supabase.storage
         .from('player-images')
         .list('');
         
       if (!listError) {
-        console.log("Successfully listed files in player-images bucket:", files);
+        console.log("Successfully listed files in player-images bucket:", files?.length || 0);
         setBucketStatus("exists");
         toast.success("Bucket d'images accessible");
+        
+        // Update total images count
+        setTotalImagesInBucket(files?.length || 0);
         
         // If we can list files, we have access to the bucket
         setRlsStatus(prev => ({
@@ -54,7 +59,18 @@ const PlayerImagesContainer = () => {
           canList: true
         }));
         
-        // Check upload permissions separately to be thorough
+        // Also get count of players with images in DB
+        const { count: playersWithImagesCount, error: countError } = await supabase
+          .from('players')
+          .select('playerid', { count: 'exact', head: true })
+          .not('image', 'is', null);
+          
+        if (!countError && playersWithImagesCount !== null) {
+          setTotalPlayersWithImages(playersWithImagesCount);
+          console.log(`Found ${playersWithImagesCount} players with image references in database`);
+        }
+        
+        // Check upload permissions separately
         try {
           const rlsCheckResult = await checkBucketRlsPermission();
           setRlsStatus({
@@ -152,11 +168,14 @@ const PlayerImagesContainer = () => {
       setIsRefreshingImages(true);
       setRefreshProgress(0);
       
-      // Appeler la fonction de rafraîchissement des images
+      // Call the image refresh function
       const result = await refreshImageReferences();
       
       setRefreshProgress(100);
       setRefreshComplete(true);
+      
+      // Update the counts after refresh
+      await checkBucketAccess();
       
       if (result.fixedCount > 0) {
         toast.success(`${result.fixedCount} références d'images invalides ont été supprimées`);
@@ -181,6 +200,9 @@ const PlayerImagesContainer = () => {
       if (result.success) {
         console.log(`Suppression réussie: ${result.clearedCount} références`);
         toast.success(`${result.clearedCount} références d'images ont été supprimées`);
+        
+        // Update the counts after deletion
+        await checkBucketAccess();
       } else {
         console.error("Échec de la suppression des références d'images");
         toast.error("Échec de la suppression des références d'images");
@@ -229,6 +251,8 @@ const PlayerImagesContainer = () => {
           refreshProgress={refreshProgress}
           refreshComplete={refreshComplete}
           isProcessingClearAll={isProcessingClearAll}
+          totalImagesInBucket={totalImagesInBucket}
+          totalPlayersWithImages={totalPlayersWithImages}
           handleRefreshImages={handleRefreshImages}
           setShowConfirmClearAll={setShowConfirmClearAll}
           setShowHelp={showBucketHelp}

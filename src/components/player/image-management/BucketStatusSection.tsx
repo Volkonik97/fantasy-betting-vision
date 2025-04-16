@@ -17,6 +17,8 @@ interface BucketStatusSectionProps {
   refreshProgress: number;
   refreshComplete: boolean;
   isProcessingClearAll: boolean;
+  totalImagesInBucket: number | null;
+  totalPlayersWithImages: number | null;
   handleRefreshImages: () => Promise<void>;
   setShowConfirmClearAll: (show: boolean) => void;
   setShowHelp: (show: boolean) => void;
@@ -31,6 +33,8 @@ const BucketStatusSection: React.FC<BucketStatusSectionProps> = ({
   refreshProgress,
   refreshComplete,
   isProcessingClearAll,
+  totalImagesInBucket,
+  totalPlayersWithImages,
   handleRefreshImages,
   setShowConfirmClearAll,
   setShowHelp,
@@ -49,6 +53,29 @@ const BucketStatusSection: React.FC<BucketStatusSectionProps> = ({
             onShowHelp={() => setShowRlsHelp(true)}
           />
           
+          {totalImagesInBucket !== null && (
+            <div className="mb-3 text-sm">
+              <p>
+                <span className="font-semibold">Fichiers dans le stockage:</span> {totalImagesInBucket} images
+                {totalPlayersWithImages !== null && (
+                  <span className="ml-4">
+                    <span className="font-semibold">Joueurs avec références d'images:</span> {totalPlayersWithImages}
+                  </span>
+                )}
+                {totalImagesInBucket > 0 && totalPlayersWithImages === 0 && (
+                  <span className="ml-2 text-amber-600">
+                    (Désynchronisation détectée: des fichiers existent sans références dans la base de données)
+                  </span>
+                )}
+                {totalImagesInBucket === 0 && totalPlayersWithImages && totalPlayersWithImages > 0 && (
+                  <span className="ml-2 text-amber-600">
+                    (Désynchronisation détectée: des références existent sans fichiers dans le stockage)
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+          
           <ImageRefreshControls
             isRefreshingImages={isRefreshingImages}
             refreshProgress={refreshProgress}
@@ -60,7 +87,7 @@ const BucketStatusSection: React.FC<BucketStatusSectionProps> = ({
           
           <p className="mb-4 text-xs text-gray-500">
             La vérification permet de détecter les références d'images invalides et les supprimer.
-            Le bouton rouge supprimera toutes les références d'images dans la base de données.
+            Le bouton rouge supprimera toutes les références d'images dans la base de données et les fichiers dans le stockage.
             {refreshProgress > 0 && !refreshComplete && (
               <span className="block mt-1 font-medium">
                 Traitement partiel effectué. Cliquez à nouveau pour continuer.

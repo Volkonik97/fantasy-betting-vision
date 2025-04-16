@@ -11,6 +11,18 @@ export const refreshImageReferences = async (): Promise<{ fixedCount: number, co
   try {
     console.log("Démarrage de la vérification des références d'images");
     
+    // Also check for files in storage that don't have a corresponding player reference
+    const { data: allFiles, error: listError } = await supabase
+      .storage
+      .from('player-images')
+      .list('');
+    
+    if (listError) {
+      console.error("Erreur lors de la liste des fichiers du bucket:", listError);
+    } else {
+      console.log(`Trouvé ${allFiles?.length || 0} fichiers dans le stockage`);
+    }
+    
     // Get all players with image references
     const { data: playersWithImages, error: selectError } = await supabase
       .from('players')
@@ -23,11 +35,17 @@ export const refreshImageReferences = async (): Promise<{ fixedCount: number, co
     }
     
     if (!playersWithImages || playersWithImages.length === 0) {
-      console.log("Aucun joueur avec des images trouvé");
+      console.log("Aucun joueur avec des images trouvé dans la base de données");
+      
+      // No players with images in DB, but we might have files in storage
+      if (allFiles && allFiles.length > 0) {
+        console.log(`Attention: ${allFiles.length} fichiers trouvés dans le stockage, mais aucune référence dans la base de données`);
+      }
+      
       return { fixedCount: 0, completed: true };
     }
     
-    console.log(`Vérification de ${playersWithImages.length} références d'images de joueurs`);
+    console.log(`Vérification de ${playersWithImages.length} références d'images de joueurs dans la base de données`);
     
     let fixedCount = 0;
     
