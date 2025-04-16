@@ -1,426 +1,86 @@
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Player } from "@/utils/models/types";
-import { getPlayers } from "@/utils/database/playersService";
-import { PlayerWithImage, hasPlayerImage } from "./image-import/types"; // Import the shared type and helper
+import React, { useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { usePlayerImageUpload } from "./image-import/usePlayerImageUpload";
+import { hasPlayerImage } from "./image-import/types";
 
-import DropZone from "./image-import/DropZone";
-import UploadErrorAlert from "./image-import/UploadErrorAlert";
-import UploadControls from "./image-import/UploadControls";
-import UnmatchedImagesList from "./image-import/UnmatchedImagesList";
-import PlayerImagesFilter from "./image-import/PlayerImagesFilter";
-import PlayerImagesList from "./image-import/PlayerImagesList";
-import RlsWarning from "./image-import/RlsWarning";
-import BucketStatusInfo from "./image-import/BucketStatusInfo";
-
-interface ImageUploadError {
-  count: number;
-  lastError: string | null;
-}
-
-interface PlayerImagesImportProps {
-  bucketStatus?: "loading" | "exists" | "error";
-  rlsEnabled?: boolean;
-  showRlsHelp?: () => void;
-}
-
-const PlayerImagesImport = ({ 
-  bucketStatus, 
-  rlsEnabled = false,
-  showRlsHelp = () => {}
-}: PlayerImagesImportProps) => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [playerImages, setPlayerImages] = useState<PlayerWithImage[]>([]);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [unmatched, setUnmatched] = useState<File[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [bucketExists, setBucketExists] = useState<boolean | null>(null);
-  const [uploadErrors, setUploadErrors] = useState<ImageUploadError>({
-    count: 0,
-    lastError: null
-  });
-  const [rlsStatus, setRlsStatus] = useState({
-    checked: false,
-    canUpload: false,
-    canList: false
-  });
+const PlayerImagesImport = () => {
+  const { 
+    players, 
+    isLoading, 
+    loadPlayers, 
+    uploadPlayerImage, 
+    assignImageToPlayer 
+  } = usePlayerImageUpload();
 
   useEffect(() => {
     loadPlayers();
-  }, []);
+  }, [loadPlayers]);
 
-  useEffect(() => {
-    if (bucketStatus === "exists") {
-      setBucketExists(true);
-    } else if (bucketStatus === "error") {
-      setBucketExists(false);
-    }
-  }, [bucketStatus]);
-
-  useEffect(() => {
-    setRlsStatus({
-      checked: rlsEnabled !== undefined, 
-      canUpload: !rlsEnabled,
-      canList: !rlsEnabled
-    });
-  }, [rlsEnabled]);
-
-  const loadPlayers = async () => {
-    setIsLoading(true);
-    try {
-      const firstBatch = await getPlayers(1, 1000);
-      let allPlayers = [...firstBatch];
-      console.log("Loaded first batch of players:", firstBatch.length);
-      
-      const count = await supabase
-        .from('players')
-        .select('playerid', { count: 'exact', head: true }) as { count: number; error: any };
-      
-      if (count.count > 1000) {
-        console.log(`Total player count is ${count.count}, loading additional batches...`);
-        
-        const totalBatches = Math.ceil(count.count / 1000);
-        
-        for (let page = 2; page <= totalBatches; page++) {
-          const nextBatch = await getPlayers(page, 1000);
-          console.log(`Loaded batch ${page} with ${nextBatch.length} players`);
-          allPlayers = [...allPlayers, ...nextBatch];
-        }
-      }
-      
-      setPlayers(allPlayers);
-      console.log("Total loaded players:", allPlayers.length);
-      
-      // Normalize image URLs to ensure consistent format before counting
-      allPlayers.forEach(player => {
-        if (player.image) {
-          // Ensure the image property is a clean string by removing any extra whitespace
-          player.image = player.image.trim();
-        }
-      });
-      
-      const playersWithImages = allPlayers.filter(player => hasPlayerImage(player));
-      console.log("Players with images:", playersWithImages.length);
-      if (playersWithImages.length > 0) {
-        console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
-      }
-      
-      // Initialize with all required properties of PlayerWithImage type
-      const initialPlayerImages: PlayerWithImage[] = allPlayers.map(player => ({
-        player,
-        imageFile: null,
-        newImageUrl: null,
-        processed: false,
-        isUploading: false,
-        error: null
-      }));
-      setPlayerImages(initialPlayerImages);
-    } catch (error) {
-      console.error("Error loading players:", error);
-      toast.error("Erreur lors du chargement des joueurs");
-    } finally {
-      setIsLoading(false);
+  const handleFileUpload = async () => {
+    const playersToUpload = players.filter(p => p.file);
+    for (const playerUpload of playersToUpload) {
+      await uploadPlayerImage(playerUpload);
     }
   };
-
-  const normalizeString = (str: string): string => {
-    return str
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "");
-  };
-
-  const findMatchingPlayer = (fileName: string): number => {
-    const normalizedFileName = normalizeString(fileName);
-    
-    for (let i = 0; i < playerImages.length; i++) {
-      const normalizedPlayerName = normalizeString(playerImages[i].player.name);
-      
-      if (normalizedPlayerName === normalizedFileName) {
-        return i;
-      }
-      
-      if (normalizedFileName.includes(normalizedPlayerName)) {
-        return i;
-      }
-      
-      if (normalizedPlayerName.includes(normalizedFileName)) {
-        return i;
-      }
-    }
-    
-    return -1;
-  };
-
-  const handleFileSelect = (files: File[]) => {
-    processFiles(files);
-  };
-
-  const processFiles = (files: File[]) => {
-    const updatedPlayerImages = [...playerImages];
-    const unmatchedFiles: File[] = [];
-    
-    files.forEach(file => {
-      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
-      const matchIndex = findMatchingPlayer(fileName);
-      
-      if (matchIndex !== -1) {
-        const objectUrl = URL.createObjectURL(file);
-        
-        updatedPlayerImages[matchIndex] = {
-          ...updatedPlayerImages[matchIndex],
-          imageFile: file,
-          newImageUrl: objectUrl
-        };
-      } else {
-        unmatchedFiles.push(file);
-      }
-    });
-    
-    setPlayerImages(updatedPlayerImages);
-    setUnmatched(unmatchedFiles);
-    
-    if (unmatchedFiles.length > 0) {
-      toast.warning(`${unmatchedFiles.length} images n'ont pas pu être associées à des joueurs`);
-    }
-  };
-
-  const manuallyAssignFile = (file: File, playerIndex: number) => {
-    const updatedPlayerImages = [...playerImages];
-    const objectUrl = URL.createObjectURL(file);
-    
-    updatedPlayerImages[playerIndex] = {
-      ...updatedPlayerImages[playerIndex],
-      imageFile: file,
-      newImageUrl: objectUrl
-    };
-    
-    setPlayerImages(updatedPlayerImages);
-    
-    setUnmatched(prev => prev.filter(f => f !== file));
-  };
-
-  const uploadImages = async () => {
-    if (!bucketExists) {
-      toast.error("Le bucket de stockage n'est pas accessible. Impossible de télécharger les images.");
-      return;
-    }
-    
-    setUploadErrors({ count: 0, lastError: null });
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    const playersToUpdate = playerImages.filter(p => p.imageFile !== null);
-    let processed = 0;
-    const total = playersToUpdate.length;
-    
-    if (total === 0) {
-      toast.info("Aucune image à télécharger");
-      setIsUploading(false);
-      return;
-    }
-    
-    const updatedPlayerImages = [...playerImages];
-    let successCount = 0;
-    let errorCount = 0;
-    let lastErrorMessage = null;
-    
-    for (const playerData of playersToUpdate) {
-      try {
-        if (!playerData.imageFile) continue;
-        
-        const playerId = playerData.player.id;
-        const file = playerData.imageFile;
-        
-        const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
-        
-        console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
-        
-        const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
-        
-        if (bucketError) {
-          console.error("Error accessing bucket before upload:", bucketError);
-          toast.error("Erreur d'accès au bucket de stockage. Vérifiez les permissions.");
-          errorCount++;
-          lastErrorMessage = bucketError.message;
-          continue;
-        }
-        
-        const uploadPromise = supabase.storage.from('player-images').upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-        const uploadTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Upload timeout")), 30000);
-        });
-        
-        const { data: uploadData, error: uploadError } = await Promise.race([
-          uploadPromise,
-          uploadTimeout.then(() => ({ data: null, error: new Error("Upload timeout") }))
-        ]) as any;
-        
-        if (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          
-          if (uploadError.message?.includes("violates row-level security policy")) {
-            lastErrorMessage = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
-          } else {
-            lastErrorMessage = uploadError.message;
-          }
-          
-          errorCount++;
-          continue;
-        }
-        
-        console.log("Upload successful, data:", uploadData);
-        
-        const { data: { publicUrl } } = supabase
-          .storage
-          .from('player-images')
-          .getPublicUrl(fileName);
-        
-        console.log(`Public URL for player ${playerId}: ${publicUrl}`);
-        
-        const { error: updateError } = await supabase
-          .from('players')
-          .update({ image: publicUrl })
-          .eq('playerid', playerId);
-        
-        if (updateError) {
-          console.error("Error updating player:", updateError);
-          toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
-          errorCount++;
-          lastErrorMessage = updateError.message;
-          continue;
-        }
-        
-        console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
-        
-        const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
-        if (playerIndex !== -1) {
-          updatedPlayerImages[playerIndex] = {
-            ...updatedPlayerImages[playerIndex],
-            processed: true,
-            player: {
-              ...updatedPlayerImages[playerIndex].player,
-              image: publicUrl
-            }
-          };
-        }
-
-        successCount++;
-        
-      } catch (error) {
-        console.error("Error processing player image:", error);
-        errorCount++;
-        lastErrorMessage = error instanceof Error ? error.message : String(error);
-      } finally {
-        processed++;
-        setUploadProgress(Math.round((processed / total) * 100));
-      }
-    }
-    
-    if (errorCount > 0) {
-      setUploadErrors({
-        count: errorCount,
-        lastError: lastErrorMessage
-      });
-    }
-    
-    setPlayerImages(updatedPlayerImages);
-    setIsUploading(false);
-    
-    if (successCount > 0) {
-      toast.success(`${successCount} images de joueurs téléchargées avec succès`);
-    }
-    
-    if (errorCount > 0) {
-      toast.error(`${errorCount} images n'ont pas pu être téléchargées`);
-    }
-  };
-
-  const getFilteredPlayers = () => {
-    switch (activeTab) {
-      case "no-image":
-        return playerImages.filter(p => !hasPlayerImage(p.player) && !p.newImageUrl);
-      case "with-image":
-        return playerImages.filter(p => hasPlayerImage(p.player) || p.newImageUrl);
-      case "pending":
-        return playerImages.filter(p => p.imageFile && !p.processed);
-      case "processed":
-        return playerImages.filter(p => p.processed);
-      case "all":
-      default:
-        return playerImages;
-    }
-  };
-
-  const filteredPlayers = getFilteredPlayers();
-  const disableUpload = bucketExists === false || 
-                        rlsEnabled || 
-                        playerImages.filter(p => p.imageFile !== null).length === 0;
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Importer des images de joueurs</CardTitle>
-        <CardDescription>
-          Téléchargez des images pour les joueurs. Les fichiers seront associés aux joueurs selon leur nom.
-        </CardDescription>
+      <CardContent className="space-y-4 p-6">
+        <h2 className="text-xl font-bold mb-4">Importer des images de joueurs</h2>
         
-        <BucketStatusInfo 
-          bucketExists={bucketExists} 
-          rlsStatus={rlsStatus}
-        />
-        
-        {rlsEnabled && (
-          <RlsWarning showRlsHelp={showRlsHelp} />
-        )}
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <DropZone 
-          onFileSelect={handleFileSelect}
-          disabled={bucketExists === false || rlsEnabled}
-        />
-
-        <UploadErrorAlert 
-          errorCount={uploadErrors.count} 
-          lastError={uploadErrors.lastError} 
-        />
-
-        <UploadControls 
-          onUpload={uploadImages}
-          disableUpload={disableUpload}
-          isUploading={isUploading}
-          uploadProgress={uploadProgress}
-        />
-
-        <UnmatchedImagesList 
-          unmatched={unmatched}
-          playerOptions={playerImages}
-          onAssign={manuallyAssignFile}
-        />
-
-        <Separator className="my-4" />
-
-        <PlayerImagesFilter
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          playerImages={playerImages}
-        >
-          <PlayerImagesList 
-            isLoading={isLoading} 
-            filteredPlayers={filteredPlayers} 
-          />
-        </PlayerImagesFilter>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {players.map((playerUpload, index) => (
+            <div 
+              key={playerUpload.player.id} 
+              className="border rounded-lg p-4 flex flex-col items-center"
+            >
+              <img 
+                src={playerUpload.url || playerUpload.player.image || '/placeholder.png'} 
+                alt={playerUpload.player.name}
+                className="w-32 h-32 object-cover rounded-full mb-4"
+              />
+              <h3 className="text-md font-semibold mb-2">{playerUpload.player.name}</h3>
+              
+              <div className="flex items-center space-x-2">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      assignImageToPlayer(file, index);
+                    }
+                  }}
+                  className="hidden"
+                  id={`file-${playerUpload.player.id}`}
+                />
+                <label 
+                  htmlFor={`file-${playerUpload.player.id}`} 
+                  className="cursor-pointer bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                >
+                  Choisir une image
+                </label>
+                
+                {playerUpload.file && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => uploadPlayerImage(playerUpload)}
+                    disabled={playerUpload.status === 'uploading'}
+                  >
+                    {playerUpload.status === 'uploading' ? 'En cours...' : 'Télécharger'}
+                  </Button>
+                )}
+              </div>
+              
+              {playerUpload.error && (
+                <p className="text-red-500 text-sm mt-2">{playerUpload.error}</p>
+              )}
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
