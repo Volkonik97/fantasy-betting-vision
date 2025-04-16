@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -132,6 +133,16 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
         wcpm: adaptedPlayers[0].wcpm,
         gold_share_percent: adaptedPlayers[0].gold_share_percent
       });
+      
+      // Log image URL information for debugging
+      const playersWithImages = adaptedPlayers.filter(p => p.image);
+      console.log(`Players with image URLs: ${playersWithImages.length}/${adaptedPlayers.length}`);
+      if (playersWithImages.length > 0) {
+        console.log("Sample image URLs:", playersWithImages.slice(0, 3).map(p => ({
+          name: p.name,
+          image: p.image
+        })));
+      }
     }
     
     // Only update cache if we fetched all players (no pagination) and we're not in a paginated request

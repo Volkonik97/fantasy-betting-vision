@@ -51,14 +51,19 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           console.log(`URL Supabase construite pour ${name}: ${publicUrl}`);
           setImageUrl(publicUrl);
 
-          // Vérifier si l'image existe
-          const { data, error } = await supabase
-            .storage
-            .from('player-images')
-            .download(image);
-            
-          if (error) {
-            console.error(`L'image n'existe pas dans le stockage pour ${name}: ${error.message}`);
+          // Vérifier si l'image existe dans le stockage
+          try {
+            const { data, error } = await supabase
+              .storage
+              .from('player-images')
+              .download(image);
+              
+            if (error) {
+              console.error(`L'image n'existe pas dans le stockage pour ${name}: ${error.message}`);
+              setImageError(true);
+            }
+          } catch (downloadError) {
+            console.error(`Erreur lors du téléchargement de l'image: ${downloadError}`);
             setImageError(true);
           }
         }

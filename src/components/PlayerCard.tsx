@@ -19,12 +19,47 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   
   console.log(`Rendu de la carte pour ${player.name} avec image: ${player.image || 'aucune'}`);
   
+  // Normaliser l'URL de l'image si elle commence par https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/
+  // Cela permet de s'assurer que les images sont correctement détectées après rechargement de la page
+  const normalizeImageUrl = (imageUrl: string | null | undefined): string | null | undefined => {
+    if (!imageUrl) return imageUrl;
+    
+    // Si c'est déjà un nom de fichier simple, le retourner tel quel
+    if (!imageUrl.includes('/') && !imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // Essayer d'extraire le nom du fichier depuis l'URL de stockage Supabase
+    if (imageUrl.includes('supabase.co/storage') && imageUrl.includes('player-images')) {
+      const regex = /player-images\/([^?]+)/;
+      const match = imageUrl.match(regex);
+      
+      if (match && match[1]) {
+        try {
+          // Retourner le nom du fichier décodé sans l'URL complète
+          return decodeURIComponent(match[1]);
+        } catch (e) {
+          console.error("Erreur lors du décodage de l'URL:", e);
+          return imageUrl;
+        }
+      }
+    }
+    
+    return imageUrl;
+  };
+  
+  // Créer une copie du joueur avec l'URL d'image normalisée
+  const playerWithNormalizedImage = {
+    ...player,
+    image: normalizeImageUrl(player.image)
+  };
+  
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
         <PlayerImage 
           name={player.name} 
-          image={player.image} 
+          image={playerWithNormalizedImage.image} 
           role={player.role} 
         />
       </div>
