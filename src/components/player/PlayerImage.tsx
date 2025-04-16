@@ -88,7 +88,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
 
   // Fonction pour construire l'URL Supabase storage
   const getSupabaseStorageUrl = (filename: string): string => {
-    return `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/${encodeURIComponent(filename)}`;
+    return `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/Player Images/${encodeURIComponent(filename)}`;
   };
 
   return (

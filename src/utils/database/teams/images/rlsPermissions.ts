@@ -8,7 +8,7 @@ interface RlsPermissionsResult {
 }
 
 /**
- * Check if the current user has proper RLS permissions for the player-images bucket
+ * Check if the current user has proper RLS permissions for the Player Images bucket
  * @returns Object with permission status
  */
 export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> => {
@@ -30,10 +30,10 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
       return result;
     }
     
-    const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
+    const bucketExists = buckets?.some(bucket => bucket.name === 'Player Images');
     if (!bucketExists) {
-      console.error("player-images bucket does not exist");
-      result.errorMessage = "Le bucket 'player-images' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.";
+      console.error("Player Images bucket does not exist");
+      result.errorMessage = "Le bucket 'Player Images' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.";
       return result;
     }
     
@@ -41,7 +41,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     console.log("Checking RLS listing permissions");
     const { data: listData, error: listError } = await supabase
       .storage
-      .from('player-images')
+      .from('Player Images')
       .list('', { limit: 1 });
     
     if (listError) {
@@ -59,7 +59,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     const { data: uploadData, error: uploadError } = await supabase
       .storage
-      .from('player-images')
+      .from('Player Images')
       .upload(`test-rls-${Date.now()}.txt`, testFile, {
         cacheControl: '0',
         upsert: true
@@ -82,7 +82,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
         try {
           const { error: deleteError } = await supabase
             .storage
-            .from('player-images')
+            .from('Player Images')
             .remove([uploadData.path]);
           
           if (deleteError) {

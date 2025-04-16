@@ -43,18 +43,18 @@ const PlayerImagesContainer = () => {
         return;
       }
       
-      const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
+      const bucketExists = buckets?.some(bucket => bucket.name === 'Player Images');
       
       if (!bucketExists) {
-        console.error("Bucket 'player-images' does not exist");
-        setErrorMessage("Le bucket 'player-images' n'existe pas dans votre projet Supabase.");
+        console.error("Bucket 'Player Images' does not exist");
+        setErrorMessage("Le bucket 'Player Images' n'existe pas dans votre projet Supabase.");
         setBucketStatus("error");
         return;
       }
       
       // Now try to list files to verify access
       const { data: files, error: listError } = await supabase.storage
-        .from('player-images')
+        .from('Player Images')
         .list('');
         
       if (listError) {
@@ -140,7 +140,7 @@ const PlayerImagesContainer = () => {
       <div className="grid gap-6 mt-6">
         {bucketStatus === "error" && (
           <BucketCreator 
-            bucketId="player-images" 
+            bucketId="Player Images" 
             onBucketCreated={handleBucketCreated} 
           />
         )}

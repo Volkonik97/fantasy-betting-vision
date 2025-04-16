@@ -1,4 +1,3 @@
-
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,7 +17,7 @@ class ImageUploadManager {
   private setUploadProgress: (progress: number) => void;
   private setUploadErrors: (errors: { count: number, lastError: string | null }) => void;
   private setPlayerImages: (images: PlayerWithImage[]) => void;
-  private uploadTimeoutMs: number = 60000; // increased timeout from 30s to 60s
+  private uploadTimeoutMs: number = 60000;
 
   constructor(props: ImageUploadManagerProps) {
     this.setIsUploading = props.setIsUploading;
@@ -63,7 +62,6 @@ class ImageUploadManager {
     let errorCount = 0;
     let lastErrorMessage = null;
     
-    // Process images in batches of 3 to avoid overwhelming the connection
     const batchSize = 3;
     const batches = Math.ceil(playersToUpdate.length / batchSize);
     
@@ -94,7 +92,6 @@ class ImageUploadManager {
         this.setUploadProgress(this.uploadProgress);
       });
       
-      // Small delay between batches to avoid overwhelming the connection
       if (batch < batches - 1) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
@@ -137,10 +134,9 @@ class ImageUploadManager {
       
       const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
       
-      console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
+      console.log(`Uploading file ${fileName} to Player Images bucket for player ${playerId}`);
       
-      // Check bucket access before upload
-      const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
+      const { error: bucketError } = await supabase.storage.from('Player Images').list('', { limit: 1 });
       
       if (bucketError) {
         console.error("Error accessing bucket before upload:", bucketError);
@@ -151,9 +147,8 @@ class ImageUploadManager {
         };
       }
       
-      // Prepare the file for upload - compress if it's too large
       let fileToUpload = file;
-      if (file.size > 2 * 1024 * 1024) { // > 2MB
+      if (file.size > 2 * 1024 * 1024) {
         try {
           fileToUpload = await this.compressImage(file);
         } catch (compressionError) {
@@ -161,24 +156,20 @@ class ImageUploadManager {
         }
       }
       
-      // Upload with timeout handling without using AbortController.signal directly
       try {
-        // Set up a timeout promise
         const timeoutPromise = new Promise<{ data: null, error: Error }>((_, reject) => {
           setTimeout(() => {
             reject(new Error("Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet."));
           }, this.uploadTimeoutMs);
         });
         
-        // Start the upload
         const uploadPromise = supabase.storage
-          .from('player-images')
+          .from('Player Images')
           .upload(fileName, fileToUpload, {
             cacheControl: '3600',
             upsert: true
           });
           
-        // Race between upload and timeout
         const result = await Promise.race([uploadPromise, timeoutPromise]);
         
         if (result.error) {
@@ -196,7 +187,7 @@ class ImageUploadManager {
         
         const { data: { publicUrl } } = supabase
           .storage
-          .from('player-images')
+          .from('Player Images')
           .getPublicUrl(fileName);
         
         console.log(`Public URL for player ${playerId}: ${publicUrl}`);
@@ -247,7 +238,6 @@ class ImageUploadManager {
     }
   }
   
-  // Helper method to compress images before uploading
   private async compressImage(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -258,7 +248,6 @@ class ImageUploadManager {
         let width = img.width;
         let height = img.height;
         
-        // Calculate new dimensions while maintaining aspect ratio
         const maxDimension = 1200;
         if (width > height && width > maxDimension) {
           height = Math.round(height * (maxDimension / width));
@@ -279,9 +268,8 @@ class ImageUploadManager {
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Get file extension
         const fileType = file.type || 'image/jpeg';
-        const quality = 0.8; // 80% quality
+        const quality = 0.8;
         
         canvas.toBlob(
           (blob) => {
