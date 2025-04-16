@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +19,12 @@ const UnmatchedImageCard: React.FC<UnmatchedImageCardProps> = ({
 }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const imageUrl = URL.createObjectURL(file);
+
+  // Trier les options de joueurs par ordre alphabétique
+  const sortedPlayerOptions = useMemo(() => 
+    [...playerOptions].sort((a, b) => a.player.name.localeCompare(b.player.name)), 
+    [playerOptions]
+  );
 
   const handleAssign = () => {
     const playerIndex = playerOptions.findIndex(p => p.player.id === selectedPlayerId);
@@ -54,7 +59,7 @@ const UnmatchedImageCard: React.FC<UnmatchedImageCardProps> = ({
               <SelectValue placeholder="Associer à un joueur" />
             </SelectTrigger>
             <SelectContent>
-              {playerOptions.map((option) => (
+              {sortedPlayerOptions.map((option) => (
                 <SelectItem key={option.player.id} value={option.player.id}>
                   {option.player.name}
                 </SelectItem>
