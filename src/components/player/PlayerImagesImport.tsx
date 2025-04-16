@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -74,18 +73,36 @@ const PlayerImagesImport = ({
   const loadPlayers = async () => {
     setIsLoading(true);
     try {
-      const playersList = await getPlayers();
-      setPlayers(playersList);
-      console.log("Loaded players:", playersList.length);
+      const firstBatch = await getPlayers(1, 1000);
+      let allPlayers = [...firstBatch];
+      console.log("Loaded first batch of players:", firstBatch.length);
       
-      const playersWithImages = playersList.filter(player => player.image);
+      const count = await supabase
+        .from('players')
+        .select('playerid', { count: 'exact', head: true }) as { count: number; error: any };
+      
+      if (count.count > 1000) {
+        console.log(`Total player count is ${count.count}, loading additional batches...`);
+        
+        const totalBatches = Math.ceil(count.count / 1000);
+        
+        for (let page = 2; page <= totalBatches; page++) {
+          const nextBatch = await getPlayers(page, 1000);
+          console.log(`Loaded batch ${page} with ${nextBatch.length} players`);
+          allPlayers = [...allPlayers, ...nextBatch];
+        }
+      }
+      
+      setPlayers(allPlayers);
+      console.log("Total loaded players:", allPlayers.length);
+      
+      const playersWithImages = allPlayers.filter(player => player.image);
       console.log("Players with images:", playersWithImages.length);
       if (playersWithImages.length > 0) {
         console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
       }
       
-      // Ensure we're creating objects that match the PlayerWithImage type
-      const initialPlayerImages: PlayerWithImage[] = playersList.map(player => ({
+      const initialPlayerImages: PlayerWithImage[] = allPlayers.map(player => ({
         player,
         imageFile: null,
         newImageUrl: null,

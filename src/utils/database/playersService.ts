@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -59,19 +58,13 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
   try {
     console.log(`Fetching players (page: ${page}, pageSize: ${pageSize})`);
     
-    // Try to use the cache first
-    const cachedPlayers = getLoadedPlayers();
-    if (cachedPlayers && cachedPlayers.length > 0) {
-      console.log(`Retrieved ${cachedPlayers.length} players from cache`);
-      
-      // If pagination is requested, slice the cached data accordingly
-      if (page !== undefined && pageSize !== undefined) {
-        const start = (page - 1) * pageSize;
-        const end = start + pageSize;
-        return cachedPlayers.slice(start, end);
+    // Try to use the cache first if we're not doing pagination
+    if (!page && !pageSize) {
+      const cachedPlayers = getLoadedPlayers();
+      if (cachedPlayers && cachedPlayers.length > 0) {
+        console.log(`Retrieved ${cachedPlayers.length} players from cache`);
+        return cachedPlayers;
       }
-      
-      return cachedPlayers;
     }
     
     // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
@@ -115,8 +108,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       const adaptedPlayers = fallbackData.map(player => adaptPlayerFromDatabase(player));
       console.log(`Retrieved ${adaptedPlayers.length} players from fallback`);
       
-      // Only update cache if we fetched all players (no pagination)
-      if (page === undefined || pageSize === undefined) {
+      // Only update cache if we fetched all players (no pagination) and we're not in a paginated request
+      if (!page && !pageSize) {
         setLoadedPlayers(adaptedPlayers);
       }
       
@@ -141,8 +134,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       });
     }
     
-    // Only update cache if we fetched all players (no pagination)
-    if (page === undefined || pageSize === undefined) {
+    // Only update cache if we fetched all players (no pagination) and we're not in a paginated request
+    if (!page && !pageSize) {
       setLoadedPlayers(adaptedPlayers);
     }
     

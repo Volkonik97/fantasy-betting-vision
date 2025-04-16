@@ -37,6 +37,14 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
     checkImageUrl();
   }, [image, name]);
 
+  // Prepare the proper Supabase storage URL if needed
+  let imageUrl = image;
+  if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.includes('/')) {
+    // If it's just a filename, assume it's in the player-images bucket
+    imageUrl = `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/${imageUrl}`;
+    console.log(`Using constructed Supabase URL for ${name}: ${imageUrl}`);
+  }
+
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       {isLoading && (
@@ -45,17 +53,17 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         </div>
       )}
       
-      {image && !imageError ? (
+      {imageUrl && !imageError ? (
         <img
-          src={image}
+          src={imageUrl}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onLoad={() => {
-            console.log(`Image for player ${name} loaded successfully:`, image);
+            console.log(`Image for player ${name} loaded successfully:`, imageUrl);
             setIsLoading(false);
           }}
           onError={(e) => {
-            console.error(`Image load error for player ${name}:`, image);
+            console.error(`Image load error for player ${name}:`, imageUrl);
             setImageError(true);
             setIsLoading(false);
             const target = e.target as HTMLImageElement;
