@@ -27,7 +27,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData }) => {
   
   const getStatusText = () => {
     if (error) return <Badge variant="destructive">Erreur</Badge>;
-    if (processed) return <Badge variant="success">Téléchargé</Badge>;
+    if (processed) return <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">Téléchargé</Badge>;
     if (isUploading) return <Badge variant="secondary">En cours...</Badge>;
     if (hasNewImage) return <Badge variant="outline">Prêt à télécharger</Badge>;
     if (hasExistingImage) return <Badge variant="outline">Image existante</Badge>;
@@ -62,8 +62,8 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData }) => {
           <h3 className="font-medium truncate" title={player.name}>
             {player.name}
           </h3>
-          <p className="text-sm text-gray-500 truncate" title={player.position}>
-            {player.position}
+          <p className="text-sm text-gray-500 truncate" title={player.role}>
+            {player.role}
           </p>
         </div>
         
