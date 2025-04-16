@@ -25,6 +25,12 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       console.log("Gold share stats from view:", {
         gold_share_percent: summaryData.gold_share_percent
       });
+      
+      // Log image URL if present
+      if (summaryData.image) {
+        console.log("Player image URL:", summaryData.image);
+      }
+      
       return adaptPlayerFromDatabase(summaryData);
     }
     
@@ -48,6 +54,12 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     }
     
     console.log("Found player in players table:", data);
+    
+    // Log image URL if present
+    if (data.image) {
+      console.log("Player image URL from players table:", data.image);
+    }
+    
     return adaptPlayerFromDatabase(data);
   } catch (error) {
     console.error("Error in getPlayerById:", error);
@@ -165,7 +177,7 @@ export const getPlayersCount = async (): Promise<number> => {
   try {
     const { count, error } = await supabase
       .from('players')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true }) as { count: number; error: any };
 
     if (error) {
       console.error("Error fetching players count:", error);
