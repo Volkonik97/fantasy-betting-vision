@@ -73,30 +73,39 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
                 </p>
                 
                 <p>
-                  Pour résoudre ce problème, vous devez modifier les politiques RLS du bucket "player-images" 
-                  dans la console Supabase pour permettre les actions suivantes :
+                  Pour résoudre ce problème, vous devez ajouter des politiques RLS au bucket "player-images" 
+                  dans la console Supabase pour permettre les actions suivantes:
                 </p>
                 
                 <ol className="list-decimal pl-5 space-y-1">
                   <li>Ouvrir le dashboard Supabase</li>
-                  <li>Aller dans "Storage"</li>
+                  <li>Aller dans "Storage" puis "Buckets"</li>
                   <li>Sélectionner le bucket "player-images"</li>
                   <li>Cliquer sur l'onglet "Policies"</li>
-                  <li>Créer des politiques pour:
-                    <ul className="list-disc pl-5 mt-1">
-                      <li>INSERT - Pour télécharger des images</li>
-                      <li>SELECT - Pour lister les images</li>
-                      <li>UPDATE - Pour mettre à jour les images (optionnel)</li>
-                      <li>DELETE - Pour supprimer les images (optionnel)</li>
-                    </ul>
+                  <li>Pour chaque opération (INSERT, SELECT, UPDATE, DELETE):
+                    <ol className="list-decimal pl-5 mt-1">
+                      <li>Cliquer sur "Add Policy"</li>
+                      <li>Sélectionner l'opération (INSERT, SELECT, etc.)</li>
+                      <li>Donner un nom à la politique (ex: "Allow uploads to player-images")</li>
+                      <li>Dans la définition de la politique, saisir simplement: <code className="bg-gray-100 px-1 rounded">bucket_id = 'player-images'</code></li>
+                      <li>Cliquer sur "Review" puis "Save Policy"</li>
+                    </ol>
                   </li>
                 </ol>
                 
                 <div className="bg-amber-50 border border-amber-200 rounded p-3 my-3">
-                  <p className="font-medium">Exemple de politique simple</p>
-                  <p className="text-xs font-mono mt-1">
-                    Pour SELECT: <code>(bucket_id = 'player-images')::</code> défini sur TRUE<br />
-                    Pour INSERT: <code>(bucket_id = 'player-images')::</code> défini sur TRUE
+                  <p className="font-medium">Politiques recommandées</p>
+                  <p className="text-xs mt-1">
+                    Pour un accès complet (sans authentification requise), utilisez simplement:
+                  </p>
+                  <p className="text-xs font-mono mt-1 bg-gray-100 p-1 rounded">
+                    Pour toutes les opérations: <code>bucket_id = 'player-images'</code>
+                  </p>
+                  <p className="text-xs mt-2">
+                    Pour limiter l'accès aux utilisateurs authentifiés:
+                  </p>
+                  <p className="text-xs font-mono mt-1 bg-gray-100 p-1 rounded">
+                    <code>bucket_id = 'player-images' AND auth.role() = 'authenticated'</code>
                   </p>
                 </div>
                 
