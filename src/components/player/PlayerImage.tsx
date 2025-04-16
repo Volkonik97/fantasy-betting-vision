@@ -4,6 +4,8 @@ import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 import { verifyImageExists } from "@/utils/database/teams/images/verifyImage";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerImageProps {
   name: string;
@@ -19,58 +21,64 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
   useEffect(() => {
     const processImageUrl = async () => {
       if (!image) {
-        console.log(`No image provided for player: ${name}`);
+        console.log(`Pas d'image fournie pour le joueur: ${name}`);
         setImageError(true);
         setIsLoading(false);
         return;
       }
 
-      console.log(`Processing image for ${name}: ${image}`);
+      console.log(`Traitement de l'image pour ${name}: ${image}`);
 
-      // If it's a full URL, use it directly
+      // Si c'est une URL complète, l'utiliser directement
       if (image.startsWith('http')) {
         setImageUrl(image);
-      }
-      // If it's a relative path to public folder, prepend with /
-      else if (image.startsWith('lovable-uploads/')) {
-        setImageUrl(`/${image}`);
-      }
-      // If it's just a filename, assume it's in the player-images bucket
-      else if (!image.includes('/')) {
-        // Construct the Supabase storage URL
-        const publicUrl = supabaseStorageUrl(image);
-        console.log(`Constructed Supabase URL: ${publicUrl}`);
-        setImageUrl(publicUrl);
-
-        // Verify the image exists
-        const exists = await verifyImageExists(publicUrl);
+        // Vérifier si l'image est accessible
+        const exists = await verifyImageExists(image);
         if (!exists) {
-          console.warn(`Image does not exist in storage: ${publicUrl}`);
+          console.warn(`L'image n'existe pas: ${image}`);
           setImageError(true);
         }
       }
-      // For any other format, use as is and hope for the best
+      // Si c'est un chemin relatif vers le dossier public, ajouter un / au début
+      else if (image.startsWith('lovable-uploads/')) {
+        setImageUrl(`/${image}`);
+      }
+      // Si c'est juste un nom de fichier, supposer qu'il est dans le bucket player-images
+      else if (!image.includes('/')) {
+        // Construire l'URL Supabase storage
+        const publicUrl = getSupabaseStorageUrl(image);
+        console.log(`URL Supabase construite: ${publicUrl}`);
+        setImageUrl(publicUrl);
+
+        // Vérifier si l'image existe
+        const exists = await verifyImageExists(publicUrl);
+        if (!exists) {
+          console.warn(`L'image n'existe pas dans le stockage: ${publicUrl}`);
+          setImageError(true);
+        }
+      }
+      // Pour tout autre format, utiliser tel quel
       else {
         setImageUrl(image);
       }
     };
 
-    // Reset states when image prop changes
+    // Réinitialiser les états quand l'image change
     setImageError(false);
     setIsLoading(true);
     processImageUrl();
   }, [image, name]);
 
-  // Helper function to construct Supabase storage URL
-  const supabaseStorageUrl = (filename: string): string => {
-    return `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/${filename}`;
+  // Fonction pour construire l'URL Supabase storage
+  const getSupabaseStorageUrl = (filename: string): string => {
+    return `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/player-images/${encodeURIComponent(filename)}`;
   };
 
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       {isLoading && (
         <div className="w-full h-full flex items-center justify-center bg-gray-100 absolute z-10">
-          <div className="animate-pulse w-12 h-12 bg-gray-200 rounded-full"></div>
+          <Skeleton className="h-32 w-32 rounded-full" />
         </div>
       )}
       
@@ -80,11 +88,11 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onLoad={() => {
-            console.log(`Image for player ${name} loaded successfully`);
+            console.log(`Image pour joueur ${name} chargée avec succès`);
             setIsLoading(false);
           }}
           onError={(e) => {
-            console.error(`Image load error for player ${name}: ${imageUrl}`);
+            console.error(`Erreur de chargement d'image pour joueur ${name}: ${imageUrl}`);
             setImageError(true);
             setIsLoading(false);
           }}
@@ -96,7 +104,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
       )}
       
       <div className="absolute top-2 left-2 flex gap-2 items-center">
-        <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs">
+        <Badge variant="outline" className="bg-black/50 text-white border-none px-2 py-1 text-xs font-medium backdrop-blur-sm">
           {name}
         </Badge>
       </div>

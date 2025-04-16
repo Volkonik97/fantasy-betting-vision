@@ -2,6 +2,7 @@
 import React from "react";
 import UnmatchedImageCard from "./UnmatchedImageCard";
 import { PlayerWithImage } from "./types";
+import { AlertTriangle } from "lucide-react";
 
 interface UnmatchedImagesListProps {
   unmatched: File[];
@@ -18,8 +19,19 @@ const UnmatchedImagesList = ({ unmatched, playerOptions, onAssign }: UnmatchedIm
 
   return (
     <div className="mt-6">
-      <h3 className="text-lg font-semibold mb-2">Images non associées ({unmatched.length})</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="mb-3 flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5 text-amber-500" />
+        <h3 className="text-lg font-medium">Images non associées ({unmatched.length})</h3>
+      </div>
+      
+      <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+        <p className="text-sm text-amber-800">
+          Ces images n'ont pas pu être automatiquement associées à des joueurs par leurs noms. 
+          Veuillez sélectionner manuellement un joueur pour chaque image.
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {unmatched.map((file, index) => (
           <UnmatchedImageCard 
             key={`unmatched-${index}`}

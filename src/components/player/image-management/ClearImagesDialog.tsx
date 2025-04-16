@@ -25,13 +25,22 @@ const ClearImagesDialog = ({
             <Trash2 className="h-5 w-5" />
             Confirmer la suppression complète
           </DialogTitle>
-          <DialogDescription className="space-y-2">
+          <DialogDescription className="space-y-2 pt-2">
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-amber-800 mb-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold mb-1">Cette action est irréversible</p>
+                  <p className="text-sm">Toutes les images des joueurs seront définitivement supprimées.</p>
+                </div>
+              </div>
+            </div>
+            
             <p><strong>Cette action va:</strong></p>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
+            <ul className="list-disc pl-5 space-y-1.5 text-sm">
               <li>Supprimer <strong>toutes</strong> les références d'images dans la base de données</li>
               <li>Supprimer <strong>tous</strong> les fichiers d'images stockés dans le bucket Supabase</li>
             </ul>
-            <p className="text-destructive font-medium mt-2">Cette action ne peut pas être annulée.</p>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-start gap-2 mt-4">

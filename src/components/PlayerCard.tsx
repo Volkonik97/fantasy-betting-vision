@@ -11,9 +11,9 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Defensive check for player data
+  // Vérification défensive pour les données du joueur
   if (!player) {
-    console.error("PlayerCard received undefined player");
+    console.error("PlayerCard a reçu un joueur indéfini");
     return null;
   }
   
