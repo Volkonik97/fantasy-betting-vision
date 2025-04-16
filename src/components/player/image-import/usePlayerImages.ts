@@ -153,7 +153,7 @@ export const usePlayerImages = () => {
     
     // Prepare uploads
     const uploads = playersWithImages.map(p => ({
-      playerId: p.player.id || p.player.playerid,
+      playerId: p.player.id || '', // Fixed: using player.id instead of player.playerid
       file: p.imageFile as File
     }));
     
@@ -167,7 +167,7 @@ export const usePlayerImages = () => {
       
       // Update player states based on results
       setPlayerImages(prev => prev.map(p => {
-        const playerId = p.player.id || p.player.playerid;
+        const playerId = p.player.id || ''; // Fixed: using player.id instead of player.playerid
         
         if (p.imageFile && !p.processed) {
           const hasError = results.errors[playerId];
