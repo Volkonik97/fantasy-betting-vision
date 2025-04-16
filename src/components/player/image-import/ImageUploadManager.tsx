@@ -18,6 +18,7 @@ class ImageUploadManager {
   private setUploadProgress: (progress: number) => void;
   private setUploadErrors: (errors: { count: number, lastError: string | null }) => void;
   private setPlayerImages: (images: PlayerWithImage[]) => void;
+  private uploadTimeoutMs: number = 60000; // increased timeout from 30s to 60s
 
   constructor(props: ImageUploadManagerProps) {
     this.setIsUploading = props.setIsUploading;
@@ -62,100 +63,40 @@ class ImageUploadManager {
     let errorCount = 0;
     let lastErrorMessage = null;
     
-    for (const playerData of playersToUpdate) {
-      try {
-        if (!playerData.imageFile) continue;
-        
-        const playerId = playerData.player.id;
-        const file = playerData.imageFile;
-        
-        const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
-        
-        console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
-        
-        const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
-        
-        if (bucketError) {
-          console.error("Error accessing bucket before upload:", bucketError);
-          toast.error("Erreur d'accès au bucket de stockage. Vérifiez les permissions.");
-          errorCount++;
-          lastErrorMessage = bucketError.message;
-          continue;
-        }
-        
-        const uploadPromise = supabase.storage.from('player-images').upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-        const uploadTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Upload timeout")), 30000);
-        });
-        
-        const { data: uploadData, error: uploadError } = await Promise.race([
-          uploadPromise,
-          uploadTimeout.then(() => ({ data: null, error: new Error("Upload timeout") }))
-        ]) as any;
-        
-        if (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          
-          if (uploadError.message?.includes("violates row-level security policy")) {
-            lastErrorMessage = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
-          } else {
-            lastErrorMessage = uploadError.message;
-          }
-          
-          errorCount++;
-          continue;
-        }
-        
-        console.log("Upload successful, data:", uploadData);
-        
-        const { data: { publicUrl } } = supabase
-          .storage
-          .from('player-images')
-          .getPublicUrl(fileName);
-        
-        console.log(`Public URL for player ${playerId}: ${publicUrl}`);
-        
-        const { error: updateError } = await supabase
-          .from('players')
-          .update({ image: publicUrl })
-          .eq('playerid', playerId);
-        
-        if (updateError) {
-          console.error("Error updating player:", updateError);
-          toast.error(`Erreur lors de la mise à jour du joueur ${playerData.player.name}`);
-          errorCount++;
-          lastErrorMessage = updateError.message;
-          continue;
-        }
-        
-        console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
-        
-        const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
-        if (playerIndex !== -1) {
-          updatedPlayerImages[playerIndex] = {
-            ...updatedPlayerImages[playerIndex],
-            processed: true,
-            player: {
-              ...updatedPlayerImages[playerIndex].player,
-              image: publicUrl
-            }
-          };
-        }
-
-        successCount++;
-        
-      } catch (error) {
-        console.error("Error processing player image:", error);
-        errorCount++;
-        lastErrorMessage = error instanceof Error ? error.message : String(error);
-      } finally {
+    // Process images in batches of 3 to avoid overwhelming the connection
+    const batchSize = 3;
+    const batches = Math.ceil(playersToUpdate.length / batchSize);
+    
+    for (let batch = 0; batch < batches; batch++) {
+      const batchStart = batch * batchSize;
+      const batchEnd = Math.min(batchStart + batchSize, playersToUpdate.length);
+      const currentBatch = playersToUpdate.slice(batchStart, batchEnd);
+      
+      const batchPromises = currentBatch.map(playerData => this.processPlayerImage(
+        playerData, 
+        updatedPlayerImages, 
+        successCount, 
+        errorCount, 
+        lastErrorMessage
+      ));
+      
+      const results = await Promise.all(batchPromises);
+      
+      results.forEach(result => {
         processed++;
+        if (result.success) successCount++;
+        if (result.error) {
+          errorCount++;
+          lastErrorMessage = result.errorMessage;
+        }
+        
         this.uploadProgress = Math.round((processed / total) * 100);
         this.setUploadProgress(this.uploadProgress);
+      });
+      
+      // Small delay between batches to avoid overwhelming the connection
+      if (batch < batches - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
     
@@ -177,6 +118,202 @@ class ImageUploadManager {
     if (errorCount > 0) {
       toast.error(`${errorCount} images n'ont pas pu être téléchargées`);
     }
+  }
+  
+  private async processPlayerImage(
+    playerData: PlayerWithImage,
+    updatedPlayerImages: PlayerWithImage[],
+    successCount: number,
+    errorCount: number,
+    lastErrorMessage: string | null
+  ): Promise<{ success: boolean; error: boolean; errorMessage: string | null }> {
+    try {
+      if (!playerData.imageFile) {
+        return { success: false, error: false, errorMessage: null };
+      }
+      
+      const playerId = playerData.player.id;
+      const file = playerData.imageFile;
+      
+      const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
+      
+      console.log(`Uploading file ${fileName} to player-images bucket for player ${playerId}`);
+      
+      // Check bucket access before upload
+      const { error: bucketError } = await supabase.storage.from('player-images').list('', { limit: 1 });
+      
+      if (bucketError) {
+        console.error("Error accessing bucket before upload:", bucketError);
+        return { 
+          success: false, 
+          error: true, 
+          errorMessage: `Erreur d'accès au bucket: ${bucketError.message}` 
+        };
+      }
+      
+      // Prepare the file for upload - compress if it's too large
+      let fileToUpload = file;
+      if (file.size > 2 * 1024 * 1024) { // > 2MB
+        try {
+          fileToUpload = await this.compressImage(file);
+        } catch (compressionError) {
+          console.warn("Failed to compress image, proceeding with original:", compressionError);
+        }
+      }
+      
+      // Upload with longer timeout and better error handling
+      try {
+        // Create an AbortController to handle timeouts
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.uploadTimeoutMs);
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('player-images')
+          .upload(fileName, fileToUpload, {
+            cacheControl: '3600',
+            upsert: true,
+            signal: controller.signal
+          });
+          
+        clearTimeout(timeoutId);
+        
+        if (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          
+          let errorMsg = uploadError.message;
+          if (uploadError.message?.includes("violates row-level security policy")) {
+            errorMsg = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
+          } else if (uploadError.name === "AbortError" || uploadError.message?.includes("abort")) {
+            errorMsg = "Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet.";
+          }
+          
+          return { success: false, error: true, errorMessage: errorMsg };
+        }
+        
+        console.log("Upload successful, data:", uploadData);
+        
+        const { data: { publicUrl } } = supabase
+          .storage
+          .from('player-images')
+          .getPublicUrl(fileName);
+        
+        console.log(`Public URL for player ${playerId}: ${publicUrl}`);
+        
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({ image: publicUrl })
+          .eq('playerid', playerId);
+        
+        if (updateError) {
+          console.error("Error updating player:", updateError);
+          return { 
+            success: false, 
+            error: true, 
+            errorMessage: `Erreur lors de la mise à jour du joueur: ${updateError.message}` 
+          };
+        }
+        
+        console.log(`Updated player ${playerData.player.name} with new image URL: ${publicUrl}`);
+        
+        const playerIndex = updatedPlayerImages.findIndex(p => p.player.id === playerId);
+        if (playerIndex !== -1) {
+          updatedPlayerImages[playerIndex] = {
+            ...updatedPlayerImages[playerIndex],
+            processed: true,
+            player: {
+              ...updatedPlayerImages[playerIndex].player,
+              image: publicUrl
+            }
+          };
+        }
+        
+        return { success: true, error: false, errorMessage: null };
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return { 
+            success: false, 
+            error: true, 
+            errorMessage: "Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet." 
+          };
+        } else {
+          return { 
+            success: false, 
+            error: true, 
+            errorMessage: error instanceof Error ? error.message : String(error) 
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Error processing player image:", error);
+      return { 
+        success: false, 
+        error: true, 
+        errorMessage: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  }
+  
+  // Helper method to compress images before uploading
+  private async compressImage(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions while maintaining aspect ratio
+        const maxDimension = 1200;
+        if (width > height && width > maxDimension) {
+          height = Math.round(height * (maxDimension / width));
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Get file extension
+        const fileType = file.type || 'image/jpeg';
+        const quality = 0.8; // 80% quality
+        
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Failed to create blob from canvas"));
+              return;
+            }
+            
+            const compressedFile = new File(
+              [blob], 
+              file.name, 
+              { type: fileType }
+            );
+            
+            console.log(`Compressed image from ${file.size} to ${compressedFile.size} bytes`);
+            resolve(compressedFile);
+          },
+          fileType,
+          quality
+        );
+      };
+      
+      img.onerror = () => {
+        reject(new Error("Failed to load image for compression"));
+      };
+    });
   }
 }
 
