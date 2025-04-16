@@ -1,10 +1,9 @@
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
-import { normalizeImageUrl, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, listAllPlayerImages, imageExistsForPlayer } from "@/utils/database/teams/images/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllTeams } from "@/services/teamService";
-import { imageExistsForPlayer as checkImageExistsForPlayer } from "@/utils/database/teams/images/imageUtils";
 
 // Cache for player images in storage
 let playerImagesCache: string[] = [];

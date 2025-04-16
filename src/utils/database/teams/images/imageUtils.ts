@@ -53,6 +53,33 @@ export const hasPlayerImage = (imageUrl: string | null | undefined): boolean => 
 };
 
 /**
+ * Check if an image exists for a specific player ID
+ */
+export const imageExistsForPlayer = async (playerId: string): Promise<boolean> => {
+  if (!playerId) return false;
+  
+  try {
+    // Look for files with the playerid prefix
+    const { data, error } = await supabase
+      .storage
+      .from('player-images')
+      .list('', {
+        search: `playerid${playerId}`
+      });
+    
+    if (error) {
+      console.error("Error checking player image existence:", error);
+      return false;
+    }
+    
+    return data && data.length > 0;
+  } catch (error) {
+    console.error("Error accessing storage:", error);
+    return false;
+  }
+};
+
+/**
  * Retrieve a list of all images in the player-images bucket
  */
 export const listAllPlayerImages = async (): Promise<string[]> => {
@@ -82,3 +109,4 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
 export const getPlayerImageFilename = (playerId: string, fileExtension: string = 'webp'): string => {
   return `playerid${playerId}.${fileExtension}`;
 };
+

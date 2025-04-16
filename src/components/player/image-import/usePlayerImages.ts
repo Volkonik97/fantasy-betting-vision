@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Player } from "@/utils/models/types";
 import { loadAllPlayersInBatches } from "@/services/playerService";
@@ -298,7 +297,7 @@ export const usePlayerImages = () => {
     const processBatch = async (batch: typeof uploads) => {
       const promises = batch.map(async ({ playerId, file }) => {
         try {
-          const result = await uploadPlayerImage(playerId, file, 60000);
+          const result = await uploadPlayerImage(playerId, file);
           
           if (!result.success) {
             results.failed++;

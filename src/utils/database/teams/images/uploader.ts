@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -70,7 +69,8 @@ export const compressImage = async (file: File): Promise<File> => {
  */
 export const uploadPlayerImage = async (
   playerId: string, 
-  file: File
+  file: File,
+  timeout: number = 30000 // Default timeout of 30 seconds
 ): Promise<{ success: boolean; publicUrl?: string; error?: string }> => {
   try {
     // Check bucket access before upload
@@ -156,4 +156,69 @@ export const updatePlayerImageReference = async (playerId: string, imageUrl: str
     console.error("Error updating player image reference:", error);
     return false;
   }
+};
+
+/**
+ * Upload multiple player images with concurrency control
+ * @param uploads Array of player ID and file pairs to upload
+ * @param concurrencyLimit Maximum number of concurrent uploads (default: 3)
+ * @returns Object containing success count, failure count, and errors by player ID
+ */
+export const uploadMultiplePlayerImages = async (
+  uploads: { playerId: string; file: File }[],
+  concurrencyLimit: number = 3
+): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: {} as Record<string, string>
+  };
+  
+  // Sort uploads by file size (smallest first) for better efficiency
+  const sortedUploads = [...uploads].sort((a, b) => a.file.size - b.file.size);
+  
+  // Process uploads in batches to control concurrency
+  for (let i = 0; i < sortedUploads.length; i += concurrencyLimit) {
+    const batch = sortedUploads.slice(i, i + concurrencyLimit);
+    
+    // Process each batch concurrently
+    const batchPromises = batch.map(async ({ playerId, file }) => {
+      try {
+        // Upload the image
+        const result = await uploadPlayerImage(playerId, file);
+        
+        if (!result.success) {
+          results.failed++;
+          results.errors[playerId] = result.error || "Unknown error";
+          return { success: false };
+        }
+        
+        // Update the database reference
+        const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
+        
+        if (!updateSuccess) {
+          results.failed++;
+          results.errors[playerId] = "Failed to update database reference";
+          return { success: false };
+        }
+        
+        results.success++;
+        return { success: true };
+      } catch (error) {
+        results.failed++;
+        results.errors[playerId] = error instanceof Error ? error.message : String(error);
+        return { success: false };
+      }
+    });
+    
+    // Wait for the current batch to complete
+    await Promise.all(batchPromises);
+    
+    // Small delay between batches to prevent overwhelming the server
+    if (i + concurrencyLimit < sortedUploads.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+  
+  return results;
 };
