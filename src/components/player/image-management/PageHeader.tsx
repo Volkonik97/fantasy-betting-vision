@@ -1,38 +1,39 @@
 
 import React from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
+import DatabaseConnectionStatus from "./DatabaseConnectionStatus";
 
 interface PageHeaderProps {
   onCheckBucket: () => void;
 }
 
-const PageHeader = ({ onCheckBucket }: PageHeaderProps) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ onCheckBucket }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="mb-8"
-    >
-      <h1 className="text-3xl font-bold mb-2">Gestion des images des joueurs</h1>
-      <p className="text-gray-600">
-        Importez et gérez les photos des joueurs. Les images seront automatiquement associées aux joueurs selon leur nom de fichier.
-      </p>
-      
-      <div className="mt-4">
-        <Button
-          onClick={onCheckBucket}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCcw className="h-4 w-4" />
-          Vérifier l'accès au bucket
-        </Button>
+    <div className="mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Gestion des images de joueurs</h1>
+          <p className="text-gray-500">
+            Téléchargez, gérez et vérifiez les images des joueurs
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <DatabaseConnectionStatus />
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onCheckBucket}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Vérifier le bucket
+          </Button>
+        </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
