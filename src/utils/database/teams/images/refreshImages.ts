@@ -8,6 +8,10 @@ const extractPlayerIdFromFilename = (filename: string): string | null => {
   return playerIdMatch ? playerIdMatch[1] : null;
 };
 
+/**
+ * Synchronize image references between storage and database
+ * Adds missing references and removes invalid ones
+ */
 export const synchronizeReferences = async (): Promise<{
   addedCount: number;
   removedCount: number;
@@ -99,5 +103,96 @@ export const synchronizeReferences = async (): Promise<{
     console.error("Erreur lors de la synchronisation:", error);
     toast.error("Erreur lors de la synchronisation des références");
     return { addedCount: 0, removedCount: 0, completed: false };
+  }
+};
+
+/**
+ * Refresh image references by verifying they still exist
+ * and cleaning up invalid references
+ */
+export const refreshImageReferences = async (): Promise<{
+  fixedCount: number;
+  orphanedFilesCount: number;
+  completed: boolean;
+}> => {
+  try {
+    console.log("Démarrage de la vérification des références d'images");
+    
+    // 1. Get all players with images from database
+    const { data: playersWithImages, error: playerError } = await supabase
+      .from('players')
+      .select('playerid, image')
+      .not('image', 'is', null);
+    
+    if (playerError) {
+      console.error("Erreur lors de la récupération des joueurs:", playerError);
+      toast.error("Impossible de récupérer les joueurs");
+      return { fixedCount: 0, orphanedFilesCount: 0, completed: false };
+    }
+    
+    console.log(`Trouvé ${playersWithImages?.length || 0} joueurs avec des images à vérifier`);
+    
+    // 2. Get all files in storage
+    const { data: allFiles, error: listError } = await supabase
+      .storage
+      .from('player-images')
+      .list('');
+    
+    if (listError) {
+      console.error("Erreur lors de la liste des fichiers du bucket:", listError);
+      toast.error("Impossible de lister les fichiers du bucket");
+      return { fixedCount: 0, orphanedFilesCount: 0, completed: false };
+    }
+    
+    console.log(`Trouvé ${allFiles?.length || 0} fichiers dans le stockage`);
+    
+    let fixedCount = 0;
+    let orphanedFilesCount = 0;
+    
+    // 3. Verify each image reference
+    for (const player of (playersWithImages || [])) {
+      if (player.image) {
+        const isValid = await verifyImageExists(player.image);
+        
+        if (!isValid) {
+          console.log(`Référence d'image invalide détectée pour joueur ${player.playerid}`);
+          
+          // Clear invalid reference
+          const { error: clearError } = await supabase
+            .from('players')
+            .update({ image: null })
+            .eq('playerid', player.playerid);
+          
+          if (!clearError) {
+            console.log(`Référence d'image nettoyée pour joueur ${player.playerid}`);
+            fixedCount++;
+          }
+        }
+      }
+    }
+    
+    // 4. Check for orphaned files
+    if (allFiles && playersWithImages) {
+      for (const file of allFiles) {
+        const playerId = extractPlayerIdFromFilename(file.name);
+        
+        if (playerId && !playersWithImages.some(p => p.playerid === playerId)) {
+          console.log(`Fichier orphelin détecté: ${file.name} (playerid: ${playerId})`);
+          orphanedFilesCount++;
+        }
+      }
+    }
+    
+    console.log(`Vérification terminée: ${fixedCount} références corrigées, ${orphanedFilesCount} fichiers orphelins détectés`);
+    
+    return { 
+      fixedCount, 
+      orphanedFilesCount, 
+      completed: true 
+    };
+  } catch (error) {
+    console.error("Erreur lors de la vérification des références d'images:", error);
+    toast.error("Erreur lors de la vérification des références");
+    return { fixedCount: 0, orphanedFilesCount: 0, completed: false };
   }
 };

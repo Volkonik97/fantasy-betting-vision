@@ -1,7 +1,7 @@
 
 import { verifyImageExists } from './verifyImage';
 import { clearInvalidImageReference, clearAllPlayerImageReferences } from './clearImages';
-import { refreshImageReferences } from './refreshImages';
+import { refreshImageReferences, synchronizeReferences } from './refreshImages';
 import { checkBucketRlsPermission } from './rlsPermissions';
 
 export {
@@ -9,5 +9,6 @@ export {
   clearInvalidImageReference,
   clearAllPlayerImageReferences,
   refreshImageReferences,
+  synchronizeReferences,
   checkBucketRlsPermission
 };
