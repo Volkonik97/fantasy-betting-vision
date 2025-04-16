@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2, SyncIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface ImageRefreshControlsProps {
@@ -9,7 +9,9 @@ interface ImageRefreshControlsProps {
   refreshProgress: number;
   refreshComplete: boolean;
   isProcessingClearAll: boolean;
+  isSyncingReferences: boolean;
   handleRefreshImages: () => Promise<void>;
+  handleSynchronizeReferences: () => Promise<void>;
   setShowConfirmClearAll: (show: boolean) => void;
 }
 
@@ -18,7 +20,9 @@ const ImageRefreshControls = ({
   refreshProgress, 
   refreshComplete, 
   isProcessingClearAll,
+  isSyncingReferences,
   handleRefreshImages,
+  handleSynchronizeReferences,
   setShowConfirmClearAll
 }: ImageRefreshControlsProps) => {
   return (
@@ -26,24 +30,37 @@ const ImageRefreshControls = ({
       <div className="flex flex-wrap gap-2 items-center">
         <Button
           onClick={handleRefreshImages}
-          disabled={isRefreshingImages}
+          disabled={isRefreshingImages || isSyncingReferences}
           variant="outline"
           size="sm"
           className="flex items-center gap-2"
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshingImages ? 'animate-spin' : ''}`} />
           {isRefreshingImages 
-            ? 'Rafraîchissement en cours...' 
+            ? 'Vérification en cours...' 
             : refreshComplete 
-              ? 'Rafraîchissement terminé' 
-              : 'Vérifier et nettoyer les références d\'images'}
+              ? 'Vérification terminée' 
+              : 'Vérifier les références'}
+        </Button>
+
+        <Button
+          onClick={handleSynchronizeReferences}
+          disabled={isSyncingReferences || isRefreshingImages}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <SyncIcon className={`h-4 w-4 ${isSyncingReferences ? 'animate-spin' : ''}`} />
+          {isSyncingReferences 
+            ? 'Synchronisation en cours...' 
+            : 'Synchroniser les références'}
         </Button>
 
         <Button
           variant="destructive"
           size="sm"
           className="flex items-center gap-2"
-          disabled={isProcessingClearAll || isRefreshingImages}
+          disabled={isProcessingClearAll || isRefreshingImages || isSyncingReferences}
           onClick={() => setShowConfirmClearAll(true)}
         >
           <Trash2 className="h-4 w-4" />

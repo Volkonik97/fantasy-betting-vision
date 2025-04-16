@@ -17,9 +17,11 @@ interface BucketStatusSectionProps {
   refreshProgress: number;
   refreshComplete: boolean;
   isProcessingClearAll: boolean;
+  isSyncingReferences: boolean;
   totalImagesInBucket: number | null;
   totalPlayersWithImages: number | null;
   handleRefreshImages: () => Promise<void>;
+  handleSynchronizeReferences: () => Promise<void>;
   setShowConfirmClearAll: (show: boolean) => void;
   setShowHelp: (show: boolean) => void;
   setShowRlsHelp: (show: boolean) => void;
@@ -33,9 +35,11 @@ const BucketStatusSection: React.FC<BucketStatusSectionProps> = ({
   refreshProgress,
   refreshComplete,
   isProcessingClearAll,
+  isSyncingReferences,
   totalImagesInBucket,
   totalPlayersWithImages,
   handleRefreshImages,
+  handleSynchronizeReferences,
   setShowConfirmClearAll,
   setShowHelp,
   setShowRlsHelp
@@ -81,13 +85,22 @@ const BucketStatusSection: React.FC<BucketStatusSectionProps> = ({
             refreshProgress={refreshProgress}
             refreshComplete={refreshComplete}
             isProcessingClearAll={isProcessingClearAll}
+            isSyncingReferences={isSyncingReferences}
             handleRefreshImages={handleRefreshImages}
+            handleSynchronizeReferences={handleSynchronizeReferences}
             setShowConfirmClearAll={setShowConfirmClearAll}
           />
           
           <p className="mb-4 text-xs text-gray-500">
-            La vérification permet de détecter les références d'images invalides et les supprimer.
-            Le bouton rouge supprimera toutes les références d'images dans la base de données et les fichiers dans le stockage.
+            <span className="block mb-1">
+              <strong>Vérification:</strong> Détecte les références d'images invalides et les supprime.
+            </span>
+            <span className="block mb-1">
+              <strong>Synchronisation:</strong> Associe automatiquement les fichiers aux joueurs correspondants et nettoie les références invalides.
+            </span>
+            <span className="block">
+              <strong>Suppression:</strong> Le bouton rouge supprimera toutes les références d'images dans la base de données et les fichiers dans le stockage.
+            </span>
             {refreshProgress > 0 && !refreshComplete && (
               <span className="block mt-1 font-medium">
                 Traitement partiel effectué. Cliquez à nouveau pour continuer.

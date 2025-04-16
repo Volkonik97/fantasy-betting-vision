@@ -11,7 +11,7 @@ import { checkBucketRlsPermission } from "@/utils/database/teams/images/rlsPermi
 import BucketCreator from "../BucketCreator";
 import ClearImagesDialog from "./ClearImagesDialog";
 import { clearAllPlayerImageReferences } from "@/utils/database/teams/images/clearImages";
-import { refreshImageReferences } from "@/utils/database/teams/images/refreshImages";
+import { refreshImageReferences, synchronizeReferences } from "@/utils/database/teams/images/refreshImages";
 
 const PlayerImagesContainer = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
@@ -25,6 +25,7 @@ const PlayerImagesContainer = () => {
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
   const [totalImagesInBucket, setTotalImagesInBucket] = useState<number | null>(null);
   const [totalPlayersWithImages, setTotalPlayersWithImages] = useState<number | null>(null);
+  const [isSyncingReferences, setIsSyncingReferences] = useState(false);
   
   const [rlsStatus, setRlsStatus] = useState({
     checked: false,
@@ -177,8 +178,8 @@ const PlayerImagesContainer = () => {
       // Update the counts after refresh
       await checkBucketAccess();
       
-      if (result.fixedCount > 0) {
-        toast.success(`${result.fixedCount} références d'images invalides ont été supprimées`);
+      if (result.fixedCount > 0 || result.orphanedFilesCount > 0) {
+        toast.success(`${result.fixedCount} références d'images invalides ont été supprimées. ${result.orphanedFilesCount} fichiers orphelins détectés.`);
       } else {
         toast.info("Aucune référence d'image invalide trouvée");
       }
@@ -187,6 +188,29 @@ const PlayerImagesContainer = () => {
       toast.error("Une erreur s'est produite lors de la vérification des images");
     } finally {
       setIsRefreshingImages(false);
+    }
+  };
+
+  const handleSynchronizeReferences = async () => {
+    try {
+      setIsSyncingReferences(true);
+      
+      // Call the synchronization function
+      const result = await synchronizeReferences();
+      
+      // Update the counts after sync
+      await checkBucketAccess();
+      
+      if (result.addedCount > 0 || result.removedCount > 0) {
+        toast.success(`Synchronisation réussie! ${result.addedCount} références ajoutées, ${result.removedCount} références supprimées.`);
+      } else {
+        toast.info("Aucune modification nécessaire, tout est déjà synchronisé.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la synchronisation des images:", error);
+      toast.error("Une erreur s'est produite lors de la synchronisation des images");
+    } finally {
+      setIsSyncingReferences(false);
     }
   };
 
@@ -251,9 +275,11 @@ const PlayerImagesContainer = () => {
           refreshProgress={refreshProgress}
           refreshComplete={refreshComplete}
           isProcessingClearAll={isProcessingClearAll}
+          isSyncingReferences={isSyncingReferences}
           totalImagesInBucket={totalImagesInBucket}
           totalPlayersWithImages={totalPlayersWithImages}
           handleRefreshImages={handleRefreshImages}
+          handleSynchronizeReferences={handleSynchronizeReferences}
           setShowConfirmClearAll={setShowConfirmClearAll}
           setShowHelp={showBucketHelp}
           setShowRlsHelp={showRlsHelp}
