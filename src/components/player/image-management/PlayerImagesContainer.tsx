@@ -167,15 +167,15 @@ const PlayerImagesContainer = () => {
         </TabsList>
         
         <TabsContent value="list" className="mt-6">
-          <PlayerImagesList bucketExists={bucketStatus === "exists"} />
+          <PlayerImagesList status={bucketStatus} />
         </TabsContent>
         
         <TabsContent value="upload" className="mt-6">
-          <UploadControls bucketExists={bucketStatus === "exists"} />
+          <UploadControls status={bucketStatus} />
         </TabsContent>
         
         <TabsContent value="unmatched" className="mt-6">
-          <UnmatchedImagesList bucketExists={bucketStatus === "exists"} />
+          <UnmatchedImagesList status={bucketStatus} />
         </TabsContent>
       </Tabs>
       

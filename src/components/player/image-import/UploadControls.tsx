@@ -4,19 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 interface UploadControlsProps {
-  onUpload: () => void;
-  disableUpload: boolean;
-  isUploading: boolean;
-  uploadProgress: number;
+  onUpload?: () => void;
+  disableUpload?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  status?: "loading" | "exists" | "error";
 }
 
-const UploadControls = ({ onUpload, disableUpload, isUploading, uploadProgress }: UploadControlsProps) => {
+const UploadControls: React.FC<UploadControlsProps> = ({ 
+  onUpload = () => {}, 
+  disableUpload = false, 
+  isUploading = false, 
+  uploadProgress = 0,
+  status = "loading"
+}) => {
+  const isDisabled = disableUpload || isUploading || status !== "exists";
+  
   return (
     <div className="space-y-2">
       <Button 
         onClick={onUpload} 
         className="w-full" 
-        disabled={disableUpload || isUploading}
+        disabled={isDisabled}
       >
         {isUploading ? 'Téléchargement en cours' : 'Télécharger les images'}
       </Button>
