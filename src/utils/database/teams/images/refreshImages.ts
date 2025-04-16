@@ -1,61 +1,81 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { verifyImageExists } from "./verifyImage";
 import { clearInvalidImageReference } from "./clearImages";
 
 /**
- * Refresh image references in the database
- * @returns Number of fixed image references and a boolean indicating if operation completed
+ * Refreshes player image references by checking if they exist in storage and removing invalid ones
+ * @returns An object with the count of fixed references and completion status
  */
-export const refreshImageReferences = async (): Promise<{fixedCount: number, completed: boolean}> => {
+export const refreshImageReferences = async (): Promise<{ fixedCount: number, completed: boolean }> => {
   try {
-    // Import supabase directly here to avoid circular dependencies
-    const { supabase } = await import("@/integrations/supabase/client");
+    console.log("Démarrage de la vérification des références d'images");
     
-    // Get all players with images - use safe query approach
-    const { data: playersWithImages, error } = await supabase
+    // Get all players with image references
+    const { data: playersWithImages, error: selectError } = await supabase
       .from('players')
       .select('playerid, image')
-      .not('image', 'is', null);
+      .not('image', 'is', null)
+      .limit(100); // Process in batches of 100 to avoid timeouts
     
-    if (error) {
-      console.error("Error fetching players with images:", error);
-      return {fixedCount: 0, completed: false};
+    if (selectError) {
+      console.error("Erreur lors de la récupération des joueurs avec images:", selectError);
+      return { fixedCount: 0, completed: false };
     }
     
     if (!playersWithImages || playersWithImages.length === 0) {
-      return {fixedCount: 0, completed: true};
+      console.log("Aucun joueur avec des images trouvé");
+      return { fixedCount: 0, completed: true };
     }
+    
+    console.log(`Vérification de ${playersWithImages.length} références d'images de joueurs`);
     
     let fixedCount = 0;
     
-    // Process a reasonable batch size to avoid timeouts
-    const batchSize = 10;
-    const playersToProcess = playersWithImages.slice(0, batchSize);
-    
-    console.log(`Processing ${playersToProcess.length} player images out of ${playersWithImages.length}`);
-    
-    for (const player of playersToProcess) {
-      // Skip if player has no valid image reference
-      if (!player || !player.playerid || !player.image) continue;
+    // Check each image reference
+    for (const player of playersWithImages) {
+      if (!player.image) continue;
       
-      const exists = await verifyImageExists(player.image);
+      // Check if the image exists in storage
+      const imageExists = await verifyImageExists(player.image);
       
-      if (!exists) {
-        // Clear invalid image reference
+      if (!imageExists) {
+        console.log(`Image invalide détectée pour le joueur ${player.playerid}: ${player.image}`);
+        
+        // Clear the invalid image reference
         const success = await clearInvalidImageReference(player.playerid);
-        if (success) fixedCount++;
+        
+        if (success) {
+          fixedCount++;
+          console.log(`Référence d'image supprimée pour le joueur ${player.playerid}`);
+        } else {
+          console.error(`Échec de la suppression de la référence d'image pour le joueur ${player.playerid}`);
+        }
       }
     }
     
-    // Return whether we've processed all players
-    const completed = playersToProcess.length === playersWithImages.length;
+    // Determine if there are more players to process
+    const { count, error: countError } = await supabase
+      .from('players')
+      .select('playerid', { count: 'exact' })
+      .not('image', 'is', null);
     
-    return {
-      fixedCount,
-      completed
-    };
+    if (countError) {
+      console.error("Erreur lors du comptage des joueurs restants:", countError);
+      return { fixedCount, completed: false };
+    }
+    
+    const completed = count === 0 || playersWithImages.length >= count;
+    
+    if (completed) {
+      console.log("Vérification des références d'images terminée");
+    } else {
+      console.log(`Il reste ${count - playersWithImages.length} références d'images à vérifier`);
+    }
+    
+    return { fixedCount, completed };
   } catch (error) {
-    console.error("Exception refreshing image references:", error);
-    return {fixedCount: 0, completed: false};
+    console.error("Erreur lors de la vérification des références d'images:", error);
+    return { fixedCount: 0, completed: false };
   }
 };
