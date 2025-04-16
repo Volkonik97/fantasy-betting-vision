@@ -18,15 +18,29 @@ export const usePlayerImages = () => {
     failed: 0,
     inProgress: false
   });
+  const [loadingProgress, setLoadingProgress] = useState<{percent: number, message: string}>({
+    percent: 0,
+    message: "Initialisation..."
+  });
 
   // Charger les joueurs avec pagination pour dépasser la limite de 1000
   useEffect(() => {
     const loadPlayers = async () => {
       setIsLoading(true);
+      setLoadingProgress({percent: 0, message: "Préparation du chargement des joueurs..."});
+      
       try {
-        // Utiliser loadAllPlayersInBatches pour charger tous les joueurs
-        const allPlayers = await loadAllPlayersInBatches();
+        // Utiliser loadAllPlayersInBatches pour charger tous les joueurs avec callback de progression
+        const allPlayers = await loadAllPlayersInBatches((loaded, total, batch) => {
+          const percent = Math.round((loaded / total) * 100);
+          setLoadingProgress({
+            percent,
+            message: `Chargement des joueurs: ${loaded}/${total} (lot ${batch}/${Math.ceil(total/500)})`
+          });
+        });
+        
         console.log(`Chargement de ${allPlayers.length} joueurs terminé (en lots)`);
+        setLoadingProgress({percent: 100, message: "Initialisation des données..."});
         
         setPlayers(allPlayers);
         
@@ -40,9 +54,14 @@ export const usePlayerImages = () => {
         }));
         
         setPlayerImages(initialPlayerImages);
+        setLoadingProgress({percent: 100, message: "Chargement terminé"});
       } catch (error) {
         console.error("Erreur lors du chargement des joueurs:", error);
         toast.error("Erreur lors du chargement des joueurs");
+        setLoadingProgress({
+          percent: 0, 
+          message: `Erreur: ${error instanceof Error ? error.message : String(error)}`
+        });
       } finally {
         setIsLoading(false);
       }
@@ -179,9 +198,23 @@ export const usePlayerImages = () => {
       file: p.imageFile!
     }));
     
+    toast.info(`Début du téléchargement de ${uploadsData.length} images...`);
+    console.log(`Starting upload of ${uploadsData.length} images`);
+    
     // Utiliser la fonction d'upload multiple avec limite de concurrence
     try {
-      const results = await uploadMultiplePlayerImages(uploadsData, 3);
+      // Utiliser une fonction qui supporte les mises à jour de progression
+      const results = await uploadMultiplePlayerImagesWithProgress(
+        uploadsData, 
+        3,
+        (processed, total) => {
+          console.log(`Upload progress: ${processed}/${total}`);
+          setUploadStatus(prev => ({
+            ...prev,
+            processed
+          }));
+        }
+      );
       
       // Mettre à jour les statuts des joueurs avec les résultats
       const finalPlayerImages = updatedPlayerImages.map(p => {
@@ -244,11 +277,80 @@ export const usePlayerImages = () => {
     }
   }, [playerImages]);
 
+  // Version améliorée de uploadMultiplePlayerImages avec support de progression
+  const uploadMultiplePlayerImagesWithProgress = async (
+    uploads: { playerId: string; file: File }[],
+    concurrencyLimit: number = 3,
+    progressCallback?: (processed: number, total: number) => void
+  ): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: {} as Record<string, string>
+    };
+    
+    // Trier les fichiers par taille pour uploader les plus petits en premier
+    const sortedUploads = [...uploads].sort((a, b) => a.file.size - b.file.size);
+    let processed = 0;
+    const total = sortedUploads.length;
+    
+    // Fonction pour traiter un lot d'uploads
+    const processBatch = async (batch: typeof uploads) => {
+      const promises = batch.map(async ({ playerId, file }) => {
+        try {
+          const result = await uploadPlayerImage(playerId, file, 60000);
+          
+          if (!result.success) {
+            results.failed++;
+            results.errors[playerId] = result.error || "Erreur inconnue";
+            return { success: false, playerId };
+          }
+          
+          const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
+          
+          if (!updateSuccess) {
+            results.failed++;
+            results.errors[playerId] = "Échec de la mise à jour dans la base de données";
+            return { success: false, playerId };
+          }
+          
+          results.success++;
+          return { success: true, playerId, imageUrl: result.publicUrl };
+        } catch (error) {
+          results.failed++;
+          results.errors[playerId] = error instanceof Error ? error.message : String(error);
+          return { success: false, playerId };
+        } finally {
+          processed++;
+          if (progressCallback) {
+            progressCallback(processed, total);
+          }
+        }
+      });
+      
+      return Promise.all(promises);
+    };
+    
+    // Diviser en lots pour limiter la concurrence
+    for (let i = 0; i < sortedUploads.length; i += concurrencyLimit) {
+      const batch = sortedUploads.slice(i, i + concurrencyLimit);
+      await processBatch(batch);
+      
+      // Petite pause entre les lots pour éviter de surcharger le réseau
+      if (i + concurrencyLimit < sortedUploads.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    return results;
+  };
+
   return {
     playerImages,
     unmatched,
     isLoading,
     uploadStatus,
+    loadingProgress,
     handleFileSelect,
     assignFileToPlayer,
     uploadImages

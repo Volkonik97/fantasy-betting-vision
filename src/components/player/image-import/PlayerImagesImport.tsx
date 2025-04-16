@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import ImportHeader from "./ImportHeader";
 import DropZone from "./DropZone";
@@ -31,6 +32,7 @@ const PlayerImagesImport = ({
     unmatched,
     isLoading,
     uploadStatus,
+    loadingProgress,
     handleFileSelect,
     assignFileToPlayer,
     uploadImages
@@ -73,6 +75,28 @@ const PlayerImagesImport = ({
                           rlsEnabled || 
                           playerImages.filter(p => p.imageFile !== null && !p.processed).length === 0 ||
                           uploadStatus.inProgress;
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardContent className="flex flex-col items-center justify-center space-y-4 py-12">
+          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+          <div className="text-center">
+            <h3 className="text-lg font-medium mb-2">{loadingProgress.message}</h3>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-md">
+              <div 
+                className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                style={{ width: `${loadingProgress.percent}%` }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Chargement des données des joueurs... Cela peut prendre un moment.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">

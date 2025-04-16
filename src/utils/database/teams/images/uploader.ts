@@ -108,34 +108,46 @@ export const uploadPlayerImage = async (
     // Créer un nom de fichier unique
     const fileName = `${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
     
+    // Controller pour le timeout
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), timeout);
+    
     try {
-      // Configurer une promesse de timeout
-      const timeoutPromise = new Promise<{ data: null, error: Error }>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error("Délai d'attente dépassé lors du téléchargement. Vérifiez votre connexion internet."));
-        }, timeout);
-      });
+      // Lancer l'upload avec un timeout
+      try {
+        // Utiliser directement supabase storage pour le téléchargement
+        const { data, error } = await supabase.storage
+          .from('player-images')
+          .upload(fileName, fileToUpload, {
+            cacheControl: '3600',
+            upsert: true
+          });
       
-      // Lancer l'upload
-      const uploadPromise = supabase.storage
-        .from('player-images')
-        .upload(fileName, fileToUpload, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        clearTimeout(timeoutId);
         
-      // Course entre l'upload et le timeout
-      const result = await Promise.race([uploadPromise, timeoutPromise]);
-      
-      if (result.error) {
-        console.error("Erreur lors du téléchargement:", result.error);
-        
-        let errorMsg = result.error.message || "Erreur inconnue";
-        if (errorMsg.includes("violates row-level security policy")) {
-          errorMsg = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
+        if (error) {
+          console.error("Erreur lors du téléchargement:", error);
+          
+          let errorMsg = error.message;
+          if (errorMsg.includes("violates row-level security policy")) {
+            errorMsg = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
+          }
+          
+          return { success: false, error: errorMsg };
         }
         
-        return { success: false, error: errorMsg };
+        if (!data) {
+          return { success: false, error: "Aucune donnée retournée par l'upload" };
+        }
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return { 
+            success: false,
+            error: `Délai d'attente dépassé lors du téléchargement. Vérifiez votre connexion internet.`
+          };
+        }
+        throw error;
       }
       
       // Obtenir l'URL publique
@@ -146,6 +158,7 @@ export const uploadPlayerImage = async (
         publicUrl
       };
     } catch (error) {
+      clearTimeout(timeoutId);
       const errorMessage = error instanceof Error ? error.message : String(error);
       return { 
         success: false,
@@ -166,6 +179,8 @@ export const uploadPlayerImage = async (
  */
 export const updatePlayerImageReference = async (playerId: string, imageUrl: string): Promise<boolean> => {
   try {
+    console.log(`Mise à jour de la référence d'image pour le joueur ${playerId}: ${imageUrl}`);
+    
     const { error } = await supabase
       .from('players')
       .update({ image: imageUrl })
@@ -176,6 +191,7 @@ export const updatePlayerImageReference = async (playerId: string, imageUrl: str
       return false;
     }
     
+    console.log(`Référence d'image mise à jour avec succès pour le joueur ${playerId}`);
     return true;
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la référence d'image:", error);
@@ -240,6 +256,9 @@ export const uploadMultiplePlayerImages = async (
     if (i + concurrencyLimit < sortedUploads.length) {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
+    
+    // Log de progression
+    console.log(`Progression de l'upload: ${Math.min(i + concurrencyLimit, sortedUploads.length)}/${sortedUploads.length}`);
   }
   
   return results;
