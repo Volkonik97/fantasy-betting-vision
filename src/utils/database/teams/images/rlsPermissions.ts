@@ -30,7 +30,12 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     if (bucketError) {
       console.error("Error checking for buckets:", bucketError);
-      result.errorMessage = `Error checking buckets: ${bucketError.message}`;
+      
+      if (bucketError.message?.includes("policy") || bucketError.message?.includes("RLS")) {
+        result.errorMessage = "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour lister les buckets.";
+      } else {
+        result.errorMessage = `Error checking buckets: ${bucketError.message}`;
+      }
       return result;
     }
     
@@ -52,7 +57,12 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     if (listError) {
       console.error("Error checking listing permissions:", listError);
-      result.errorMessage = `Listing error: ${listError.message}`;
+      
+      if (listError.message?.includes("policy") || listError.message?.includes("RLS")) {
+        result.errorMessage = "Erreur RLS: Vous n'avez pas la permission de lister les fichiers dans ce bucket.";
+      } else {
+        result.errorMessage = `Listing error: ${listError.message}`;
+      }
     } else {
       console.log("Listing permissions verified:", listData);
       result.canList = true;
@@ -74,10 +84,12 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     if (uploadError) {
       console.error("Error checking upload permissions:", uploadError);
       
-      if (!result.errorMessage) {
-        result.errorMessage = `Upload error: ${uploadError.message}`;
+      if (uploadError.message?.includes("policy") || uploadError.message?.includes("RLS")) {
+        const errorMsg = "Erreur de politique RLS: Vous n'avez pas la permission d'uploader des fichiers dans ce bucket.";
+        result.errorMessage = !result.errorMessage ? errorMsg : `${result.errorMessage} | ${errorMsg}`;
       } else {
-        result.errorMessage += ` | Upload error: ${uploadError.message}`;
+        const errorMsg = `Upload error: ${uploadError.message}`;
+        result.errorMessage = !result.errorMessage ? errorMsg : `${result.errorMessage} | ${errorMsg}`;
       }
     } else {
       console.log("Upload permissions verified:", uploadData);

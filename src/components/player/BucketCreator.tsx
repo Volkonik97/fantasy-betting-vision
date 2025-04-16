@@ -31,11 +31,21 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
       
       if (checkError) {
         console.error("Error checking buckets:", checkError);
-        setResult({
-          success: false,
-          message: `Erreur lors de la vérification des buckets: ${checkError.message}`,
-        });
-        toast.error(`Erreur lors de la vérification des buckets: ${checkError.message}`);
+        
+        // Check if it's an RLS error
+        if (checkError.message?.includes("policy") || checkError.message?.includes("RLS")) {
+          setResult({
+            success: false,
+            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour créer ou accéder aux buckets. Contactez l'administrateur du projet.",
+          });
+          toast.error("Erreur de permissions RLS. Accès refusé.");
+        } else {
+          setResult({
+            success: false,
+            message: `Erreur lors de la vérification des buckets: ${checkError.message}`,
+          });
+          toast.error(`Erreur lors de la vérification des buckets: ${checkError.message}`);
+        }
         setIsCreating(false);
         return;
       }
@@ -63,11 +73,23 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
 
       if (bucketError) {
         console.error("Error creating bucket:", bucketError);
-        setResult({
-          success: false,
-          message: `Erreur lors de la création du bucket: ${bucketError.message}`,
-        });
-        toast.error(`Erreur lors de la création du bucket: ${bucketError.message}`);
+        
+        // Check if it's an RLS error
+        if (bucketError.message?.includes("violates row-level security policy") || 
+            bucketError.message?.includes("policy") || 
+            bucketError.message?.includes("RLS")) {
+          setResult({
+            success: false,
+            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.",
+          });
+          toast.error("Erreur de permissions RLS. Contactez l'administrateur.");
+        } else {
+          setResult({
+            success: false,
+            message: `Erreur lors de la création du bucket: ${bucketError.message}`,
+          });
+          toast.error(`Erreur lors de la création du bucket: ${bucketError.message}`);
+        }
         setIsCreating(false);
         return;
       }
@@ -168,6 +190,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
           <ul className="list-disc ml-5 mt-2 text-sm space-y-1">
             <li>Votre compte Supabase dispose des permissions nécessaires</li>
             <li>La fonctionnalité Storage est activée dans votre projet Supabase</li>
+            <li>Les politiques RLS sont configurées pour permettre la création de buckets</li>
             <li>Vous n'avez pas atteint de limite de ressources</li>
           </ul>
         </AlertDescription>
