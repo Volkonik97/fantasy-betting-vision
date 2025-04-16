@@ -5,7 +5,7 @@ import UnmatchedImageCard from "./UnmatchedImageCard";
 interface UnmatchedImagesListProps {
   unmatched?: any[];
   playerOptions?: any[];
-  onAssign?: (file: File, playerId: string) => void;
+  onAssign?: (file: File, playerIndex: number) => void;
   disabled?: boolean;
   status?: "loading" | "exists" | "error";
 }

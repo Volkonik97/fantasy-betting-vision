@@ -5,18 +5,12 @@ import BucketStatusInfo from "./BucketStatusInfo";
 import RlsWarning from "./RlsWarning";
 
 interface ImportHeaderProps {
-  bucketExists: boolean | null;
+  bucketStatus: "loading" | "exists" | "error";
   rlsEnabled: boolean;
   showRlsHelp: () => void;
 }
 
-const ImportHeader = ({ bucketExists, rlsEnabled, showRlsHelp }: ImportHeaderProps) => {
-  const rlsStatus = {
-    checked: rlsEnabled !== undefined,
-    canUpload: !rlsEnabled,
-    canList: !rlsEnabled
-  };
-
+const ImportHeader = ({ bucketStatus, rlsEnabled, showRlsHelp }: ImportHeaderProps) => {
   return (
     <CardHeader>
       <CardTitle>Importer des images de joueurs</CardTitle>
@@ -25,8 +19,9 @@ const ImportHeader = ({ bucketExists, rlsEnabled, showRlsHelp }: ImportHeaderPro
       </CardDescription>
       
       <BucketStatusInfo 
-        bucketExists={bucketExists} 
-        rlsStatus={rlsStatus}
+        status={bucketStatus} 
+        rlsEnabled={rlsEnabled}
+        onRlsHelpClick={showRlsHelp}
       />
       
       {rlsEnabled && (

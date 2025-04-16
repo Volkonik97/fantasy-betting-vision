@@ -22,7 +22,7 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
     );
   }
 
-  if (filteredPlayers.length === 0) {
+  if (!filteredPlayers || filteredPlayers.length === 0) {
     return (
       <div className="p-8 text-center">
         <p>Aucun joueur ne correspond aux critères sélectionnés.</p>
@@ -33,7 +33,7 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {filteredPlayers.map((item) => (
-        <PlayerImageCard key={item.player.playerid} playerImage={item} />
+        <PlayerImageCard key={item.player.id || item.player.playerid} playerData={item} />
       ))}
     </div>
   );

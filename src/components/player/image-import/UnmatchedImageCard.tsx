@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 
 interface UnmatchedImageCardProps {
   file: File;
-  index: number;
   playerOptions: PlayerWithImage[];
   onAssign: (file: File, playerIndex: number) => void;
   disabled?: boolean;
@@ -14,7 +13,6 @@ interface UnmatchedImageCardProps {
 
 const UnmatchedImageCard = ({ 
   file, 
-  index, 
   playerOptions, 
   onAssign, 
   disabled = false
@@ -23,9 +21,7 @@ const UnmatchedImageCard = ({
 
   const handleAssign = () => {
     if (selectedPlayerIndex >= 0) {
-      onAssign(file, playerOptions[selectedPlayerIndex].player.id 
-        ? playerOptions.findIndex(p => p.player.id === playerOptions[selectedPlayerIndex].player.id)
-        : selectedPlayerIndex);
+      onAssign(file, selectedPlayerIndex);
     }
   };
 
@@ -53,7 +49,7 @@ const UnmatchedImageCard = ({
         >
           <option value="-1">Sélectionnez un joueur...</option>
           {playerOptions.map((playerData, idx) => (
-            <option key={playerData.player.id} value={idx}>
+            <option key={playerData.player.id || playerData.player.playerid} value={idx}>
               {playerData.player.name} ({playerData.player.role || 'Rôle inconnu'})
             </option>
           ))}

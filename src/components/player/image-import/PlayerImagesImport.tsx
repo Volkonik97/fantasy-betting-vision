@@ -26,7 +26,6 @@ const PlayerImagesImport = ({
   rlsEnabled = false,
   showRlsHelp = () => {}
 }: PlayerImagesImportProps) => {
-  const [bucketExists, setBucketExists] = useState<boolean | null>(null);
   const {
     playerImages,
     unmatched,
@@ -40,16 +39,8 @@ const PlayerImagesImport = ({
   
   const [activeTab, setActiveTab] = useState<string>("all");
 
-  useEffect(() => {
-    if (bucketStatus === "exists") {
-      setBucketExists(true);
-    } else if (bucketStatus === "error") {
-      setBucketExists(false);
-    }
-  }, [bucketStatus]);
-
   const handleUpload = () => {
-    uploadImages(bucketExists === true);
+    uploadImages(bucketStatus === "exists");
   };
 
   const getFilteredPlayers = () => {
@@ -71,7 +62,7 @@ const PlayerImagesImport = ({
   };
 
   const filteredPlayers = getFilteredPlayers();
-  const disableUpload = bucketExists === false || 
+  const disableUpload = bucketStatus !== "exists" || 
                           rlsEnabled || 
                           playerImages.filter(p => p.imageFile !== null && !p.processed).length === 0 ||
                           uploadStatus.inProgress;
@@ -101,7 +92,7 @@ const PlayerImagesImport = ({
   return (
     <Card className="w-full">
       <ImportHeader 
-        bucketExists={bucketExists} 
+        bucketStatus={bucketStatus} 
         rlsEnabled={rlsEnabled}
         showRlsHelp={showRlsHelp}
       />
@@ -111,7 +102,7 @@ const PlayerImagesImport = ({
           <div className="md:col-span-2">
             <DropZone 
               onFileSelect={handleFileSelect}
-              disabled={bucketExists === false || rlsEnabled || uploadStatus.inProgress}
+              disabled={bucketStatus !== "exists" || rlsEnabled || uploadStatus.inProgress}
             />
           </div>
           
@@ -135,6 +126,7 @@ const PlayerImagesImport = ({
           disableUpload={disableUpload}
           isUploading={uploadStatus.inProgress}
           uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
+          status={bucketStatus}
         />
 
         {unmatched.length > 0 && (
@@ -143,6 +135,7 @@ const PlayerImagesImport = ({
             playerOptions={playerImages}
             onAssign={assignFileToPlayer}
             disabled={uploadStatus.inProgress}
+            status={bucketStatus}
           />
         )}
 
@@ -156,6 +149,7 @@ const PlayerImagesImport = ({
           <PlayerImagesList 
             isLoading={isLoading} 
             filteredPlayers={filteredPlayers} 
+            status={bucketStatus}
           />
         </PlayerImagesFilter>
       </CardContent>
