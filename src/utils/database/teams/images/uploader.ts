@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -218,6 +219,54 @@ export const uploadMultiplePlayerImages = async (
     if (i + concurrencyLimit < sortedUploads.length) {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
+  }
+  
+  return results;
+};
+
+/**
+ * Upload multiple player images with progress tracking
+ */
+export const uploadMultiplePlayerImagesWithProgress = async (
+  uploads: { playerId: string; file: File }[],
+  progressCallback: (processed: number, total: number) => void
+): Promise<{ success: number; failed: number; errors: Record<string, string> }> => {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: {} as Record<string, string>
+  };
+  
+  const total = uploads.length;
+  let processed = 0;
+  
+  // Process each upload sequentially for better progress tracking
+  for (const { playerId, file } of uploads) {
+    try {
+      // Upload the image
+      const result = await uploadPlayerImage(playerId, file);
+      
+      if (!result.success) {
+        results.failed++;
+        results.errors[playerId] = result.error || "Unknown error";
+      } else {
+        // Update the database reference
+        const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
+        
+        if (!updateSuccess) {
+          results.failed++;
+          results.errors[playerId] = "Failed to update database reference";
+        } else {
+          results.success++;
+        }
+      }
+    } catch (error) {
+      results.failed++;
+      results.errors[playerId] = error instanceof Error ? error.message : String(error);
+    }
+    
+    processed++;
+    progressCallback(processed, total);
   }
   
   return results;

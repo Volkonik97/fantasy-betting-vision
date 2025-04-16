@@ -7,7 +7,9 @@ const PlayerImages = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <PlayerImagesContainer />
+      <div className="container mx-auto px-4 pt-20">
+        <PlayerImagesContainer />
+      </div>
     </div>
   );
 };

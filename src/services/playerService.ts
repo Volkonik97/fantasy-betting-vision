@@ -1,7 +1,7 @@
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
-import { normalizeImageUrl, listAllPlayerImages, imageExistsForPlayer } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, listAllPlayerImages } from "@/utils/database/teams/images/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllTeams } from "@/services/teamService";
 
@@ -43,7 +43,7 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
 /**
  * Check if an image exists for a player ID
  */
-export const imageExistsForPlayer = (playerId: string): boolean => {
+export const hasImageForPlayer = (playerId: string): boolean => {
   if (!playerId) return false;
   
   // Check if any file starts with 'playerid' + playerId
@@ -94,7 +94,7 @@ export const loadAllPlayersInBatches = async (
         // Process each player's image
         const normalizedPlayers = batchPlayers.map(player => {
           // Check if player has an image in cache
-          const hasImage = imageExistsForPlayer(player.id);
+          const hasImage = hasImageForPlayer(player.id);
           
           // Use existing image URL or generate one from player ID if image exists in cache
           let imageUrl = player.image;
@@ -162,7 +162,7 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     // Normalize image URLs
     const normalizedPlayers = players.map(player => {
       // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
-      const hasImageInCache = imageExistsForPlayer(player.id);
+      const hasImageInCache = hasImageForPlayer(player.id);
       
       // Si le joueur a déjà une URL d'image, la normaliser
       // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache

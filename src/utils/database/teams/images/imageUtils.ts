@@ -109,4 +109,3 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
 export const getPlayerImageFilename = (playerId: string, fileExtension: string = 'webp'): string => {
   return `playerid${playerId}.${fileExtension}`;
 };
-
