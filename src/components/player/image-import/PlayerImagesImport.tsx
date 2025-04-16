@@ -88,7 +88,7 @@ const PlayerImagesImport = ({
 
         <UploadControls 
           onUpload={handleUpload}
-          disabled={bucketStatus !== "exists" || rlsEnabled || uploadStatus.inProgress}
+          disabled={bucketStatus !== "exists" || rlsEnabled || playerImages.filter(p => p.imageFile && !p.processed).length === 0}
           isUploading={uploadStatus.inProgress}
           uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
           status={bucketStatus}

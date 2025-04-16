@@ -1,8 +1,9 @@
 
 import React, { useState } from "react";
-import { PlayerWithImage } from "./types";
-import { AlertCircle, CornerRightDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlayerWithImage } from "./types";
 
 interface UnmatchedImageCardProps {
   file: File;
@@ -11,62 +12,67 @@ interface UnmatchedImageCardProps {
   disabled?: boolean;
 }
 
-const UnmatchedImageCard = ({ 
+const UnmatchedImageCard: React.FC<UnmatchedImageCardProps> = ({ 
   file, 
   playerOptions, 
-  onAssign, 
+  onAssign,
   disabled = false
-}: UnmatchedImageCardProps) => {
-  const [selectedPlayerIndex, setSelectedPlayerIndex] = useState<number>(-1);
+}) => {
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
+  const imageUrl = URL.createObjectURL(file);
 
   const handleAssign = () => {
-    if (selectedPlayerIndex >= 0) {
-      onAssign(file, selectedPlayerIndex);
+    const playerIndex = playerOptions.findIndex(p => p.player.id === selectedPlayerId);
+    if (playerIndex !== -1) {
+      onAssign(file, playerIndex);
     }
   };
 
   return (
-    <div className={`border rounded-lg p-4 ${disabled ? 'bg-gray-100 opacity-70' : 'bg-amber-50 border-amber-200'}`}>
-      <div className="h-28 bg-white rounded flex items-center justify-center overflow-hidden mb-3">
+    <Card className="overflow-hidden">
+      <div className="aspect-square w-full relative bg-gray-100">
         <img 
-          src={URL.createObjectURL(file)} 
-          alt={file.name}
-          className="max-h-full max-w-full object-contain"
+          src={imageUrl} 
+          alt={file.name} 
+          className="w-full h-full object-cover"
+          onLoad={() => URL.revokeObjectURL(imageUrl)}
         />
       </div>
       
-      <div className="flex items-start space-x-2 mb-2">
-        <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-        <p className="text-xs font-medium text-amber-700 truncate">{file.name}</p>
-      </div>
-      
-      <div className="space-y-2">
-        <select 
-          className="w-full text-xs p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          onChange={(e) => setSelectedPlayerIndex(parseInt(e.target.value))}
-          value={selectedPlayerIndex}
-          disabled={disabled}
-        >
-          <option value="-1">Sélectionnez un joueur...</option>
-          {playerOptions.map((playerData, idx) => (
-            <option key={playerData.player.id} value={idx}>
-              {playerData.player.name} ({playerData.player.role || 'Rôle inconnu'})
-            </option>
-          ))}
-        </select>
+      <CardContent className="p-4 space-y-3">
+        <p className="text-sm font-medium truncate" title={file.name}>
+          {file.name}
+        </p>
         
-        <Button 
-          onClick={handleAssign} 
-          size="sm" 
-          variant="outline"
-          className="w-full text-xs"
-          disabled={selectedPlayerIndex < 0 || disabled}
-        >
-          <CornerRightDown className="h-3 w-3 mr-1" />
-          Associer
-        </Button>
-      </div>
-    </div>
+        <div className="space-y-2">
+          <Select 
+            value={selectedPlayerId} 
+            onValueChange={setSelectedPlayerId}
+            disabled={disabled}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Associer à un joueur" />
+            </SelectTrigger>
+            <SelectContent>
+              {playerOptions.map((option) => (
+                <SelectItem key={option.player.id} value={option.player.id}>
+                  {option.player.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Button 
+            variant="secondary" 
+            className="w-full" 
+            onClick={handleAssign}
+            disabled={!selectedPlayerId || disabled}
+          >
+            Associer
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
