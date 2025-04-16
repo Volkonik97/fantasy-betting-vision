@@ -34,7 +34,7 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
               
               <div className="text-sm space-y-2">
                 <p>
-                  Pour résoudre ce problème, un administrateur doit créer le bucket "player-images" dans le dashboard Supabase:
+                  Pour résoudre ce problème, vous devez créer le bucket "player-images" dans le dashboard Supabase:
                 </p>
                 
                 <ol className="list-decimal pl-5 space-y-1">
@@ -54,7 +54,7 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
                 </Button>
                 
                 <p className="pt-2">
-                  Si vous venez de créer le bucket, veuillez rafraîchir la page après quelques secondes.
+                  Si vous venez de créer le bucket, cliquez sur "Vérifier le bucket" en haut à droite pour rafraîchir la page.
                 </p>
               </div>
             </>
@@ -73,7 +73,7 @@ const HelpDialog = ({ open, onOpenChange, type, rlsErrorMessage }: HelpDialogPro
                 </p>
                 
                 <p>
-                  Pour résoudre ce problème, un administrateur doit modifier les politiques RLS du bucket "player-images" 
+                  Pour résoudre ce problème, vous devez modifier les politiques RLS du bucket "player-images" 
                   dans la console Supabase pour permettre les actions suivantes :
                 </p>
                 

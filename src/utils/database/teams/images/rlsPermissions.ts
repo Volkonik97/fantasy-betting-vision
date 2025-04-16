@@ -49,28 +49,41 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     if (!bucketExists) {
-      console.error(`Bucket "${bucketName}" does not exist`);
+      console.error(`Bucket "${bucketName}" does not exist in list of buckets, but it might be an RLS issue`);
       
-      // Try to create the bucket to check if user has permission
-      const { error: createError } = await supabase.storage.createBucket(bucketName, {
-        public: true,
-        fileSizeLimit: 5242880, // 5MB
-      });
+      // Try listing files to double-check if the bucket exists but just isn't visible in the list
+      const { data: filesTest, error: filesTestError } = await supabase
+        .storage
+        .from(bucketName)
+        .list('');
       
-      if (createError) {
-        console.error("Error creating bucket:", createError);
-        result.canCreate = false;
+      if (!filesTestError) {
+        console.log(`Bucket "${bucketName}" exists but wasn't listed (likely due to RLS)`);
+        // Continue checking permissions since we can access the bucket
+      } else {
+        console.error(`Confirmed bucket "${bucketName}" does not exist or is not accessible:`, filesTestError);
         
-        if (createError.message?.includes("policy") || createError.message?.includes("RLS")) {
-          result.errorMessage = "Erreur de politique RLS: Vous n'avez pas la permission de créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.";
-        } else {
-          result.errorMessage = `Erreur lors de la création du bucket: ${createError.message}`;
+        // Try to create the bucket to check if user has permission
+        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 5242880, // 5MB
+        });
+        
+        if (createError) {
+          console.error("Error creating bucket:", createError);
+          result.canCreate = false;
+          
+          if (createError.message?.includes("policy") || createError.message?.includes("RLS")) {
+            result.errorMessage = "Erreur de politique RLS: Vous n'avez pas la permission de créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.";
+          } else {
+            result.errorMessage = `Erreur lors de la création du bucket: ${createError.message}`;
+          }
+          return result;
         }
-        return result;
+        
+        // If we get here, bucket was created successfully
+        console.log(`Successfully created bucket "${bucketName}"`);
       }
-      
-      // If we get here, bucket was created successfully
-      console.log(`Successfully created bucket "${bucketName}"`);
       result.canCreate = true;
     }
     
@@ -147,3 +160,4 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     return result;
   }
 };
+
