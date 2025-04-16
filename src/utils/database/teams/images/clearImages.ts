@@ -154,11 +154,10 @@ export const clearAllPlayerImageReferences = async (deleteFromStorage: boolean =
     }
     
     // Maintenant, effacer toutes les références d'images dans la base de données
-    const { count, error } = await supabase
+    const { data, error, count } = await supabase
       .from('players')
       .update({ image: null })
-      .not('image', 'is', null)
-      .select('playerid', { count: 'exact' });
+      .not('image', 'is', null);
     
     if (error) {
       console.error("Erreur lors de la suppression de toutes les références d'images:", error);
