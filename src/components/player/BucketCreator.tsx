@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,16 +16,28 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  const sanitizeBucketName = (name: string): string => {
+    // Convert to lowercase and replace spaces with hyphens
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9.-]/g, '-')     // Replace invalid characters with hyphens
+      .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '');  // Trim non-alphanumeric characters from start/end
+  };
+
   const createBucket = async () => {
+    const sanitizedBucketId = sanitizeBucketName(bucketId);
+
+    if (sanitizedBucketId !== bucketId) {
+      toast.warning(`Bucket name sanitized to: "${sanitizedBucketId}"`);
+    }
+
     setIsCreating(true);
     setProgress(10);
     setResult(null);
 
     try {
-      console.log(`Attempting to create bucket: "${bucketId}"`);
+      console.log(`Attempting to create bucket: "${sanitizedBucketId}"`);
       
-      // Step 1: Check if bucket already exists
-      setProgress(15);
       const { data: buckets, error: checkError } = await supabase.storage.listBuckets();
       
       if (checkError) {
@@ -63,10 +74,9 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         return;
       }
 
-      // Step 2: Create bucket
       setProgress(30);
-      console.log(`Creating bucket with ID: "${bucketId}"`);
-      const { error: bucketError } = await supabase.storage.createBucket(bucketId, {
+      console.log(`Creating bucket with ID: "${sanitizedBucketId}"`);
+      const { error: bucketError } = await supabase.storage.createBucket(sanitizedBucketId, {
         public: true,
         fileSizeLimit: 5242880, // 5MB
       });
@@ -98,7 +108,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
       
       // Step 3: Set bucket settings
       try {
-        const corsResponse = await supabase.storage.updateBucket(bucketId, {
+        const corsResponse = await supabase.storage.updateBucket(sanitizedBucketId, {
           public: true,
           fileSizeLimit: 5242880, // 5MB
           allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
@@ -114,7 +124,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
       }
       
       // Step 4: Verify bucket was created
-      const { data, error: getBucketError } = await supabase.storage.getBucket(bucketId);
+      const { data, error: getBucketError } = await supabase.storage.getBucket(sanitizedBucketId);
       
       if (getBucketError || !data) {
         setResult({
