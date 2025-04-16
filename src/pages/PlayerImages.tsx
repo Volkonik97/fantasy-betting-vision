@@ -130,7 +130,6 @@ const PlayerImages = () => {
     setIsProcessingClearAll(true);
     
     try {
-      // Pass true to indicate we should also delete files from storage
       const { success, clearedCount } = await clearAllPlayerImageReferences(true);
       
       if (success) {
