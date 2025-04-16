@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
-import { PlayerWithImage } from "./image-import/types"; // Import the shared type
+import { PlayerWithImage, hasPlayerImage } from "./image-import/types"; // Import the shared type and helper
 
 import DropZone from "./image-import/DropZone";
 import UploadErrorAlert from "./image-import/UploadErrorAlert";
@@ -97,20 +97,28 @@ const PlayerImagesImport = ({
       setPlayers(allPlayers);
       console.log("Total loaded players:", allPlayers.length);
       
-      const playersWithImages = allPlayers.filter(player => player.image);
+      // Normalize image URLs to ensure consistent format before counting
+      allPlayers.forEach(player => {
+        if (player.image) {
+          // Ensure the image property is a clean string by removing any extra whitespace
+          player.image = player.image.trim();
+        }
+      });
+      
+      const playersWithImages = allPlayers.filter(player => hasPlayerImage(player));
       console.log("Players with images:", playersWithImages.length);
       if (playersWithImages.length > 0) {
         console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
       }
       
-      // Fix here: Initialize with all required properties of PlayerWithImage type
+      // Initialize with all required properties of PlayerWithImage type
       const initialPlayerImages: PlayerWithImage[] = allPlayers.map(player => ({
         player,
         imageFile: null,
         newImageUrl: null,
         processed: false,
-        isUploading: false,  // Add this missing property
-        error: null         // Add this missing property
+        isUploading: false,
+        error: null
       }));
       setPlayerImages(initialPlayerImages);
     } catch (error) {
@@ -341,9 +349,9 @@ const PlayerImagesImport = ({
   const getFilteredPlayers = () => {
     switch (activeTab) {
       case "no-image":
-        return playerImages.filter(p => !p.player.image && !p.newImageUrl);
+        return playerImages.filter(p => !hasPlayerImage(p.player) && !p.newImageUrl);
       case "with-image":
-        return playerImages.filter(p => p.player.image || p.newImageUrl);
+        return playerImages.filter(p => hasPlayerImage(p.player) || p.newImageUrl);
       case "pending":
         return playerImages.filter(p => p.imageFile && !p.processed);
       case "processed":

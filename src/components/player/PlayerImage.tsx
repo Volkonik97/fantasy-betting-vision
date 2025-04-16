@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 import { verifyImageExists } from "@/utils/database/teams/imageUtils";
-import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,27 +26,29 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         return;
       }
 
-      console.log(`Traitement de l'image pour ${name}: ${image}`);
+      // Trim any whitespace that might cause inconsistency
+      const cleanImageUrl = image.trim();
+      console.log(`Traitement de l'image pour ${name}: ${cleanImageUrl}`);
 
       try {
         // Si c'est une URL complète, l'utiliser directement
-        if (image.startsWith('http')) {
-          setImageUrl(image);
+        if (cleanImageUrl.startsWith('http')) {
+          setImageUrl(cleanImageUrl);
           // Vérifier si l'image est accessible
-          const exists = await verifyImageExists(image);
+          const exists = await verifyImageExists(cleanImageUrl);
           if (!exists) {
-            console.warn(`L'image n'existe pas: ${image}`);
+            console.warn(`L'image n'existe pas: ${cleanImageUrl}`);
             setImageError(true);
           }
         }
         // Si c'est un chemin relatif vers le dossier public, ajouter un / au début
-        else if (image.startsWith('lovable-uploads/')) {
-          setImageUrl(`/${image}`);
+        else if (cleanImageUrl.startsWith('lovable-uploads/')) {
+          setImageUrl(`/${cleanImageUrl}`);
         }
         // Si c'est juste un nom de fichier, construire l'URL Supabase storage
-        else if (!image.includes('/')) {
+        else if (!cleanImageUrl.includes('/')) {
           // Construire l'URL Supabase storage
-          const publicUrl = getSupabaseStorageUrl(image);
+          const publicUrl = getSupabaseStorageUrl(cleanImageUrl);
           console.log(`URL Supabase construite pour ${name}: ${publicUrl}`);
           setImageUrl(publicUrl);
 
@@ -56,7 +57,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
             const { data, error } = await supabase
               .storage
               .from('player-images')
-              .download(image);
+              .download(cleanImageUrl);
               
             if (error) {
               console.error(`L'image n'existe pas dans le stockage pour ${name}: ${error.message}`);
@@ -69,7 +70,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
         }
         // Pour tout autre format, utiliser tel quel
         else {
-          setImageUrl(image);
+          setImageUrl(cleanImageUrl);
         }
       } catch (error) {
         console.error(`Erreur lors du traitement de l'image pour ${name}:`, error);
