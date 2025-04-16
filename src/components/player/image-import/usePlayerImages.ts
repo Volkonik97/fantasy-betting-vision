@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Player } from "@/utils/models/types";
-import { getPlayers } from "@/utils/database/playersService";
+import { loadAllPlayersInBatches } from "@/services/playerService";
 import { PlayerWithImage, UploadStatus } from "./types";
 import { uploadPlayerImage, updatePlayerImageReference, uploadMultiplePlayerImages } from "@/utils/database/teams/images/uploader";
 import { toast } from "sonner";
@@ -19,13 +19,14 @@ export const usePlayerImages = () => {
     inProgress: false
   });
 
-  // Charger les joueurs
+  // Charger les joueurs avec pagination pour dépasser la limite de 1000
   useEffect(() => {
     const loadPlayers = async () => {
       setIsLoading(true);
       try {
-        const allPlayers = await getPlayers(1, 1000);
-        console.log(`Chargement de ${allPlayers.length} joueurs terminé`);
+        // Utiliser loadAllPlayersInBatches pour charger tous les joueurs
+        const allPlayers = await loadAllPlayersInBatches();
+        console.log(`Chargement de ${allPlayers.length} joueurs terminé (en lots)`);
         
         setPlayers(allPlayers);
         

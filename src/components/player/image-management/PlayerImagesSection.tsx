@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import PlayerImagesImport from "@/components/player/image-import/PlayerImagesImport";
 import MissingImagesCsvExport from "@/components/player/image-management/MissingImagesCsvExport";
 import { Player } from "@/utils/models/types";
-import { getPlayers } from "@/utils/database/playersService";
+import { loadAllPlayersInBatches } from "@/services/playerService";
 
 interface PlayerImagesSectionProps {
   bucketStatus: "loading" | "exists" | "error";
@@ -19,7 +19,10 @@ const PlayerImagesSection = ({ bucketStatus, rlsEnabled, showRlsHelp }: PlayerIm
   useEffect(() => {
     const loadPlayers = async () => {
       try {
-        const playersList = await getPlayers();
+        setIsLoading(true);
+        // Use the batch loading service instead of direct getPlayers
+        const playersList = await loadAllPlayersInBatches();
+        console.log(`Loaded ${playersList.length} players in batches`);
         setPlayers(playersList);
       } catch (error) {
         console.error("Error loading players:", error);
