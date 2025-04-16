@@ -11,6 +11,7 @@ import { checkBucketRlsPermission } from "@/utils/database/teams/images/rlsPermi
 import BucketCreator from "../BucketCreator";
 import ClearImagesDialog from "./ClearImagesDialog";
 import { clearAllPlayerImageReferences } from "@/utils/database/teams/images/clearImages";
+import { refreshImageReferences } from "@/utils/database/teams/images/refreshImages";
 
 const PlayerImagesContainer = () => {
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
@@ -147,24 +148,27 @@ const PlayerImagesContainer = () => {
   }, []);
 
   const handleRefreshImages = async () => {
-    // This would be implemented to refresh player images
-    console.log("Refreshing images...");
-    // Mock implementation
-    setIsRefreshingImages(true);
-    setRefreshProgress(0);
-    
-    // Simulate progress
-    const interval = setInterval(() => {
-      setRefreshProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsRefreshingImages(false);
-          setRefreshComplete(true);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 500);
+    try {
+      setIsRefreshingImages(true);
+      setRefreshProgress(0);
+      
+      // Appeler la fonction de rafraîchissement des images
+      const result = await refreshImageReferences();
+      
+      setRefreshProgress(100);
+      setRefreshComplete(true);
+      
+      if (result.fixedCount > 0) {
+        toast.success(`${result.fixedCount} références d'images invalides ont été supprimées`);
+      } else {
+        toast.info("Aucune référence d'image invalide trouvée");
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement des images:", error);
+      toast.error("Une erreur s'est produite lors de la vérification des images");
+    } finally {
+      setIsRefreshingImages(false);
+    }
   };
 
   const handleClearAllImages = async () => {
@@ -175,8 +179,10 @@ const PlayerImagesContainer = () => {
       const result = await clearAllPlayerImageReferences(true);
       
       if (result.success) {
+        console.log(`Suppression réussie: ${result.clearedCount} références`);
         toast.success(`${result.clearedCount} références d'images ont été supprimées`);
       } else {
+        console.error("Échec de la suppression des références d'images");
         toast.error("Échec de la suppression des références d'images");
       }
     } catch (error) {

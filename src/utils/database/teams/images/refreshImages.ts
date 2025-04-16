@@ -15,8 +15,7 @@ export const refreshImageReferences = async (): Promise<{ fixedCount: number, co
     const { data: playersWithImages, error: selectError } = await supabase
       .from('players')
       .select('playerid, image')
-      .not('image', 'is', null)
-      .limit(100); // Process in batches of 100 to avoid timeouts
+      .not('image', 'is', null);
     
     if (selectError) {
       console.error("Erreur lors de la récupération des joueurs avec images:", selectError);
@@ -54,26 +53,9 @@ export const refreshImageReferences = async (): Promise<{ fixedCount: number, co
       }
     }
     
-    // Determine if there are more players to process
-    const { count, error: countError } = await supabase
-      .from('players')
-      .select('playerid', { count: 'exact' })
-      .not('image', 'is', null);
+    console.log(`Vérification terminée. ${fixedCount} références d'images ont été supprimées.`);
     
-    if (countError) {
-      console.error("Erreur lors du comptage des joueurs restants:", countError);
-      return { fixedCount, completed: false };
-    }
-    
-    const completed = count === 0 || playersWithImages.length >= count;
-    
-    if (completed) {
-      console.log("Vérification des références d'images terminée");
-    } else {
-      console.log(`Il reste ${count - playersWithImages.length} références d'images à vérifier`);
-    }
-    
-    return { fixedCount, completed };
+    return { fixedCount, completed: true };
   } catch (error) {
     console.error("Erreur lors de la vérification des références d'images:", error);
     return { fixedCount: 0, completed: false };
