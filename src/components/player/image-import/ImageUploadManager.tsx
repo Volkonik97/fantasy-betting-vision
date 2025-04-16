@@ -161,36 +161,38 @@ class ImageUploadManager {
         }
       }
       
-      // Upload with longer timeout and better error handling
+      // Upload with timeout handling without using AbortController.signal directly
       try {
-        // Create an AbortController to handle timeouts
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.uploadTimeoutMs);
+        // Set up a timeout promise
+        const timeoutPromise = new Promise<{ data: null, error: Error }>((_, reject) => {
+          setTimeout(() => {
+            reject(new Error("Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet."));
+          }, this.uploadTimeoutMs);
+        });
         
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Start the upload
+        const uploadPromise = supabase.storage
           .from('player-images')
           .upload(fileName, fileToUpload, {
             cacheControl: '3600',
-            upsert: true,
-            signal: controller.signal
+            upsert: true
           });
           
-        clearTimeout(timeoutId);
+        // Race between upload and timeout
+        const result = await Promise.race([uploadPromise, timeoutPromise]);
         
-        if (uploadError) {
-          console.error("Error uploading image:", uploadError);
+        if (result.error) {
+          console.error("Error uploading image:", result.error);
           
-          let errorMsg = uploadError.message;
-          if (uploadError.message?.includes("violates row-level security policy")) {
+          let errorMsg = result.error.message;
+          if (errorMsg?.includes("violates row-level security policy")) {
             errorMsg = "Erreur de politique de sécurité RLS. Vérifiez les permissions du bucket.";
-          } else if (uploadError.name === "AbortError" || uploadError.message?.includes("abort")) {
-            errorMsg = "Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet.";
           }
           
           return { success: false, error: true, errorMessage: errorMsg };
         }
         
-        console.log("Upload successful, data:", uploadData);
+        console.log("Upload successful, data:", result.data);
         
         const { data: { publicUrl } } = supabase
           .storage
@@ -229,19 +231,11 @@ class ImageUploadManager {
         
         return { success: true, error: false, errorMessage: null };
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return { 
-            success: false, 
-            error: true, 
-            errorMessage: "Délai d'attente dépassé lors de l'upload. Vérifiez votre connexion internet." 
-          };
-        } else {
-          return { 
-            success: false, 
-            error: true, 
-            errorMessage: error instanceof Error ? error.message : String(error) 
-          };
-        }
+        return { 
+          success: false, 
+          error: true, 
+          errorMessage: error instanceof Error ? error.message : String(error) 
+        };
       }
     } catch (error) {
       console.error("Error processing player image:", error);
