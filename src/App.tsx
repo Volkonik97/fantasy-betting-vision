@@ -1,94 +1,50 @@
 
-import React from "react";
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import React, { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import Index from "./pages/Index";
-import Teams from "./pages/Teams";
-import Players from "./pages/Players";
-import Matches from "./pages/Matches";
-import Tournaments from "./pages/Tournaments";
-import TeamComparison from "./pages/TeamComparison";
-import Analysis from "./pages/Analysis";
-import DataImport from "./pages/DataImport";
-import PlayerImages from "./pages/PlayerImages";
-import TeamDetails from "./pages/TeamDetails";
-import PlayerDetails from "./pages/PlayerDetails";
-import MatchDetails from "./pages/MatchDetails";
 import NotFound from "./pages/NotFound";
-import Predictions from "./pages/Predictions";
-import AdminPage from "./pages/Admin";
+
+// Lazy load pages for better performance
+const Matches = lazy(() => import("./pages/Matches"));
+const MatchDetails = lazy(() => import("./pages/MatchDetails"));
+const Teams = lazy(() => import("./pages/Teams"));
+const TeamDetails = lazy(() => import("./pages/TeamDetails"));
+const Players = lazy(() => import("./pages/Players"));
+const PlayerDetails = lazy(() => import("./pages/PlayerDetails"));
+const PlayerImages = lazy(() => import("./pages/PlayerImages"));
+const Tournaments = lazy(() => import("./pages/Tournaments"));
+const DataImport = lazy(() => import("./pages/DataImport"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Analysis = lazy(() => import("./pages/Analysis"));
+const Predictions = lazy(() => import("./pages/Predictions"));
+const TeamComparison = lazy(() => import("./pages/TeamComparison"));
 
 function App() {
   return (
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Chargement...</div>}>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/matches" element={<Matches />} />
+          <Route path="/matches/:matchId" element={<MatchDetails />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/teams/:teamId" element={<TeamDetails />} />
+          <Route path="/players" element={<Players />} />
+          <Route path="/players/:playerId" element={<PlayerDetails />} />
+          <Route path="/player-images" element={<PlayerImages />} />
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/import" element={<DataImport />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/predictions" element={<Predictions />} />
+          <Route path="/compare" element={<TeamComparison />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+      <Toaster position="top-right" />
+    </BrowserRouter>
   );
 }
 
 export default App;
-
-// Update the router to ensure consistent routes for player details
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Index />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: "/teams",
-    element: <Teams />,
-  },
-  {
-    path: "/team/:id",
-    element: <TeamDetails />,
-  },
-  {
-    path: "/players",
-    element: <Players />,
-  },
-  {
-    path: "/players/:id",
-    element: <PlayerDetails />,
-  },
-  {
-    path: "/player/:id", // Add this route as a fallback for older links
-    element: <PlayerDetails />,
-  },
-  {
-    path: "/matches",
-    element: <Matches />,
-  },
-  {
-    path: "/match/:id",
-    element: <MatchDetails />,
-  },
-  {
-    path: "/tournaments",
-    element: <Tournaments />,
-  },
-  {
-    path: "/predictions",
-    element: <Predictions />,
-  },
-  {
-    path: "/team-comparison",
-    element: <TeamComparison />,
-  },
-  {
-    path: "/analysis",
-    element: <Analysis />,
-  },
-  {
-    path: "/data-import",
-    element: <DataImport />,
-  },
-  {
-    path: "/player-images",
-    element: <PlayerImages />,
-  },
-  {
-    path: "/admin",
-    element: <AdminPage />,
-  },
-]);

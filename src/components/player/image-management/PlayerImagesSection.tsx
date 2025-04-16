@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import PlayerImagesImport from "@/components/player/PlayerImagesImport";
+import PlayerImagesImport from "@/components/player/image-import/PlayerImagesImport";
 import MissingImagesCsvExport from "@/components/player/image-management/MissingImagesCsvExport";
 import { Player } from "@/utils/models/types";
 import { getPlayers } from "@/utils/database/playersService";
