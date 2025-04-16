@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SearchBar from "@/components/SearchBar";
@@ -10,21 +11,27 @@ import { getAllTeams } from "@/services/teamService";
 import { getPlayersCount } from "@/utils/database/players/playersService";
 import { toast } from "sonner";
 
+// Define an interface for player with team information
+interface PlayerWithTeam extends Player {
+  teamName: string;
+  teamRegion: string;
+}
+
 const Players = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("All");
   const [selectedRegion, setSelectedRegion] = useState<string>("All");
   const [selectedSubRegion, setSelectedSubRegion] = useState<string>("All");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [allPlayers, setAllPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
+  const [allPlayers, setAllPlayers] = useState<PlayerWithTeam[]>([]);
   const [loading, setIsLoading] = useState(true);
   const [loadingAllPlayers, setLoadingAllPlayers] = useState(false);
   const [availableRegions, setAvailableRegions] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [displayedPlayers, setDisplayedPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
-  const [filteredPlayers, setFilteredPlayers] = useState<(Player & { teamName: string; teamRegion: string })[]>([]);
+  const [displayedPlayers, setDisplayedPlayers] = useState<PlayerWithTeam[]>([]);
+  const [filteredPlayers, setFilteredPlayers] = useState<PlayerWithTeam[]>([]);
   const pageSize = 100;
 
   // Définition des rôles pour le filtrage - using consistent role names
@@ -102,7 +109,7 @@ const Players = () => {
           teamName: team?.name || "Équipe inconnue",
           teamRegion: team?.region || "Région inconnue"
         };
-      });
+      }) as PlayerWithTeam[];
       
       console.log(`Processed ${enrichedPlayers.length} enriched players`);
       
@@ -116,7 +123,7 @@ const Players = () => {
       setAllPlayers(enrichedPlayers);
       setDisplayedPlayers(enrichedPlayers);
       
-      const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
+      const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))] as string[];
       setAvailableRegions(uniqueRegions);
       
     } catch (error) {
@@ -157,7 +164,7 @@ const Players = () => {
           teamName: team?.name || "Équipe inconnue",
           teamRegion: team?.region || "Région inconnue"
         };
-      });
+      }) as PlayerWithTeam[];
       
       // Log pour vérifier les rôles des joueurs
       const roleCount: Record<string, number> = {};
@@ -169,7 +176,7 @@ const Players = () => {
       console.log(`Processed ${enrichedPlayers.length} enriched players for filtering`);
       setAllPlayers(enrichedPlayers);
       
-      const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))];
+      const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))] as string[];
       setAvailableRegions(uniqueRegions);
       
       toast.success(`${enrichedPlayers.length} joueurs chargés`);
@@ -202,7 +209,7 @@ const Players = () => {
         selectedSubRegion, 
         selectedCategory,
         regionCategories
-      ) as (Player & { teamName: string; teamRegion: string })[];
+      ) as PlayerWithTeam[];
       
       console.log(`Filtered players count: ${filtered.length}`);
       
@@ -218,7 +225,7 @@ const Players = () => {
       setFilteredPlayers(filtered);
       
       if (searchTerm.trim() !== '') {
-        const searchResults = await searchPlayers<Player & { teamName: string; teamRegion: string }>(
+        const searchResults = await searchPlayers<PlayerWithTeam>(
           filtered, 
           searchTerm
         );
