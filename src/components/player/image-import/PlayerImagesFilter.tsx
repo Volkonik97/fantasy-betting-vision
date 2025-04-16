@@ -14,12 +14,13 @@ const PlayerImagesFilter = ({ activeTab, setActiveTab, playerImages, children }:
   const playersWithoutImages = playerImages.filter(p => !p.player.image && !p.newImageUrl).length;
   const pendingCount = playerImages.filter(p => p.imageFile && !p.processed).length;
   const processedCount = playerImages.filter(p => p.processed).length;
+  const errorCount = playerImages.filter(p => p.error !== null).length;
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-5 mb-4">
+      <TabsList className="grid grid-cols-6 mb-4">
         <TabsTrigger value="all">
-          Tous les joueurs ({playerImages.length})
+          Tous ({playerImages.length})
         </TabsTrigger>
         <TabsTrigger value="no-image">
           Sans image ({playersWithoutImages})
@@ -32,6 +33,9 @@ const PlayerImagesFilter = ({ activeTab, setActiveTab, playerImages, children }:
         </TabsTrigger>
         <TabsTrigger value="processed">
           Traités ({processedCount})
+        </TabsTrigger>
+        <TabsTrigger value="errors" className={errorCount > 0 ? "bg-red-100 data-[state=active]:bg-red-200" : ""}>
+          Erreurs ({errorCount})
         </TabsTrigger>
       </TabsList>
 

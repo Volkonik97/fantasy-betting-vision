@@ -8,14 +8,20 @@ interface UnmatchedImagesListProps {
   unmatched: File[];
   playerOptions: PlayerWithImage[];
   onAssign: (file: File, playerIndex: number) => void;
+  disabled?: boolean;
 }
 
-const UnmatchedImagesList = ({ unmatched, playerOptions, onAssign }: UnmatchedImagesListProps) => {
+const UnmatchedImagesList = ({ 
+  unmatched, 
+  playerOptions, 
+  onAssign, 
+  disabled = false 
+}: UnmatchedImagesListProps) => {
   if (unmatched.length === 0) return null;
   
-  const sortedPlayerOptions = [...playerOptions].sort((a, b) => 
-    a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' })
-  );
+  const sortedPlayerOptions = [...playerOptions]
+    .filter(p => !p.processed && !p.imageFile) // Filtrer pour ne montrer que les joueurs sans image
+    .sort((a, b) => a.player.name.localeCompare(b.player.name, 'fr', { sensitivity: 'base' }));
 
   return (
     <div className="mt-6">
@@ -39,6 +45,7 @@ const UnmatchedImagesList = ({ unmatched, playerOptions, onAssign }: UnmatchedIm
             index={index}
             playerOptions={sortedPlayerOptions}
             onAssign={onAssign}
+            disabled={disabled}
           />
         ))}
       </div>

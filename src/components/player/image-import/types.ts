@@ -6,9 +6,14 @@ export interface PlayerWithImage {
   imageFile: File | null;
   newImageUrl: string | null;
   processed: boolean;
+  isUploading: boolean;
+  error: string | null;
 }
 
-export interface ImageUploadError {
-  count: number;
-  lastError: string | null;
+export interface UploadStatus {
+  total: number;
+  processed: number;
+  success: number;
+  failed: number;
+  inProgress: boolean;
 }
