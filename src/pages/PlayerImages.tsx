@@ -131,10 +131,11 @@ const PlayerImages = () => {
     setIsProcessingClearAll(true);
     
     try {
-      const { success, clearedCount } = await clearAllPlayerImageReferences();
+      // Pass true to indicate we should also delete files from storage
+      const { success, clearedCount } = await clearAllPlayerImageReferences(true);
       
       if (success) {
-        toast.success(`${clearedCount} références d'images ont été supprimées avec succès`);
+        toast.success(`${clearedCount} références d'images ont été supprimées avec succès et les fichiers associés ont été supprimés du stockage`);
         setShowConfirmClearAll(false);
       } else {
         toast.error("Erreur lors de la suppression des références d'images");

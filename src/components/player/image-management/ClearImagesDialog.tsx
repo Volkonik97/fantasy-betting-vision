@@ -1,11 +1,8 @@
 
 import React from "react";
-import { 
-  Dialog, DialogContent, DialogDescription, DialogFooter, 
-  DialogHeader, DialogTitle
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Trash2, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertCircle } from "lucide-react";
 
 interface ClearImagesDialogProps {
   open: boolean;
@@ -14,48 +11,40 @@ interface ClearImagesDialogProps {
   onConfirm: () => Promise<void>;
 }
 
-const ClearImagesDialog = ({ 
-  open, 
-  onOpenChange, 
-  isProcessing, 
-  onConfirm 
+const ClearImagesDialog = ({
+  open,
+  onOpenChange,
+  isProcessing,
+  onConfirm
 }: ClearImagesDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Confirmer la suppression</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+            Confirmer la suppression
+          </DialogTitle>
           <DialogDescription>
-            Cette action va supprimer toutes les références d'images dans la base de données.
-            Les fichiers dans le bucket resteront intacts mais ne seront plus liés aux joueurs.
+            Vous êtes sur le point de supprimer toutes les références d'images dans la base de données
+            <strong className="block mt-2">et tous les fichiers d'images associés dans le stockage Supabase.</strong>
+            Cette action ne peut pas être annulée.
           </DialogDescription>
         </DialogHeader>
-        <div className="pt-4 pb-2">
-          <p className="text-red-600">
-            Attention: Cette action ne peut pas être annulée!
-          </p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          <Button 
+        <DialogFooter className="sm:justify-start gap-2 mt-4">
+          <Button
             variant="destructive"
             onClick={onConfirm}
             disabled={isProcessing}
-            className="flex items-center gap-2"
           >
-            {isProcessing ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Traitement...
-              </>
-            ) : (
-              <>
-                <Trash2 className="h-4 w-4" />
-                Confirmer la suppression
-              </>
-            )}
+            {isProcessing ? "Suppression en cours..." : "Confirmer la suppression"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isProcessing}
+          >
+            Annuler
           </Button>
         </DialogFooter>
       </DialogContent>
