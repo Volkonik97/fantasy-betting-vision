@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface RlsPermissionsResult {
   canUpload: boolean;
   canList: boolean;
+  canCreate: boolean;
   errorMessage: string | null;
 }
 
@@ -15,6 +16,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
   const result: RlsPermissionsResult = {
     canUpload: false,
     canList: false,
+    canCreate: false,
     errorMessage: null
   };
   
@@ -24,6 +26,7 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
   try {
     console.log(`Checking RLS permissions for bucket: "${bucketName}"`);
     
+    // First check if user has permission to list buckets (admin action)
     const { data: buckets, error: bucketError } = await supabase
       .storage
       .listBuckets();
@@ -41,11 +44,34 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
     
     console.log("Available buckets:", buckets?.map(b => `"${b.name}"`).join(", "));
     
+    // User can list buckets, which suggests they might have create permission
+    result.canCreate = true;
+    
     const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     if (!bucketExists) {
       console.error(`Bucket "${bucketName}" does not exist`);
-      result.errorMessage = `Le bucket '${bucketName}' n'existe pas. Veuillez créer le bucket dans la console Supabase ou utiliser le bouton de création.`;
-      return result;
+      
+      // Try to create the bucket to check if user has permission
+      const { error: createError } = await supabase.storage.createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: 5242880, // 5MB
+      });
+      
+      if (createError) {
+        console.error("Error creating bucket:", createError);
+        result.canCreate = false;
+        
+        if (createError.message?.includes("policy") || createError.message?.includes("RLS")) {
+          result.errorMessage = "Erreur de politique RLS: Vous n'avez pas la permission de créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.";
+        } else {
+          result.errorMessage = `Erreur lors de la création du bucket: ${createError.message}`;
+        }
+        return result;
+      }
+      
+      // If we get here, bucket was created successfully
+      console.log(`Successfully created bucket "${bucketName}"`);
+      result.canCreate = true;
     }
     
     // Check listing permissions first

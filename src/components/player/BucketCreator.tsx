@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Check } from "lucide-react";
+import { AlertCircle, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 
@@ -36,7 +36,7 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         if (checkError.message?.includes("policy") || checkError.message?.includes("RLS")) {
           setResult({
             success: false,
-            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour créer ou accéder aux buckets. Contactez l'administrateur du projet.",
+            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour lister les buckets. Contactez l'administrateur du projet.",
           });
           toast.error("Erreur de permissions RLS. Accès refusé.");
         } else {
@@ -80,9 +80,9 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
             bucketError.message?.includes("RLS")) {
           setResult({
             success: false,
-            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour créer des buckets. Cette opération doit être effectuée par l'administrateur du projet.",
+            message: "Erreur de politique RLS: Vous n'avez pas les permissions nécessaires pour créer des buckets. Cette opération doit être effectuée par l'administrateur du projet sur le dashboard Supabase.",
           });
-          toast.error("Erreur de permissions RLS. Contactez l'administrateur.");
+          toast.error("Erreur de permissions RLS. Cette opération nécessite un accès administrateur.");
         } else {
           setResult({
             success: false,
@@ -96,14 +96,12 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
 
       setProgress(70);
       
-      // Step 3: Set CORS policy for the bucket
+      // Step 3: Set bucket settings
       try {
-        // Update bucket CORS using the updateBucket method instead of updateBucketCors
         const corsResponse = await supabase.storage.updateBucket(bucketId, {
           public: true,
           fileSizeLimit: 5242880, // 5MB
           allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
-          // CORS configuration is now set via project-level settings in Supabase dashboard
         });
         
         if (corsResponse.error) {
@@ -154,23 +152,50 @@ const BucketCreator: React.FC<BucketCreatorProps> = ({ bucketId, onBucketCreated
         <h3 className="text-lg font-semibold">Créer le bucket de stockage</h3>
         <p className="text-sm text-gray-500">
           Le bucket de stockage "{bucketId}" n'existe pas ou n'est pas accessible. 
-          Cliquez sur le bouton ci-dessous pour le créer et pouvoir télécharger des images de joueurs.
         </p>
       </div>
 
-      <Button 
-        onClick={createBucket} 
-        disabled={isCreating}
-        className="w-full"
-      >
-        {isCreating ? "Création en cours..." : "Créer le bucket"}
-      </Button>
+      {result?.success === false && result.message.includes("RLS") ? (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertTitle>Action administrateur requise</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>{result.message}</p>
+            <p className="text-sm">Pour créer le bucket "{bucketId}", un administrateur doit:</p>
+            <ol className="list-decimal ml-5 text-sm space-y-1">
+              <li>Se connecter au dashboard Supabase</li>
+              <li>Naviguer vers la section Storage</li>
+              <li>Cliquer sur "New Bucket"</li>
+              <li>Créer un bucket nommé exactement "{bucketId}"</li>
+              <li>Définir le bucket comme public</li>
+            </ol>
+            <div className="mt-3">
+              <Button 
+                variant="outline"
+                className="flex items-center gap-2 text-sm"
+                onClick={() => window.open("https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage/buckets", "_blank")}
+              >
+                <ExternalLink className="h-4 w-4" />
+                Ouvrir le dashboard Supabase
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Button 
+          onClick={createBucket} 
+          disabled={isCreating}
+          className="w-full"
+        >
+          {isCreating ? "Création en cours..." : "Créer le bucket"}
+        </Button>
+      )}
       
       {isCreating && (
         <Progress value={progress} className="h-2" />
       )}
       
-      {result && (
+      {result && !result.message.includes("RLS") && (
         <Alert className={result.success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}>
           {result.success ? (
             <Check className="h-4 w-4 text-green-600" />

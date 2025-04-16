@@ -1,9 +1,8 @@
 
 import React from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Check, Database, Shield } from "lucide-react";
+import { AlertTriangle, Check, Database, Shield, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface BucketAccessAlertProps {
@@ -13,6 +12,7 @@ interface BucketAccessAlertProps {
     checked: boolean; 
     canUpload: boolean; 
     canList: boolean; 
+    canCreate?: boolean;
     message: string | null;
   };
   onShowHelp: () => void;
@@ -24,7 +24,7 @@ const BucketAccessAlert = ({ bucketStatus, errorMessage, rlsStatus, onShowHelp }
   if (bucketStatus === "exists") {
     return (
       <>
-        {rlsStatus.checked && !rlsStatus.canUpload && (
+        {rlsStatus.checked && (!rlsStatus.canUpload || !rlsStatus.canList) && (
           <Alert className="bg-amber-50 border-amber-100 mb-3">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="flex items-center gap-2">
@@ -45,24 +45,37 @@ const BucketAccessAlert = ({ bucketStatus, errorMessage, rlsStatus, onShowHelp }
             </AlertTitle>
             <AlertDescription>
               <p>
-                Le bucket existe mais les politiques de sécurité RLS empêchent le téléchargement d'images.
+                Le bucket existe mais les politiques de sécurité RLS empêchent {!rlsStatus.canUpload ? "le téléchargement" : ""} 
+                {!rlsStatus.canUpload && !rlsStatus.canList ? " et " : ""}
+                {!rlsStatus.canList ? "la liste" : ""} des images.
                 {rlsStatus.message && <span className="block mt-1 text-sm">{rlsStatus.message}</span>}
               </p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onShowHelp} 
-                className="mt-2 flex items-center gap-2"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Comment configurer RLS
-              </Button>
+              <div className="mt-2 flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={onShowHelp} 
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Comment configurer RLS
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => window.open("https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage/buckets", "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Ouvrir le dashboard Supabase
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
 
-        <Alert className={`${rlsStatus.checked && !rlsStatus.canUpload ? 'bg-gray-50 border-gray-100' : 'bg-green-50 border-green-100'} mb-3`}>
-          <Check className={`h-4 w-4 ${rlsStatus.checked && !rlsStatus.canUpload ? 'text-gray-600' : 'text-green-600'}`} />
+        <Alert className={`${rlsStatus.checked && (!rlsStatus.canUpload || !rlsStatus.canList) ? 'bg-gray-50 border-gray-100' : 'bg-green-50 border-green-100'} mb-3`}>
+          <Check className={`h-4 w-4 ${rlsStatus.checked && (!rlsStatus.canUpload || !rlsStatus.canList) ? 'text-gray-600' : 'text-green-600'}`} />
           <AlertTitle className="flex items-center gap-2">
             Bucket disponible
             <TooltipProvider>
@@ -80,9 +93,11 @@ const BucketAccessAlert = ({ bucketStatus, errorMessage, rlsStatus, onShowHelp }
           </AlertTitle>
           <AlertDescription>
             Le bucket de stockage est accessible. Vous pouvez télécharger des images de joueurs.
-            {rlsStatus.checked && !rlsStatus.canUpload && (
+            {rlsStatus.checked && (!rlsStatus.canUpload || !rlsStatus.canList) && (
               <span className="block mt-1 text-amber-600 font-medium">
-                Note: Le téléchargement échouera en raison des restrictions RLS.
+                Note: {!rlsStatus.canUpload ? "Le téléchargement échouera" : ""} 
+                {!rlsStatus.canUpload && !rlsStatus.canList ? " et " : ""}
+                {!rlsStatus.canList ? "la liste des fichiers échouera" : ""} en raison des restrictions RLS.
               </span>
             )}
           </AlertDescription>
@@ -104,7 +119,7 @@ const BucketAccessAlert = ({ bucketStatus, errorMessage, rlsStatus, onShowHelp }
               </TooltipTrigger>
               <TooltipContent side="top">
                 <p className="text-xs max-w-xs">
-                  Le bucket "player-images" est nécessaire pour stocker les images des joueurs.
+                  Le bucket "Player Images" est nécessaire pour stocker les images des joueurs.
                   Il semble qu'il n'existe pas ou est inaccessible.
                 </p>
               </TooltipContent>
@@ -113,14 +128,22 @@ const BucketAccessAlert = ({ bucketStatus, errorMessage, rlsStatus, onShowHelp }
         </AlertTitle>
         <AlertDescription>
           <p>Une erreur s'est produite lors de l'accès au bucket de stockage: {errorMessage}</p>
-          <div className="mt-4">
+          <div className="mt-4 flex gap-2">
             <Button 
               variant="secondary" 
               onClick={onShowHelp}
               className="flex items-center gap-2"
             >
-              <ExternalLink className="h-4 w-4" />
+              <Database className="h-4 w-4" />
               Comment créer le bucket manuellement
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => window.open("https://supabase.com/dashboard/project/dtddoxxazhmfudrvpszu/storage/buckets", "_blank")}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Ouvrir le dashboard Supabase
             </Button>
           </div>
         </AlertDescription>

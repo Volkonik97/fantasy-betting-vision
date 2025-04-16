@@ -25,6 +25,7 @@ const PlayerImagesContainer = () => {
     checked: false,
     canUpload: false,
     canList: false,
+    canCreate: false,
     message: null as string | null
   });
 
@@ -76,6 +77,7 @@ const PlayerImagesContainer = () => {
           checked: true,
           canUpload: rlsCheckResult.canUpload,
           canList: rlsCheckResult.canList,
+          canCreate: rlsCheckResult.canCreate,
           message: rlsCheckResult.errorMessage
         });
       } catch (rlsError) {
@@ -84,6 +86,7 @@ const PlayerImagesContainer = () => {
           checked: true,
           canUpload: false,
           canList: false,
+          canCreate: false,
           message: rlsError instanceof Error ? rlsError.message : String(rlsError)
         });
       }
