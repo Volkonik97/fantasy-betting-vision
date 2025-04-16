@@ -1,10 +1,6 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
-
 import ImportHeader from "./ImportHeader";
 import DropZone from "./DropZone";
 import UploadControls from "./UploadControls";
@@ -16,9 +12,9 @@ import UploadSummary from "./UploadSummary";
 import PlayerStats from "./PlayerStats";
 
 interface PlayerImagesImportProps {
-  bucketStatus?: "loading" | "exists" | "error";
-  rlsEnabled?: boolean;
-  showRlsHelp?: () => void;
+  bucketStatus: "loading" | "exists" | "error";
+  rlsEnabled: boolean;
+  showRlsHelp: () => void;
 }
 
 const PlayerImagesImport = ({
@@ -36,42 +32,15 @@ const PlayerImagesImport = ({
     assignFileToPlayer,
     uploadImages
   } = usePlayerImages();
-  
-  const [activeTab, setActiveTab] = useState<string>("all");
 
   const handleUpload = () => {
     uploadImages(bucketStatus === "exists");
   };
 
-  const getFilteredPlayers = () => {
-    switch (activeTab) {
-      case "no-image":
-        return playerImages.filter(p => !p.player.image && !p.newImageUrl);
-      case "with-image":
-        return playerImages.filter(p => p.player.image || p.newImageUrl);
-      case "pending":
-        return playerImages.filter(p => p.imageFile && !p.processed);
-      case "processed":
-        return playerImages.filter(p => p.processed);
-      case "errors":
-        return playerImages.filter(p => p.error !== null);
-      case "all":
-      default:
-        return playerImages;
-    }
-  };
-
-  const filteredPlayers = getFilteredPlayers();
-  const disableUpload = bucketStatus !== "exists" || 
-                          rlsEnabled || 
-                          playerImages.filter(p => p.imageFile !== null && !p.processed).length === 0 ||
-                          uploadStatus.inProgress;
-
   if (isLoading) {
     return (
       <Card className="w-full">
         <CardContent className="flex flex-col items-center justify-center space-y-4 py-12">
-          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
           <div className="text-center">
             <h3 className="text-lg font-medium mb-2">{loadingProgress.message}</h3>
             <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-md">
@@ -105,12 +74,8 @@ const PlayerImagesImport = ({
               disabled={bucketStatus !== "exists" || rlsEnabled || uploadStatus.inProgress}
             />
           </div>
-          
           <div className="md:col-span-1">
-            <PlayerStats 
-              playerImages={playerImages} 
-              className="h-full"
-            />
+            <PlayerStats playerImages={playerImages} className="h-full" />
           </div>
         </div>
 
@@ -123,7 +88,7 @@ const PlayerImagesImport = ({
 
         <UploadControls 
           onUpload={handleUpload}
-          disableUpload={disableUpload}
+          disabled={bucketStatus !== "exists" || rlsEnabled || uploadStatus.inProgress}
           isUploading={uploadStatus.inProgress}
           uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
           status={bucketStatus}
@@ -139,19 +104,11 @@ const PlayerImagesImport = ({
           />
         )}
 
-        <Separator className="my-4" />
-
-        <PlayerImagesFilter
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          playerImages={playerImages}
-        >
-          <PlayerImagesList 
-            isLoading={isLoading} 
-            filteredPlayers={filteredPlayers} 
-            status={bucketStatus}
-          />
-        </PlayerImagesFilter>
+        <PlayerImagesList 
+          isLoading={isLoading} 
+          filteredPlayers={playerImages} 
+          status={bucketStatus}
+        />
       </CardContent>
     </Card>
   );
