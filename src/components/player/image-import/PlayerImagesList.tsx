@@ -7,12 +7,14 @@ interface PlayerImagesListProps {
   isLoading?: boolean;
   filteredPlayers?: PlayerWithImage[];
   status?: "loading" | "exists" | "error";
+  onImageDeleted?: () => void;
 }
 
 const PlayerImagesList: React.FC<PlayerImagesListProps> = ({ 
   isLoading = false, 
   filteredPlayers = [],
-  status = "loading"
+  status = "loading",
+  onImageDeleted
 }) => {
   const [reloadTrigger, setReloadTrigger] = useState(0);
   
@@ -48,6 +50,7 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
         <PlayerImageCard 
           key={`${item.player.id}-${reloadTrigger}`}
           playerData={item} 
+          onImageDeleted={onImageDeleted}
         />
       ))}
     </div>

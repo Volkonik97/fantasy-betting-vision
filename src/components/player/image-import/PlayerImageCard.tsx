@@ -3,18 +3,24 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerWithImage } from "./types";
-import { Check, X, Upload, Image as ImageIcon, RefreshCw } from "lucide-react";
+import { Check, X, Upload, Image as ImageIcon, RefreshCw, Trash2 } from "lucide-react";
 import { hasPlayerImage } from "./types";
 import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils"; 
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { clearInvalidImageReference } from "@/utils/database/teams/imageUtils";
 
 interface PlayerImageCardProps {
   playerData: PlayerWithImage;
+  onImageDeleted?: () => void;
 }
 
-const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData }) => {
+const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDeleted }) => {
   const { player, imageFile, newImageUrl, isUploading, processed, error } = playerData;
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Ensure we always have the latest image URL
   useEffect(() => {
@@ -67,6 +73,30 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData }) => {
       setLoadError(false);
     }
   };
+
+  const handleDeleteImage = async () => {
+    if (!player.id) return;
+
+    setIsDeleting(true);
+    
+    try {
+      const success = await clearInvalidImageReference(player.id);
+      
+      if (success) {
+        toast.success(`L'image de ${player.name} a été supprimée`);
+        if (onImageDeleted) {
+          onImageDeleted();
+        }
+      } else {
+        toast.error(`Échec de la suppression de l'image de ${player.name}`);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'image:", error);
+      toast.error("Une erreur est survenue lors de la suppression de l'image");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   
   return (
     <Card className="overflow-hidden h-full flex flex-col">
@@ -97,6 +127,41 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData }) => {
         {hasNewImage && (
           <div className="absolute top-2 right-2">
             {getStatusIcon()}
+          </div>
+        )}
+
+        {hasExistingImage && (
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 h-7 px-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Supprimer l'image</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Êtes-vous sûr de vouloir supprimer l'image de {player.name} ? 
+                    Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteImage}
+                    disabled={isDeleting}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {isDeleting ? "Suppression..." : "Supprimer"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </div>

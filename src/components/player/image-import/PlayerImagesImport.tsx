@@ -32,11 +32,17 @@ const PlayerImagesImport = ({
     assignFileToPlayer,
     uploadImages,
     filterTab,
-    setFilterTab
+    setFilterTab,
+    refreshPlayerImages
   } = usePlayerImages();
 
   const handleUpload = () => {
     uploadImages(bucketStatus === "exists");
+  };
+
+  const handleImageDeleted = () => {
+    // Refresh the player list when an image is deleted
+    refreshPlayerImages();
   };
 
   if (isLoading) {
@@ -130,6 +136,7 @@ const PlayerImagesImport = ({
               }
             })} 
             status={bucketStatus}
+            onImageDeleted={handleImageDeleted}
           />
         </PlayerImagesFilter>
       </CardContent>
