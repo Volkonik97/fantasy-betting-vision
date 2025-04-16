@@ -1,3 +1,4 @@
+
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -133,7 +134,11 @@ class ImageUploadManager {
       const playerId = playerData.player.id;
       const file = playerData.imageFile;
       
-      const fileName = `playerid${playerId}_${Date.now()}.${file.name.split('.').pop()}`;
+      // Assurez-vous que l'ID du joueur soit propre pour le nom de fichier
+      const safePlayerId = playerId.replace(/[^a-zA-Z0-9]/g, '');
+      
+      // S'assurer d'utiliser le préfixe "playerid" pour faciliter la détection
+      const fileName = `playerid${safePlayerId}_${Date.now()}.${file.name.split('.').pop()}`;
       
       console.log(`Uploading file ${fileName} to ${this.bucketName} bucket for player ${playerId}`);
       

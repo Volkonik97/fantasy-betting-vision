@@ -111,7 +111,9 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Si c'est déjà une URL Supabase Storage complète, la retourner telle quelle
   if (cleanUrl.includes('supabase.co/storage')) {
     console.log(`URL Supabase normalisée: ${cleanUrl}`);
-    return cleanUrl;
+    // Corriger le double slash dans les URLs
+    const fixedUrl = cleanUrl.replace('player-images//', 'player-images/');
+    return fixedUrl;
   }
   
   // Si c'est une URL absolue, la retourner telle quelle
@@ -130,7 +132,6 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       console.log(`Construction de l'URL publique pour: ${cleanUrl}`);
       
       // Vérifier si c'est un ID de joueur en cherchant des fichiers commençant par cet ID
-      // Cette recherche utilise l'ID comme préfixe, comme on le voit dans l'image partagée
       if (cleanUrl.startsWith('playerid')) {
         // Générer l'URL publique pour le bucket player-images
         const { data: publicUrlData } = supabase
@@ -212,7 +213,7 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
   
   try {
     while (hasMore) {
-      // Utiliser await directement sur l'appel à list() - ne pas attribuer la promesse à une variable
+      // Utiliser correctement la méthode list() et attendre son résultat
       const response = await supabase
         .storage
         .from('player-images')
@@ -222,12 +223,12 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
           sortBy: { column: 'name', order: 'asc' }
         });
       
-      const { data, error } = response;
-      
-      if (error) {
-        console.error("Erreur lors de la récupération des images:", error);
+      if (response.error) {
+        console.error("Erreur lors de la récupération des images:", response.error);
         break;
       }
+      
+      const data = response.data;
       
       if (!data || data.length === 0) {
         hasMore = false;

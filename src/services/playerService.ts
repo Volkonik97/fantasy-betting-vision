@@ -1,3 +1,4 @@
+
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
@@ -20,30 +21,43 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
     if (playerImagesCache.length === 0 || (now - playerImagesCacheTimestamp) > CACHE_DURATION) {
       console.log("Préchargement du cache des images de joueurs...");
       
-      // Lister tous les fichiers dans le bucket player-images
-      const { data, error } = await supabase
-        .storage
-        .from('player-images')
-        .list('');
+      // Méthode 1: Utiliser listAllPlayerImages
+      const allImages = await listAllPlayerImages();
+      playerImagesCache = allImages;
       
-      if (error) {
-        console.error("Erreur lors du chargement des images:", error);
-        return;
+      // Méthode 2 (fallback): Lister directement les fichiers
+      if (playerImagesCache.length === 0) {
+        console.log("Utilisation de la méthode de secours pour charger les images...");
+        const { data, error } = await supabase
+          .storage
+          .from('player-images')
+          .list('');
+        
+        if (error) {
+          console.error("Erreur lors du chargement des images:", error);
+          return;
+        }
+        
+        playerImagesCache = data ? data.map(item => item.name) : [];
       }
       
-      // Extraire les noms de fichiers
-      playerImagesCache = data ? data.map(item => item.name) : [];
       playerImagesCacheTimestamp = now;
       
       console.log(`Cache des images mis à jour: ${playerImagesCache.length} images`);
-      console.log("Échantillon de noms d'images dans le cache:", playerImagesCache.slice(0, 10));
+      if (playerImagesCache.length > 0) {
+        console.log("Échantillon de noms d'images dans le cache:", playerImagesCache.slice(0, 10));
+      } else {
+        console.warn("Aucune image trouvée dans le bucket!");
+      }
       
       // Analyser les noms de fichiers pour identifier les ID de joueurs
       const playerIds = new Set<string>();
       playerImagesCache.forEach(filename => {
         // Format attendu: playeridXXXX où XXXX est l'ID du joueur
         if (filename.startsWith('playerid')) {
-          const playerId = filename.replace('playerid', '').split('_')[0];
+          // Extraire l'ID en enlevant le préfixe "playerid" et en arrêtant au premier underscore
+          const filenameParts = filename.replace('playerid', '').split('_');
+          const playerId = filenameParts[0];
           if (playerId) {
             playerIds.add(playerId);
           }
@@ -51,7 +65,9 @@ export const preloadPlayerImagesCache = async (): Promise<void> => {
       });
       
       console.log(`IDs de joueurs identifiés depuis les noms de fichiers: ${playerIds.size}`);
-      console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
+      if (playerIds.size > 0) {
+        console.log("Échantillon d'IDs de joueurs:", Array.from(playerIds).slice(0, 10));
+      }
     }
   } catch (error) {
     console.error("Erreur lors du préchargement du cache des images:", error);
@@ -65,9 +81,12 @@ export const imageExistsForPlayer = (playerId: string): boolean => {
   if (!playerId) return false;
   
   // Vérifier si un fichier commence par 'playerid' + ID du joueur
-  return playerImagesCache.some(filename => {
+  const imageExists = playerImagesCache.some(filename => {
     return filename.startsWith(`playerid${playerId}`);
   });
+  
+  console.log(`Vérification d'image pour le joueur ${playerId}: ${imageExists ? 'Trouvée' : 'Non trouvée'}`);
+  return imageExists;
 };
 
 /**

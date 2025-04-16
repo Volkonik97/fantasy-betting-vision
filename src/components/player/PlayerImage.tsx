@@ -22,14 +22,17 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       setIsLoading(true);
       setImageError(false);
       
+      console.log(`Traitement de l'image pour ${name} (ID: ${playerId || 'non défini'}), image: ${image || 'non définie'}`);
+      
       // Si pas d'image mais un ID de joueur, essayer de construire l'URL à partir de l'ID
       if ((!image || image === "") && playerId) {
         console.log(`Tentative de construction d'URL pour le joueur ${name} avec ID: ${playerId}`);
-        // Construire le nom de fichier avec le préfixe playerid
-        const playerIdFilename = `playerid${playerId}`;
         
-        // Obtenir l'URL publique via supabase
         try {
+          // Utiliser directement le préfixe playerid pour la recherche d'image
+          const playerIdFilename = `playerid${playerId}`;
+          
+          // Obtenir l'URL publique via supabase
           const normalizedUrl = normalizeImageUrl(playerIdFilename);
           console.log(`Image construite pour ${name} (ID: ${playerId}): ${normalizedUrl}`);
           setImageUrl(normalizedUrl);
@@ -69,6 +72,17 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     processImageUrl();
   }, [image, name, playerId]);
 
+  const handleImageLoad = () => {
+    console.log(`Image pour joueur ${name} (ID: ${playerId || 'non défini'}) chargée avec succès: ${imageUrl}`);
+    setIsLoading(false);
+  };
+
+  const handleImageError = () => {
+    console.error(`Erreur de chargement d'image pour joueur ${name} (ID: ${playerId || 'non défini'}): ${imageUrl}`);
+    setImageError(true);
+    setIsLoading(false);
+  };
+
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
       {isLoading && (
@@ -82,15 +96,8 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
           src={imageUrl}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onLoad={() => {
-            console.log(`Image pour joueur ${name} (ID: ${playerId || 'non défini'}) chargée avec succès: ${imageUrl}`);
-            setIsLoading(false);
-          }}
-          onError={(e) => {
-            console.error(`Erreur de chargement d'image pour joueur ${name} (ID: ${playerId || 'non défini'}): ${imageUrl}`);
-            setImageError(true);
-            setIsLoading(false);
-          }}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
