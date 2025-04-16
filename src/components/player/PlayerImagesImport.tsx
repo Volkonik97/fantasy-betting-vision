@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -102,11 +103,14 @@ const PlayerImagesImport = ({
         console.log("Sample player with image:", playersWithImages[0].name, playersWithImages[0].image);
       }
       
+      // Fix here: Initialize with all required properties of PlayerWithImage type
       const initialPlayerImages: PlayerWithImage[] = allPlayers.map(player => ({
         player,
         imageFile: null,
         newImageUrl: null,
-        processed: false
+        processed: false,
+        isUploading: false,  // Add this missing property
+        error: null         // Add this missing property
       }));
       setPlayerImages(initialPlayerImages);
     } catch (error) {
