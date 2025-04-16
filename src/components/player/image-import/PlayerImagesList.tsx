@@ -1,11 +1,11 @@
 
 import React from "react";
-import { Player } from "@/utils/models/types";
+import { PlayerWithImage } from "./types";
 import PlayerImageCard from "./PlayerImageCard";
 
 interface PlayerImagesListProps {
   isLoading?: boolean;
-  filteredPlayers?: any[];
+  filteredPlayers?: PlayerWithImage[];
   status?: "loading" | "exists" | "error";
 }
 
@@ -33,7 +33,7 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {filteredPlayers.map((item) => (
-        <PlayerImageCard key={item.player.id || item.player.playerid} playerData={item} />
+        <PlayerImageCard key={item.player.id} playerData={item} />
       ))}
     </div>
   );

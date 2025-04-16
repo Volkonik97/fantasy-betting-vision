@@ -13,13 +13,11 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import BucketStatusInfo from "../image-import/BucketStatusInfo";
 import ImageRefreshControls from "./ImageRefreshControls";
-import PlayerImagesList from "../image-import/PlayerImagesList";
-import UnmatchedImagesList from "../image-import/UnmatchedImagesList";
-import UploadControls from "../image-import/UploadControls";
+import PlayerImagesImport from "../image-import/PlayerImagesImport";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const PlayerImagesContainer = () => {
-  const [activeTab, setActiveTab] = useState("list");
+  const [activeTab, setActiveTab] = useState("import");
   const [bucketStatus, setBucketStatus] = useState<"loading" | "exists" | "error">("loading");
   const [isRefreshingImages, setIsRefreshingImages] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState(0);
@@ -161,21 +159,26 @@ const PlayerImagesContainer = () => {
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full">
-          <TabsTrigger value="list" className="flex-1">Liste des joueurs</TabsTrigger>
-          <TabsTrigger value="upload" className="flex-1">Téléchargement</TabsTrigger>
-          <TabsTrigger value="unmatched" className="flex-1">Images non associées</TabsTrigger>
+          <TabsTrigger value="import" className="flex-1">Importer des images</TabsTrigger>
+          <TabsTrigger value="manage" className="flex-1">Gérer les références</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="list" className="mt-6">
-          <PlayerImagesList status={bucketStatus} />
+        <TabsContent value="import" className="mt-6">
+          <PlayerImagesImport 
+            bucketStatus={bucketStatus}
+            rlsEnabled={rlsEnabled}
+            showRlsHelp={() => setShowRlsHelp(true)}
+          />
         </TabsContent>
         
-        <TabsContent value="upload" className="mt-6">
-          <UploadControls status={bucketStatus} />
-        </TabsContent>
-        
-        <TabsContent value="unmatched" className="mt-6">
-          <UnmatchedImagesList status={bucketStatus} />
+        <TabsContent value="manage" className="mt-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h2 className="text-xl font-medium mb-4">Gestion des références d'images</h2>
+            <p className="text-gray-600 mb-4">
+              Utilisez ces outils pour synchroniser les références d'images entre la base de données et le stockage.
+            </p>
+            {/* Contenu de gestion */}
+          </div>
         </TabsContent>
       </Tabs>
       
