@@ -39,9 +39,8 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       else {
         console.log(`No image available for ${name}`);
         setImageError(true);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
 
     loadImage();
@@ -68,7 +67,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
 
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">
-      {isLoading && (
+      {isLoading && !imageError && (
         <div className="w-full h-full flex items-center justify-center bg-gray-100 absolute z-10">
           <Skeleton className="h-32 w-32 rounded-full" />
         </div>

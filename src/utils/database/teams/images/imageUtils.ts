@@ -13,20 +13,26 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Add cache busting parameter to force refresh
   const cacheBuster = `?t=${Date.now()}`;
   
+  // Log for debugging
+  console.log(`Normalizing image URL: ${cleanUrl}`);
+  
   // If it's already a complete Supabase Storage URL, return it with cache buster
   if (cleanUrl.includes('supabase.co/storage')) {
     // Fix any double slashes in URLs except for https://
     const fixedUrl = cleanUrl.replace(/([^:])\/\//g, '$1/');
+    console.log(`Normalized Supabase URL: ${fixedUrl}${cacheBuster}`);
     return fixedUrl + cacheBuster;
   }
   
   // If it's an absolute URL, return it as is with cache buster
   if (cleanUrl.startsWith('http')) {
+    console.log(`Normalized absolute URL: ${cleanUrl}${cacheBuster}`);
     return cleanUrl + cacheBuster;
   }
   
   // If it's a path to the public folder, add leading slash if needed
   if (cleanUrl.startsWith('lovable-uploads/')) {
+    console.log(`Normalized public path: /${cleanUrl}${cacheBuster}`);
     return `/${cleanUrl}${cacheBuster}`;
   }
   
@@ -42,6 +48,7 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       .from('player-images')
       .getPublicUrl(playerId);
       
+    console.log(`Generated Supabase URL for player ${cleanUrl}: ${data.publicUrl}${cacheBuster}`);
     return data.publicUrl + cacheBuster;
   } catch (error) {
     console.error("Error creating URL from player ID:", error);
@@ -52,8 +59,20 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
 /**
  * Check if a player has a valid image
  */
-export const hasPlayerImage = (imageUrl: string | null | undefined): boolean => {
-  return !!imageUrl;
+export const hasPlayerImage = (player: { image?: string | null } | string | null | undefined): boolean => {
+  if (!player) return false;
+  
+  // If player is a string (URL)
+  if (typeof player === 'string') {
+    return player.trim().length > 0;
+  }
+  
+  // If player is an object with image property
+  if (typeof player === 'object' && 'image' in player) {
+    return !!player.image && player.image.trim().length > 0;
+  }
+  
+  return false;
 };
 
 /**

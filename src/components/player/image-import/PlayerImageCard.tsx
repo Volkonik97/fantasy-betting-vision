@@ -28,6 +28,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     const imageSource = newImageUrl || player.image;
     if (imageSource) {
       const normalizedUrl = normalizeImageUrl(imageSource);
+      console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
       setDisplayUrl(normalizedUrl);
       setLoadError(false);
     } else {
@@ -69,6 +70,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     if (displayUrl) {
       // Force reload by adding timestamp
       const reloadUrl = `${displayUrl.split('?')[0]}?t=${Date.now()}`;
+      console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
       setDisplayUrl(reloadUrl);
       setLoadError(false);
     }
@@ -130,7 +132,8 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
           </div>
         )}
 
-        {hasExistingImage && (
+        {/* Toujours afficher le bouton de suppression si l'image existe ou si une image est en attente de téléchargement */}
+        {(hasExistingImage || hasNewImage) && (
           <div className="absolute top-2 right-2">
             <AlertDialog>
               <AlertDialogTrigger asChild>
