@@ -17,6 +17,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     return null;
   }
   
+  console.log(`Rendu de la carte pour ${player.name} avec image: ${player.image || 'aucune'}`);
+  
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">

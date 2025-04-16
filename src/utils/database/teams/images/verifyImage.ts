@@ -38,7 +38,7 @@ export const verifyImageExists = async (imageUrl: string): Promise<boolean> => {
     }
     
     // Pour les URLs directes depuis storage.supabase.co
-    if (imageUrl.includes('storage.supabase.co') && imageUrl.includes('player-images')) {
+    if (imageUrl.includes('supabase.co/storage') && imageUrl.includes('player-images')) {
       console.log(`URL de stockage direct depuis player-images: ${imageUrl}`);
       
       // Extraire le chemin du fichier depuis l'URL
