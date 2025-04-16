@@ -19,6 +19,24 @@ export const checkBucketRlsPermission = async (): Promise<RlsPermissionsResult> 
   };
   
   try {
+    // Check if the bucket exists first
+    const { data: buckets, error: bucketError } = await supabase
+      .storage
+      .listBuckets();
+    
+    if (bucketError) {
+      console.error("Error checking for buckets:", bucketError);
+      result.errorMessage = `Error checking buckets: ${bucketError.message}`;
+      return result;
+    }
+    
+    const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
+    if (!bucketExists) {
+      console.error("player-images bucket does not exist");
+      result.errorMessage = "Bucket 'player-images' n'existe pas. Veuillez créer le bucket dans la console Supabase.";
+      return result;
+    }
+    
     // Check listing permissions first
     console.log("Checking RLS listing permissions");
     const { data: listData, error: listError } = await supabase

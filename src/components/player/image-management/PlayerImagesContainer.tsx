@@ -32,58 +32,57 @@ const PlayerImagesContainer = () => {
     try {
       setBucketStatus("loading");
       
-      const { data, error } = await supabase.storage.getBucket('player-images');
+      // First check if bucket exists
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
       
-      if (error) {
-        console.error("Error getting bucket:", error);
-        setErrorMessage(error.message);
+      if (bucketError) {
+        console.error("Error getting buckets:", bucketError);
+        setErrorMessage(`Erreur lors de la récupération des buckets: ${bucketError.message}`);
         setBucketStatus("error");
         return;
       }
       
-      if (data) {
-        // Test if we can actually access the bucket by listing files
-        try {
-          const { data: files, error: listError } = await supabase.storage
-            .from('player-images')
-            .list('');
-            
-          if (listError) {
-            console.error("Error listing files:", listError);
-            setErrorMessage(listError.message);
-            setBucketStatus("error");
-          } else {
-            console.log("Successfully listed files:", files);
-            setBucketStatus("exists");
-            toast.success("Bucket d'images accessible");
-          }
-        } catch (listException) {
-          console.error("Exception listing files:", listException);
-          setErrorMessage(listException instanceof Error ? listException.message : String(listException));
-          setBucketStatus("error");
-        }
-        
-        // Check RLS permissions separately
-        try {
-          const rlsCheckResult = await checkBucketRlsPermission();
-          setRlsStatus({
-            checked: true,
-            canUpload: rlsCheckResult.canUpload,
-            canList: rlsCheckResult.canList,
-            message: rlsCheckResult.errorMessage
-          });
-        } catch (rlsError) {
-          console.error("Error checking RLS:", rlsError);
-          setRlsStatus({
-            checked: true,
-            canUpload: false,
-            canList: false,
-            message: rlsError instanceof Error ? rlsError.message : String(rlsError)
-          });
-        }
-      } else {
-        setErrorMessage("Bucket does not exist");
+      const bucketExists = buckets?.some(bucket => bucket.name === 'player-images');
+      
+      if (!bucketExists) {
+        console.error("Bucket 'player-images' does not exist");
+        setErrorMessage("Le bucket 'player-images' n'existe pas dans votre projet Supabase.");
         setBucketStatus("error");
+        return;
+      }
+      
+      // Now try to list files to verify access
+      const { data: files, error: listError } = await supabase.storage
+        .from('player-images')
+        .list('');
+        
+      if (listError) {
+        console.error("Error listing files:", listError);
+        setErrorMessage(`Erreur lors de la liste des fichiers: ${listError.message}`);
+        setBucketStatus("error");
+      } else {
+        console.log("Successfully listed files:", files);
+        setBucketStatus("exists");
+        toast.success("Bucket d'images accessible");
+      }
+      
+      // Check RLS permissions separately
+      try {
+        const rlsCheckResult = await checkBucketRlsPermission();
+        setRlsStatus({
+          checked: true,
+          canUpload: rlsCheckResult.canUpload,
+          canList: rlsCheckResult.canList,
+          message: rlsCheckResult.errorMessage
+        });
+      } catch (rlsError) {
+        console.error("Error checking RLS:", rlsError);
+        setRlsStatus({
+          checked: true,
+          canUpload: false,
+          canList: false,
+          message: rlsError instanceof Error ? rlsError.message : String(rlsError)
+        });
       }
     } catch (error) {
       console.error("Error checking bucket:", error);
