@@ -10,20 +10,24 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Clean up the URL by trimming whitespace
   const cleanUrl = imageUrl.trim();
   
-  // If it's already a complete Supabase Storage URL, return it
+  // Add cache busting parameter to force refresh
+  const cacheBuster = `?t=${Date.now()}`;
+  
+  // If it's already a complete Supabase Storage URL, return it with cache buster
   if (cleanUrl.includes('supabase.co/storage')) {
     // Fix any double slashes in URLs except for https://
-    return cleanUrl.replace(/([^:])\/\//g, '$1/');
+    const fixedUrl = cleanUrl.replace(/([^:])\/\//g, '$1/');
+    return fixedUrl + cacheBuster;
   }
   
-  // If it's an absolute URL, return it as is
+  // If it's an absolute URL, return it as is with cache buster
   if (cleanUrl.startsWith('http')) {
-    return cleanUrl;
+    return cleanUrl + cacheBuster;
   }
   
   // If it's a path to the public folder, add leading slash if needed
   if (cleanUrl.startsWith('lovable-uploads/')) {
-    return `/${cleanUrl}`;
+    return `/${cleanUrl}${cacheBuster}`;
   }
   
   // If it's a player ID (with or without the 'playerid' prefix)
@@ -38,7 +42,7 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       .from('player-images')
       .getPublicUrl(playerId);
       
-    return data.publicUrl;
+    return data.publicUrl + cacheBuster;
   } catch (error) {
     console.error("Error creating URL from player ID:", error);
     return null;

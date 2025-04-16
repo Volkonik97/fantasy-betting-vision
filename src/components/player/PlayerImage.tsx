@@ -16,6 +16,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [reloadAttempt, setReloadAttempt] = useState(0);
 
   useEffect(() => {
     const loadImage = async () => {
@@ -25,15 +26,18 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       // First try to use the provided image URL
       if (image) {
         const normalizedUrl = normalizeImageUrl(image);
+        console.log(`Loading image for ${name} from URL: ${normalizedUrl}`);
         setImageUrl(normalizedUrl);
       } 
       // If no image provided but we have a player ID, construct URL from player ID
       else if (playerId) {
         const playerIdUrl = normalizeImageUrl(`playerid${playerId}`);
+        console.log(`Loading image for ${name} from player ID: ${playerIdUrl}`);
         setImageUrl(playerIdUrl);
       }
       // No image data available
       else {
+        console.log(`No image available for ${name}`);
         setImageError(true);
       }
       
@@ -41,15 +45,25 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     };
 
     loadImage();
-  }, [image, playerId]);
+  }, [image, playerId, reloadAttempt]);
 
   const handleImageLoad = () => {
+    console.log(`Image loaded successfully for ${name}`);
     setIsLoading(false);
   };
 
   const handleImageError = () => {
+    console.log(`Image failed to load for ${name}`);
     setImageError(true);
     setIsLoading(false);
+    
+    // If image failed to load on first attempt, try one more time after a short delay
+    if (reloadAttempt === 0) {
+      setTimeout(() => {
+        console.log(`Attempting to reload image for ${name}`);
+        setReloadAttempt(1);
+      }, 2000);
+    }
   };
 
   return (

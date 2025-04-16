@@ -102,6 +102,8 @@ export const uploadPlayerImage = async (
     const fileExtension = file.name.split('.').pop() || 'webp';
     const fileName = `playerid${playerId}.${fileExtension}`;
     
+    console.log(`Uploading image for player ${playerId} with filename ${fileName}`);
+    
     // Upload the file with upsert to replace any existing file
     const { error: uploadError } = await supabase
       .storage
@@ -112,6 +114,7 @@ export const uploadPlayerImage = async (
       });
     
     if (uploadError) {
+      console.error("Upload error:", uploadError);
       return { 
         success: false, 
         error: uploadError.message 
@@ -124,12 +127,15 @@ export const uploadPlayerImage = async (
       .from('player-images')
       .getPublicUrl(fileName);
     
+    console.log(`Successfully uploaded image for player ${playerId}, URL: ${publicUrl}`);
+    
     return { 
       success: true,
       publicUrl
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in uploadPlayerImage:", errorMessage);
     return { 
       success: false,
       error: errorMessage
@@ -142,6 +148,8 @@ export const uploadPlayerImage = async (
  */
 export const updatePlayerImageReference = async (playerId: string, imageUrl: string): Promise<boolean> => {
   try {
+    console.log(`Updating image reference for player ${playerId} with URL ${imageUrl}`);
+    
     const { error } = await supabase
       .from('players')
       .update({ image: imageUrl })
@@ -152,6 +160,7 @@ export const updatePlayerImageReference = async (playerId: string, imageUrl: str
       return false;
     }
     
+    console.log(`Successfully updated image reference for player ${playerId}`);
     return true;
   } catch (error) {
     console.error("Error updating player image reference:", error);

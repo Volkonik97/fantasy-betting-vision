@@ -1,3 +1,4 @@
+
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
@@ -9,6 +10,14 @@ import { getAllTeams } from "@/services/teamService";
 let playerImagesCache: string[] = [];
 let playerImagesCacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Force refresh of player images cache
+ */
+export const forceRefreshPlayerImagesCache = async (): Promise<void> => {
+  playerImagesCacheTimestamp = 0; // Reset timestamp to force refresh
+  await preloadPlayerImagesCache();
+};
 
 /**
  * Preload the player images cache
@@ -47,13 +56,12 @@ export const hasImageForPlayer = (playerId: string): boolean => {
   if (!playerId) return false;
   
   // Check if any file starts with 'playerid' + playerId
-  return playerImagesCache.some(filename => 
-    filename === `playerid${playerId}.webp` || 
-    filename === `playerid${playerId}.jpg` || 
-    filename === `playerid${playerId}.jpeg` || 
-    filename === `playerid${playerId}.png` ||
-    filename.startsWith(`playerid${playerId}.`)
+  const hasImage = playerImagesCache.some(filename => 
+    filename.startsWith(`playerid${playerId}`)
   );
+  
+  console.log(`Checking if player ${playerId} has image: ${hasImage}`);
+  return hasImage;
 };
 
 /**
@@ -107,9 +115,12 @@ export const loadAllPlayersInBatches = async (
               .getPublicUrl(`playerid${player.id}.webp`);
             
             imageUrl = data.publicUrl;
+            console.log(`Generated URL for player ${player.id}: ${imageUrl}`);
           } else if (imageUrl) {
             // Normalize existing URL
-            imageUrl = normalizeImageUrl(imageUrl);
+            const normalizedUrl = normalizeImageUrl(imageUrl);
+            console.log(`Normalized URL for player ${player.id}: ${normalizedUrl}`);
+            imageUrl = normalizedUrl;
           }
           
           return {
@@ -136,6 +147,7 @@ export const loadAllPlayersInBatches = async (
       }
     }
     
+    // Log player image stats
     const playersWithImages = allPlayers.filter(p => p.image).length;
     console.log(`Loaded ${allPlayers.length} players with ${playersWithImages} having images`);
     

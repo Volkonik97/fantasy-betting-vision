@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PlayerWithImage } from "./types";
 import PlayerImageCard from "./PlayerImageCard";
 
@@ -14,6 +14,18 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
   filteredPlayers = [],
   status = "loading"
 }) => {
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+  
+  // Force refresh when filtered players change to ensure images are loaded correctly
+  useEffect(() => {
+    // Small delay to ensure the DOM has updated
+    const timer = setTimeout(() => {
+      setReloadTrigger(prev => prev + 1);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [filteredPlayers]);
+
   if (isLoading) {
     return (
       <div className="p-8 text-center">
@@ -33,7 +45,10 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {filteredPlayers.map((item) => (
-        <PlayerImageCard key={item.player.id} playerData={item} />
+        <PlayerImageCard 
+          key={`${item.player.id}-${reloadTrigger}`}
+          playerData={item} 
+        />
       ))}
     </div>
   );

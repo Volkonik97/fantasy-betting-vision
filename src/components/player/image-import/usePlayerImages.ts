@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { PlayerWithImage, UploadStatus } from "./types";
 import { Player } from "@/utils/models/types";
 import { loadAllPlayersInBatches } from "@/services/playerService";
 import { uploadMultiplePlayerImagesWithProgress } from "@/utils/database/teams/images/uploader";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const usePlayerImages = () => {
   const [playerImages, setPlayerImages] = useState<PlayerWithImage[]>([]);
@@ -22,6 +22,57 @@ export const usePlayerImages = () => {
     inProgress: false
   });
   const [filterTab, setFilterTab] = useState("all");
+
+  // Force refresh player images when upload is complete
+  useEffect(() => {
+    if (uploadStatus.processed > 0 && uploadStatus.processed === uploadStatus.total && !uploadStatus.inProgress) {
+      refreshPlayerImages();
+    }
+  }, [uploadStatus]);
+
+  // Refresh player images with latest data from the server
+  const refreshPlayerImages = async () => {
+    if (isLoading) return;
+    
+    console.log("Refreshing player images to get latest data");
+    
+    setIsLoading(true);
+    setLoadingProgress({
+      message: "Actualisation des données des joueurs...",
+      percent: 50
+    });
+    
+    try {
+      const players = await loadAllPlayersInBatches((progress, total) => {
+        setLoadingProgress({
+          message: `Actualisation des données (${progress}/${total})`,
+          percent: Math.min(90, (progress / total) * 100)
+        });
+      });
+      
+      // Keep existing file data but update player data
+      const updatedPlayerImages = players.map(player => {
+        const existingPlayerData = playerImages.find(p => p.player.id === player.id);
+        
+        return {
+          player,
+          imageFile: existingPlayerData?.imageFile || null,
+          newImageUrl: null, // Reset the temporary URL as we'll use the actual one now
+          processed: existingPlayerData?.processed || false,
+          isUploading: false,
+          error: null
+        };
+      });
+      
+      setPlayerImages(updatedPlayerImages);
+      setLoadingProgress({ message: "Données actualisées", percent: 100 });
+    } catch (error) {
+      console.error("Error refreshing player images:", error);
+      toast.error("Erreur lors de l'actualisation des données des joueurs");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Load player data
   useEffect(() => {
@@ -153,7 +204,7 @@ export const usePlayerImages = () => {
     
     // Prepare uploads
     const uploads = playersWithImages.map(p => ({
-      playerId: p.player.id || '', // Fixed: using player.id instead of player.playerid
+      playerId: p.player.id || '', // Using player.id instead of playerid
       file: p.imageFile as File
     }));
     
@@ -167,7 +218,7 @@ export const usePlayerImages = () => {
       
       // Update player states based on results
       setPlayerImages(prev => prev.map(p => {
-        const playerId = p.player.id || ''; // Fixed: using player.id instead of player.playerid
+        const playerId = p.player.id || ''; // Using player.id instead of playerid
         
         if (p.imageFile && !p.processed) {
           const hasError = results.errors[playerId];
@@ -195,6 +246,12 @@ export const usePlayerImages = () => {
       } else {
         toast.error(`${results.success} images téléchargées, ${results.failed} échecs`);
       }
+      
+      // Force a refresh to get the updated player data from the database
+      setTimeout(() => {
+        refreshPlayerImages();
+      }, 1000);
+      
     } catch (error) {
       console.error("Upload error:", error);
       
@@ -225,6 +282,7 @@ export const usePlayerImages = () => {
     assignFileToPlayer,
     uploadImages,
     filterTab,
-    setFilterTab
+    setFilterTab,
+    refreshPlayerImages
   };
 };
