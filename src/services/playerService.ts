@@ -3,6 +3,7 @@ import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
 import { getAllTeams } from "@/services/teamService";
+import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 
 /**
  * Load all players in batches to bypass the 1000 record limit in Supabase
@@ -37,10 +38,17 @@ export const loadAllPlayersInBatches = async (
       
       try {
         const batchPlayers = await getPlayers(batch, batchSize);
-        console.log(`Batch ${batch}: loaded ${batchPlayers.length} players`);
         
-        allPlayers = [...allPlayers, ...batchPlayers];
-        loadedCount += batchPlayers.length;
+        // Normalize image URLs in players data
+        const normalizedPlayers = batchPlayers.map(player => ({
+          ...player,
+          image: normalizeImageUrl(player.image)
+        }));
+        
+        console.log(`Batch ${batch}: loaded ${normalizedPlayers.length} players`);
+        
+        allPlayers = [...allPlayers, ...normalizedPlayers];
+        loadedCount += normalizedPlayers.length;
         
         // Report progress if callback provided
         if (progressCallback) {
@@ -73,7 +81,14 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
   try {
     console.log(`Getting players for page ${page} with page size ${pageSize}`);
     const players = await getPlayers(page, pageSize);
-    return players;
+    
+    // Normalize image URLs
+    const normalizedPlayers = players.map(player => ({
+      ...player,
+      image: normalizeImageUrl(player.image)
+    }));
+    
+    return normalizedPlayers;
   } catch (error) {
     console.error("Error getting all players:", error);
     toast.error("Erreur lors du chargement des joueurs");

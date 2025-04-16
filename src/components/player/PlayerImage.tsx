@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { verifyImageExists } from "@/utils/database/teams/imageUtils";
+import { verifyImageExists } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,42 +31,31 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
       console.log(`Traitement de l'image pour ${name}: ${cleanImageUrl}`);
 
       try {
-        // Si c'est une URL complète, l'utiliser directement
-        if (cleanImageUrl.startsWith('http')) {
+        // Si c'est une URL complète de Supabase storage, l'utiliser directement
+        if (cleanImageUrl.includes('supabase.co/storage') && cleanImageUrl.includes('player-images')) {
+          console.log(`URL Supabase storage détectée pour ${name}: ${cleanImageUrl}`);
           setImageUrl(cleanImageUrl);
-          // Vérifier si l'image est accessible
-          const exists = await verifyImageExists(cleanImageUrl);
-          if (!exists) {
-            console.warn(`L'image n'existe pas: ${cleanImageUrl}`);
-            setImageError(true);
-          }
+        }
+        // Si c'est une URL complète externe, l'utiliser directement
+        else if (cleanImageUrl.startsWith('http')) {
+          console.log(`URL externe détectée pour ${name}: ${cleanImageUrl}`);
+          setImageUrl(cleanImageUrl);
         }
         // Si c'est un chemin relatif vers le dossier public, ajouter un / au début
         else if (cleanImageUrl.startsWith('lovable-uploads/')) {
+          console.log(`Chemin relatif détecté pour ${name}: ${cleanImageUrl}`);
           setImageUrl(`/${cleanImageUrl}`);
         }
         // Si c'est juste un nom de fichier, construire l'URL Supabase storage
         else if (!cleanImageUrl.includes('/')) {
           // Construire l'URL Supabase storage
-          const publicUrl = getSupabaseStorageUrl(cleanImageUrl);
-          console.log(`URL Supabase construite pour ${name}: ${publicUrl}`);
-          setImageUrl(publicUrl);
-
-          // Vérifier si l'image existe dans le stockage
-          try {
-            const { data, error } = await supabase
-              .storage
-              .from('Player Images')
-              .download(cleanImageUrl);
-              
-            if (error) {
-              console.error(`L'image n'existe pas dans le stockage pour ${name}: ${error.message}`);
-              setImageError(true);
-            }
-          } catch (downloadError) {
-            console.error(`Erreur lors du téléchargement de l'image: ${downloadError}`);
-            setImageError(true);
-          }
+          const { data: publicUrl } = supabase
+            .storage
+            .from('player-images')
+            .getPublicUrl(cleanImageUrl);
+            
+          console.log(`URL Supabase construite pour ${name}: ${publicUrl.publicUrl}`);
+          setImageUrl(publicUrl.publicUrl);
         }
         // Pour tout autre format, utiliser tel quel
         else {
@@ -85,11 +74,6 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, image, role }) => {
     setIsLoading(true);
     processImageUrl();
   }, [image, name]);
-
-  // Fonction pour construire l'URL Supabase storage
-  const getSupabaseStorageUrl = (filename: string): string => {
-    return `https://dtddoxxazhmfudrvpszu.supabase.co/storage/v1/object/public/Player Images/${encodeURIComponent(filename)}`;
-  };
 
   return (
     <div className="h-48 bg-gray-50 relative overflow-hidden group">

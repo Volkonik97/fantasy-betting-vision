@@ -7,12 +7,18 @@ import { Player } from "@/utils/models/types";
 import { loadAllPlayersInBatches } from "@/services/playerService";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 
 interface PlayerImagesSectionProps {
   bucketStatus: "loading" | "exists" | "error";
   rlsEnabled: boolean;
   showRlsHelp: () => void;
 }
+
+// Stocker les données des joueurs en cache pour éviter de les recharger
+let playersCache: Player[] = [];
+let lastLoadTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes en millisecondes
 
 const PlayerImagesSection = ({ bucketStatus, rlsEnabled, showRlsHelp }: PlayerImagesSectionProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -27,17 +33,39 @@ const PlayerImagesSection = ({ bucketStatus, rlsEnabled, showRlsHelp }: PlayerIm
         setLoadingStatus("Préparation du chargement des joueurs...");
         setLoadingProgress(5);
 
-        // Use the batch loading service instead of direct getPlayers
+        // Vérifier si nous avons un cache valide
+        const now = Date.now();
+        if (playersCache.length > 0 && (now - lastLoadTime) < CACHE_DURATION) {
+          console.log("Utilisation du cache des joueurs");
+          setLoadingProgress(100);
+          setLoadingStatus("Données chargées depuis le cache");
+          setPlayers(playersCache);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Sinon charger depuis la base de données
         const playersList = await loadAllPlayersInBatches((progress, total, batch) => {
           const percentage = Math.round((progress / total) * 100);
           setLoadingProgress(5 + (percentage * 0.9)); // 5% to 95%
           setLoadingStatus(`Chargement des joueurs... ${progress}/${total} (lot ${batch})`);
         });
         
+        // Normaliser les URLs des images
+        const normalizedPlayers = playersList.map(player => ({
+          ...player,
+          image: normalizeImageUrl(player.image)
+        }));
+        
         setLoadingProgress(100);
         setLoadingStatus("Chargement terminé");
-        console.log(`Loaded ${playersList.length} players in batches`);
-        setPlayers(playersList);
+        console.log(`Loaded ${normalizedPlayers.length} players in batches`);
+        
+        // Mettre à jour le cache
+        playersCache = normalizedPlayers;
+        lastLoadTime = now;
+        
+        setPlayers(normalizedPlayers);
       } catch (error) {
         console.error("Error loading players:", error);
         setLoadingStatus(`Erreur lors du chargement: ${error instanceof Error ? error.message : String(error)}`);
