@@ -16,6 +16,12 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Log for debugging
   console.log(`Normalizing image URL: ${cleanUrl}`);
   
+  // Special case for blob URLs (file previews) - return as is
+  if (cleanUrl.startsWith('blob:')) {
+    console.log(`Using blob URL as is: ${cleanUrl}`);
+    return cleanUrl;
+  }
+  
   // If it's already a complete Supabase Storage URL, return it with cache buster
   if (cleanUrl.includes('supabase.co/storage')) {
     // Fix any double slashes in URLs except for https://

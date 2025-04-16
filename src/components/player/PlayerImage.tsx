@@ -25,15 +25,33 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       
       // First try to use the provided image URL
       if (image) {
-        const normalizedUrl = normalizeImageUrl(image);
-        console.log(`Loading image for ${name} from URL: ${normalizedUrl}`);
-        setImageUrl(normalizedUrl);
+        try {
+          // For blob URLs, we need special handling
+          if (image.startsWith('blob:')) {
+            console.log(`Using blob image directly for ${name}: ${image}`);
+            setImageUrl(image);
+          } else {
+            const normalizedUrl = normalizeImageUrl(image);
+            console.log(`Loading image for ${name} from URL: ${normalizedUrl}`);
+            setImageUrl(normalizedUrl);
+          }
+        } catch (error) {
+          console.error(`Error normalizing image URL for ${name}:`, error);
+          setImageError(true);
+          setIsLoading(false);
+        }
       } 
       // If no image provided but we have a player ID, construct URL from player ID
       else if (playerId) {
-        const playerIdUrl = normalizeImageUrl(`playerid${playerId}`);
-        console.log(`Loading image for ${name} from player ID: ${playerIdUrl}`);
-        setImageUrl(playerIdUrl);
+        try {
+          const playerIdUrl = normalizeImageUrl(`playerid${playerId}`);
+          console.log(`Loading image for ${name} from player ID: ${playerIdUrl}`);
+          setImageUrl(playerIdUrl);
+        } catch (error) {
+          console.error(`Error creating player ID URL for ${name}:`, error);
+          setImageError(true);
+          setIsLoading(false);
+        }
       }
       // No image data available
       else {
@@ -84,6 +102,11 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
           <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
+          {imageError && (
+            <div className="absolute bottom-10 text-xs text-blue-500 hover:text-blue-700 cursor-pointer" onClick={() => setReloadAttempt(prev => prev + 1)}>
+              ↻ Recharger
+            </div>
+          )}
         </div>
       )}
       

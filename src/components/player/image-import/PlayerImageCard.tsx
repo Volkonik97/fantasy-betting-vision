@@ -26,15 +26,28 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   useEffect(() => {
     // Priority: 1. newImageUrl (temporary preview) 2. player.image (from database)
     const imageSource = newImageUrl || player.image;
+    
     if (imageSource) {
-      const normalizedUrl = normalizeImageUrl(imageSource);
-      console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
-      setDisplayUrl(normalizedUrl);
-      setLoadError(false);
+      try {
+        // Special handling for blob URLs (file previews)
+        if (imageSource.startsWith('blob:')) {
+          console.log(`Using blob image directly for ${player.name}: ${imageSource}`);
+          setDisplayUrl(imageSource);
+          setLoadError(false);
+        } else {
+          const normalizedUrl = normalizeImageUrl(imageSource);
+          console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
+          setDisplayUrl(normalizedUrl);
+          setLoadError(false);
+        }
+      } catch (error) {
+        console.error(`Error setting display URL for ${player.name}:`, error);
+        setLoadError(true);
+      }
     } else {
       setDisplayUrl(null);
     }
-  }, [newImageUrl, player.image, processed]);
+  }, [newImageUrl, player.image, processed, player.name]);
   
   const hasExistingImage = hasPlayerImage(player);
   const hasNewImage = Boolean(imageFile);
@@ -68,11 +81,20 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   
   const reloadImage = () => {
     if (displayUrl) {
-      // Force reload by adding timestamp
-      const reloadUrl = `${displayUrl.split('?')[0]}?t=${Date.now()}`;
-      console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
-      setDisplayUrl(reloadUrl);
-      setLoadError(false);
+      if (displayUrl.startsWith('blob:')) {
+        // For blob URLs, just refresh the state to trigger a re-render
+        console.log(`Forcing refresh of blob image for ${player.name}`);
+        setLoadError(false);
+        // Force a re-render by toggling a state
+        setDisplayUrl(null);
+        setTimeout(() => setDisplayUrl(displayUrl), 10);
+      } else {
+        // For regular URLs, add a timestamp to force reload
+        const reloadUrl = `${displayUrl.split('?')[0]}?t=${Date.now()}`;
+        console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
+        setDisplayUrl(reloadUrl);
+        setLoadError(false);
+      }
     }
   };
 
@@ -126,9 +148,15 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
           </div>
         )}
         
-        {hasNewImage && (
-          <div className="absolute top-2 right-2">
-            {getStatusIcon()}
+        {/* Badge d'état */}
+        {(hasNewImage || isUploading || processed || error) && (
+          <div className="absolute top-2 left-2">
+            <Badge 
+              variant={error ? "destructive" : processed ? "secondary" : "outline"} 
+              className={processed ? "bg-green-100 text-green-800" : ""}
+            >
+              {error ? "Erreur" : processed ? "Téléchargé" : isUploading ? "En cours..." : "Prêt"}
+            </Badge>
           </div>
         )}
 
