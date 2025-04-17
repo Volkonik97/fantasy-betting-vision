@@ -48,13 +48,9 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         </div>
         
         <PlayerStats 
-          kda={player.kda} 
-          csPerMin={player.csPerMin} 
-          damageShare={
-            typeof player.damageShare === 'number'
-              ? player.damageShare
-              : 0
-          }
+  kda={player.kda} 
+  csPerMin={player.csPerMin} 
+  damageShare={player.damageShare}
         />
       </div>
     </div>
