@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllTeams } from "@/services/teamService";
+import { adaptPlayerFromDatabase } from "@/utils/database/adapters/playerAdapter";
+
 
 // Cache for player images in storage
 let playerImagesCache: string[] = [];
@@ -99,35 +101,34 @@ export const loadAllPlayersInBatches = async (
         // Here we call getPlayers which now explicitly selects the image field
         const batchPlayers = await getPlayers(batch, batchSize);
         
-        // Process each player's image
-        const normalizedPlayers = batchPlayers.map(player => {
-          // Check if player has an image in cache
-          const hasImage = hasImageForPlayer(player.id);
-          
-          // Use existing image URL or generate one from player ID if image exists in cache
-          let imageUrl = player.image;
-          
-          if (!imageUrl && hasImage) {
-            // Create URL from player ID
-            const { data } = supabase
-              .storage
-              .from('player-images')
-              .getPublicUrl(`playerid${player.id}.webp`);
-            
-            imageUrl = data.publicUrl;
-            console.log(`Generated URL for player ${player.id}: ${imageUrl}`);
-          } else if (imageUrl) {
-            // Normalize existing URL
-            const normalizedUrl = normalizeImageUrl(imageUrl);
-            console.log(`Normalized URL for player ${player.id}: ${normalizedUrl}`);
-            imageUrl = normalizedUrl;
-          }
-          
-          return {
-            ...player,
-            image: imageUrl
-          };
-        });
+        // Étape 3.1 : Adapter chaque joueur (convertir damage_share etc.)
+const adaptedPlayers = batchPlayers.map(adaptPlayerFromDatabase);
+
+// Étape 3.2 : Normaliser les images
+const normalizedPlayers = adaptedPlayers.map(player => {
+  const hasImage = hasImageForPlayer(player.id);
+
+  let imageUrl = player.image;
+
+  if (!imageUrl && hasImage) {
+    const { data } = supabase
+      .storage
+      .from("player-images")
+      .getPublicUrl(`playerid${player.id}.webp`);
+
+    imageUrl = data.publicUrl;
+    console.log(`Generated URL for player ${player.id}: ${imageUrl}`);
+  } else if (imageUrl) {
+    imageUrl = normalizeImageUrl(imageUrl);
+    console.log(`Normalized URL for player ${player.id}: ${imageUrl}`);
+  }
+
+  return {
+    ...player,
+    image: imageUrl,
+  };
+});
+
         
         allPlayers = [...allPlayers, ...normalizedPlayers];
         loadedCount += normalizedPlayers.length;
@@ -170,26 +171,24 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     await preloadPlayerImagesCache();
     
     const players = await getPlayers(page, pageSize);
-    
-    // Normalize image URLs
-    const normalizedPlayers = players.map(player => {
-      // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
-      const hasImageInCache = hasImageForPlayer(player.id);
-      
-      // Si le joueur a déjà une URL d'image, la normaliser
-      // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
-      const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
-      
-      // Normaliser l'URL de l'image
-      const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
-      
-      console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
-      
-      return {
-        ...player,
-        image: normalizedImageUrl
-      };
-    });
+
+// 1. Adapt players (convert damage_share etc.)
+const adaptedPlayers = players.map(adaptPlayerFromDatabase);
+
+// 2. Normalize image URLs
+const normalizedPlayers = adaptedPlayers.map(player => {
+  const hasImageInCache = hasImageForPlayer(player.id);
+
+  const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
+  const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
+
+  console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
+
+  return {
+    ...player,
+    image: normalizedImageUrl,
+  };
+});
     
     // Log debugging info
     const playersWithImages = normalizedPlayers.filter(p => p.image).length;
