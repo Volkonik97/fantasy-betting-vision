@@ -67,13 +67,8 @@ const PlayerHeader = ({
     playerDamageShare = 0;
   }
   
-  const formattedDamageShare = (() => {
-    if (playerDamageShare === 0 || isNaN(playerDamageShare)) return "0%";
-    if (playerDamageShare >= 0 && playerDamageShare <= 1) {
-      return `${Math.round(playerDamageShare * 100)}%`;
-    }
-    return `${Math.round(playerDamageShare)}%`;
-  })();
+  const formattedDamageShare = `${Math.round(playerDamageShare)}%`;
+
 
   console.log(`PlayerHeader ${player.name} formatted damageShare: ${formattedDamageShare} from ${playerDamageShare}`);
 
