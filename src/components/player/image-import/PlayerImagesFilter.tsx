@@ -7,29 +7,27 @@ import { hasPlayerImage } from "./types";
 
 interface PlayerImagesFilterProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
-  playerImages: PlayerWithImage[];
-  children: React.ReactNode;
+  onChange: (tab: string) => void;
+  players: PlayerWithImage[];
 }
 
 const PlayerImagesFilter: React.FC<PlayerImagesFilterProps> = ({ 
   activeTab, 
-  setActiveTab, 
-  playerImages,
-  children 
+  onChange, 
+  players
 }) => {
   // Count players for each category
-  const countAll = playerImages.length;
-  const countNoImage = playerImages.filter(p => !hasPlayerImage(p.player) && !p.newImageUrl).length;
-  const countWithImage = playerImages.filter(p => hasPlayerImage(p.player) || p.newImageUrl).length;
-  const countPending = playerImages.filter(p => p.imageFile && !p.processed).length;
-  const countProcessed = playerImages.filter(p => p.processed).length;
-  const countErrors = playerImages.filter(p => p.error !== null).length;
+  const countAll = players.length;
+  const countNoImage = players.filter(p => !hasPlayerImage(p.player) && !p.newImageUrl).length;
+  const countWithImage = players.filter(p => hasPlayerImage(p.player) || p.newImageUrl).length;
+  const countPending = players.filter(p => p.imageFile && !p.processed).length;
+  const countProcessed = players.filter(p => p.processed).length;
+  const countErrors = players.filter(p => p.error !== null).length;
 
   return (
     <div>
       <div className="mb-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={onChange} className="w-full">
           <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6">
             <TabsTrigger value="all" className="relative">
               Tous
@@ -69,8 +67,6 @@ const PlayerImagesFilter: React.FC<PlayerImagesFilterProps> = ({
           </TabsList>
         </Tabs>
       </div>
-      
-      {children}
     </div>
   );
 };

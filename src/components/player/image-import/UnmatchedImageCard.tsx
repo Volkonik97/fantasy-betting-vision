@@ -1,77 +1,89 @@
-import React, { useState, useMemo } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { PlayerWithImage } from "./types";
 
 interface UnmatchedImageCardProps {
   file: File;
   playerOptions: PlayerWithImage[];
-  onAssign: (file: File, playerIndex: number) => void;
+  onAssign: (file: File, playerId: string) => void;
   disabled?: boolean;
 }
 
-const UnmatchedImageCard: React.FC<UnmatchedImageCardProps> = ({ 
-  file, 
-  playerOptions, 
+const UnmatchedImageCard: React.FC<UnmatchedImageCardProps> = ({
+  file,
+  playerOptions,
   onAssign,
   disabled = false
 }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
-  const imageUrl = URL.createObjectURL(file);
-
-  // Trier les options de joueurs par ordre alphabétique
-  const sortedPlayerOptions = useMemo(() => 
-    [...playerOptions].sort((a, b) => a.player.name.localeCompare(b.player.name)), 
-    [playerOptions]
-  );
-
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Create image preview
+  useEffect(() => {
+    if (!file) return;
+    
+    const url = URL.createObjectURL(file);
+    setImagePreview(url);
+    
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+  
   const handleAssign = () => {
-    const playerIndex = playerOptions.findIndex(p => p.player.id === selectedPlayerId);
-    if (playerIndex !== -1) {
-      onAssign(file, playerIndex);
+    if (selectedPlayerId && file) {
+      onAssign(file, selectedPlayerId);
     }
   };
-
+  
+  // Sort players alphabetically
+  const sortedPlayers = [...playerOptions].sort((a, b) => 
+    a.player.name.localeCompare(b.player.name)
+  );
+  
   return (
     <Card className="overflow-hidden">
-      <div className="aspect-square w-full relative bg-gray-100">
-        <img 
-          src={imageUrl} 
-          alt={file.name} 
-          className="w-full h-full object-cover"
-          onLoad={() => URL.revokeObjectURL(imageUrl)}
-        />
+      <div className="aspect-w-1 aspect-h-1 bg-gray-100">
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt={file.name}
+            className="object-cover w-full h-full"
+          />
+        )}
       </div>
       
-      <CardContent className="p-4 space-y-3">
-        <p className="text-sm font-medium truncate" title={file.name}>
+      <CardContent className="p-3">
+        <div className="text-sm font-medium mb-2 truncate" title={file.name}>
           {file.name}
-        </p>
+        </div>
         
         <div className="space-y-2">
           <Select 
-            value={selectedPlayerId} 
-            onValueChange={setSelectedPlayerId}
+            onValueChange={setSelectedPlayerId} 
+            value={selectedPlayerId}
             disabled={disabled}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Associer à un joueur" />
+              <SelectValue placeholder="Sélectionner un joueur" />
             </SelectTrigger>
             <SelectContent>
-              {sortedPlayerOptions.map((option) => (
-                <SelectItem key={option.player.id} value={option.player.id}>
-                  {option.player.name}
+              {sortedPlayers.map((p) => (
+                <SelectItem key={p.player.id} value={p.player.id}>
+                  {p.player.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
           <Button 
-            variant="secondary" 
-            className="w-full" 
-            onClick={handleAssign}
+            onClick={handleAssign} 
+            className="w-full"
             disabled={!selectedPlayerId || disabled}
+            size="sm"
           >
             Associer
           </Button>

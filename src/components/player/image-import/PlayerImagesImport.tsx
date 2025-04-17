@@ -64,9 +64,15 @@ const PlayerImagesImport = ({
     );
   }
 
+  // Get the list of players with errors for the UploadSummary
+  const failedPlayers = playerImages.filter(p => p.error !== null);
+
   return (
     <div className="space-y-6">
       <ImportHeader
+        bucketStatus={bucketStatus}
+        rlsEnabled={rlsEnabled}
+        showRlsHelp={showRlsHelp}
         unmatched={unmatched}
         totalPlayers={playerImages.length}
         pendingUpload={pendingUploadCount}
@@ -84,6 +90,7 @@ const PlayerImagesImport = ({
         files={unmatched}
         onMatch={assignFileToPlayer}
         players={playerImages}
+        status={bucketStatus}
       />
 
       <PlayerImagesFilter
@@ -99,6 +106,7 @@ const PlayerImagesImport = ({
       />
 
       <UploadSummary status={uploadStatus} />
+
       <PlayerStats players={playerImages} />
     </div>
   );

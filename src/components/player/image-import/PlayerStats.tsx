@@ -6,17 +6,17 @@ import { Progress } from "@/components/ui/progress";
 import { ImageIcon, XCircle, CheckCircle, Clock, AlertCircle } from "lucide-react";
 
 interface PlayerStatsProps {
-  playerImages: PlayerWithImage[];
+  players: PlayerWithImage[];
   className?: string;
 }
 
-const PlayerStats: React.FC<PlayerStatsProps> = ({ playerImages, className = "" }) => {
-  const totalPlayers = playerImages.length;
-  const playersWithImages = playerImages.filter(p => p.player.image || p.newImageUrl).length;
+const PlayerStats: React.FC<PlayerStatsProps> = ({ players, className = "" }) => {
+  const totalPlayers = players.length;
+  const playersWithImages = players.filter(p => p.player.image || p.newImageUrl).length;
   const playersWithoutImages = totalPlayers - playersWithImages;
-  const pendingUploads = playerImages.filter(p => p.imageFile && !p.processed).length;
-  const uploadedImages = playerImages.filter(p => p.processed).length;
-  const errorCount = playerImages.filter(p => p.error !== null).length;
+  const pendingUploads = players.filter(p => p.imageFile && !p.processed).length;
+  const uploadedImages = players.filter(p => p.processed).length;
+  const errorCount = players.filter(p => p.error !== null).length;
   
   const coveragePercentage = totalPlayers > 0 
     ? Math.round((playersWithImages / totalPlayers) * 100) 

@@ -1,22 +1,53 @@
-
 import React, { useEffect, useState } from "react";
 import { PlayerWithImage } from "./types";
 import PlayerImageCard from "./PlayerImageCard";
 
 interface PlayerImagesListProps {
-  isLoading?: boolean;
-  filteredPlayers?: PlayerWithImage[];
-  status?: "loading" | "exists" | "error";
-  onImageDeleted?: () => void;
+  filter: string;
+  players: PlayerWithImage[];
+  onDelete: () => void;
 }
 
 const PlayerImagesList: React.FC<PlayerImagesListProps> = ({ 
-  isLoading = false, 
-  filteredPlayers = [],
-  status = "loading",
-  onImageDeleted
+  filter = "all", 
+  players = [],
+  onDelete
 }) => {
   const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [filteredPlayers, setFilteredPlayers] = useState<PlayerWithImage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Apply filters when the filter or players change
+  useEffect(() => {
+    setIsLoading(true);
+    
+    let filtered = [...players];
+    
+    switch (filter) {
+      case "no-image":
+        filtered = filtered.filter(p => !p.player.image && !p.newImageUrl);
+        break;
+      case "with-image":
+        filtered = filtered.filter(p => p.player.image || p.newImageUrl);
+        break;
+      case "pending":
+        filtered = filtered.filter(p => p.imageFile && !p.processed);
+        break;
+      case "processed":
+        filtered = filtered.filter(p => p.processed);
+        break;
+      case "errors":
+        filtered = filtered.filter(p => p.error !== null);
+        break;
+      case "all":
+      default:
+        // No filter, keep all players
+        break;
+    }
+    
+    setFilteredPlayers(filtered);
+    setIsLoading(false);
+  }, [filter, players]);
   
   // Force refresh when filtered players change
   useEffect(() => {
@@ -48,8 +79,8 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
   }, [filteredPlayers]);
 
   const handleImageDeleted = () => {
-    if (onImageDeleted) {
-      onImageDeleted();
+    if (onDelete) {
+      onDelete();
     }
     
     // More aggressive refresh after deletion
