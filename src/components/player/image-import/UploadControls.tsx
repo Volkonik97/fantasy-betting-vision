@@ -1,47 +1,26 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { UploadStatus } from "./types";
 
-interface UploadControlsProps {
-  onUpload?: () => void;
-  disabled?: boolean;
-  isUploading?: boolean;
-  uploadProgress?: number;
-  status?: "loading" | "exists" | "error";
-  uploadCount?: number;
-}
-
-const UploadControls: React.FC<UploadControlsProps> = ({ 
-  onUpload = () => {}, 
-  disabled = false, 
-  isUploading = false, 
-  uploadProgress = 0,
-  status = "loading",
-  uploadCount = 0
-}) => {
-  const isDisabled = disabled || isUploading || status !== "exists";
-  
+export default function UploadControls({
+  uploadImages,
+  uploadStatus,
+  bucketStatus
+}: {
+  uploadImages: (bucketExists: boolean) => void;
+  uploadStatus: UploadStatus;
+  bucketStatus: "loading" | "exists" | "error";
+}) {
   return (
-    <div className="space-y-2">
-      <Button 
-        onClick={onUpload} 
-        className="w-full" 
-        disabled={isDisabled}
+    <div className="flex flex-col sm:flex-row gap-4 mt-4">
+      <Button
+        onClick={() => uploadImages(bucketStatus === "exists")}
+        disabled={uploadStatus.inProgress || bucketStatus !== "exists"}
       >
-        {isUploading ? 'Téléchargement en cours...' : `Télécharger les images${uploadCount > 0 ? ` (${uploadCount})` : ''}`}
+        {uploadStatus.inProgress
+          ? "Téléchargement en cours..."
+          : "Uploader toutes les images"}
       </Button>
-      
-      {isUploading && (
-        <div className="space-y-1">
-          <Progress value={uploadProgress} className="h-2" />
-          <p className="text-xs text-center text-muted-foreground">
-            Ne pas actualiser la page pendant le téléchargement
-          </p>
-        </div>
-      )}
     </div>
   );
-};
-
-export default UploadControls;
+}
