@@ -7,7 +7,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 // Use lazy loading to improve initial load performance
 const Home = lazy(() => import("@/pages/Home"));
 const Players = lazy(() => import("@/pages/Players"));
-const PlayerDetails = lazy(() => import("@/components/player/PlayerDetails"));
+const PlayerDetails = lazy(() => import("@/pages/PlayerDetails"));
 const Matches = lazy(() => import("@/pages/Matches"));
 const MatchDetails = lazy(() => import("@/pages/MatchDetails"));
 const Teams = lazy(() => import("@/pages/Teams"));
@@ -21,6 +21,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/players" element={<Players />} />
+          <Route path="/players/:id" element={<PlayerDetails />} />
           <Route path="/player/:id" element={<PlayerDetails />} />
           <Route path="/matches" element={<Matches />} />
           <Route path="/match/:id" element={<MatchDetails />} />

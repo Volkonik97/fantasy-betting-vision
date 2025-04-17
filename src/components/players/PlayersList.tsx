@@ -89,4 +89,3 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
 };
 
 export default PlayersList;
-
