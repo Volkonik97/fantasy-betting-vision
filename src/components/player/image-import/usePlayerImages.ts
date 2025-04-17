@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { PlayerWithImage, UploadStatus } from "./types";
 import { Player } from "@/utils/models/types";
@@ -294,6 +293,10 @@ export const usePlayerImages = () => {
       // Show toast notification
       if (results.failed === 0 && results.success > 0) {
         toast.success(`${results.success} image${results.success > 1 ? 's' : ''} téléchargée${results.success > 1 ? 's' : ''} avec succès`);
+        
+        // Refresh player images after successful upload
+        console.log("Refreshing after upload");
+        refreshPlayerImages();
       } else if (results.success > 0 && results.failed > 0) {
         toast.error(`${results.success} image${results.success > 1 ? 's' : ''} téléchargée${results.success > 1 ? 's' : ''}, ${results.failed} échec${results.failed > 1 ? 's' : ''}`);
       } else if (results.failed > 0 && results.success === 0) {
@@ -318,7 +321,7 @@ export const usePlayerImages = () => {
       
       toast.error("Erreur lors du téléchargement des images");
     }
-  }, [playerImages]);
+  }, [playerImages, refreshPlayerImages]);
 
   return {
     playerImages,
