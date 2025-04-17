@@ -73,6 +73,13 @@ export const uploadPlayerImage = async (
   file: File,
   timeout: number = 30000 // Default timeout of 30 seconds
 ): Promise<{ success: boolean; publicUrl?: string; error?: string }> => {
+  if (!playerId || playerId.trim() === '') {
+    console.error("❌ ID de joueur non valide :", playerId);
+    return {
+      success: false,
+      error: "ID de joueur non valide"
+    };
+  }
   try {
     // Vérifier que l'ID du joueur n'est pas vide
     if (!playerId || playerId.trim() === '') {
