@@ -81,20 +81,15 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   }
   
   // Extract damage_share - prioritize the damage_share field from player_summary_view
-  let damageShare: number = 0;
-  if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
-    const damageShareValue = parseFloat(String(dbPlayer.damage_share));
-    if (!isNaN(damageShareValue)) {
-      damageShare = Math.round(damageShareValue * 100);
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share, 'converted to:', damageShare);
-  } else if (dbPlayer.damageshare !== undefined && dbPlayer.damageshare !== null) {
-    const damageShareValue = parseFloat(String(dbPlayer.damageshare));
-    if (!isNaN(damageShareValue)) {
-      damageShare = Math.round(damageShareValue * 100);
-    }
-    console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
+  let damageShareRaw: number = 0;
+if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
+  const value = parseFloat(String(dbPlayer.damage_share));
+  if (!isNaN(value)) {
+    damageShareRaw = value;
   }
+}
+console.log(`ADAPTER ${dbPlayer.playername}: raw damage_share =`, dbPlayer.damage_share, "parsed =", damageShareRaw);
+
   
   // Extract vspm (Vision Score Per Minute)
   let vspm: number = 0;
@@ -249,7 +244,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     
     // Damage
     dpm: parseFloat(String(dbPlayer.dpm || 0)),
-    damageShare: Math.round(damageShare * 100),
+    damageShare: Math.round(damageShareRaw * 100),
     dmg_per_gold: dmgPerGold,
     
     // Vision
