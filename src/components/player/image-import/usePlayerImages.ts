@@ -220,7 +220,7 @@ export const usePlayerImages = () => {
     })));
     
     const uploads = playersWithImages.map(p => ({
-      playerId: p.player.id || '',
+      playerId: p.player.playerid || '',
       file: p.imageFile as File
     }));    
     
