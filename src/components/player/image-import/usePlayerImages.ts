@@ -187,6 +187,7 @@ export const usePlayerImages = () => {
   }, []);
 
   const uploadImages = useCallback(async (bucketExists: boolean) => {
+    console.log("🚀 uploadImages called!");
     if (!bucketExists) {
       toast.error("Le bucket de stockage n'existe pas");
       return;
