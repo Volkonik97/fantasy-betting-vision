@@ -25,7 +25,6 @@ export const usePlayerImages = () => {
   const [refreshCounter, setRefreshCounter] = useState(0);
   const [refreshScheduled, setRefreshScheduled] = useState(false);
 
-  // Only refresh data when upload is complete and not already refreshing
   useEffect(() => {
     if (uploadStatus.processed > 0 && 
         uploadStatus.processed === uploadStatus.total && 
@@ -36,16 +35,13 @@ export const usePlayerImages = () => {
       console.log("Upload completed. Scheduling data refresh...");
       setRefreshScheduled(true);
       
-      // Schedule delayed refreshes to allow Supabase to process uploads
       const delays = [2000, 5000, 10000, 15000];
       
-      // Create a queue of refresh operations
       delays.forEach((delay, index) => {
         setTimeout(() => {
           console.log(`Executing scheduled refresh #${index + 1} after ${delay}ms`);
           refreshPlayerImages();
           
-          // Only reset the flag after the last refresh
           if (index === delays.length - 1) {
             setRefreshScheduled(false);
           }
@@ -196,7 +192,6 @@ export const usePlayerImages = () => {
       return;
     }
     
-    // Log et vérifie si le bucket existe avant de tenter le téléchargement
     console.log("Bucket status before upload:", bucketExists ? "exists" : "does not exist");
     
     const playersWithImages = playerImages.filter(p => p.imageFile && !p.processed);
@@ -207,10 +202,8 @@ export const usePlayerImages = () => {
       return;
     }
     
-    // Reset any previous scheduled refreshes
     setRefreshScheduled(false);
     
-    // Set upload status
     setUploadStatus({
       total: playersWithImages.length,
       processed: 0,
@@ -219,12 +212,11 @@ export const usePlayerImages = () => {
       inProgress: true
     });
     
-    // Mark players as uploading
     setPlayerImages(prev => prev.map(p => ({
       ...p,
       isUploading: p.imageFile && !p.processed ? true : p.isUploading,
-      processed: false, // Reset processed state
-      error: null // Clear previous errors
+      processed: false,
+      error: null
     })));
     
     const uploads = playersWithImages.map(p => ({
@@ -233,7 +225,6 @@ export const usePlayerImages = () => {
     }));    
     
     try {
-      // Validate player IDs before upload
       const invalidIds = uploads.filter(upload => !upload.playerId);
       if (invalidIds.length > 0) {
         console.error("Invalid player IDs found:", invalidIds);
@@ -242,7 +233,6 @@ export const usePlayerImages = () => {
       
       console.log("Starting upload of player images:", uploads.length);
       
-      // Process uploads with progress tracking
       const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
         console.log(`Upload progress: ${processed}/${total}`);
         setUploadStatus(prev => ({
@@ -253,7 +243,6 @@ export const usePlayerImages = () => {
       
       console.log("Upload results:", results);
       
-      // Update player states based on results
       setPlayerImages(prev => prev.map(p => {
         const playerId = p.player.id || '';
         
@@ -282,7 +271,6 @@ export const usePlayerImages = () => {
         return p;
       }));
       
-      // Update final status
       setUploadStatus(prev => ({
         ...prev,
         success: results.success,
@@ -290,12 +278,9 @@ export const usePlayerImages = () => {
         inProgress: false
       }));
       
-      // Show toast notification
       if (results.failed === 0 && results.success > 0) {
         toast.success(`${results.success} image${results.success > 1 ? 's' : ''} téléchargée${results.success > 1 ? 's' : ''} avec succès`);
         
-        // Refresh player images after successful upload
-        console.log("Refreshing after upload");
         refreshPlayerImages();
       } else if (results.success > 0 && results.failed > 0) {
         toast.error(`${results.success} image${results.success > 1 ? 's' : ''} téléchargée${results.success > 1 ? 's' : ''}, ${results.failed} échec${results.failed > 1 ? 's' : ''}`);
@@ -303,7 +288,6 @@ export const usePlayerImages = () => {
         toast.error(`Échec du téléchargement de ${results.failed} image${results.failed > 1 ? 's' : ''}`);
       }
       
-      // Refreshes will be scheduled by the useEffect
     } catch (error) {
       console.error("Upload error:", error);
       
