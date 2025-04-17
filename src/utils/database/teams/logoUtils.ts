@@ -1,4 +1,5 @@
-import { supabase } from "@/utils/supabaseClient";
+
+import { supabase } from "@/integrations/supabase/client";
 
 const BUCKET = "team-logos"; // Nom de ton bucket Supabase Storage
 const FOLDER = ""; // Ajoute ici un sous-dossier si les logos sont dans un répertoire (ex: "logos")
