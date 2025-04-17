@@ -81,7 +81,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
-    let query = supabase.from('player_summary_view').select('*');
+    // Explicitly specify the fields we need, including 'image'
+    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15');
     
     // Apply pagination if provided
     if (page !== undefined && pageSize !== undefined) {
@@ -98,7 +99,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       
       // Fall back to players table
       console.log("Falling back to players table");
-      let fallbackQuery = supabase.from('players').select('*');
+      let fallbackQuery = supabase.from('players').select('playerid, playername, position, image, teamid, kda, cspm, dpm, damage_share, vspm, wcpm');
       
       if (page !== undefined && pageSize !== undefined) {
         const start = (page - 1) * pageSize;

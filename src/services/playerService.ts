@@ -1,3 +1,4 @@
+
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";
@@ -96,6 +97,7 @@ export const loadAllPlayersInBatches = async (
       console.log(`Loading batch ${batch}/${batches}`);
       
       try {
+        // Here we call getPlayers which now explicitly selects the image field
         const batchPlayers = await getPlayers(batch, batchSize);
         
         // Process each player's image

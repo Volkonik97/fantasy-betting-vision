@@ -11,7 +11,8 @@ export const getPlayers = async (page = 0, pageSize = 0): Promise<Player[]> => {
   try {
     console.log(`Fetching players from Supabase ${page && pageSize ? `(page ${page}, pageSize ${pageSize})` : '(all players)'}`);
     
-    let query = supabase.from('players').select('*');
+    // Explicitly select all required fields including 'image'
+    let query = supabase.from('players').select('playerid, playername, position, image, teamid, kda, cspm, dpm, damage_share, vspm, wcpm');
     
     // Apply pagination only if both parameters are provided and greater than 0
     if (page > 0 && pageSize > 0) {
@@ -39,6 +40,10 @@ export const getPlayers = async (page = 0, pageSize = 0): Promise<Player[]> => {
       ? `Found ${data.length} players in database (page ${page})`
       : `Found ${data.length} players in database (all players)`;
     console.log(logMessage);
+    
+    // Log image information
+    const playersWithImages = data.filter(p => p.image).length;
+    console.log(`Players with images: ${playersWithImages}/${data.length}`);
     
     return data.map(adaptPlayerFromDatabase);
   } catch (error) {
