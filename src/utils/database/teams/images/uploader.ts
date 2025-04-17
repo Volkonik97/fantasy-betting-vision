@@ -100,9 +100,14 @@ export const uploadPlayerImage = async (
       }
     }
     
-    // Use a consistent filename format with playerid prefix
+    // Use a consistent filename format with playerid prefix and preserve original extension
     // This ensures we can easily find images by player ID later
-    const fileExtension = file.name.split('.').pop() || 'webp';
+    let fileExtension = file.name.split('.').pop()?.toLowerCase() || 'png';
+    // Make sure the extension is valid
+    if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileExtension)) {
+      fileExtension = 'png'; // Default to png for unknown extensions
+    }
+    
     const fileName = `playerid${cleanPlayerId}.${fileExtension}`;
     
     console.log(`Uploading image for player ${cleanPlayerId} with filename ${fileName}`);
@@ -134,6 +139,7 @@ export const uploadPlayerImage = async (
     const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
     
     console.log(`Successfully uploaded image for player ${cleanPlayerId}, URL: ${publicUrlWithCacheBuster}`);
+    console.log(`File extension used: ${fileExtension}, full filename: ${fileName}`);
     
     return { 
       success: true,

@@ -59,11 +59,29 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       ? cleanId 
       : `playerid${cleanId}`;
     
-    // Generate the public URL for the image in the player-images bucket
+    // Check multiple extensions (.png, .jpg, .webp, etc.)
+    const possibleExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
+    
+    // Try to get the public URL for the image with different extensions
+    for (const ext of possibleExtensions) {
+      const { data } = supabase
+        .storage
+        .from('player-images')
+        .getPublicUrl(`${playerId}${ext}`);
+      
+      // Add cache buster to prevent caching issues
+      const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
+      console.log(`Trying Supabase URL with ${ext} extension for player ${cleanId}: ${publicUrlWithCacheBuster}`);
+      
+      // We'll return the first one, actual verification will happen later
+      return publicUrlWithCacheBuster;
+    }
+    
+    // Default to .png if we don't know the extension
     const { data } = supabase
       .storage
       .from('player-images')
-      .getPublicUrl(`${playerId}.webp`);
+      .getPublicUrl(`${playerId}.png`);
       
     // Add cache buster to prevent caching issues
     const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
@@ -223,30 +241,51 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
         
         console.log(`Checking Supabase storage: bucket=${bucket}, path=${path}`);
         
-        // First try listing files with search to find files starting with playerid
-        try {
-          // If the path starts with playerid, try to search for files with that prefix
-          if (path.startsWith('playerid')) {
-            const playerId = path.replace(/\..*$/, ''); // Remove file extension
-            console.log(`Searching for files with prefix: ${playerId}`);
+        // Check for player ID pattern
+        if (path.startsWith('playerid')) {
+          // Extract the player ID without file extension
+          const playerIdWithExt = path;
+          const playerId = playerIdWithExt.split('.')[0];
+          
+          // Try with different extensions
+          const { data: listData, error: listError } = await supabase
+            .storage
+            .from(bucket)
+            .list('', {
+              search: playerId,
+              sortBy: { column: 'name', order: 'asc' }
+            });
             
-            const { data: listData, error: listError } = await supabase
-              .storage
-              .from(bucket)
-              .list('', {
-                search: playerId,
-                sortBy: { column: 'name', order: 'asc' }
-              });
+          if (listError) {
+            console.error(`List verification error: ${listError.message}`);
+          } else if (listData && listData.length > 0) {
+            console.log(`Files found matching prefix: ${listData.map(f => f.name).join(', ')}`);
+            return true;
+          }
+        }
+        
+        // Try direct download with various extensions if we're dealing with a playerid file
+        if (path.startsWith('playerid')) {
+          const baseFilename = path.split('.')[0];
+          const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
+          
+          for (const ext of extensions) {
+            try {
+              const { data, error } = await supabase
+                .storage
+                .from(bucket)
+                .download(`${baseFilename}${ext}`);
               
-            if (listError) {
-              console.error(`List verification error: ${listError.message}`);
-            } else if (listData && listData.length > 0) {
-              console.log(`Files found matching prefix: ${listData.map(f => f.name).join(', ')}`);
-              return true;
+              if (!error && data) {
+                console.log(`File exists with extension ${ext}: ${baseFilename}${ext}`);
+                return true;
+              }
+            } catch (e) {
+              // Continue trying other extensions
             }
           }
-          
-          // Direct download attempt as fallback
+        } else {
+          // Direct download attempt for non-playerid files
           const { data, error } = await supabase
             .storage
             .from(bucket)
@@ -258,8 +297,6 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
             console.log(`File exists and is downloadable from bucket ${bucket}`);
             return true;
           }
-        } catch (storageError) {
-          console.error(`Error during storage verification: ${storageError}`);
         }
       }
     } catch (error) {

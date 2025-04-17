@@ -22,6 +22,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const [loadError, setLoadError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reloadTrigger, setReloadTrigger] = useState(0);
+  const [triedExtensions, setTriedExtensions] = useState<string[]>([]);
   const imageRef = useRef<HTMLImageElement>(null);
   
   // Clean up player ID to make sure it doesn't contain invalid characters
@@ -73,7 +74,51 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     updateImageUrl();
   }, [newImageUrl, player.image, processed, player.name, reloadTrigger, cleanPlayerId]);
   
-  // Effect to retry failed images
+  // Effect to retry with different file extensions if image fails to load
+  useEffect(() => {
+    if (loadError && displayUrl && !displayUrl.startsWith('blob:') && displayUrl.includes('supabase.co/storage')) {
+      const tryNextExtension = async () => {
+        const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
+        
+        // Extract the base URL without extension and cache buster
+        const baseUrlMatch = displayUrl.match(/(.+playerid[^.]+)(\.[^?]+)?(\?.+)?$/);
+        
+        if (baseUrlMatch) {
+          const baseUrl = baseUrlMatch[1]; // playerid part
+          const currentExt = baseUrlMatch[2] || '.png'; // current extension or default
+          
+          // Find extensions we haven't tried yet
+          const remainingExts = extensions.filter(ext => 
+            !triedExtensions.includes(ext) && ext !== currentExt
+          );
+          
+          if (remainingExts.length > 0) {
+            const nextExt = remainingExts[0];
+            const newTriedExtensions = [...triedExtensions, nextExt];
+            setTriedExtensions(newTriedExtensions);
+            
+            const newUrl = `${baseUrl}${nextExt}?t=${Date.now()}`;
+            console.log(`Trying alternate extension for ${player.name}: ${nextExt}`, newUrl);
+            
+            setDisplayUrl(newUrl);
+          } else {
+            // All extensions tried, reset and set regular retry timer
+            console.log(`All extensions tried for ${player.name}, starting over`);
+            setTriedExtensions([]);
+          }
+        }
+      };
+      
+      // Try next extension after a short delay
+      const timeout = setTimeout(() => {
+        tryNextExtension();
+      }, 1000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [loadError, displayUrl, player.name, triedExtensions]);
+  
+  // Effect to retry failed images regularly
   useEffect(() => {
     let retryTimeout: NodeJS.Timeout;
     
@@ -97,7 +142,10 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     if (processed && hasNewImage) {
       console.log(`Player ${player.name} image processed, scheduling additional reloads`);
       
-      const timeouts = [500, 1500, 3000, 5000].map(delay => 
+      // Reset tried extensions when a new image is processed
+      setTriedExtensions([]);
+      
+      const timeouts = [500, 1500, 3000, 5000, 8000].map(delay => 
         setTimeout(() => {
           console.log(`Post-processing reload for ${player.name}: ${delay}ms delay`);
           reloadImage();
