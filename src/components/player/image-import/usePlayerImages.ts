@@ -233,7 +233,11 @@ export const usePlayerImages = () => {
       
       console.log("Starting upload of player images:", uploads.length);
       
-      const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
+      console.log("🧠 Uploading player IDs:", uploads.map(u => u.playerId));
+const invalidIds = uploads.filter(upload => !upload.playerId);
+console.log("❌ Invalid player IDs:", invalidIds.map(u => u.playerId));
+
+const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
         console.log(`Upload progress: ${processed}/${total}`);
         setUploadStatus(prev => ({
           ...prev,
