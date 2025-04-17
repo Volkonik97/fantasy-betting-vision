@@ -85,13 +85,13 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
   if (dbPlayer.damage_share !== undefined && dbPlayer.damage_share !== null) {
     const damageShareValue = parseFloat(String(dbPlayer.damage_share));
     if (!isNaN(damageShareValue)) {
-      damageShare = damageShareValue;
+      damageShare = Math.round(damageShareValue * 100);
     }
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damage_share field:`, dbPlayer.damage_share, 'converted to:', damageShare);
   } else if (dbPlayer.damageshare !== undefined && dbPlayer.damageshare !== null) {
     const damageShareValue = parseFloat(String(dbPlayer.damageshare));
     if (!isNaN(damageShareValue)) {
-      damageShare = damageShareValue;
+      damageShare = Math.round(damageShareValue * 100);
     }
     console.log(`Player ${dbPlayer.playername || dbPlayer.playerid}: damageshare field:`, dbPlayer.damageshare, 'converted to:', damageShare);
   }
@@ -285,10 +285,10 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
     if (typeof player.damageShare === 'string') {
       const parsed = parseFloat(player.damageShare);
       if (!isNaN(parsed)) {
-        damageShare = parsed;
+        damageShare = parsed / 100;
       }
     } else if (typeof player.damageShare === 'number' && !isNaN(player.damageShare)) {
-      damageShare = player.damageShare;
+      damageShare = player.damageShare / 100;
     }
   }
 
