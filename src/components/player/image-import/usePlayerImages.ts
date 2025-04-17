@@ -220,6 +220,8 @@ export const usePlayerImages = () => {
     })));
     
     console.log("🎯 Mapping player IDs from playerImages:", playerImages.map(p => p.player));
+console.log("🧪 Players with image files:", playersWithImages.map(p => ({ name: p.player?.playername, id: p.player?.playerid, file: p.imageFile?.name })));
+
 const uploads = playersWithImages.map(p => ({
   playerId: p.player.playerid,
   file: p.imageFile as File
