@@ -24,6 +24,9 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const [reloadTrigger, setReloadTrigger] = useState(0);
   const imageRef = useRef<HTMLImageElement>(null);
   
+  // Clean up player ID to make sure it doesn't contain invalid characters
+  const cleanPlayerId = player.id ? player.id.replace(/[^a-zA-Z0-9-_]/g, '') : null;
+  
   // Ensure we always have the latest image URL
   useEffect(() => {
     const updateImageUrl = async () => {
@@ -43,6 +46,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
             
             // If the image is from Supabase storage, verify it exists
             if (normalizedUrl && normalizedUrl.includes('supabase.co/storage')) {
+              console.log(`Verifying Supabase storage image for ${player.name}`);
               const isAccessible = await verifyImageAccessibleWithRetry(normalizedUrl);
               if (!isAccessible) {
                 console.warn(`Image for ${player.name} is not accessible: ${normalizedUrl}`);
@@ -67,7 +71,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     };
     
     updateImageUrl();
-  }, [newImageUrl, player.image, processed, player.name, reloadTrigger]);
+  }, [newImageUrl, player.image, processed, player.name, reloadTrigger, cleanPlayerId]);
   
   // Effect to retry failed images
   useEffect(() => {
@@ -87,6 +91,22 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   
   const hasExistingImage = hasPlayerImage(player);
   const hasNewImage = Boolean(imageFile);
+
+  // When an image is processed (upload completed), schedule additional reloads
+  useEffect(() => {
+    if (processed && hasNewImage) {
+      console.log(`Player ${player.name} image processed, scheduling additional reloads`);
+      
+      const timeouts = [500, 1500, 3000, 5000].map(delay => 
+        setTimeout(() => {
+          console.log(`Post-processing reload for ${player.name}: ${delay}ms delay`);
+          reloadImage();
+        }, delay)
+      );
+      
+      return () => timeouts.forEach(t => clearTimeout(t));
+    }
+  }, [processed, hasNewImage, player.name]);
   
   const getStatusIcon = () => {
     if (error) return <X className="h-4 w-4 text-red-500" />;

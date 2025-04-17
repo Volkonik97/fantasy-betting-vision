@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 import { normalizeImageUrl, forceImageReload, verifyImageAccessibleWithRetry } from "@/utils/database/teams/images/imageUtils";
@@ -20,6 +20,10 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const [isLoading, setIsLoading] = useState(true);
   const [reloadAttempt, setReloadAttempt] = useState(0);
   const [hasVerifiedImage, setHasVerifiedImage] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Clean up playerID to make sure it doesn't contain invalid characters
+  const cleanPlayerId = playerId ? playerId.replace(/[^a-zA-Z0-9-_]/g, '') : null;
 
   // Effect to load the image URL
   useEffect(() => {
@@ -46,9 +50,10 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
         }
       } 
       // If no image provided but we have a player ID, construct URL from player ID
-      else if (playerId) {
+      else if (cleanPlayerId) {
         try {
-          const playerIdUrl = normalizeImageUrl(`playerid${playerId}`);
+          // Make sure we're using a clean player ID for the URL
+          const playerIdUrl = normalizeImageUrl(`playerid${cleanPlayerId}`);
           console.log(`Loading image for ${name} from player ID: ${playerIdUrl}`);
           setImageUrl(playerIdUrl);
         } catch (error) {
@@ -66,17 +71,18 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     };
 
     loadImage();
-  }, [image, playerId, reloadAttempt]);
+  }, [image, cleanPlayerId, name, reloadAttempt]);
 
   // Effect to verify the image is accessible
   useEffect(() => {
-    if (imageUrl && !hasVerifiedImage) {
+    if (imageUrl && !hasVerifiedImage && !imageUrl.startsWith('blob:')) {
       const verifyImage = async () => {
         try {
+          console.log(`Verifying image accessibility for ${name}: ${imageUrl}`);
           const isAccessible = await verifyImageAccessibleWithRetry(imageUrl);
-          console.log(`Image verification for ${name}: ${isAccessible ? 'accessible' : 'not accessible'}`);
           
           if (!isAccessible) {
+            console.log(`Image verification failed for ${name}, marking as error`);
             setImageError(true);
             setIsLoading(false);
           }
@@ -130,6 +136,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       
       {imageUrl && !imageError ? (
         <img
+          ref={imageRef}
           src={imageUrl}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

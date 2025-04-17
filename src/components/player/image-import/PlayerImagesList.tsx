@@ -30,13 +30,13 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
 
   // Set up a periodic refresh to ensure images are attempted to be loaded
   useEffect(() => {
-    // Trigger a refresh every 5 seconds if images are being displayed
+    // Trigger a refresh every 3 seconds if images are being displayed
     const intervalId = setInterval(() => {
       if (filteredPlayers && filteredPlayers.length > 0 && !isLoading) {
         console.log('Auto-refreshing image list to retry loading any failed images');
         setReloadTrigger(prev => prev + 1);
       }
-    }, 5000); // Reduced from 10s to 5s for more frequent retries
+    }, 3000); // Reduced from 5s to 3s for more frequent retries
     
     return () => clearInterval(intervalId);
   }, [filteredPlayers, isLoading]);
@@ -47,9 +47,9 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
     const hasProcessedPlayers = filteredPlayers.some(p => p.processed);
     
     if (hasProcessedPlayers) {
-      console.log('Detected processed player images, scheduling a refresh');
+      console.log('Detected processed player images, scheduling refreshes');
       // Schedule multiple refreshes with increasing delays to catch Supabase storage propagation
-      const timeouts = [1000, 3000, 6000, 10000].map(delay => 
+      const timeouts = [500, 1500, 3000, 6000, 10000].map(delay => 
         setTimeout(() => {
           console.log(`Refresh after upload: ${delay}ms delay`);
           setReloadTrigger(prev => prev + 1);

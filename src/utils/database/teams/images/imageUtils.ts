@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -24,7 +23,7 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
     // Fix any double slashes in URLs except for https://
     const fixedUrl = cleanUrl.replace(/([^:])\/\//g, '$1/');
     
-    // Remove any existing cache buster parameter
+    // Remove any existing cache buster parameter and clean special characters
     const urlWithoutParams = fixedUrl.split('?')[0];
     
     // Add a new cache buster parameter
@@ -54,19 +53,21 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   
   // If it's a player ID (with or without the 'playerid' prefix)
   try {
-    const playerId = cleanUrl.startsWith('playerid') 
-      ? cleanUrl 
-      : `playerid${cleanUrl}`;
+    // Clean the player ID to prevent URL encoding issues
+    const cleanId = cleanUrl.replace(/[^a-zA-Z0-9-_]/g, '');
+    const playerId = cleanId.startsWith('playerid') 
+      ? cleanId 
+      : `playerid${cleanId}`;
     
     // Generate the public URL for the image in the player-images bucket
     const { data } = supabase
       .storage
       .from('player-images')
-      .getPublicUrl(playerId);
+      .getPublicUrl(`${playerId}.webp`);
       
     // Add cache buster to prevent caching issues
     const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
-    console.log(`Generated Supabase URL for player ${cleanUrl}: ${publicUrlWithCacheBuster}`);
+    console.log(`Generated Supabase URL for player ${cleanId}: ${publicUrlWithCacheBuster}`);
     return publicUrlWithCacheBuster;
   } catch (error) {
     console.error("Error creating URL from player ID:", error);
@@ -222,8 +223,30 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
         
         console.log(`Checking Supabase storage: bucket=${bucket}, path=${path}`);
         
-        // First try direct download to verify existence
+        // First try listing files with search to find files starting with playerid
         try {
+          // If the path starts with playerid, try to search for files with that prefix
+          if (path.startsWith('playerid')) {
+            const playerId = path.replace(/\..*$/, ''); // Remove file extension
+            console.log(`Searching for files with prefix: ${playerId}`);
+            
+            const { data: listData, error: listError } = await supabase
+              .storage
+              .from(bucket)
+              .list('', {
+                search: playerId,
+                sortBy: { column: 'name', order: 'asc' }
+              });
+              
+            if (listError) {
+              console.error(`List verification error: ${listError.message}`);
+            } else if (listData && listData.length > 0) {
+              console.log(`Files found matching prefix: ${listData.map(f => f.name).join(', ')}`);
+              return true;
+            }
+          }
+          
+          // Direct download attempt as fallback
           const { data, error } = await supabase
             .storage
             .from(bucket)
@@ -235,28 +258,8 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
             console.log(`File exists and is downloadable from bucket ${bucket}`);
             return true;
           }
-        } catch (downloadError) {
-          console.error(`Error during download verification: ${downloadError}`);
-        }
-        
-        // Fallback to listing files
-        try {
-          const { data: listData, error: listError } = await supabase
-            .storage
-            .from(bucket)
-            .list('', {
-              search: path,
-              limit: 1
-            });
-            
-          if (listError) {
-            console.error(`List verification error: ${listError.message}`);
-          } else if (listData && listData.length > 0) {
-            console.log(`File found in bucket listing: ${listData[0].name}`);
-            return true;
-          }
-        } catch (listError) {
-          console.error(`Error during list verification: ${listError}`);
+        } catch (storageError) {
+          console.error(`Error during storage verification: ${storageError}`);
         }
       }
     } catch (error) {
@@ -264,7 +267,7 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
     }
   }
   
-  // Fallback to direct HTTP verification for all URLs
+  // Fallback to direct HTTP fetch verification for all URLs
   try {
     const fetchUrl = imageUrl.includes('?') ? imageUrl : `${imageUrl}?t=${Date.now()}`;
     
@@ -273,7 +276,7 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
     const response = await fetch(fetchUrl, { 
       method: 'HEAD',
       headers: { "Cache-Control": "no-cache" },
-      signal: AbortSignal.timeout(3000) // 3 second timeout
+      signal: AbortSignal.timeout(5000) // 5 second timeout
     });
     
     console.log(`Image fetch response: ${response.status} ${response.statusText}`);

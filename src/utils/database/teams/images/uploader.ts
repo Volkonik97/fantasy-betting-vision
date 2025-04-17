@@ -74,6 +74,9 @@ export const uploadPlayerImage = async (
   timeout: number = 30000 // Default timeout of 30 seconds
 ): Promise<{ success: boolean; publicUrl?: string; error?: string }> => {
   try {
+    // Clean the player ID to prevent URL encoding issues
+    const cleanPlayerId = playerId.replace(/[^a-zA-Z0-9-_]/g, '');
+    
     // Check bucket access before upload
     const { error: bucketError } = await supabase
       .storage
@@ -100,9 +103,9 @@ export const uploadPlayerImage = async (
     // Use a consistent filename format with playerid prefix
     // This ensures we can easily find images by player ID later
     const fileExtension = file.name.split('.').pop() || 'webp';
-    const fileName = `playerid${playerId}.${fileExtension}`;
+    const fileName = `playerid${cleanPlayerId}.${fileExtension}`;
     
-    console.log(`Uploading image for player ${playerId} with filename ${fileName}`);
+    console.log(`Uploading image for player ${cleanPlayerId} with filename ${fileName}`);
     
     // Upload the file with upsert to replace any existing file
     const { error: uploadError } = await supabase
@@ -130,7 +133,7 @@ export const uploadPlayerImage = async (
     // Add cache buster to URL
     const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
     
-    console.log(`Successfully uploaded image for player ${playerId}, URL: ${publicUrlWithCacheBuster}`);
+    console.log(`Successfully uploaded image for player ${cleanPlayerId}, URL: ${publicUrlWithCacheBuster}`);
     
     return { 
       success: true,
