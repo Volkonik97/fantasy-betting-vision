@@ -187,7 +187,6 @@ export const usePlayerImages = () => {
   }, []);
 
   const uploadImages = useCallback(async (bucketExists: boolean) => {
-    console.log("🚀 uploadImages called!");
     if (!bucketExists) {
       toast.error("Le bucket de stockage n'existe pas");
       return;
@@ -220,10 +219,14 @@ export const usePlayerImages = () => {
       error: null
     })));
     
-    const uploads = playersWithImages.map(p => ({
-      playerId: p.player.playerid || '',
-      file: p.imageFile as File
-    }));    
+    console.log("🎯 Mapping player IDs from playerImages:", playerImages.map(p => p.player));
+const uploads = playersWithImages.map(p => ({
+  playerId: p.player.playerid,
+  file: p.imageFile as File
+}));
+console.log("📦 Final uploads array:", uploads);
+const invalidIds = uploads.filter(upload => !upload.playerId);
+console.log("❌ Invalid player IDs:", invalidIds.map(u => ({ id: u.playerId, file: u.file.name }))););    
     
     try {
       const invalidIds = uploads.filter(upload => !upload.playerId);
@@ -234,11 +237,7 @@ export const usePlayerImages = () => {
       
       console.log("Starting upload of player images:", uploads.length);
       
-      console.log("🧠 Uploading player IDs:", uploads.map(u => u.playerId));
-const invalidIds = uploads.filter(upload => !upload.playerId);
-console.log("❌ Invalid player IDs:", invalidIds.map(u => u.playerId));
-
-const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
+      const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
         console.log(`Upload progress: ${processed}/${total}`);
         setUploadStatus(prev => ({
           ...prev,
