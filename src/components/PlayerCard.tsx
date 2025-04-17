@@ -52,7 +52,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
           csPerMin={player.csPerMin} 
           damageShare={
             typeof player.damageShare === 'number'
-              ? player.damageShare * 100
+              ? player.damageShare
               : 0
           }
         />
