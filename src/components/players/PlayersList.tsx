@@ -22,13 +22,13 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
           name: p.name,
           id: p.id,
           imageUrl: p.image,
-          hasImage: hasPlayerImage(p.image),
+          hasImage: hasPlayerImage({ image: p.image }),
           role: p.role
         }))
       );
       
       // Count players with images vs without
-      const withImages = players.filter(p => hasPlayerImage(p.image)).length;
+      const withImages = players.filter(p => hasPlayerImage({ image: p.image })).length;
       console.log(`Players with images: ${withImages}/${players.length}`);
     }
   }, [players]);
@@ -89,3 +89,4 @@ const PlayersList = ({ players, loading }: PlayersListProps) => {
 };
 
 export default PlayersList;
+

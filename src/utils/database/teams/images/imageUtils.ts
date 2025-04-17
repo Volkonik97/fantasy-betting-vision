@@ -59,7 +59,7 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
 /**
  * Check if a player has a valid image
  */
-export const hasPlayerImage = (player: { image?: string | null } | null | undefined): boolean => {
+export const hasPlayerImage = (player: { image?: string | null } | string | null | undefined): boolean => {
   if (!player) return false;
   
   // If player is a string (URL)
@@ -146,3 +146,4 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
   
   return false;
 };
+
