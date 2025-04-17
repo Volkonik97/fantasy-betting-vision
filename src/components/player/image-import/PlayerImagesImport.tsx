@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import ImportHeader from "./ImportHeader";
@@ -74,7 +75,7 @@ const PlayerImagesImport = ({
       <DropZone onDrop={handleFileSelect} />
 
       <UploadControls
-        uploadImages={uploadImages}
+        uploadImages={() => uploadImages(bucketStatus === "exists")}
         uploadStatus={uploadStatus}
         bucketStatus={bucketStatus}
       />

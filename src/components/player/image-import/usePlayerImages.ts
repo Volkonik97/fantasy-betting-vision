@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { PlayerWithImage, UploadStatus } from "./types";
 import { Player } from "@/utils/models/types";
@@ -132,6 +133,82 @@ export const usePlayerImages = () => {
     loadPlayers();
   }, []);
 
+  // Implement the missing handleFileSelect function
+  const handleFileSelect = useCallback((files: File[]) => {
+    console.log("Files selected:", files.length);
+    
+    if (files.length === 0) {
+      return;
+    }
+
+    // Filter out non-image files
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // Try to match files to players based on filename
+    const newUnmatched: File[] = [];
+    const updatedPlayers = [...playerImages];
+    
+    imageFiles.forEach(file => {
+      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // Remove file extension
+      
+      // Try to find a matching player by name (case insensitive)
+      const matchedPlayerIndex = updatedPlayers.findIndex(
+        p => p.player.name.toLowerCase() === fileName
+      );
+      
+      if (matchedPlayerIndex >= 0) {
+        // Match found, assign file to player
+        updatedPlayers[matchedPlayerIndex] = {
+          ...updatedPlayers[matchedPlayerIndex],
+          imageFile: file,
+          processed: false,
+          error: null
+        };
+        console.log(`Matched file ${file.name} to player ${updatedPlayers[matchedPlayerIndex].player.name}`);
+      } else {
+        // No match found, add to unmatched files
+        newUnmatched.push(file);
+        console.log(`No player match found for file: ${file.name}`);
+      }
+    });
+    
+    setPlayerImages(updatedPlayers);
+    setUnmatched(prev => [...prev, ...newUnmatched]);
+    
+    if (newUnmatched.length > 0) {
+      toast.info(`${newUnmatched.length} fichiers n'ont pas pu être associés automatiquement`);
+    }
+    
+    if (newUnmatched.length < imageFiles.length) {
+      toast.success(`${imageFiles.length - newUnmatched.length} images associées automatiquement`);
+    }
+  }, [playerImages]);
+
+  // Implement the assignFileToPlayer function
+  const assignFileToPlayer = useCallback((file: File, playerId: string) => {
+    console.log(`Assigning file ${file.name} to player with ID ${playerId}`);
+    
+    // Update player with the assigned file
+    setPlayerImages(prev => 
+      prev.map(p => {
+        if (p.player.id === playerId) {
+          return {
+            ...p,
+            imageFile: file,
+            processed: false,
+            error: null
+          };
+        }
+        return p;
+      })
+    );
+    
+    // Remove file from unmatched list
+    setUnmatched(prev => prev.filter(f => f !== file));
+    
+    toast.success("Image associée au joueur");
+  }, []);
+
   const uploadImages = useCallback(
     async (bucketExists: boolean) => {
       console.log("🚀 uploadImages called!");
@@ -139,8 +216,8 @@ export const usePlayerImages = () => {
       console.log(
         "🧩 Raw playerImages (filtered):",
         playerImages.map((p) => ({
-          name: p.player?.playername,
-          id: p.player?.playerid,
+          name: p.player?.name,
+          id: p.player?.id,
           file: p.imageFile?.name,
         }))
       );
@@ -155,20 +232,20 @@ export const usePlayerImages = () => {
       );
 
       const validPlayersWithImages = playersWithImages.filter(
-        (p) => p.player?.playerid
+        (p) => p.player?.id
       );
 
       console.log(
         "🧪 Valid players with image files:",
         validPlayersWithImages.map((p) => ({
-          name: p.player?.playername,
-          id: p.player?.playerid,
+          name: p.player?.name,
+          id: p.player?.id,
           file: p.imageFile?.name,
         }))
       );
 
       const uploads = validPlayersWithImages.map((p) => ({
-        playerId: p.player.playerid,
+        playerId: p.player.id,
         file: p.imageFile as File,
       }));
 
@@ -216,7 +293,7 @@ export const usePlayerImages = () => {
 
         setPlayerImages((prev) =>
           prev.map((p) => {
-            const playerId = p.player.playerid;
+            const playerId = p.player.id;
 
             if (p.imageFile && p.isUploading) {
               const hasError = results.errors[playerId];

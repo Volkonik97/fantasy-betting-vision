@@ -5,11 +5,11 @@ import { ImageIcon, Upload, FileUp } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface DropZoneProps {
-  onFileSelect: (files: File[]) => void;
+  onDrop: (files: File[]) => void;
   disabled?: boolean;
 }
 
-const DropZone: React.FC<DropZoneProps> = ({ onFileSelect, disabled = false }) => {
+const DropZone: React.FC<DropZoneProps> = ({ onDrop, disabled = false }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +36,7 @@ const DropZone: React.FC<DropZoneProps> = ({ onFileSelect, disabled = false }) =
       );
       
       if (filesArray.length > 0) {
-        onFileSelect(filesArray);
+        onDrop(filesArray);
       }
     }
   };
@@ -49,7 +49,7 @@ const DropZone: React.FC<DropZoneProps> = ({ onFileSelect, disabled = false }) =
     );
     
     if (filesArray.length > 0) {
-      onFileSelect(filesArray);
+      onDrop(filesArray);
     }
     
     // Reset the file input to allow selecting the same file again
