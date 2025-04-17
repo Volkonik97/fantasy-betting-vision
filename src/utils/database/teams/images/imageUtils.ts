@@ -10,9 +10,6 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Clean up the URL by trimming whitespace
   const cleanUrl = imageUrl.trim();
   
-  // Add cache busting parameter to force refresh
-  const cacheBuster = `?t=${Date.now()}`;
-  
   // Log for debugging
   console.log(`Normalizing image URL: ${cleanUrl}`);
   
@@ -26,20 +23,33 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   if (cleanUrl.includes('supabase.co/storage')) {
     // Fix any double slashes in URLs except for https://
     const fixedUrl = cleanUrl.replace(/([^:])\/\//g, '$1/');
-    console.log(`Normalized Supabase URL: ${fixedUrl}${cacheBuster}`);
-    return fixedUrl + cacheBuster;
+    
+    // Remove any existing cache buster parameter
+    const urlWithoutParams = fixedUrl.split('?')[0];
+    
+    // Add a new cache buster parameter
+    const cacheBuster = `?t=${Date.now()}`;
+    console.log(`Normalized Supabase URL: ${urlWithoutParams}${cacheBuster}`);
+    return urlWithoutParams + cacheBuster;
   }
   
-  // If it's an absolute URL, return it as is with cache buster
+  // If it's an absolute URL, return it with cache buster
   if (cleanUrl.startsWith('http')) {
-    console.log(`Normalized absolute URL: ${cleanUrl}${cacheBuster}`);
-    return cleanUrl + cacheBuster;
+    // Remove any existing cache buster parameter
+    const urlWithoutParams = cleanUrl.split('?')[0];
+    
+    // Add a new cache buster parameter
+    const cacheBuster = `?t=${Date.now()}`;
+    console.log(`Normalized absolute URL: ${urlWithoutParams}${cacheBuster}`);
+    return urlWithoutParams + cacheBuster;
   }
   
   // If it's a path to the public folder, add leading slash if needed
   if (cleanUrl.startsWith('lovable-uploads/')) {
-    console.log(`Normalized public path: /${cleanUrl}${cacheBuster}`);
-    return `/${cleanUrl}${cacheBuster}`;
+    const urlWithoutParams = cleanUrl.split('?')[0];
+    const cacheBuster = `?t=${Date.now()}`;
+    console.log(`Normalized public path: /${urlWithoutParams}${cacheBuster}`);
+    return `/${urlWithoutParams}${cacheBuster}`;
   }
   
   // If it's a player ID (with or without the 'playerid' prefix)
@@ -54,8 +64,10 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
       .from('player-images')
       .getPublicUrl(playerId);
       
-    console.log(`Generated Supabase URL for player ${cleanUrl}: ${data.publicUrl}${cacheBuster}`);
-    return data.publicUrl + cacheBuster;
+    // Add cache buster to prevent caching issues
+    const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
+    console.log(`Generated Supabase URL for player ${cleanUrl}: ${publicUrlWithCacheBuster}`);
+    return publicUrlWithCacheBuster;
   } catch (error) {
     console.error("Error creating URL from player ID:", error);
     return null;
@@ -137,4 +149,22 @@ export const listAllPlayerImages = async (): Promise<string[]> => {
  */
 export const getPlayerImageFilename = (playerId: string, fileExtension: string = 'webp'): string => {
   return `playerid${playerId}.${fileExtension}`;
+};
+
+/**
+ * Force reload an image by creating a new URL with a timestamp
+ */
+export const forceImageReload = (imageUrl: string | null): string | null => {
+  if (!imageUrl) return null;
+  
+  // For blob URLs, we can't add a cache buster
+  if (imageUrl.startsWith('blob:')) {
+    return imageUrl;
+  }
+  
+  // Remove any existing parameters
+  const baseUrl = imageUrl.split('?')[0];
+  
+  // Add a new cache buster timestamp
+  return `${baseUrl}?t=${Date.now()}`;
 };

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlayerWithImage } from "./types";
 import { Check, X, Upload, Image as ImageIcon, RefreshCw, Trash2 } from "lucide-react";
 import { hasPlayerImage } from "./types";
-import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils"; 
+import { normalizeImageUrl, forceImageReload } from "@/utils/database/teams/images/imageUtils"; 
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -89,8 +89,8 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
         setDisplayUrl(null);
         setTimeout(() => setDisplayUrl(displayUrl), 10);
       } else {
-        // For regular URLs, add a timestamp to force reload
-        const reloadUrl = `${displayUrl.split('?')[0]}?t=${Date.now()}`;
+        // For regular URLs, use the utility function to force reload
+        const reloadUrl = forceImageReload(displayUrl);
         console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
         setDisplayUrl(reloadUrl);
         setLoadError(false);
@@ -138,27 +138,22 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
             <ImageIcon className="h-16 w-16" />
             <p className="text-sm">Pas d'image</p>
             {loadError && (
-              <button 
+              <Button 
+                variant="ghost"
+                size="sm"
                 onClick={reloadImage}
                 className="mt-2 flex items-center text-xs text-blue-500 hover:text-blue-700"
               >
                 <RefreshCw className="h-3 w-3 mr-1" /> Recharger
-              </button>
+              </Button>
             )}
           </div>
         )}
         
         {/* Badge d'état */}
-        {(hasNewImage || isUploading || processed || error) && (
-          <div className="absolute top-2 left-2">
-            <Badge 
-              variant={error ? "destructive" : processed ? "secondary" : "outline"} 
-              className={processed ? "bg-green-100 text-green-800" : ""}
-            >
-              {error ? "Erreur" : processed ? "Téléchargé" : isUploading ? "En cours..." : "Prêt"}
-            </Badge>
-          </div>
-        )}
+        <div className="absolute top-2 left-2">
+          {getStatusText()}
+        </div>
 
         {/* Toujours afficher le bouton de suppression si l'image existe ou si une image est en attente de téléchargement */}
         {(hasExistingImage || hasNewImage) && (
@@ -208,8 +203,6 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
         </div>
         
         <div className="mt-2 flex items-center justify-between">
-          {getStatusText()}
-          
           {error && (
             <div className="text-xs text-red-500 mt-1 truncate" title={error}>
               {error}

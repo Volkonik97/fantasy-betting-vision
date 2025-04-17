@@ -23,14 +23,12 @@ export const usePlayerImages = () => {
   });
   const [filterTab, setFilterTab] = useState("all");
 
-  // Force refresh player images when upload is complete
   useEffect(() => {
     if (uploadStatus.processed > 0 && uploadStatus.processed === uploadStatus.total && !uploadStatus.inProgress) {
       refreshPlayerImages();
     }
   }, [uploadStatus]);
 
-  // Refresh player images with latest data from the server
   const refreshPlayerImages = async () => {
     if (isLoading) return;
     
@@ -50,15 +48,14 @@ export const usePlayerImages = () => {
         });
       });
       
-      // Keep existing file data but update player data
       const updatedPlayerImages = players.map(player => {
         const existingPlayerData = playerImages.find(p => p.player.id === player.id);
         
         return {
           player,
           imageFile: existingPlayerData?.imageFile || null,
-          newImageUrl: null, // Reset the temporary URL as we'll use the actual one now
-          processed: existingPlayerData?.processed || false,
+          newImageUrl: null,
+          processed: false,
           isUploading: false,
           error: null
         };
@@ -74,7 +71,6 @@ export const usePlayerImages = () => {
     }
   };
 
-  // Load player data
   useEffect(() => {
     const loadPlayers = async () => {
       setIsLoading(true);
@@ -112,28 +108,22 @@ export const usePlayerImages = () => {
     loadPlayers();
   }, []);
 
-  // Handle file selection from drag-and-drop or file picker
   const handleFileSelect = useCallback((files: File[]) => {
     if (!files.length) return;
     
-    // Create a copy of the current player images
     const updatedPlayerImages = [...playerImages];
     const unmatchedFiles: File[] = [];
     
-    // Process each file
     files.forEach(file => {
-      // Try to match file name with player name
-      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, ""); // Remove extension
+      const fileName = file.name.toLowerCase().replace(/\.[^/.]+$/, "");
       const matchedPlayerIndex = updatedPlayerImages.findIndex(
         p => p.player.name.toLowerCase().includes(fileName) || 
              fileName.includes(p.player.name.toLowerCase())
       );
       
       if (matchedPlayerIndex !== -1) {
-        // File matched to a player
         const playerImage = updatedPlayerImages[matchedPlayerIndex];
         
-        // Only assign if player doesn't already have a file or the new file is bigger (presumably better quality)
         if (!playerImage.imageFile || (playerImage.imageFile && file.size > playerImage.imageFile.size)) {
           updatedPlayerImages[matchedPlayerIndex] = {
             ...playerImage,
@@ -144,7 +134,6 @@ export const usePlayerImages = () => {
           };
         }
       } else {
-        // No match found, add to unmatched list
         unmatchedFiles.push(file);
       }
     });
@@ -155,7 +144,6 @@ export const usePlayerImages = () => {
     toast.success(`${files.length} images importées, ${unmatchedFiles.length} non associées`);
   }, [playerImages]);
 
-  // Assign a file to a player manually
   const assignFileToPlayer = useCallback((file: File, playerIndex: number) => {
     setPlayerImages(prev => {
       const updated = [...prev];
@@ -174,7 +162,6 @@ export const usePlayerImages = () => {
     toast.success("Image associée avec succès");
   }, []);
 
-  // Upload all images
   const uploadImages = useCallback(async (bucketExists: boolean) => {
     if (!bucketExists) {
       toast.error("Le bucket de stockage n'existe pas");
@@ -196,15 +183,13 @@ export const usePlayerImages = () => {
       inProgress: true
     });
     
-    // Mark players as uploading
     setPlayerImages(prev => prev.map(p => ({
       ...p,
       isUploading: p.imageFile && !p.processed ? true : p.isUploading
     })));
     
-    // Prepare uploads
     const uploads = playersWithImages.map(p => ({
-      playerId: p.player.id || '', // Using player.id instead of playerid
+      playerId: p.player.id || '',
       file: p.imageFile as File
     }));
     
@@ -216,9 +201,8 @@ export const usePlayerImages = () => {
         }));
       });
       
-      // Update player states based on results
       setPlayerImages(prev => prev.map(p => {
-        const playerId = p.player.id || ''; // Using player.id instead of playerid
+        const playerId = p.player.id || '';
         
         if (p.imageFile && !p.processed) {
           const hasError = results.errors[playerId];
@@ -247,15 +231,13 @@ export const usePlayerImages = () => {
         toast.error(`${results.success} images téléchargées, ${results.failed} échecs`);
       }
       
-      // Force a refresh to get the updated player data from the database
       setTimeout(() => {
         refreshPlayerImages();
-      }, 1000);
+      }, 1500);
       
     } catch (error) {
       console.error("Upload error:", error);
       
-      // Mark all as failed
       setPlayerImages(prev => prev.map(p => ({
         ...p,
         isUploading: false,

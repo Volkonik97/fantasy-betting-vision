@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, forceImageReload } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface PlayerImageProps {
   name: string;
@@ -73,13 +75,16 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     console.log(`Image failed to load for ${name}`);
     setImageError(true);
     setIsLoading(false);
-    
-    // If image failed to load on first attempt, try one more time after a short delay
-    if (reloadAttempt === 0) {
-      setTimeout(() => {
-        console.log(`Attempting to reload image for ${name}`);
-        setReloadAttempt(1);
-      }, 2000);
+  };
+  
+  const handleManualReload = () => {
+    if (imageUrl) {
+      console.log(`Manually reloading image for ${name}`);
+      const reloadedUrl = forceImageReload(imageUrl);
+      setImageUrl(reloadedUrl);
+      setImageError(false);
+      setIsLoading(true);
+      setReloadAttempt(prev => prev + 1);
     }
   };
 
@@ -100,12 +105,17 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
           onError={handleImageError}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
           <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
           {imageError && (
-            <div className="absolute bottom-10 text-xs text-blue-500 hover:text-blue-700 cursor-pointer" onClick={() => setReloadAttempt(prev => prev + 1)}>
-              ↻ Recharger
-            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mt-2 text-xs text-blue-500 hover:text-blue-700 flex items-center"
+              onClick={handleManualReload}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" /> Recharger
+            </Button>
           )}
         </div>
       )}
