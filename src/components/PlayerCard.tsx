@@ -12,19 +12,17 @@ interface PlayerCardProps {
 }
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
-  // Vérification défensive pour les données du joueur
   if (!player) {
     console.error("PlayerCard a reçu un joueur indéfini");
     return null;
   }
   
-  // Ensure we have a valid player ID
   const playerId = player.id ? player.id.trim() : null;
   
-  // Log debugging information about this player's image
+  // Log player data for debugging
   console.log(`PlayerCard: Player ${player.name} (ID: ${playerId}):`, {
-    originalImage: player.image,
-    hasImage: hasPlayerImage(player)
+    damageShare: player.damageShare,
+    type: typeof player.damageShare
   });
   
   return (
