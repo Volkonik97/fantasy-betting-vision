@@ -220,7 +220,9 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     dmgPerGold,
     gpmValue
   });
-  
+  console.log("ADAPTER", dbPlayer.playername, "raw:", dbPlayer.damage_share, "=> adapted:", damageShare);
+
+
   return {
     id: dbPlayer.playerid || '',
     name: dbPlayer.playername || '',
@@ -291,7 +293,7 @@ export const adaptPlayerForDatabase = (player: Player): RawDatabasePlayer => {
       damageShare = player.damageShare / 100;
     }
   }
-
+  
   return {
     playerid: player.id,
     playername: player.name,
