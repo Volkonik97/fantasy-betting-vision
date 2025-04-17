@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { uploadTeamLogo } from "@/utils/database/teams/logoUtils";
+import { uploadTeamLogo, getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Team } from "@/utils/models/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,6 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, AlertCircle, Check, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SingleTeamLogoUploaderProps {
