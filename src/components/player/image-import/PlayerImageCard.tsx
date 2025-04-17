@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PlayerWithImage } from "./types";
 import { Check, X, Upload, Image as ImageIcon, RefreshCw, Trash2 } from "lucide-react";
 import { hasPlayerImage } from "./types";
-import { normalizeImageUrl, forceImageReload } from "@/utils/database/teams/images/imageUtils"; 
+import { normalizeImageUrl, forceImageReload, verifyImageAccessibleWithRetry } from "@/utils/database/teams/images/imageUtils"; 
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
   
   // Ensure we always have the latest image URL
   useEffect(() => {
@@ -47,7 +48,22 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     } else {
       setDisplayUrl(null);
     }
-  }, [newImageUrl, player.image, processed, player.name]);
+  }, [newImageUrl, player.image, processed, player.name, reloadTrigger]);
+  
+  // Effect to verify image accessibility
+  useEffect(() => {
+    if (displayUrl && !displayUrl.startsWith('blob:')) {
+      const verifyImage = async () => {
+        const isAccessible = await verifyImageAccessibleWithRetry(displayUrl);
+        if (!isAccessible) {
+          console.log(`Image for ${player.name} is not accessible: ${displayUrl}`);
+          setLoadError(true);
+        }
+      };
+      
+      verifyImage();
+    }
+  }, [displayUrl, player.name]);
   
   const hasExistingImage = hasPlayerImage(player);
   const hasNewImage = Boolean(imageFile);
@@ -94,6 +110,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
         console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
         setDisplayUrl(reloadUrl);
         setLoadError(false);
+        setReloadTrigger(prev => prev + 1);
       }
     }
   };
@@ -132,11 +149,12 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
             className="w-full h-full object-cover"
             onError={handleImageError}
             onLoad={handleImageLoad}
+            crossOrigin="anonymous"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-gray-400">
+          <div className="flex flex-col items-center justify-center text-gray-400 p-4 text-center">
             <ImageIcon className="h-16 w-16" />
-            <p className="text-sm">Pas d'image</p>
+            <p className="text-sm mt-2">Pas d'image</p>
             {loadError && (
               <Button 
                 variant="ghost"

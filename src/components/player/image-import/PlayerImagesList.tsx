@@ -28,6 +28,30 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
     return () => clearTimeout(timer);
   }, [filteredPlayers]);
 
+  // Set up a periodic refresh to ensure images are attempted to be loaded
+  useEffect(() => {
+    // Trigger a refresh every 10 seconds if images are being displayed
+    const intervalId = setInterval(() => {
+      if (filteredPlayers && filteredPlayers.length > 0 && !isLoading) {
+        console.log('Auto-refreshing image list to retry loading any failed images');
+        setReloadTrigger(prev => prev + 1);
+      }
+    }, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, [filteredPlayers, isLoading]);
+
+  const handleImageDeleted = () => {
+    if (onImageDeleted) {
+      onImageDeleted();
+    }
+    
+    // Refresh the list after deletion
+    setTimeout(() => {
+      setReloadTrigger(prev => prev + 1);
+    }, 500);
+  };
+
   if (isLoading) {
     return (
       <div className="p-8 text-center">
@@ -50,7 +74,7 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
         <PlayerImageCard 
           key={`${item.player.id}-${reloadTrigger}`}
           playerData={item} 
-          onImageDeleted={onImageDeleted}
+          onImageDeleted={handleImageDeleted}
         />
       ))}
     </div>

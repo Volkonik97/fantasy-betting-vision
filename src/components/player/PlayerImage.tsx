@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { normalizeImageUrl, forceImageReload } from "@/utils/database/teams/images/imageUtils";
+import { normalizeImageUrl, forceImageReload, verifyImageAccessibleWithRetry } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -19,7 +19,9 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadAttempt, setReloadAttempt] = useState(0);
+  const [hasVerifiedImage, setHasVerifiedImage] = useState(false);
 
+  // Effect to load the image URL
   useEffect(() => {
     const loadImage = async () => {
       setIsLoading(true);
@@ -66,9 +68,33 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     loadImage();
   }, [image, playerId, reloadAttempt]);
 
+  // Effect to verify the image is accessible
+  useEffect(() => {
+    if (imageUrl && !hasVerifiedImage) {
+      const verifyImage = async () => {
+        try {
+          const isAccessible = await verifyImageAccessibleWithRetry(imageUrl);
+          console.log(`Image verification for ${name}: ${isAccessible ? 'accessible' : 'not accessible'}`);
+          
+          if (!isAccessible) {
+            setImageError(true);
+            setIsLoading(false);
+          }
+          
+          setHasVerifiedImage(true);
+        } catch (error) {
+          console.error(`Error verifying image for ${name}:`, error);
+        }
+      };
+      
+      verifyImage();
+    }
+  }, [imageUrl, hasVerifiedImage, name]);
+
   const handleImageLoad = () => {
     console.log(`Image loaded successfully for ${name}`);
     setIsLoading(false);
+    setImageError(false);
   };
 
   const handleImageError = () => {
@@ -84,6 +110,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       setImageUrl(reloadedUrl);
       setImageError(false);
       setIsLoading(true);
+      setHasVerifiedImage(false);
       setReloadAttempt(prev => prev + 1);
     }
   };
@@ -103,10 +130,12 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onLoad={handleImageLoad}
           onError={handleImageError}
+          crossOrigin="anonymous"
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
           <span className="text-5xl font-bold text-gray-300">{name.charAt(0).toUpperCase()}</span>
+          <p className="text-gray-400 mt-2">Pas d'image</p>
           {imageError && (
             <Button 
               variant="ghost" 

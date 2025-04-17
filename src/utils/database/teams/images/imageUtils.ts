@@ -100,7 +100,29 @@ export const imageExistsForPlayer = async (playerId: string): Promise<boolean> =
   if (!playerId) return false;
   
   try {
-    // Look for files with the playerid prefix
+    // Check first if a file with exact name exists
+    const fileName = `playerid${playerId}`;
+    
+    // Try to get the file info from storage
+    const { data: fileData, error: fileError } = await supabase
+      .storage
+      .from('player-images')
+      .list('', {
+        search: fileName,
+        limit: 1
+      });
+    
+    if (fileError) {
+      console.error("Error checking exact player image:", fileError);
+      return false;
+    }
+    
+    if (fileData && fileData.length > 0) {
+      console.log(`Found exact image match for player ${playerId}: ${fileData[0].name}`);
+      return true;
+    }
+    
+    // No exact match found, check with wildcard search
     const { data, error } = await supabase
       .storage
       .from('player-images')
@@ -166,5 +188,76 @@ export const forceImageReload = (imageUrl: string | null): string | null => {
   const baseUrl = imageUrl.split('?')[0];
   
   // Add a new cache buster timestamp
-  return `${baseUrl}?t=${Date.now()}`;
+  const timestamp = Date.now();
+  console.log(`Force reloading image: ${baseUrl}?t=${timestamp}`);
+  return `${baseUrl}?t=${timestamp}`;
 };
+
+/**
+ * Try all possible methods to verify an image exists
+ */
+export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<boolean> => {
+  if (!imageUrl) return false;
+  
+  console.log(`Verifying image accessibility for URL: ${imageUrl}`);
+  
+  // For blob URLs, assume they're accessible since they're in memory
+  if (imageUrl.startsWith('blob:')) {
+    return true;
+  }
+  
+  // For Supabase storage URLs
+  if (imageUrl.includes('supabase.co/storage')) {
+    try {
+      // Extract the bucket and path
+      const storageUrlPattern = /storage\/v1\/object\/public\/([^\/]+)\/(.+?)(\?.*)?$/;
+      const matches = imageUrl.match(storageUrlPattern);
+      
+      if (matches && matches.length >= 3) {
+        const bucket = matches[1];
+        let path = matches[2];
+        
+        // Remove any URL encoding
+        path = decodeURIComponent(path);
+        
+        console.log(`Checking Supabase storage: bucket=${bucket}, path=${path}`);
+        
+        // Check if the file exists in storage
+        const { data, error } = await supabase
+          .storage
+          .from(bucket)
+          .createSignedUrl(path, 60);
+        
+        if (error) {
+          console.error(`Storage verification error: ${error.message}`);
+          return false;
+        }
+        
+        return !!data;
+      }
+    } catch (error) {
+      console.error("Error verifying Supabase image:", error);
+    }
+  }
+  
+  // Fallback to direct HTTP verification for all URLs
+  try {
+    const fetchUrl = imageUrl.includes('?') ? imageUrl : `${imageUrl}?t=${Date.now()}`;
+    
+    console.log(`Fetching image with HEAD request: ${fetchUrl}`);
+    
+    const response = await fetch(fetchUrl, { 
+      method: 'HEAD',
+      headers: { "Cache-Control": "no-cache" },
+      signal: AbortSignal.timeout(3000) // 3 second timeout
+    });
+    
+    console.log(`Image fetch response: ${response.status} ${response.statusText}`);
+    
+    return response.ok;
+  } catch (error) {
+    console.error("Error verifying image with fetch:", error);
+    return false;
+  }
+};
+
