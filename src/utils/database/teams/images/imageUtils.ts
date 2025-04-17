@@ -1,8 +1,9 @@
+
 // Re-export all image utility functions from the images module
-import { verifyImageExists } from './images/verifyImage';
-import { clearInvalidImageReference, clearAllPlayerImageReferences } from './images/clearImages';
-import { refreshImageReferences, synchronizeReferences } from './images/refreshImages';
-import { checkBucketRlsPermission } from './images/rlsPermissions';
+import { verifyImageExists } from './verifyImage';
+import { clearInvalidImageReference, clearAllPlayerImageReferences } from './clearImages';
+import { refreshImageReferences, synchronizeReferences } from './refreshImages';
+import { checkBucketRlsPermission } from './rlsPermissions';
 
 // Normalize image URL to ensure consistent format
 export const normalizeImageUrl = (imageUrl: string | null): string | null => {
