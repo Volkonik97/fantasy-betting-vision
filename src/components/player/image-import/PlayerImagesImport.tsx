@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import ImportHeader from "./ImportHeader";
@@ -44,6 +43,9 @@ const PlayerImagesImport = ({
     // Refresh the player list when an image is deleted
     refreshPlayerImages();
   };
+
+  // Count players with images ready to upload
+  const pendingUploadCount = playerImages.filter(p => p.imageFile && !p.processed).length;
 
   if (isLoading) {
     return (
@@ -96,10 +98,11 @@ const PlayerImagesImport = ({
 
         <UploadControls 
           onUpload={handleUpload}
-          disabled={bucketStatus !== "exists" || rlsEnabled || playerImages.filter(p => p.imageFile && !p.processed).length === 0}
+          disabled={bucketStatus !== "exists" || rlsEnabled || pendingUploadCount === 0}
           isUploading={uploadStatus.inProgress}
           uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
           status={bucketStatus}
+          uploadCount={pendingUploadCount}
         />
 
         {unmatched.length > 0 && (

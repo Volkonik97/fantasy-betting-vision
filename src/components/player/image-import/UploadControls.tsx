@@ -9,6 +9,7 @@ interface UploadControlsProps {
   isUploading?: boolean;
   uploadProgress?: number;
   status?: "loading" | "exists" | "error";
+  uploadCount?: number;
 }
 
 const UploadControls: React.FC<UploadControlsProps> = ({ 
@@ -16,7 +17,8 @@ const UploadControls: React.FC<UploadControlsProps> = ({
   disabled = false, 
   isUploading = false, 
   uploadProgress = 0,
-  status = "loading"
+  status = "loading",
+  uploadCount = 0
 }) => {
   const isDisabled = disabled || isUploading || status !== "exists";
   
@@ -27,11 +29,16 @@ const UploadControls: React.FC<UploadControlsProps> = ({
         className="w-full" 
         disabled={isDisabled}
       >
-        {isUploading ? 'Téléchargement en cours' : 'Télécharger les images'}
+        {isUploading ? 'Téléchargement en cours...' : `Télécharger les images${uploadCount > 0 ? ` (${uploadCount})` : ''}`}
       </Button>
       
       {isUploading && (
-        <Progress value={uploadProgress} className="h-2" />
+        <div className="space-y-1">
+          <Progress value={uploadProgress} className="h-2" />
+          <p className="text-xs text-center text-muted-foreground">
+            Ne pas actualiser la page pendant le téléchargement
+          </p>
+        </div>
       )}
     </div>
   );

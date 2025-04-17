@@ -123,14 +123,24 @@ export const uploadPlayerImage = async (
     
     console.log(`Uploading image for player ${cleanPlayerId} with filename ${fileName}`);
     
+    // Create upload abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
     // Upload the file with upsert to replace any existing file
+    // Using ArrayBuffer for more reliable uploads
+    const fileBuffer = await fileToUpload.arrayBuffer();
+    
     const { data: uploadData, error: uploadError } = await supabase
       .storage
       .from('player-images')
-      .upload(fileName, fileToUpload, {
-        cacheControl: 'max-age=0', // Prevent caching completely
-        upsert: true // Overwrite if exists
+      .upload(fileName, fileBuffer, {
+        cacheControl: '0', // No caching
+        upsert: true, // Overwrite if exists
+        contentType: 'image/png' // Force content type to be PNG
       });
+    
+    clearTimeout(timeoutId);
     
     if (uploadError) {
       console.error("Upload error:", uploadError);
@@ -142,14 +152,15 @@ export const uploadPlayerImage = async (
     
     console.log("Upload successful:", uploadData);
     
-    // Get the public URL
+    // Get the public URL with cache buster
+    const timestamp = Date.now();
     const { data: { publicUrl } } = supabase
       .storage
       .from('player-images')
       .getPublicUrl(fileName);
     
     // Add cache buster to URL
-    const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
+    const publicUrlWithCacheBuster = `${publicUrl}?t=${timestamp}`;
     
     console.log(`Successfully uploaded image for player ${cleanPlayerId}, URL: ${publicUrlWithCacheBuster}`);
     
@@ -215,48 +226,91 @@ export const uploadMultiplePlayerImagesWithProgress = async (
   
   console.log(`Starting batch upload of ${total} player images`);
   
-  // Process each upload sequentially for better progress tracking
-  for (const { playerId, file } of uploads) {
-    try {
-      console.log(`Processing upload for player ${playerId}`);
-      
-      if (!playerId || playerId.trim() === '') {
-        processed++;
-        results.failed++;
-        results.errors[playerId || 'unknown'] = "ID de joueur non valide";
-        progressCallback(processed, total);
-        console.error("Skipping upload due to invalid player ID");
-        continue;
-      }
-      
-      // Upload the image
-      const result = await uploadPlayerImage(playerId, file);
-      
-      if (!result.success) {
-        results.failed++;
-        results.errors[playerId] = result.error || "Erreur inconnue";
-        console.error(`Failed to upload image for player ${playerId}: ${result.error}`);
-      } else {
-        // Update the database reference
-        const updateSuccess = await updatePlayerImageReference(playerId, result.publicUrl!);
-        
-        if (!updateSuccess) {
-          results.failed++;
-          results.errors[playerId] = "Échec de la mise à jour de la référence dans la base de données";
-          console.error(`Failed to update database reference for player ${playerId}`);
-        } else {
-          results.success++;
-          console.log(`Successfully processed image for player ${playerId}`);
-        }
-      }
-    } catch (error) {
+  // Validate and filter uploads first
+  const validUploads = uploads.filter(upload => {
+    if (!upload.playerId || upload.playerId.trim() === '') {
       results.failed++;
-      results.errors[playerId] = error instanceof Error ? error.message : String(error);
-      console.error(`Unexpected error processing player ${playerId}:`, error);
+      results.errors['unknown'] = "ID de joueur manquant";
+      return false;
     }
+    return true;
+  });
+  
+  // Process valid uploads in small batches (3 at a time) to prevent overwhelming the server
+  const batchSize = 3;
+  const batches = Math.ceil(validUploads.length / batchSize);
+  
+  for (let i = 0; i < batches; i++) {
+    const start = i * batchSize;
+    const end = Math.min(start + batchSize, validUploads.length);
+    const currentBatch = validUploads.slice(start, end);
     
-    processed++;
-    progressCallback(processed, total);
+    console.log(`Processing batch ${i+1}/${batches} (${currentBatch.length} images)`);
+    
+    // Process the current batch in parallel
+    const batchResults = await Promise.all(
+      currentBatch.map(async ({ playerId, file }) => {
+        try {
+          // Upload the image
+          const uploadResult = await uploadPlayerImage(playerId, file);
+          
+          if (!uploadResult.success) {
+            console.error(`Failed to upload image for player ${playerId}: ${uploadResult.error}`);
+            return {
+              playerId,
+              success: false,
+              error: uploadResult.error || "Erreur inconnue"
+            };
+          }
+          
+          // Update the database reference
+          const updateSuccess = await updatePlayerImageReference(
+            playerId, 
+            uploadResult.publicUrl!
+          );
+          
+          if (!updateSuccess) {
+            console.error(`Failed to update database reference for player ${playerId}`);
+            return {
+              playerId,
+              success: false,
+              error: "Échec de la mise à jour de la référence dans la base de données"
+            };
+          }
+          
+          console.log(`Successfully processed image for player ${playerId}`);
+          return {
+            playerId,
+            success: true,
+            error: null
+          };
+        } catch (error) {
+          console.error(`Unexpected error processing player ${playerId}:`, error);
+          return {
+            playerId,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          };
+        }
+      })
+    );
+    
+    // Update results
+    batchResults.forEach(result => {
+      if (result.success) {
+        results.success++;
+      } else {
+        results.failed++;
+        results.errors[result.playerId] = result.error || "Erreur inconnue";
+      }
+      processed++;
+      progressCallback(processed, total);
+    });
+    
+    // Small delay between batches to avoid rate limiting
+    if (i < batches - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
   
   console.log(`Batch upload complete: ${results.success} successful, ${results.failed} failed`);
