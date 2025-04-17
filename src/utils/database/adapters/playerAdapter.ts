@@ -215,8 +215,7 @@ console.log(`ADAPTER ${dbPlayer.playername}: raw damage_share =`, dbPlayer.damag
     dmgPerGold,
     gpmValue
   });
-  console.log("ADAPTER", dbPlayer.playername, "raw:", dbPlayer.damage_share, "=> adapted:", damageShare);
-
+  console.log("ADAPTER", dbPlayer.playername, "raw:", dbPlayer.damage_share, "=> adapted:", Math.round(damageShareRaw * 100));
 
   return {
     id: dbPlayer.playerid || '',
