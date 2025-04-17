@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
@@ -10,7 +9,7 @@ import { getDirectPlayerImageUrl } from "@/utils/database/teams/getDirectImageUr
 
 interface PlayerImageProps {
   name: string;
-  playerId?: string;
+  playerId?: string | null;
   image?: string | null;
   role?: string;
 }
@@ -26,9 +25,10 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   // Clean up playerID to make sure it doesn't contain invalid characters
   const cleanPlayerId = playerId ? playerId.replace(/[^a-zA-Z0-9-_]/g, '') : null;
 
-  // Effet pour générer et tenter différentes URLs d'images
+  // Effect for generating and trying different image URLs
   useEffect(() => {
     const attemptToLoadImage = () => {
+      // If we have no image data and no player ID, we can't load an image
       if (!cleanPlayerId && !image) {
         console.log(`[PlayerImage] No image data for ${name}`);
         setImageError(true);
@@ -46,29 +46,33 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
         return;
       }
       
-      // Essayer les extensions par ordre de priorité
+      // Try extensions in priority order
       const extensions = ['.webp', '.png', '.jpg', '.jpeg'];
-      const currentExtension = triedExtensions.length > 0 ? 
-        triedExtensions[triedExtensions.length - 1] : extensions[0];
       
       try {
         if (cleanPlayerId) {
-          // Ajouter un timestamp pour éviter le cache
-          const timestamp = Date.now();
-          // Construire une URL basée sur l'ID du joueur et l'extension actuelle
-          const baseUrl = getDirectPlayerImageUrl(cleanPlayerId).split('.')[0];
-          const directUrl = `${baseUrl}${currentExtension}?t=${timestamp}`;
+          // Generate player image URL from player ID
+          let imageUrl = cleanPlayerId;
           
-          console.log(`[PlayerImage] Trying URL for ${name} with ${currentExtension}: ${directUrl}`);
-          setImageUrl(directUrl);
-          
-          // Si nous avons déjà essayé toutes les extensions, réinitialiser
-          if (triedExtensions.length >= extensions.length) {
-            console.log(`[PlayerImage] Tried all extensions for ${name}, resetting`);
-            setTriedExtensions([]);
+          // If we have a specific image URL, use that
+          if (image) {
+            const normalizedUrl = normalizeImageUrl(image);
+            if (normalizedUrl) {
+              console.log(`[PlayerImage] Using provided image URL for ${name}: ${normalizedUrl}`);
+              setImageUrl(normalizedUrl);
+              return;
+            }
           }
+          
+          // Otherwise, try to construct a URL from the player ID
+          const directUrl = getDirectPlayerImageUrl(cleanPlayerId);
+          console.log(`[PlayerImage] Generated URL for ${name}: ${directUrl}`);
+          
+          // Add timestamp to avoid caching issues
+          const forcedUrl = forceImageReload(directUrl);
+          setImageUrl(forcedUrl);
         } else if (image) {
-          // Si seule une URL d'image est fournie, la normaliser et l'utiliser
+          // If only an image URL is provided, normalize and use it
           const normalizedUrl = normalizeImageUrl(image);
           console.log(`[PlayerImage] Using normalized URL for ${name}: ${normalizedUrl}`);
           setImageUrl(normalizedUrl);
@@ -84,20 +88,20 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     };
     
     attemptToLoadImage();
-  }, [image, cleanPlayerId, name, reloadAttempt, triedExtensions]);
+  }, [image, cleanPlayerId, name, reloadAttempt]);
 
   const handleImageLoad = () => {
     console.log(`[PlayerImage] Image loaded successfully for ${name}`);
     setIsLoading(false);
     setImageError(false);
-    // Réinitialiser les extensions essayées après un chargement réussi
+    // Reset tried extensions after successful load
     setTriedExtensions([]);
   };
 
   const handleImageError = useCallback(() => {
     console.log(`[PlayerImage] Image failed to load for ${name}: ${imageUrl}`);
     
-    // Si nous avons une ID de joueur, essayons une autre extension
+    // If we have a player ID, try another extension
     if (cleanPlayerId) {
       const extensions = ['.webp', '.png', '.jpg', '.jpeg'];
       const nextExtension = extensions.find(ext => !triedExtensions.includes(ext));
@@ -105,11 +109,16 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       if (nextExtension) {
         console.log(`[PlayerImage] Trying next extension for ${name}: ${nextExtension}`);
         setTriedExtensions(prev => [...prev, nextExtension]);
+        
+        // Construct a new URL with the next extension
+        const baseUrl = `https://nbioauymqggfafmsuigr.supabase.co/storage/v1/object/public/player-images/playerid${cleanPlayerId}`;
+        const newUrl = `${baseUrl}${nextExtension}?t=${Date.now()}`;
+        setImageUrl(newUrl);
         return;
       }
     }
     
-    // Si toutes les extensions ont échoué ou si nous n'avons pas d'ID de joueur
+    // If all extensions have failed or if we don't have a player ID
     setImageError(true);
     setIsLoading(false);
   }, [imageUrl, name, cleanPlayerId, triedExtensions]);
@@ -117,19 +126,19 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const handleManualReload = () => {
     console.log(`[PlayerImage] Manual reload for ${name}`);
     
-    // Incrémenter le compteur pour forcer un rechargement complet
+    // Increment counter to force a complete reload
     setReloadAttempt(prev => prev + 1);
     
-    // Réinitialiser l'état
+    // Reset state
     setImageError(false);
     setIsLoading(true);
     setTriedExtensions([]);
     
-    // Si nous avons une URL d'image, essayer de l'actualiser
+    // If we have an image URL, try to refresh it
     if (imageUrl) {
       const reloadedUrl = forceImageReload(imageUrl);
       
-      // Effacer d'abord l'URL pour forcer un rechargement complet
+      // First clear the URL to force a complete reload
       setImageUrl(null);
       setTimeout(() => {
         setImageUrl(reloadedUrl);

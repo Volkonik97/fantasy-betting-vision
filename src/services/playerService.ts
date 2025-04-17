@@ -1,4 +1,3 @@
-
 import { getPlayers, getPlayersCount } from "@/utils/database/playersService";
 import { Player } from "@/utils/models/types";
 import { toast } from "sonner";

@@ -18,17 +18,22 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     return null;
   }
   
-  // Vérifier et normaliser l'URL de l'image avant de l'utiliser
-  const playerImage = player.image;
-  console.log(`PlayerCard: Image originale pour ${player.name} (ID: ${player.id}):`, playerImage);
+  // Ensure we have a valid player ID
+  const playerId = player.id ? player.id.trim() : null;
+  
+  // Log debugging information about this player's image
+  console.log(`PlayerCard: Player ${player.name} (ID: ${playerId}):`, {
+    originalImage: player.image,
+    hasImage: hasPlayerImage(player)
+  });
   
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
         <PlayerImage 
           name={player.name} 
-          playerId={player.id}
-          image={playerImage} 
+          playerId={playerId}
+          image={player.image} 
           role={player.role} 
         />
       </div>
