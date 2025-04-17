@@ -20,134 +20,121 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadAttempt, setReloadAttempt] = useState(0);
+  const [triedExtensions, setTriedExtensions] = useState<string[]>([]);
   const imageRef = useRef<HTMLImageElement>(null);
 
   // Clean up playerID to make sure it doesn't contain invalid characters
   const cleanPlayerId = playerId ? playerId.replace(/[^a-zA-Z0-9-_]/g, '') : null;
 
-  // Effect to load the image URL
+  // Effet pour générer et tenter différentes URLs d'images
   useEffect(() => {
-    if (!cleanPlayerId && !image) {
-      console.log(`[PlayerImage] No image data for ${name}`);
-      setImageError(true);
-      setIsLoading(false);
-      return;
-    }
+    const attemptToLoadImage = () => {
+      if (!cleanPlayerId && !image) {
+        console.log(`[PlayerImage] No image data for ${name}`);
+        setImageError(true);
+        setIsLoading(false);
+        return;
+      }
 
-    setIsLoading(true);
-    setImageError(false);
-    
-    // Handle blob URLs (for previews)
-    if (image && image.startsWith('blob:')) {
-      console.log(`[PlayerImage] Using blob image for ${name}: ${image}`);
-      setImageUrl(image);
-      return;
-    }
-    
-    // Try to use direct URL from player ID first (most reliable)
-    if (cleanPlayerId) {
+      setIsLoading(true);
+      setImageError(false);
+      
+      // Handle blob URLs (for previews)
+      if (image && image.startsWith('blob:')) {
+        console.log(`[PlayerImage] Using blob image for ${name}: ${image}`);
+        setImageUrl(image);
+        return;
+      }
+      
+      // Essayer les extensions par ordre de priorité
+      const extensions = ['.webp', '.png', '.jpg', '.jpeg'];
+      const currentExtension = triedExtensions.length > 0 ? 
+        triedExtensions[triedExtensions.length - 1] : extensions[0];
+      
       try {
-        // Ajouter un cache-buster directement à l'URL
-        const timestamp = Date.now();
-        const directUrl = `${getDirectPlayerImageUrl(cleanPlayerId)}?t=${timestamp}`;
-        console.log(`[PlayerImage] Generated direct URL for ${name}: ${directUrl}`);
-        setImageUrl(directUrl);
-      } catch (error) {
-        console.error(`[PlayerImage] Error generating URL for ${name}:`, error);
-        
-        // Fall back to provided image URL if available
-        if (image) {
-          console.log(`[PlayerImage] Falling back to provided URL for ${name}: ${image}`);
+        if (cleanPlayerId) {
+          // Ajouter un timestamp pour éviter le cache
+          const timestamp = Date.now();
+          // Construire une URL basée sur l'ID du joueur et l'extension actuelle
+          const baseUrl = getDirectPlayerImageUrl(cleanPlayerId).split('.')[0];
+          const directUrl = `${baseUrl}${currentExtension}?t=${timestamp}`;
+          
+          console.log(`[PlayerImage] Trying URL for ${name} with ${currentExtension}: ${directUrl}`);
+          setImageUrl(directUrl);
+          
+          // Si nous avons déjà essayé toutes les extensions, réinitialiser
+          if (triedExtensions.length >= extensions.length) {
+            console.log(`[PlayerImage] Tried all extensions for ${name}, resetting`);
+            setTriedExtensions([]);
+          }
+        } else if (image) {
+          // Si seule une URL d'image est fournie, la normaliser et l'utiliser
           const normalizedUrl = normalizeImageUrl(image);
+          console.log(`[PlayerImage] Using normalized URL for ${name}: ${normalizedUrl}`);
           setImageUrl(normalizedUrl);
         } else {
           setImageError(true);
           setIsLoading(false);
         }
+      } catch (error) {
+        console.error(`[PlayerImage] Error generating URL for ${name}:`, error);
+        setImageError(true);
+        setIsLoading(false);
       }
-    } 
-    // If no player ID but image URL is provided
-    else if (image) {
-      console.log(`[PlayerImage] Using provided URL for ${name}: ${image}`);
-      const normalizedUrl = normalizeImageUrl(image);
-      setImageUrl(normalizedUrl);
-    }
-  }, [image, cleanPlayerId, name, reloadAttempt]);
+    };
+    
+    attemptToLoadImage();
+  }, [image, cleanPlayerId, name, reloadAttempt, triedExtensions]);
 
   const handleImageLoad = () => {
     console.log(`[PlayerImage] Image loaded successfully for ${name}`);
     setIsLoading(false);
     setImageError(false);
+    // Réinitialiser les extensions essayées après un chargement réussi
+    setTriedExtensions([]);
   };
 
   const handleImageError = useCallback(() => {
     console.log(`[PlayerImage] Image failed to load for ${name}: ${imageUrl}`);
     
-    // Vérifier si l'URL provient de Supabase et essayer avec différentes extensions
-    if (imageUrl && imageUrl.includes('supabase.co/storage')) {
-      const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
-      const baseUrl = imageUrl.split('?')[0]; // Enlever les paramètres de requête
+    // Si nous avons une ID de joueur, essayons une autre extension
+    if (cleanPlayerId) {
+      const extensions = ['.webp', '.png', '.jpg', '.jpeg'];
+      const nextExtension = extensions.find(ext => !triedExtensions.includes(ext));
       
-      // Extraire l'extension actuelle
-      const extensionMatch = baseUrl.match(/\.([a-zA-Z0-9]+)$/);
-      const currentExtension = extensionMatch ? `.${extensionMatch[1]}` : '';
-      
-      // Essayer avec une autre extension
-      const nextExtIndex = extensions.findIndex(ext => ext === currentExtension) + 1;
-      const nextExt = nextExtIndex < extensions.length ? extensions[nextExtIndex] : extensions[0];
-      
-      // Remplacer l'extension dans l'URL
-      if (currentExtension) {
-        const newUrl = baseUrl.replace(currentExtension, nextExt) + `?t=${Date.now()}`;
-        console.log(`[PlayerImage] Trying alternate extension for ${name}: ${newUrl}`);
-        setImageUrl(newUrl);
+      if (nextExtension) {
+        console.log(`[PlayerImage] Trying next extension for ${name}: ${nextExtension}`);
+        setTriedExtensions(prev => [...prev, nextExtension]);
         return;
       }
     }
     
+    // Si toutes les extensions ont échoué ou si nous n'avons pas d'ID de joueur
     setImageError(true);
     setIsLoading(false);
-  }, [imageUrl, name]);
+  }, [imageUrl, name, cleanPlayerId, triedExtensions]);
 
   const handleManualReload = () => {
     console.log(`[PlayerImage] Manual reload for ${name}`);
     
-    // Pour les URLs basées sur l'ID du joueur, regénérer l'URL
-    if (cleanPlayerId) {
-      try {
-        const timestamp = Date.now();
-        const directUrl = `${getDirectPlayerImageUrl(cleanPlayerId)}?t=${timestamp}`;
-        console.log(`[PlayerImage] Regenerated URL for ${name}: ${directUrl}`);
-        
-        // Effacer l'URL d'abord pour forcer un rechargement complet
-        setImageUrl(null);
-        setTimeout(() => {
-          setImageUrl(directUrl);
-          setImageError(false);
-          setIsLoading(true);
-        }, 50);
-        
-        return;
-      } catch (error) {
-        console.error(`[PlayerImage] Error regenerating URL:`, error);
-      }
-    }
+    // Incrémenter le compteur pour forcer un rechargement complet
+    setReloadAttempt(prev => prev + 1);
     
-    // Pour les autres URLs, ajouter un nouveau cache buster
+    // Réinitialiser l'état
+    setImageError(false);
+    setIsLoading(true);
+    setTriedExtensions([]);
+    
+    // Si nous avons une URL d'image, essayer de l'actualiser
     if (imageUrl) {
       const reloadedUrl = forceImageReload(imageUrl);
       
-      // Effacer l'URL d'abord pour forcer un rechargement complet
+      // Effacer d'abord l'URL pour forcer un rechargement complet
       setImageUrl(null);
       setTimeout(() => {
         setImageUrl(reloadedUrl);
-        setImageError(false);
-        setIsLoading(true);
       }, 50);
     }
-    
-    // Incrémenter le compteur de tentatives de rechargement
-    setReloadAttempt(prev => prev + 1);
   };
 
   return (
