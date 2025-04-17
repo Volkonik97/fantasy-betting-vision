@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -228,10 +229,10 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   return (
     <Card className="overflow-hidden h-full flex flex-col group">
       <div className="aspect-square w-full relative bg-gray-100 flex items-center justify-center">
-        {player.player.image ? (
+        {player.image ? (
           <img
-            src={player.player.image}
-            alt={`Portrait de ${player.player.name}`}
+            src={player.image}
+            alt={`Portrait de ${player.name}`}
             className="w-full h-full object-cover"
             onError={handleImageError}
             onLoad={handleImageLoad}
