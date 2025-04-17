@@ -106,12 +106,17 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const handleManualReload = () => {
     if (imageUrl) {
       console.log(`Manually reloading image for ${name}`);
-      const reloadedUrl = forceImageReload(imageUrl);
-      setImageUrl(reloadedUrl);
-      setImageError(false);
-      setIsLoading(true);
-      setHasVerifiedImage(false);
-      setReloadAttempt(prev => prev + 1);
+      // Clear the current URL first so React fully remounts the image
+      setImageUrl(null);
+      // Small delay before setting the new URL
+      setTimeout(() => {
+        const reloadedUrl = forceImageReload(imageUrl);
+        setImageUrl(reloadedUrl);
+        setImageError(false);
+        setIsLoading(true);
+        setHasVerifiedImage(false);
+        setReloadAttempt(prev => prev + 1);
+      }, 50);
     }
   };
 

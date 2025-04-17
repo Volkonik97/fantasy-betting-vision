@@ -222,18 +222,42 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
         
         console.log(`Checking Supabase storage: bucket=${bucket}, path=${path}`);
         
-        // Check if the file exists in storage
-        const { data, error } = await supabase
-          .storage
-          .from(bucket)
-          .createSignedUrl(path, 60);
-        
-        if (error) {
-          console.error(`Storage verification error: ${error.message}`);
-          return false;
+        // First try direct download to verify existence
+        try {
+          const { data, error } = await supabase
+            .storage
+            .from(bucket)
+            .download(path);
+          
+          if (error) {
+            console.error(`Download verification error: ${error.message}`);
+          } else if (data) {
+            console.log(`File exists and is downloadable from bucket ${bucket}`);
+            return true;
+          }
+        } catch (downloadError) {
+          console.error(`Error during download verification: ${downloadError}`);
         }
         
-        return !!data;
+        // Fallback to listing files
+        try {
+          const { data: listData, error: listError } = await supabase
+            .storage
+            .from(bucket)
+            .list('', {
+              search: path,
+              limit: 1
+            });
+            
+          if (listError) {
+            console.error(`List verification error: ${listError.message}`);
+          } else if (listData && listData.length > 0) {
+            console.log(`File found in bucket listing: ${listData[0].name}`);
+            return true;
+          }
+        } catch (listError) {
+          console.error(`Error during list verification: ${listError}`);
+        }
       }
     } catch (error) {
       console.error("Error verifying Supabase image:", error);
@@ -260,4 +284,3 @@ export const verifyImageAccessibleWithRetry = async (imageUrl: string): Promise<
     return false;
   }
 };
-

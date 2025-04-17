@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerWithImage } from "./types";
@@ -22,48 +22,68 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const [loadError, setLoadError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reloadTrigger, setReloadTrigger] = useState(0);
+  const imageRef = useRef<HTMLImageElement>(null);
   
   // Ensure we always have the latest image URL
   useEffect(() => {
-    // Priority: 1. newImageUrl (temporary preview) 2. player.image (from database)
-    const imageSource = newImageUrl || player.image;
-    
-    if (imageSource) {
-      try {
-        // Special handling for blob URLs (file previews)
-        if (imageSource.startsWith('blob:')) {
-          console.log(`Using blob image directly for ${player.name}: ${imageSource}`);
-          setDisplayUrl(imageSource);
-          setLoadError(false);
-        } else {
-          const normalizedUrl = normalizeImageUrl(imageSource);
-          console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
-          setDisplayUrl(normalizedUrl);
-          setLoadError(false);
-        }
-      } catch (error) {
-        console.error(`Error setting display URL for ${player.name}:`, error);
-        setLoadError(true);
-      }
-    } else {
-      setDisplayUrl(null);
-    }
-  }, [newImageUrl, player.image, processed, player.name, reloadTrigger]);
-  
-  // Effect to verify image accessibility
-  useEffect(() => {
-    if (displayUrl && !displayUrl.startsWith('blob:')) {
-      const verifyImage = async () => {
-        const isAccessible = await verifyImageAccessibleWithRetry(displayUrl);
-        if (!isAccessible) {
-          console.log(`Image for ${player.name} is not accessible: ${displayUrl}`);
+    const updateImageUrl = async () => {
+      // Priority: 1. newImageUrl (temporary preview) 2. player.image (from database)
+      const imageSource = newImageUrl || player.image;
+      
+      if (imageSource) {
+        try {
+          // Special handling for blob URLs (file previews)
+          if (imageSource.startsWith('blob:')) {
+            console.log(`Using blob image directly for ${player.name}: ${imageSource}`);
+            setDisplayUrl(imageSource);
+            setLoadError(false);
+          } else {
+            const normalizedUrl = normalizeImageUrl(imageSource);
+            console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
+            
+            // If the image is from Supabase storage, verify it exists
+            if (normalizedUrl && normalizedUrl.includes('supabase.co/storage')) {
+              const isAccessible = await verifyImageAccessibleWithRetry(normalizedUrl);
+              if (!isAccessible) {
+                console.warn(`Image for ${player.name} is not accessible: ${normalizedUrl}`);
+                setLoadError(true);
+              } else {
+                setDisplayUrl(normalizedUrl);
+                setLoadError(false);
+              }
+            } else {
+              setDisplayUrl(normalizedUrl);
+              setLoadError(false);
+            }
+          }
+        } catch (error) {
+          console.error(`Error setting display URL for ${player.name}:`, error);
           setLoadError(true);
         }
-      };
-      
-      verifyImage();
+      } else {
+        setDisplayUrl(null);
+        setLoadError(true);
+      }
+    };
+    
+    updateImageUrl();
+  }, [newImageUrl, player.image, processed, player.name, reloadTrigger]);
+  
+  // Effect to retry failed images
+  useEffect(() => {
+    let retryTimeout: NodeJS.Timeout;
+    
+    if (loadError && displayUrl && !displayUrl.startsWith('blob:')) {
+      retryTimeout = setTimeout(() => {
+        console.log(`Auto-retrying image load for ${player.name}`);
+        reloadImage();
+      }, 3000); // Retry every 3 seconds
     }
-  }, [displayUrl, player.name]);
+    
+    return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [loadError, displayUrl, player.name]);
   
   const hasExistingImage = hasPlayerImage(player);
   const hasNewImage = Boolean(imageFile);
@@ -106,11 +126,14 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
         setTimeout(() => setDisplayUrl(displayUrl), 10);
       } else {
         // For regular URLs, use the utility function to force reload
-        const reloadUrl = forceImageReload(displayUrl);
-        console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
-        setDisplayUrl(reloadUrl);
-        setLoadError(false);
-        setReloadTrigger(prev => prev + 1);
+        setDisplayUrl(null); // Clear first
+        setTimeout(() => {
+          const reloadUrl = forceImageReload(displayUrl);
+          console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
+          setDisplayUrl(reloadUrl);
+          setLoadError(false);
+          setReloadTrigger(prev => prev + 1);
+        }, 50);
       }
     }
   };
@@ -144,6 +167,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
       <div className="aspect-square w-full relative bg-gray-100 flex items-center justify-center">
         {displayUrl && !loadError ? (
           <img 
+            ref={imageRef}
             src={displayUrl} 
             alt={player.name} 
             className="w-full h-full object-cover"

@@ -109,7 +109,7 @@ export const uploadPlayerImage = async (
       .storage
       .from('player-images')
       .upload(fileName, fileToUpload, {
-        cacheControl: '3600',
+        cacheControl: 'no-cache', // Updated to prevent caching
         upsert: true // Overwrite if exists
       });
     
@@ -127,11 +127,14 @@ export const uploadPlayerImage = async (
       .from('player-images')
       .getPublicUrl(fileName);
     
-    console.log(`Successfully uploaded image for player ${playerId}, URL: ${publicUrl}`);
+    // Add cache buster to URL
+    const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
+    
+    console.log(`Successfully uploaded image for player ${playerId}, URL: ${publicUrlWithCacheBuster}`);
     
     return { 
       success: true,
-      publicUrl
+      publicUrl: publicUrlWithCacheBuster
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

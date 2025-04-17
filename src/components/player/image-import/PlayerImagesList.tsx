@@ -30,26 +30,48 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
 
   // Set up a periodic refresh to ensure images are attempted to be loaded
   useEffect(() => {
-    // Trigger a refresh every 10 seconds if images are being displayed
+    // Trigger a refresh every 5 seconds if images are being displayed
     const intervalId = setInterval(() => {
       if (filteredPlayers && filteredPlayers.length > 0 && !isLoading) {
         console.log('Auto-refreshing image list to retry loading any failed images');
         setReloadTrigger(prev => prev + 1);
       }
-    }, 10000);
+    }, 5000); // Reduced from 10s to 5s for more frequent retries
     
     return () => clearInterval(intervalId);
   }, [filteredPlayers, isLoading]);
+
+  // Add an effect to refresh the list after uploading completes
+  useEffect(() => {
+    // Check if any players were recently processed (after upload)
+    const hasProcessedPlayers = filteredPlayers.some(p => p.processed);
+    
+    if (hasProcessedPlayers) {
+      console.log('Detected processed player images, scheduling a refresh');
+      // Schedule multiple refreshes with increasing delays to catch Supabase storage propagation
+      const timeouts = [1000, 3000, 6000, 10000].map(delay => 
+        setTimeout(() => {
+          console.log(`Refresh after upload: ${delay}ms delay`);
+          setReloadTrigger(prev => prev + 1);
+        }, delay)
+      );
+      
+      return () => timeouts.forEach(t => clearTimeout(t));
+    }
+  }, [filteredPlayers]);
 
   const handleImageDeleted = () => {
     if (onImageDeleted) {
       onImageDeleted();
     }
     
-    // Refresh the list after deletion
-    setTimeout(() => {
-      setReloadTrigger(prev => prev + 1);
-    }, 500);
+    // Refresh the list after deletion with multiple retries
+    [500, 2000, 5000].forEach(delay => {
+      setTimeout(() => {
+        console.log(`Refresh after deletion: ${delay}ms delay`);
+        setReloadTrigger(prev => prev + 1);
+      }, delay);
+    });
   };
 
   if (isLoading) {

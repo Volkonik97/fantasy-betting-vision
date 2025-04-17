@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { PlayerWithImage, UploadStatus } from "./types";
 import { Player } from "@/utils/models/types";
@@ -22,14 +23,21 @@ export const usePlayerImages = () => {
     inProgress: false
   });
   const [filterTab, setFilterTab] = useState("all");
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   useEffect(() => {
     if (uploadStatus.processed > 0 && uploadStatus.processed === uploadStatus.total && !uploadStatus.inProgress) {
-      refreshPlayerImages();
+      // Schedule multiple refreshes after upload completes to catch Supabase propagation delays
+      [1000, 3000, 6000, 10000].forEach(delay => {
+        setTimeout(() => {
+          console.log(`Auto-refreshing after upload: ${delay}ms delay`);
+          refreshPlayerImages();
+        }, delay);
+      });
     }
   }, [uploadStatus]);
 
-  const refreshPlayerImages = async () => {
+  const refreshPlayerImages = useCallback(async () => {
     if (isLoading) return;
     
     console.log("Refreshing player images to get latest data");
@@ -63,13 +71,14 @@ export const usePlayerImages = () => {
       
       setPlayerImages(updatedPlayerImages);
       setLoadingProgress({ message: "Données actualisées", percent: 100 });
+      setRefreshCounter(prev => prev + 1);
     } catch (error) {
       console.error("Error refreshing player images:", error);
       toast.error("Erreur lors de l'actualisation des données des joueurs");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [playerImages, isLoading]);
 
   useEffect(() => {
     const loadPlayers = async () => {
@@ -231,10 +240,6 @@ export const usePlayerImages = () => {
         toast.error(`${results.success} images téléchargées, ${results.failed} échecs`);
       }
       
-      setTimeout(() => {
-        refreshPlayerImages();
-      }, 1500);
-      
     } catch (error) {
       console.error("Upload error:", error);
       
@@ -265,6 +270,7 @@ export const usePlayerImages = () => {
     uploadImages,
     filterTab,
     setFilterTab,
-    refreshPlayerImages
+    refreshPlayerImages,
+    refreshCounter
   };
 };
