@@ -177,7 +177,11 @@ export const usePlayerImages = () => {
       return;
     }
     
+    // Log et vérifie si le bucket existe avant de tenter le téléchargement
+    console.log("Bucket status before upload:", bucketExists ? "exists" : "does not exist");
+    
     const playersWithImages = playerImages.filter(p => p.imageFile && !p.processed);
+    console.log(`Found ${playersWithImages.length} players with images to upload`);
     
     if (playersWithImages.length === 0) {
       toast.info("Aucune image à télécharger");
@@ -203,18 +207,36 @@ export const usePlayerImages = () => {
     }));
     
     try {
+      // Vérifier que les IDs des joueurs sont valides
+      uploads.forEach(upload => {
+        if (!upload.playerId) {
+          console.error("Invalid player ID found:", upload);
+        }
+      });
+      
+      console.log("Starting upload of player images:", uploads.length);
+      
       const results = await uploadMultiplePlayerImagesWithProgress(uploads, (processed, total) => {
+        console.log(`Upload progress: ${processed}/${total}`);
         setUploadStatus(prev => ({
           ...prev,
           processed
         }));
       });
       
+      console.log("Upload results:", results);
+      
       setPlayerImages(prev => prev.map(p => {
         const playerId = p.player.id || '';
         
         if (p.imageFile && !p.processed) {
           const hasError = results.errors[playerId];
+          
+          if (hasError) {
+            console.error(`Error uploading image for player ${playerId}:`, hasError);
+          } else {
+            console.log(`Successfully uploaded image for player ${playerId}`);
+          }
           
           return {
             ...p,
@@ -240,6 +262,9 @@ export const usePlayerImages = () => {
         toast.error(`${results.success} images téléchargées, ${results.failed} échecs`);
       }
       
+      // Forcer un rafraîchissement immédiatement après le téléchargement
+      setTimeout(() => refreshPlayerImages(), 1000);
+      
     } catch (error) {
       console.error("Upload error:", error);
       
@@ -257,7 +282,7 @@ export const usePlayerImages = () => {
       
       toast.error("Erreur lors du téléchargement des images");
     }
-  }, [playerImages]);
+  }, [playerImages, refreshPlayerImages]);
 
   return {
     playerImages,

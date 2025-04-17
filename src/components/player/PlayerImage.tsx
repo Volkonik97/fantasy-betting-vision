@@ -47,7 +47,9 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     // Try to use direct URL from player ID first (most reliable)
     if (cleanPlayerId) {
       try {
-        const directUrl = getDirectPlayerImageUrl(cleanPlayerId);
+        // Ajouter un cache-buster directement à l'URL
+        const timestamp = Date.now();
+        const directUrl = `${getDirectPlayerImageUrl(cleanPlayerId)}?t=${timestamp}`;
         console.log(`[PlayerImage] Generated direct URL for ${name}: ${directUrl}`);
         setImageUrl(directUrl);
       } catch (error) {
@@ -78,19 +80,43 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     setImageError(false);
   };
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     console.log(`[PlayerImage] Image failed to load for ${name}: ${imageUrl}`);
+    
+    // Vérifier si l'URL provient de Supabase et essayer avec différentes extensions
+    if (imageUrl && imageUrl.includes('supabase.co/storage')) {
+      const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
+      const baseUrl = imageUrl.split('?')[0]; // Enlever les paramètres de requête
+      
+      // Extraire l'extension actuelle
+      const extensionMatch = baseUrl.match(/\.([a-zA-Z0-9]+)$/);
+      const currentExtension = extensionMatch ? `.${extensionMatch[1]}` : '';
+      
+      // Essayer avec une autre extension
+      const nextExtIndex = extensions.findIndex(ext => ext === currentExtension) + 1;
+      const nextExt = nextExtIndex < extensions.length ? extensions[nextExtIndex] : extensions[0];
+      
+      // Remplacer l'extension dans l'URL
+      if (currentExtension) {
+        const newUrl = baseUrl.replace(currentExtension, nextExt) + `?t=${Date.now()}`;
+        console.log(`[PlayerImage] Trying alternate extension for ${name}: ${newUrl}`);
+        setImageUrl(newUrl);
+        return;
+      }
+    }
+    
     setImageError(true);
     setIsLoading(false);
-  };
-  
+  }, [imageUrl, name]);
+
   const handleManualReload = () => {
     console.log(`[PlayerImage] Manual reload for ${name}`);
     
     // Pour les URLs basées sur l'ID du joueur, regénérer l'URL
     if (cleanPlayerId) {
       try {
-        const directUrl = getDirectPlayerImageUrl(cleanPlayerId);
+        const timestamp = Date.now();
+        const directUrl = `${getDirectPlayerImageUrl(cleanPlayerId)}?t=${timestamp}`;
         console.log(`[PlayerImage] Regenerated URL for ${name}: ${directUrl}`);
         
         // Effacer l'URL d'abord pour forcer un rechargement complet
