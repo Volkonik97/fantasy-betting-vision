@@ -60,9 +60,6 @@ export const compressImage = async (file: File): Promise<File> => {
   });
 };
 
-/**
- * Upload an image to Supabase Storage and update DB
- */
 export const uploadPlayerImage = async (
   playerId: string,
   file: File,
@@ -115,26 +112,31 @@ export const uploadPlayerImage = async (
 
     const publicUrlWithTimestamp = `${data.publicUrl}?t=${Date.now()}`;
 
+    // ✅ LOG AVANT UPDATE
+    console.log("🔄 Updating player image in DB:", {
+      playerId,
+      publicUrl: publicUrlWithTimestamp,
+    });
+
     const { error: dbError } = await supabase
       .from("players")
       .update({ image: publicUrlWithTimestamp })
       .eq("playerid", playerId);
 
     if (dbError) {
-      console.error("Erreur mise à jour image joueur :", dbError);
+      console.error("❌ Erreur mise à jour image joueur :", dbError);
       return { success: false, error: dbError.message };
     }
 
+    console.log("✅ Player image updated in DB:", playerId);
     return { success: true, publicUrl: publicUrlWithTimestamp };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("Unexpected error:", message);
     return { success: false, error: message };
   }
 };
 
-/**
- * Upload multiple player images with progress tracking
- */
 export const uploadMultiplePlayerImagesWithProgress = async (
   uploads: { playerId: string; file: File }[],
   progressCallback: (processed: number, total: number) => void
