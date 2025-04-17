@@ -101,13 +101,13 @@ export const loadAllPlayersInBatches = async (
         // Here we call getPlayers which now explicitly selects the image field
         const batchPlayers = await getPlayers(batch, batchSize);
         
-        // Étape 3.1 : adapter chaque joueur
+        // Étape 3.1 : Adapter chaque joueur (convertir damage_share etc.)
 const adaptedPlayers = batchPlayers.map(adaptPlayerFromDatabase);
 
-// Étape 3.2 : normaliser les images
+// Étape 3.2 : Normaliser les images
 const normalizedPlayers = adaptedPlayers.map(player => {
   const hasImage = hasImageForPlayer(player.id);
-  
+
   let imageUrl = player.image;
 
   if (!imageUrl && hasImage) {
@@ -115,9 +115,12 @@ const normalizedPlayers = adaptedPlayers.map(player => {
       .storage
       .from("player-images")
       .getPublicUrl(`playerid${player.id}.webp`);
+
     imageUrl = data.publicUrl;
+    console.log(`Generated URL for player ${player.id}: ${imageUrl}`);
   } else if (imageUrl) {
     imageUrl = normalizeImageUrl(imageUrl);
+    console.log(`Normalized URL for player ${player.id}: ${imageUrl}`);
   }
 
   return {
