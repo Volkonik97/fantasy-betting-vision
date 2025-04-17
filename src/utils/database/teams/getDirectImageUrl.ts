@@ -14,6 +14,7 @@ export const getDirectPlayerImageUrl = (playerId: string | undefined | null): st
     const cleanId = playerId.replace(/[^a-zA-Z0-9-_]/g, '');
     
     // Use consistent filename format with .png extension
+    // Instead of using date-based filenames, we use a standard format for better caching
     const fileName = `playerid${cleanId}.png`;
     
     // Get public URL from Supabase

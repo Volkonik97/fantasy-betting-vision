@@ -5,7 +5,8 @@ import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { normalizeImageUrl, forceImageReload } from "@/utils/database/teams/images/imageUtils";
+import { getDirectPlayerImageUrl } from "@/utils/database/teams/getDirectImageUrl";
 
 interface PlayerImageProps {
   name: string;
@@ -23,16 +24,6 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
 
   // Clean up playerID to make sure it doesn't contain invalid characters
   const cleanPlayerId = playerId ? playerId.replace(/[^a-zA-Z0-9-_]/g, '') : null;
-
-  // Helper to generate a direct Supabase URL for the player image
-  const generateDirectImageUrl = useCallback((id: string) => {
-    const { data } = supabase
-      .storage
-      .from('player-images')
-      .getPublicUrl(`playerid${id}.png`);
-    
-    return `${data.publicUrl}?t=${Date.now()}`;
-  }, []);
 
   // Effect to load the image URL
   useEffect(() => {
@@ -56,7 +47,7 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     // Try to use direct URL from player ID first (most reliable)
     if (cleanPlayerId) {
       try {
-        const directUrl = generateDirectImageUrl(cleanPlayerId);
+        const directUrl = getDirectPlayerImageUrl(cleanPlayerId);
         console.log(`[PlayerImage] Generated direct URL for ${name}: ${directUrl}`);
         setImageUrl(directUrl);
       } catch (error) {
@@ -65,13 +56,8 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
         // Fall back to provided image URL if available
         if (image) {
           console.log(`[PlayerImage] Falling back to provided URL for ${name}: ${image}`);
-          
-          // Add cache buster if not already present
-          const urlWithCacheBuster = image.includes('?') 
-            ? image 
-            : `${image}?t=${Date.now()}`;
-            
-          setImageUrl(urlWithCacheBuster);
+          const normalizedUrl = normalizeImageUrl(image);
+          setImageUrl(normalizedUrl);
         } else {
           setImageError(true);
           setIsLoading(false);
@@ -81,15 +67,10 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
     // If no player ID but image URL is provided
     else if (image) {
       console.log(`[PlayerImage] Using provided URL for ${name}: ${image}`);
-      
-      // Add cache buster if not already present
-      const urlWithCacheBuster = image.includes('?') 
-        ? image 
-        : `${image}?t=${Date.now()}`;
-        
-      setImageUrl(urlWithCacheBuster);
+      const normalizedUrl = normalizeImageUrl(image);
+      setImageUrl(normalizedUrl);
     }
-  }, [image, cleanPlayerId, name, reloadAttempt, generateDirectImageUrl]);
+  }, [image, cleanPlayerId, name, reloadAttempt]);
 
   const handleImageLoad = () => {
     console.log(`[PlayerImage] Image loaded successfully for ${name}`);
@@ -106,13 +87,13 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const handleManualReload = () => {
     console.log(`[PlayerImage] Manual reload for ${name}`);
     
-    // For direct player ID, regenerate the URL
+    // Pour les URLs basées sur l'ID du joueur, regénérer l'URL
     if (cleanPlayerId) {
       try {
-        const directUrl = generateDirectImageUrl(cleanPlayerId);
+        const directUrl = getDirectPlayerImageUrl(cleanPlayerId);
         console.log(`[PlayerImage] Regenerated URL for ${name}: ${directUrl}`);
         
-        // Clear URL first to force a complete reload
+        // Effacer l'URL d'abord pour forcer un rechargement complet
         setImageUrl(null);
         setTimeout(() => {
           setImageUrl(directUrl);
@@ -126,21 +107,20 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
       }
     }
     
-    // For other URLs, add a new cache buster
+    // Pour les autres URLs, ajouter un nouveau cache buster
     if (imageUrl) {
-      const baseUrl = imageUrl.split('?')[0];
-      const newUrl = `${baseUrl}?t=${Date.now()}`;
+      const reloadedUrl = forceImageReload(imageUrl);
       
-      // Clear URL first to force a complete reload
+      // Effacer l'URL d'abord pour forcer un rechargement complet
       setImageUrl(null);
       setTimeout(() => {
-        setImageUrl(newUrl);
+        setImageUrl(reloadedUrl);
         setImageError(false);
         setIsLoading(true);
       }, 50);
     }
     
-    // Increment reload attempt counter
+    // Incrémenter le compteur de tentatives de rechargement
     setReloadAttempt(prev => prev + 1);
   };
 

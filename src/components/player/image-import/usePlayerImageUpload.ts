@@ -49,13 +49,16 @@ export const usePlayerImageUpload = () => {
     setPlayers(updatedPlayers);
 
     try {
-      const fileName = `${playerUpload.player.id}_${Date.now()}.${playerUpload.imageFile.name.split('.').pop()}`;
+      // Change: Utiliser un format de nom de fichier cohérent pour éviter la prolifération de fichiers
+      const cleanId = playerUpload.player.id.replace(/[^a-zA-Z0-9-_]/g, '');
+      const fileExtension = playerUpload.imageFile.name.split('.').pop() || 'png';
+      const fileName = `playerid${cleanId}.${fileExtension}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('player-images')
         .upload(fileName, playerUpload.imageFile, {
-          cacheControl: '3600',
-          upsert: true
+          cacheControl: '0', // Désactiver le cache pour forcer le rechargement
+          upsert: true  // Remplacer si existe déjà
         });
 
       if (uploadError) {
@@ -66,9 +69,12 @@ export const usePlayerImageUpload = () => {
         .from('player-images')
         .getPublicUrl(fileName);
 
+      // Ajouter un cache buster pour forcer le rechargement
+      const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
+
       const { error: updateError } = await supabase
         .from('players')
-        .update({ image: publicUrl })
+        .update({ image: publicUrlWithCacheBuster })
         .eq('playerid', playerUpload.player.id);
 
       if (updateError) {
@@ -81,10 +87,10 @@ export const usePlayerImageUpload = () => {
         ...finalPlayers[playerIndex],
         processed: true,
         isUploading: false,
-        newImageUrl: publicUrl,
+        newImageUrl: publicUrlWithCacheBuster,
         player: {
           ...finalPlayers[playerIndex].player,
-          image: publicUrl
+          image: publicUrlWithCacheBuster
         }
       };
       
