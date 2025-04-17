@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import ImportHeader from "./ImportHeader";
@@ -10,7 +9,6 @@ import PlayerImagesList from "./PlayerImagesList";
 import { usePlayerImages } from "./usePlayerImages";
 import UploadSummary from "./UploadSummary";
 import PlayerStats from "./PlayerStats";
-import { Button } from "@/components/ui/button";
 
 interface PlayerImagesImportProps {
   bucketStatus: "loading" | "exists" | "error";
@@ -21,7 +19,7 @@ interface PlayerImagesImportProps {
 const PlayerImagesImport = ({
   bucketStatus = "loading",
   rlsEnabled = false,
-  showRlsHelp = () => {}
+  showRlsHelp = () => {},
 }: PlayerImagesImportProps) => {
   const {
     playerImages,
@@ -34,36 +32,31 @@ const PlayerImagesImport = ({
     uploadImages,
     filterTab,
     setFilterTab,
-    refreshPlayerImages
+    refreshPlayerImages,
   } = usePlayerImages();
 
-  const handleUpload = () => {
-    uploadImages(bucketStatus === "exists");
-  };
-
   const handleImageDeleted = () => {
-    // Refresh the player list when an image is deleted
     refreshPlayerImages();
   };
 
-  // Count players with images ready to upload
-  const pendingUploadCount = playerImages.filter(p => p.imageFile && !p.processed).length;
+  const pendingUploadCount = playerImages.filter(
+    (p) => p.imageFile && !p.processed
+  ).length;
 
   if (isLoading) {
     return (
       <Card className="w-full">
         <CardContent className="flex flex-col items-center justify-center space-y-4 py-12">
           <div className="text-center">
-            <h3 className="text-lg font-medium mb-2">{loadingProgress.message}</h3>
+            <h3 className="text-lg font-medium mb-2">
+              {loadingProgress.message}
+            </h3>
             <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-md">
-              <div 
-                className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+              <div
+                className="bg-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
                 style={{ width: `${loadingProgress.percent}%` }}
               ></div>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Chargement des données des joueurs... Cela peut prendre un moment.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -71,92 +64,42 @@ const PlayerImagesImport = ({
   }
 
   return (
-    <Card className="w-full">
-      <ImportHeader 
-        bucketStatus={bucketStatus} 
-        rlsEnabled={rlsEnabled}
-        showRlsHelp={showRlsHelp}
+    <div className="space-y-6">
+      <ImportHeader
+        unmatched={unmatched}
+        totalPlayers={playerImages.length}
+        pendingUpload={pendingUploadCount}
       />
-      
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-          <div className="md:col-span-2">
-            <DropZone 
-              onFileSelect={handleFileSelect}
-              disabled={bucketStatus !== "exists" || rlsEnabled || uploadStatus.inProgress}
-            />
-          </div>
-          <div className="md:col-span-1">
-            <PlayerStats playerImages={playerImages} className="h-full" />
-          </div>
-        </div>
 
-        {uploadStatus.failed > 0 && (
-          <UploadSummary
-            uploadStatus={uploadStatus}
-            failedPlayers={playerImages.filter(p => p.error !== null)}
-          />
-        )}
+      <DropZone onDrop={handleFileSelect} />
 
-        <div className="space-y-4">
-          <UploadControls 
-            onUpload={handleUpload}
-            disabled={bucketStatus !== "exists" || rlsEnabled || pendingUploadCount === 0}
-            isUploading={uploadStatus.inProgress}
-            uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
-            status={bucketStatus}
-            uploadCount={pendingUploadCount}
-          />
+      <UploadControls
+        uploadImages={uploadImages}
+        uploadStatus={uploadStatus}
+        bucketStatus={bucketStatus}
+      />
 
-          <Button
-            onClick={() => uploadImages(bucketStatus === "exists")}
-            disabled={uploadStatus.inProgress || bucketStatus !== "exists" || rlsEnabled}
-            className="w-full"
-            variant="secondary"
-          >
-            {uploadStatus.inProgress ? "Téléchargement en cours..." : "Uploader toutes les images"}
-          </Button>
-        </div>
+      <UnmatchedImagesList
+        files={unmatched}
+        onMatch={assignFileToPlayer}
+        players={playerImages}
+      />
 
-        {unmatched.length > 0 && (
-          <UnmatchedImagesList 
-            unmatched={unmatched}
-            playerOptions={playerImages}
-            onAssign={assignFileToPlayer}
-            disabled={uploadStatus.inProgress}
-            status={bucketStatus}
-          />
-        )}
+      <PlayerImagesFilter
+        activeTab={filterTab}
+        onChange={setFilterTab}
+        players={playerImages}
+      />
 
-        <PlayerImagesFilter 
-          activeTab={filterTab} 
-          setActiveTab={setFilterTab} 
-          playerImages={playerImages}
-        >
-          <PlayerImagesList 
-            isLoading={isLoading} 
-            filteredPlayers={playerImages.filter(player => {
-              switch(filterTab) {
-                case 'no-image':
-                  return !player.player.image && !player.newImageUrl;
-                case 'with-image':
-                  return player.player.image || player.newImageUrl;
-                case 'pending':
-                  return player.imageFile && !player.processed;
-                case 'processed':
-                  return player.processed;
-                case 'errors':
-                  return player.error !== null;
-                default:
-                  return true; // 'all' tab
-              }
-            })} 
-            status={bucketStatus}
-            onImageDeleted={handleImageDeleted}
-          />
-        </PlayerImagesFilter>
-      </CardContent>
-    </Card>
+      <PlayerImagesList
+        filter={filterTab}
+        players={playerImages}
+        onDelete={handleImageDeleted}
+      />
+
+      <UploadSummary status={uploadStatus} />
+      <PlayerStats players={playerImages} />
+    </div>
   );
 };
 
