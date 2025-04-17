@@ -2,22 +2,23 @@
 import { useState, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
-import { PlayerImageUpload } from './types';
+import { PlayerWithImage } from './types';
 import { getPlayers } from '@/utils/database/playersService';
 
 export const usePlayerImageUpload = () => {
-  const [players, setPlayers] = useState<PlayerImageUpload[]>([]);
+  const [players, setPlayers] = useState<PlayerWithImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadPlayers = useCallback(async () => {
     setIsLoading(true);
     try {
       const fetchedPlayers = await getPlayers();
-      const playerImageUploads: PlayerImageUpload[] = fetchedPlayers.map(player => ({
+      const playerImageUploads: PlayerWithImage[] = fetchedPlayers.map(player => ({
         player,
-        status: 'idle',
-        file: null,
-        url: null,
+        imageFile: null,
+        newImageUrl: null,
+        isUploading: false,
+        processed: false,
         error: null
       }));
       setPlayers(playerImageUploads);
@@ -29,8 +30,8 @@ export const usePlayerImageUpload = () => {
     }
   }, []);
 
-  const uploadPlayerImage = useCallback(async (playerUpload: PlayerImageUpload) => {
-    if (!playerUpload.file) return;
+  const uploadPlayerImage = useCallback(async (playerUpload: PlayerWithImage) => {
+    if (!playerUpload.imageFile) return;
     
     // Create a copy of the players array to avoid mutating state directly
     const updatedPlayers = [...players];
@@ -41,18 +42,18 @@ export const usePlayerImageUpload = () => {
     // Update the player's status to uploading
     updatedPlayers[playerIndex] = {
       ...updatedPlayers[playerIndex],
-      status: 'uploading',
+      isUploading: true,
       error: null
     };
     
     setPlayers(updatedPlayers);
 
     try {
-      const fileName = `${playerUpload.player.id}_${Date.now()}.${playerUpload.file.name.split('.').pop()}`;
+      const fileName = `${playerUpload.player.id}_${Date.now()}.${playerUpload.imageFile.name.split('.').pop()}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('player-images')
-        .upload(fileName, playerUpload.file, {
+        .upload(fileName, playerUpload.imageFile, {
           cacheControl: '3600',
           upsert: true
         });
@@ -78,8 +79,9 @@ export const usePlayerImageUpload = () => {
       const finalPlayers = [...updatedPlayers];
       finalPlayers[playerIndex] = {
         ...finalPlayers[playerIndex],
-        status: 'success',
-        url: publicUrl,
+        processed: true,
+        isUploading: false,
+        newImageUrl: publicUrl,
         player: {
           ...finalPlayers[playerIndex].player,
           image: publicUrl
@@ -95,7 +97,8 @@ export const usePlayerImageUpload = () => {
       const errorPlayers = [...updatedPlayers];
       errorPlayers[playerIndex] = {
         ...errorPlayers[playerIndex],
-        status: 'error',
+        isUploading: false,
+        processed: true,
         error: error instanceof Error ? error.message : String(error)
       };
       
@@ -109,9 +112,9 @@ export const usePlayerImageUpload = () => {
     const updatedPlayers = [...players];
     updatedPlayers[playerIndex] = {
       ...updatedPlayers[playerIndex],
-      file,
-      status: 'idle',
-      url: URL.createObjectURL(file),
+      imageFile: file,
+      newImageUrl: URL.createObjectURL(file),
+      processed: false,
       error: null
     };
     setPlayers(updatedPlayers);
