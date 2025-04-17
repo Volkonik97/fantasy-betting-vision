@@ -1,16 +1,10 @@
 
-import React from 'react';
-import Navbar from '@/components/Navbar';
+import React from "react";
+import { Navigate } from "react-router-dom";
+import Index from "./Index";
 
 const Home = () => {
-  return (
-    <div>
-      <Navbar />
-      <div className="container mx-auto px-4 pt-20">
-        <h1 className="text-2xl font-bold">Welcome to the Application</h1>
-      </div>
-    </div>
-  );
+  return <Index />;
 };
 
 export default Home;
