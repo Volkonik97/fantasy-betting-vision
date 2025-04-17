@@ -59,18 +59,14 @@ const PlayerHeader = ({
   const playerCsPerMin = cspmOverride !== null ? cspmOverride : 
     (typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0'));
   
-  let playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
-    (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
-  
-  if (isNaN(playerDamageShare)) {
-    console.warn(`Invalid damageShare value detected: ${player.damageShare}, defaulting to 0`);
-    playerDamageShare = 0;
-  }
-  
-  const formattedDamageShare = `${Math.round(playerDamageShare)}%`;
-
-
-  console.log(`PlayerHeader ${player.name} formatted damageShare: ${formattedDamageShare} from ${playerDamageShare}`);
+    const formattedDamageShare = `${Math.round(
+      damageShareOverride !== null
+        ? damageShareOverride
+        : typeof player.damageShare === "number"
+          ? player.damageShare
+          : 0
+    )}%`;
+    
 
   return (
     <motion.div 
