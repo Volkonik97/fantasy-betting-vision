@@ -1,20 +1,12 @@
-
 import { Player } from "@/utils/models/types";
-
-export interface PlayerImageUpload {
-  player: Player;
-  file: File | null;
-  url: string | null;
-  status: 'idle' | 'uploading' | 'success' | 'error';
-  error: string | null;
-}
+import { getDirectPlayerImageUrl } from "@/utils/database/teams/getDirectImageUrl";
 
 export interface PlayerWithImage {
   player: Player;
   imageFile: File | null;
   newImageUrl: string | null;
-  processed: boolean;
   isUploading: boolean;
+  processed: boolean;
   error: string | null;
 }
 
@@ -26,6 +18,24 @@ export interface UploadStatus {
   inProgress: boolean;
 }
 
-export const hasPlayerImage = (player: Player): boolean => {
-  return Boolean(player.image && typeof player.image === 'string' && player.image.trim() !== '');
+/**
+ * Check if a player has an image
+ */
+export const hasPlayerImage = (player: { image?: string | null } | null | undefined): boolean => {
+  if (!player) return false;
+  
+  return !!player.image && player.image.trim().length > 0;
+};
+
+/**
+ * Get the display URL for a player image, either from the database or from a direct storage URL
+ */
+export const getPlayerImageUrl = (player: Player): string | null => {
+  // If player already has an image URL in the database, use it
+  if (player.image) {
+    return player.image;
+  }
+  
+  // Otherwise try to generate a direct URL from player ID
+  return getDirectPlayerImageUrl(player.id);
 };

@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Badge } from "../ui/badge";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
-import { normalizeImageUrl, forceImageReload, verifyImageAccessibleWithRetry } from "@/utils/database/teams/images/imageUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerImageProps {
   name: string;
@@ -19,111 +19,129 @@ const PlayerImage: React.FC<PlayerImageProps> = ({ name, playerId, image, role }
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadAttempt, setReloadAttempt] = useState(0);
-  const [hasVerifiedImage, setHasVerifiedImage] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
   // Clean up playerID to make sure it doesn't contain invalid characters
   const cleanPlayerId = playerId ? playerId.replace(/[^a-zA-Z0-9-_]/g, '') : null;
 
+  // Helper to generate a direct Supabase URL for the player image
+  const generateDirectImageUrl = useCallback((id: string) => {
+    const { data } = supabase
+      .storage
+      .from('player-images')
+      .getPublicUrl(`playerid${id}.png`);
+    
+    return `${data.publicUrl}?t=${Date.now()}`;
+  }, []);
+
   // Effect to load the image URL
   useEffect(() => {
-    const loadImage = async () => {
-      setIsLoading(true);
-      setImageError(false);
-      
-      // First try to use the provided image URL
-      if (image) {
-        try {
-          // For blob URLs, we need special handling
-          if (image.startsWith('blob:')) {
-            console.log(`Using blob image directly for ${name}: ${image}`);
-            setImageUrl(image);
-          } else {
-            const normalizedUrl = normalizeImageUrl(image);
-            console.log(`Loading image for ${name} from URL: ${normalizedUrl}`);
-            setImageUrl(normalizedUrl);
-          }
-        } catch (error) {
-          console.error(`Error normalizing image URL for ${name}:`, error);
-          setImageError(true);
-          setIsLoading(false);
-        }
-      } 
-      // If no image provided but we have a player ID, construct URL from player ID
-      else if (cleanPlayerId) {
-        try {
-          // Make sure we're using a clean player ID for the URL
-          const playerIdUrl = normalizeImageUrl(`playerid${cleanPlayerId}`);
-          console.log(`Loading image for ${name} from player ID: ${playerIdUrl}`);
-          setImageUrl(playerIdUrl);
-        } catch (error) {
-          console.error(`Error creating player ID URL for ${name}:`, error);
-          setImageError(true);
-          setIsLoading(false);
-        }
-      }
-      // No image data available
-      else {
-        console.log(`No image available for ${name}`);
-        setImageError(true);
-        setIsLoading(false);
-      }
-    };
-
-    loadImage();
-  }, [image, cleanPlayerId, name, reloadAttempt]);
-
-  // Effect to verify the image is accessible
-  useEffect(() => {
-    if (imageUrl && !hasVerifiedImage && !imageUrl.startsWith('blob:')) {
-      const verifyImage = async () => {
-        try {
-          console.log(`Verifying image accessibility for ${name}: ${imageUrl}`);
-          const isAccessible = await verifyImageAccessibleWithRetry(imageUrl);
-          
-          if (!isAccessible) {
-            console.log(`Image verification failed for ${name}, marking as error`);
-            setImageError(true);
-            setIsLoading(false);
-          }
-          
-          setHasVerifiedImage(true);
-        } catch (error) {
-          console.error(`Error verifying image for ${name}:`, error);
-        }
-      };
-      
-      verifyImage();
+    if (!cleanPlayerId && !image) {
+      console.log(`[PlayerImage] No image data for ${name}`);
+      setImageError(true);
+      setIsLoading(false);
+      return;
     }
-  }, [imageUrl, hasVerifiedImage, name]);
+
+    setIsLoading(true);
+    setImageError(false);
+    
+    // Handle blob URLs (for previews)
+    if (image && image.startsWith('blob:')) {
+      console.log(`[PlayerImage] Using blob image for ${name}: ${image}`);
+      setImageUrl(image);
+      return;
+    }
+    
+    // Try to use direct URL from player ID first (most reliable)
+    if (cleanPlayerId) {
+      try {
+        const directUrl = generateDirectImageUrl(cleanPlayerId);
+        console.log(`[PlayerImage] Generated direct URL for ${name}: ${directUrl}`);
+        setImageUrl(directUrl);
+      } catch (error) {
+        console.error(`[PlayerImage] Error generating URL for ${name}:`, error);
+        
+        // Fall back to provided image URL if available
+        if (image) {
+          console.log(`[PlayerImage] Falling back to provided URL for ${name}: ${image}`);
+          
+          // Add cache buster if not already present
+          const urlWithCacheBuster = image.includes('?') 
+            ? image 
+            : `${image}?t=${Date.now()}`;
+            
+          setImageUrl(urlWithCacheBuster);
+        } else {
+          setImageError(true);
+          setIsLoading(false);
+        }
+      }
+    } 
+    // If no player ID but image URL is provided
+    else if (image) {
+      console.log(`[PlayerImage] Using provided URL for ${name}: ${image}`);
+      
+      // Add cache buster if not already present
+      const urlWithCacheBuster = image.includes('?') 
+        ? image 
+        : `${image}?t=${Date.now()}`;
+        
+      setImageUrl(urlWithCacheBuster);
+    }
+  }, [image, cleanPlayerId, name, reloadAttempt, generateDirectImageUrl]);
 
   const handleImageLoad = () => {
-    console.log(`Image loaded successfully for ${name}`);
+    console.log(`[PlayerImage] Image loaded successfully for ${name}`);
     setIsLoading(false);
     setImageError(false);
   };
 
   const handleImageError = () => {
-    console.log(`Image failed to load for ${name}`);
+    console.log(`[PlayerImage] Image failed to load for ${name}: ${imageUrl}`);
     setImageError(true);
     setIsLoading(false);
   };
   
   const handleManualReload = () => {
+    console.log(`[PlayerImage] Manual reload for ${name}`);
+    
+    // For direct player ID, regenerate the URL
+    if (cleanPlayerId) {
+      try {
+        const directUrl = generateDirectImageUrl(cleanPlayerId);
+        console.log(`[PlayerImage] Regenerated URL for ${name}: ${directUrl}`);
+        
+        // Clear URL first to force a complete reload
+        setImageUrl(null);
+        setTimeout(() => {
+          setImageUrl(directUrl);
+          setImageError(false);
+          setIsLoading(true);
+        }, 50);
+        
+        return;
+      } catch (error) {
+        console.error(`[PlayerImage] Error regenerating URL:`, error);
+      }
+    }
+    
+    // For other URLs, add a new cache buster
     if (imageUrl) {
-      console.log(`Manually reloading image for ${name}`);
-      // Clear the current URL first so React fully remounts the image
+      const baseUrl = imageUrl.split('?')[0];
+      const newUrl = `${baseUrl}?t=${Date.now()}`;
+      
+      // Clear URL first to force a complete reload
       setImageUrl(null);
-      // Small delay before setting the new URL
       setTimeout(() => {
-        const reloadedUrl = forceImageReload(imageUrl);
-        setImageUrl(reloadedUrl);
+        setImageUrl(newUrl);
         setImageError(false);
         setIsLoading(true);
-        setHasVerifiedImage(false);
-        setReloadAttempt(prev => prev + 1);
       }, 50);
     }
+    
+    // Increment reload attempt counter
+    setReloadAttempt(prev => prev + 1);
   };
 
   return (

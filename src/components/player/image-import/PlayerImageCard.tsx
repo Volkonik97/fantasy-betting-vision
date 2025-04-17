@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PlayerWithImage } from "./types";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { clearInvalidImageReference } from "@/utils/database/teams/imageUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerImageCardProps {
   playerData: PlayerWithImage;
@@ -27,6 +27,20 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   
   // Clean up player ID to make sure it doesn't contain invalid characters
   const cleanPlayerId = player.id ? player.id.replace(/[^a-zA-Z0-9-_]/g, '') : null;
+  
+  // Generate direct Supabase URL for the player image
+  const generateDirectImageUrl = useCallback(() => {
+    if (!cleanPlayerId) return null;
+    
+    const { data } = supabase
+      .storage
+      .from('player-images')
+      .getPublicUrl(`playerid${cleanPlayerId}.png`);
+    
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    console.log(`[PlayerImageCard] Generated direct URL for ${player.name}: ${url}`);
+    return url;
+  }, [cleanPlayerId, player.name]);
   
   // Ensure we always have the latest image URL
   useEffect(() => {

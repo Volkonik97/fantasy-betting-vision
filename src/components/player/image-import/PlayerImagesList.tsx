@@ -18,9 +18,9 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
 }) => {
   const [reloadTrigger, setReloadTrigger] = useState(0);
   
-  // Force refresh when filtered players change to ensure images are loaded correctly
+  // Force refresh when filtered players change
   useEffect(() => {
-    // Small delay to ensure the DOM has updated
+    console.log("[PlayerImagesList] Players list changed, refreshing components");
     const timer = setTimeout(() => {
       setReloadTrigger(prev => prev + 1);
     }, 300);
@@ -28,30 +28,17 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
     return () => clearTimeout(timer);
   }, [filteredPlayers]);
 
-  // Set up more frequent periodic refresh to ensure images are attempted to be loaded
+  // More aggressive refresh for recently processed uploads
   useEffect(() => {
-    // Trigger a refresh every 2 seconds if images are being displayed
-    const intervalId = setInterval(() => {
-      if (filteredPlayers && filteredPlayers.length > 0 && !isLoading) {
-        console.log('Auto-refreshing image list to retry loading any failed images');
-        setReloadTrigger(prev => prev + 1);
-      }
-    }, 2000); // Reduced to 2s for more frequent retries
-    
-    return () => clearInterval(intervalId);
-  }, [filteredPlayers, isLoading]);
-
-  // Add an effect to refresh the list more frequently after uploading completes
-  useEffect(() => {
-    // Check if any players were recently processed (after upload)
     const hasProcessedPlayers = filteredPlayers.some(p => p.processed);
     
     if (hasProcessedPlayers) {
-      console.log('Detected processed player images, scheduling more frequent refreshes');
-      // Schedule multiple refreshes with increasing delays to catch Supabase storage propagation
-      const timeouts = [500, 1000, 2000, 3000, 5000, 8000, 12000].map(delay => 
+      console.log("[PlayerImagesList] Detected processed player images, scheduling frequent refreshes");
+      // Refresh multiple times with progressively increasing delays
+      // This helps with Supabase storage propagation delays
+      const timeouts = [500, 1000, 2000, 3000, 5000, 8000, 12000, 20000].map(delay => 
         setTimeout(() => {
-          console.log(`Refresh after upload: ${delay}ms delay`);
+          console.log(`[PlayerImagesList] Post-upload refresh: ${delay}ms`);
           setReloadTrigger(prev => prev + 1);
         }, delay)
       );
@@ -65,10 +52,10 @@ const PlayerImagesList: React.FC<PlayerImagesListProps> = ({
       onImageDeleted();
     }
     
-    // Refresh the list after deletion with multiple retries
-    [500, 1500, 3000, 6000].forEach(delay => {
+    // More aggressive refresh after deletion
+    [500, 1500, 3000, 6000, 10000].forEach(delay => {
       setTimeout(() => {
-        console.log(`Refresh after deletion: ${delay}ms delay`);
+        console.log(`[PlayerImagesList] Post-deletion refresh: ${delay}ms`);
         setReloadTrigger(prev => prev + 1);
       }, delay);
     });

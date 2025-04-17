@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getDirectPlayerImageUrl } from "@/utils/database/teams/getDirectImageUrl";
 
 /**
  * Normalize an image URL to ensure it's usable
@@ -9,88 +10,56 @@ export const normalizeImageUrl = (imageUrl: string | null | undefined): string |
   // Clean up the URL by trimming whitespace
   const cleanUrl = imageUrl.trim();
   
-  // Log for debugging
-  console.log(`Normalizing image URL: ${cleanUrl}`);
-  
   // Special case for blob URLs (file previews) - return as is
   if (cleanUrl.startsWith('blob:')) {
-    console.log(`Using blob URL as is: ${cleanUrl}`);
     return cleanUrl;
   }
   
-  // If it's already a complete Supabase Storage URL, return it with cache buster
+  // For playerid strings, use the direct URL generator
+  if (cleanUrl.includes('playerid')) {
+    const playerIdMatch = cleanUrl.match(/playerid([^\.]+)/);
+    if (playerIdMatch && playerIdMatch[1]) {
+      return getDirectPlayerImageUrl(playerIdMatch[1]);
+    }
+  }
+  
+  // If it's already a complete Supabase Storage URL, add cache buster
   if (cleanUrl.includes('supabase.co/storage')) {
     // Fix any double slashes in URLs except for https://
     const fixedUrl = cleanUrl.replace(/([^:])\/\//g, '$1/');
     
-    // Remove any existing cache buster parameter and clean special characters
+    // Remove any existing cache buster parameter
     const urlWithoutParams = fixedUrl.split('?')[0];
     
     // Add a new cache buster parameter
     const cacheBuster = `?t=${Date.now()}`;
-    console.log(`Normalized Supabase URL: ${urlWithoutParams}${cacheBuster}`);
     return urlWithoutParams + cacheBuster;
   }
   
-  // If it's an absolute URL, return it with cache buster
+  // If it's an absolute URL, add cache buster
   if (cleanUrl.startsWith('http')) {
     // Remove any existing cache buster parameter
     const urlWithoutParams = cleanUrl.split('?')[0];
     
     // Add a new cache buster parameter
     const cacheBuster = `?t=${Date.now()}`;
-    console.log(`Normalized absolute URL: ${urlWithoutParams}${cacheBuster}`);
     return urlWithoutParams + cacheBuster;
+  }
+  
+  // If it's a player ID (without the 'playerid' prefix)
+  if (/^[a-zA-Z0-9-_]+$/.test(cleanUrl)) {
+    return getDirectPlayerImageUrl(cleanUrl);
   }
   
   // If it's a path to the public folder, add leading slash if needed
   if (cleanUrl.startsWith('lovable-uploads/')) {
     const urlWithoutParams = cleanUrl.split('?')[0];
     const cacheBuster = `?t=${Date.now()}`;
-    console.log(`Normalized public path: /${urlWithoutParams}${cacheBuster}`);
     return `/${urlWithoutParams}${cacheBuster}`;
   }
   
-  // If it's a player ID (with or without the 'playerid' prefix)
-  try {
-    // Clean the player ID to prevent URL encoding issues
-    const cleanId = cleanUrl.replace(/[^a-zA-Z0-9-_]/g, '');
-    const playerId = cleanId.startsWith('playerid') 
-      ? cleanId 
-      : `playerid${cleanId}`;
-    
-    // Check multiple extensions (.png, .jpg, .webp, etc.)
-    const possibleExtensions = ['.png', '.jpg', '.jpeg', '.webp'];
-    
-    // Try to get the public URL for the image with different extensions
-    for (const ext of possibleExtensions) {
-      const { data } = supabase
-        .storage
-        .from('player-images')
-        .getPublicUrl(`${playerId}${ext}`);
-      
-      // Add cache buster to prevent caching issues
-      const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
-      console.log(`Trying Supabase URL with ${ext} extension for player ${cleanId}: ${publicUrlWithCacheBuster}`);
-      
-      // We'll return the first one, actual verification will happen later
-      return publicUrlWithCacheBuster;
-    }
-    
-    // Default to .png if we don't know the extension
-    const { data } = supabase
-      .storage
-      .from('player-images')
-      .getPublicUrl(`${playerId}.png`);
-      
-    // Add cache buster to prevent caching issues
-    const publicUrlWithCacheBuster = `${data.publicUrl}?t=${Date.now()}`;
-    console.log(`Generated Supabase URL for player ${cleanId}: ${publicUrlWithCacheBuster}`);
-    return publicUrlWithCacheBuster;
-  } catch (error) {
-    console.error("Error creating URL from player ID:", error);
-    return null;
-  }
+  // Return the URL as-is if we can't determine the format
+  return cleanUrl;
 };
 
 /**
@@ -203,12 +172,19 @@ export const forceImageReload = (imageUrl: string | null): string | null => {
     return imageUrl;
   }
   
+  // For playerid strings, use the direct URL generator
+  if (imageUrl.includes('playerid')) {
+    const playerIdMatch = imageUrl.match(/playerid([^\.]+)/);
+    if (playerIdMatch && playerIdMatch[1]) {
+      return getDirectPlayerImageUrl(playerIdMatch[1]);
+    }
+  }
+  
   // Remove any existing parameters
   const baseUrl = imageUrl.split('?')[0];
   
   // Add a new cache buster timestamp
   const timestamp = Date.now();
-  console.log(`Force reloading image: ${baseUrl}?t=${timestamp}`);
   return `${baseUrl}?t=${timestamp}`;
 };
 

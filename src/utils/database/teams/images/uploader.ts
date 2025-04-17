@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -35,7 +34,7 @@ export const compressImage = async (file: File): Promise<File> => {
       
       ctx.drawImage(img, 0, 0, width, height);
       
-      // Get the file extension
+      // Get the file type
       const fileType = file.type || 'image/jpeg';
       const quality = 0.8; // 80% quality
       
@@ -100,15 +99,9 @@ export const uploadPlayerImage = async (
       }
     }
     
-    // Use a consistent filename format with playerid prefix and preserve original extension
-    // This ensures we can easily find images by player ID later
-    let fileExtension = file.name.split('.').pop()?.toLowerCase() || 'png';
-    // Make sure the extension is valid
-    if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileExtension)) {
-      fileExtension = 'png'; // Default to png for unknown extensions
-    }
-    
-    const fileName = `playerid${cleanPlayerId}.${fileExtension}`;
+    // IMPORTANT: Use a simpler file naming convention - always use .png extension
+    // This makes it easier to verify and locate files
+    const fileName = `playerid${cleanPlayerId}.png`;
     
     console.log(`Uploading image for player ${cleanPlayerId} with filename ${fileName}`);
     
@@ -117,7 +110,7 @@ export const uploadPlayerImage = async (
       .storage
       .from('player-images')
       .upload(fileName, fileToUpload, {
-        cacheControl: 'no-cache', // Updated to prevent caching
+        cacheControl: 'max-age=0', // Prevent caching completely
         upsert: true // Overwrite if exists
       });
     
@@ -139,7 +132,6 @@ export const uploadPlayerImage = async (
     const publicUrlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
     
     console.log(`Successfully uploaded image for player ${cleanPlayerId}, URL: ${publicUrlWithCacheBuster}`);
-    console.log(`File extension used: ${fileExtension}, full filename: ${fileName}`);
     
     return { 
       success: true,
