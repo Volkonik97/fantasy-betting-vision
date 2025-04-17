@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import ImportHeader from "./ImportHeader";
@@ -9,6 +10,7 @@ import PlayerImagesList from "./PlayerImagesList";
 import { usePlayerImages } from "./usePlayerImages";
 import UploadSummary from "./UploadSummary";
 import PlayerStats from "./PlayerStats";
+import { Button } from "@/components/ui/button";
 
 interface PlayerImagesImportProps {
   bucketStatus: "loading" | "exists" | "error";
@@ -96,14 +98,25 @@ const PlayerImagesImport = ({
           />
         )}
 
-        <UploadControls 
-          onUpload={handleUpload}
-          disabled={bucketStatus !== "exists" || rlsEnabled || pendingUploadCount === 0}
-          isUploading={uploadStatus.inProgress}
-          uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
-          status={bucketStatus}
-          uploadCount={pendingUploadCount}
-        />
+        <div className="space-y-4">
+          <UploadControls 
+            onUpload={handleUpload}
+            disabled={bucketStatus !== "exists" || rlsEnabled || pendingUploadCount === 0}
+            isUploading={uploadStatus.inProgress}
+            uploadProgress={uploadStatus.total > 0 ? Math.round((uploadStatus.processed / uploadStatus.total) * 100) : 0}
+            status={bucketStatus}
+            uploadCount={pendingUploadCount}
+          />
+
+          <Button
+            onClick={() => uploadImages(bucketStatus === "exists")}
+            disabled={uploadStatus.inProgress || bucketStatus !== "exists" || rlsEnabled}
+            className="w-full"
+            variant="secondary"
+          >
+            {uploadStatus.inProgress ? "Téléchargement en cours..." : "Uploader toutes les images"}
+          </Button>
+        </div>
 
         {unmatched.length > 0 && (
           <UnmatchedImagesList 
