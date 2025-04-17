@@ -1531,8 +1531,8 @@ export type Database = {
       }
       compute_soft_penalty: {
         Args:
-          | { p_playerid: string; p_league: string }
           | { p_league: string; p_match_count: number }
+          | { p_playerid: string; p_league: string }
         Returns: number
       }
       compute_soft_weight: {
