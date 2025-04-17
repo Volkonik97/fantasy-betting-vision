@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
@@ -6,6 +5,7 @@ import { motion } from "framer-motion";
 import { getTeamLogoUrl } from "@/utils/database/teams/logoUtils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getRoleColor, getRoleDisplayName } from "./RoleBadge";
+import PlayerImage from "./PlayerImage";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -46,7 +46,6 @@ const PlayerHeader = ({
     fetchTeamLogo();
   }, [player.team]);
   
-  // Log the damageShare value for debugging
   console.log("PlayerHeader damageShare:", 
     player.damageShare, 
     typeof player.damageShare, 
@@ -60,28 +59,22 @@ const PlayerHeader = ({
   const playerCsPerMin = cspmOverride !== null ? cspmOverride : 
     (typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0'));
   
-  // Get the damageShare value and handle potential NaN cases
   let playerDamageShare = damageShareOverride !== null ? damageShareOverride : 
     (typeof player.damageShare === 'number' ? player.damageShare : parseFloat(String(player.damageShare) || '0'));
   
-  // Handle NaN value after parsing
   if (isNaN(playerDamageShare)) {
     console.warn(`Invalid damageShare value detected: ${player.damageShare}, defaulting to 0`);
     playerDamageShare = 0;
   }
   
-  // Format damage share for display
   const formattedDamageShare = (() => {
     if (playerDamageShare === 0 || isNaN(playerDamageShare)) return "0%";
     if (playerDamageShare >= 0 && playerDamageShare <= 1) {
-      // Value is a decimal (0.25 = 25%)
       return `${Math.round(playerDamageShare * 100)}%`;
     }
-    // Value is already a percentage (25 = 25%)
     return `${Math.round(playerDamageShare)}%`;
   })();
 
-  // Log the formatted value for debugging
   console.log(`PlayerHeader ${player.name} formatted damageShare: ${formattedDamageShare} from ${playerDamageShare}`);
 
   return (
@@ -93,25 +86,12 @@ const PlayerHeader = ({
     >
       <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
         <div className="w-24 h-24 rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 relative flex-shrink-0">
-          {player.image ? (
-            <img 
-              src={player.image} 
-              alt={player.name} 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite error loop
-                target.src = "/placeholder.svg";
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <span className="text-4xl font-bold text-gray-300">{player.name.charAt(0)}</span>
-            </div>
-          )}
-          <div className={`absolute bottom-0 left-0 right-0 h-7 ${getRoleColor(player.role)} flex items-center justify-center`}>
-            <span className="text-white text-xs font-medium">{getRoleDisplayName(player.role)}</span>
-          </div>
+          <PlayerImage 
+            name={player.name}
+            playerId={player.id}
+            image={player.image}
+            role={player.role}
+          />
         </div>
         
         <div>
