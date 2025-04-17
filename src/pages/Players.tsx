@@ -136,16 +136,12 @@ const Players = () => {
       
       const enrichedPlayers = playersData.map(player => {
         const team = teamsMap.get(player.team);
-      
-        console.log("enriched player:", player.name, "damageShare:", player.damageShare); // 👈 LOG ICI
-      
         return {
           ...player,
           teamName: team?.name || "Équipe inconnue",
           teamRegion: team?.region || "Région inconnue"
         };
       }) as PlayerWithTeam[];
-      
       
       setAllPlayers(enrichedPlayers);
       
