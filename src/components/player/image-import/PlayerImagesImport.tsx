@@ -64,11 +64,8 @@ const PlayerImagesImport = ({
     );
   }
 
-  // Get the list of players with errors for the UploadSummary
-  const failedPlayers = playerImages.filter(p => p.error !== null);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ImportHeader
         bucketStatus={bucketStatus}
         rlsEnabled={rlsEnabled}
@@ -78,36 +75,58 @@ const PlayerImagesImport = ({
         pendingUpload={pendingUploadCount}
       />
 
-      <DropZone onDrop={handleFileSelect} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardContent className="pt-6">
+              <DropZone onDrop={handleFileSelect} />
+              
+              <div className="mt-6">
+                <UploadControls
+                  uploadImages={uploadImages}
+                  uploadStatus={uploadStatus}
+                  bucketStatus={bucketStatus}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-      <UploadControls
-        uploadImages={() => uploadImages(bucketStatus === "exists")}
-        uploadStatus={uploadStatus}
-        bucketStatus={bucketStatus}
-      />
+          <UnmatchedImagesList
+            files={unmatched}
+            onMatch={assignFileToPlayer}
+            players={playerImages}
+            status={bucketStatus}
+          />
+        </div>
 
-      <UnmatchedImagesList
-        files={unmatched}
-        onMatch={assignFileToPlayer}
-        players={playerImages}
-        status={bucketStatus}
-      />
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+            <CardContent className="pt-6">
+              <PlayerStats players={playerImages} />
+            </CardContent>
+          </Card>
 
-      <PlayerImagesFilter
-        activeTab={filterTab}
-        onChange={setFilterTab}
-        players={playerImages}
-      />
+          <UploadSummary status={uploadStatus} />
+        </div>
+      </div>
 
-      <PlayerImagesList
-        filter={filterTab}
-        players={playerImages}
-        onDelete={handleImageDeleted}
-      />
-
-      <UploadSummary status={uploadStatus} />
-
-      <PlayerStats players={playerImages} />
+      <Card>
+        <CardContent className="pt-6">
+          <PlayerImagesFilter
+            activeTab={filterTab}
+            onChange={setFilterTab}
+            players={playerImages}
+          />
+          
+          <div className="mt-6">
+            <PlayerImagesList
+              filter={filterTab}
+              players={playerImages}
+              onDelete={handleImageDeleted}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
