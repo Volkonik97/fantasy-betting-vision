@@ -83,16 +83,13 @@ const Players = () => {
     }
   };
 
+  // Basic implementation of loadPlayersData to ensure it works
   const loadPlayersData = async (page: number) => {
     try {
       setIsLoading(true);
       
-      const [playersData, teamsData] = await Promise.all([
-        getAllPlayers(page, pageSize),
-        getAllTeams()
-      ]);
-      
-      console.log(`Loaded ${playersData.length} players (page ${page}) and ${teamsData.length} teams`);
+      const playersData = await getAllPlayers(page, pageSize);
+      const teamsData = await getAllTeams();
       
       if (playersData.length === 0) {
         toast.error("Aucun joueur trouvé dans la base de données");
@@ -110,15 +107,6 @@ const Players = () => {
           teamRegion: team?.region || "Région inconnue"
         };
       }) as PlayerWithTeam[];
-      
-      console.log(`Processed ${enrichedPlayers.length} enriched players`);
-      
-      // Log pour vérifier les rôles des joueurs
-      const roleCount: Record<string, number> = {};
-      enrichedPlayers.forEach(player => {
-        roleCount[player.role] = (roleCount[player.role] || 0) + 1;
-      });
-      console.log("Players by role:", roleCount);
       
       setAllPlayers(enrichedPlayers);
       setDisplayedPlayers(enrichedPlayers);
@@ -134,26 +122,15 @@ const Players = () => {
     }
   };
 
+  // Simple implementation of loading all players
   const loadAllPlayersForFiltering = async () => {
     try {
       setLoadingAllPlayers(true);
       setIsLoading(true);
       toast.info("Chargement de tous les joueurs pour le filtrage...");
-      console.log("Loading all players for filtering...");
       
-      const [playersData, teamsData] = await Promise.all([
-        loadAllPlayersInBatches(), // Use our batch loading function
-        getAllTeams()
-      ]);
-      
-      console.log(`Loaded ${playersData.length} players (all) and ${teamsData.length} teams for filtering`);
-      
-      if (playersData.length === 0) {
-        toast.error("Aucun joueur trouvé dans la base de données");
-        setIsLoading(false);
-        setLoadingAllPlayers(false);
-        return;
-      }
+      const playersData = await loadAllPlayersInBatches();
+      const teamsData = await getAllTeams();
       
       const teamsMap = new Map(teamsData.map(team => [team.id, team]));
       
@@ -166,14 +143,6 @@ const Players = () => {
         };
       }) as PlayerWithTeam[];
       
-      // Log pour vérifier les rôles des joueurs
-      const roleCount: Record<string, number> = {};
-      enrichedPlayers.forEach(player => {
-        roleCount[player.role] = (roleCount[player.role] || 0) + 1;
-      });
-      console.log("All players by role:", roleCount);
-      
-      console.log(`Processed ${enrichedPlayers.length} enriched players for filtering`);
       setAllPlayers(enrichedPlayers);
       
       const uniqueRegions = [...new Set(teamsData.map(team => team.region).filter(Boolean))] as string[];
@@ -191,17 +160,9 @@ const Players = () => {
     }
   };
 
+  // Basic filter implementation to ensure functionality
   const applyFiltersAndSearch = async () => {
     try {
-      console.log(`Applying filters - Role: ${selectedRole}, Region: ${selectedRegion}, SubRegion: ${selectedSubRegion}, Category: ${selectedCategory}`);
-      
-      // Log for debugging the database values
-      if (allPlayers.length > 0) {
-        const roleValues = [...new Set(allPlayers.map(p => p.role))];
-        console.log("Actual role values in data:", roleValues);
-      }
-      
-      // Appliquer le filtrage
       let filtered = filterPlayers(
         allPlayers, 
         selectedRole, 
@@ -210,17 +171,6 @@ const Players = () => {
         selectedCategory,
         regionCategories
       ) as PlayerWithTeam[];
-      
-      console.log(`Filtered players count: ${filtered.length}`);
-      
-      // Log pour vérifier les rôles après filtrage
-      if (selectedRole !== "All") {
-        const roleCount: Record<string, number> = {};
-        filtered.forEach(player => {
-          roleCount[player.role] = (roleCount[player.role] || 0) + 1;
-        });
-        console.log("Filtered players by role:", roleCount);
-      }
       
       setFilteredPlayers(filtered);
       
@@ -238,9 +188,6 @@ const Players = () => {
         
         setDisplayedPlayers(paginatedResults);
         setTotalPages(totalFilteredPages);
-        if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
-          setCurrentPage(1);
-        }
       } else {
         const totalFilteredPages = Math.ceil(filtered.length / pageSize);
         const currentFilteredPage = Math.min(currentPage, totalFilteredPages || 1);
@@ -250,12 +197,8 @@ const Players = () => {
         
         setDisplayedPlayers(paginatedResults);
         setTotalPages(totalFilteredPages);
-        if (currentPage > totalFilteredPages && totalFilteredPages > 0) {
-          setCurrentPage(1);
-        }
       }
       
-      console.log(`Filtres appliqués: ${filtered.length} joueurs correspondent aux critères, affichant page ${currentPage}`);
     } catch (error) {
       console.error("Error applying filters:", error);
     }
@@ -278,9 +221,6 @@ const Players = () => {
   };
 
   const handleFilterChange = (type: string, value: string) => {
-    // Log le changement de filtre pour vérification
-    console.log(`Filter change: ${type} = ${value}`);
-    
     setCurrentPage(1);
     
     switch(type) {
