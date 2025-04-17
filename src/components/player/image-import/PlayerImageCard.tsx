@@ -25,10 +25,8 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const [triedExtensions, setTriedExtensions] = useState<string[]>([]);
   const imageRef = useRef<HTMLImageElement>(null);
   
-  // Clean up player ID to make sure it doesn't contain invalid characters
   const cleanPlayerId = player.id ? player.id.replace(/[^a-zA-Z0-9-_]/g, '') : null;
   
-  // Generate direct Supabase URL for the player image
   const generateDirectImageUrl = useCallback(() => {
     if (!cleanPlayerId) return null;
     
@@ -42,15 +40,12 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     return url;
   }, [cleanPlayerId, player.name]);
   
-  // Ensure we always have the latest image URL
   useEffect(() => {
     const updateImageUrl = async () => {
-      // Priority: 1. newImageUrl (temporary preview) 2. player.image (from database)
       const imageSource = newImageUrl || player.image;
       
       if (imageSource) {
         try {
-          // Special handling for blob URLs (file previews)
           if (imageSource.startsWith('blob:')) {
             console.log(`Using blob image directly for ${player.name}: ${imageSource}`);
             setDisplayUrl(imageSource);
@@ -59,7 +54,6 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
             const normalizedUrl = normalizeImageUrl(imageSource);
             console.log(`Setting display URL for ${player.name}:`, normalizedUrl);
             
-            // If the image is from Supabase storage, verify it exists
             if (normalizedUrl && normalizedUrl.includes('supabase.co/storage')) {
               console.log(`Verifying Supabase storage image for ${player.name}`);
               const isAccessible = await verifyImageAccessibleWithRetry(normalizedUrl);
@@ -88,20 +82,17 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     updateImageUrl();
   }, [newImageUrl, player.image, processed, player.name, reloadTrigger, cleanPlayerId]);
   
-  // Effect to retry with different file extensions if image fails to load
   useEffect(() => {
     if (loadError && displayUrl && !displayUrl.startsWith('blob:') && displayUrl.includes('supabase.co/storage')) {
       const tryNextExtension = async () => {
         const extensions = ['.png', '.jpg', '.jpeg', '.webp'];
         
-        // Extract the base URL without extension and cache buster
         const baseUrlMatch = displayUrl.match(/(.+playerid[^.]+)(\.[^?]+)?(\?.+)?$/);
         
         if (baseUrlMatch) {
-          const baseUrl = baseUrlMatch[1]; // playerid part
-          const currentExt = baseUrlMatch[2] || '.png'; // current extension or default
+          const baseUrl = baseUrlMatch[1];
+          const currentExt = baseUrlMatch[2] || '.png';
           
-          // Find extensions we haven't tried yet
           const remainingExts = extensions.filter(ext => 
             !triedExtensions.includes(ext) && ext !== currentExt
           );
@@ -116,14 +107,12 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
             
             setDisplayUrl(newUrl);
           } else {
-            // All extensions tried, reset and set regular retry timer
             console.log(`All extensions tried for ${player.name}, starting over`);
             setTriedExtensions([]);
           }
         }
       };
       
-      // Try next extension after a short delay
       const timeout = setTimeout(() => {
         tryNextExtension();
       }, 1000);
@@ -132,7 +121,6 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
     }
   }, [loadError, displayUrl, player.name, triedExtensions]);
   
-  // Effect to retry failed images regularly
   useEffect(() => {
     let retryTimeout: NodeJS.Timeout;
     
@@ -140,7 +128,7 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
       retryTimeout = setTimeout(() => {
         console.log(`Auto-retrying image load for ${player.name}`);
         reloadImage();
-      }, 3000); // Retry every 3 seconds
+      }, 3000);
     }
     
     return () => {
@@ -151,12 +139,10 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const hasExistingImage = hasPlayerImage(player);
   const hasNewImage = Boolean(imageFile);
 
-  // When an image is processed (upload completed), schedule additional reloads
   useEffect(() => {
     if (processed && hasNewImage) {
       console.log(`Player ${player.name} image processed, scheduling additional reloads`);
       
-      // Reset tried extensions when a new image is processed
       setTriedExtensions([]);
       
       const timeouts = [500, 1500, 3000, 5000, 8000].map(delay => 
@@ -200,15 +186,10 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   const reloadImage = () => {
     if (displayUrl) {
       if (displayUrl.startsWith('blob:')) {
-        // For blob URLs, just refresh the state to trigger a re-render
-        console.log(`Forcing refresh of blob image for ${player.name}`);
-        setLoadError(false);
-        // Force a re-render by toggling a state
         setDisplayUrl(null);
         setTimeout(() => setDisplayUrl(displayUrl), 10);
       } else {
-        // For regular URLs, use the utility function to force reload
-        setDisplayUrl(null); // Clear first
+        setDisplayUrl(null);
         setTimeout(() => {
           const reloadUrl = forceImageReload(displayUrl);
           console.log(`Reloading image for ${player.name} with URL:`, reloadUrl);
@@ -247,39 +228,23 @@ const PlayerImageCard: React.FC<PlayerImageCardProps> = ({ playerData, onImageDe
   return (
     <Card className="overflow-hidden h-full flex flex-col group">
       <div className="aspect-square w-full relative bg-gray-100 flex items-center justify-center">
-        {displayUrl && !loadError ? (
-          <img 
-            ref={imageRef}
-            src={displayUrl} 
-            alt={player.name} 
+        {player.player.image ? (
+          <img
+            src={player.player.image}
+            alt={`Portrait de ${player.player.name}`}
             className="w-full h-full object-cover"
             onError={handleImageError}
             onLoad={handleImageLoad}
             crossOrigin="anonymous"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center text-gray-400 p-4 text-center">
-            <ImageIcon className="h-16 w-16" />
-            <p className="text-sm mt-2">Pas d'image</p>
-            {loadError && (
-              <Button 
-                variant="ghost"
-                size="sm"
-                onClick={reloadImage}
-                className="mt-2 flex items-center text-xs text-blue-500 hover:text-blue-700"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" /> Recharger
-              </Button>
-            )}
-          </div>
+          <div className="text-gray-400 text-sm text-center">Pas d'image</div>
         )}
         
-        {/* Badge d'état */}
         <div className="absolute top-2 left-2">
           {getStatusText()}
         </div>
 
-        {/* Toujours afficher le bouton de suppression si l'image existe ou si une image est en attente de téléchargement */}
         {(hasExistingImage || hasNewImage) && (
           <div className="absolute top-2 right-2">
             <AlertDialog>
