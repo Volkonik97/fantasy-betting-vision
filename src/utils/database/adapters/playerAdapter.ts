@@ -247,7 +247,7 @@ export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
     
     // Damage
     dpm: parseFloat(String(dbPlayer.dpm || 0)),
-    damageShare: damageShare,
+    damageShare: Math.round(damageShare * 100),
     dmg_per_gold: dmgPerGold,
     
     // Vision
