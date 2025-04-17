@@ -1,20 +1,30 @@
+import { supabase } from "@/utils/supabaseClient";
 
-// Re-export logo-related functions from a central file
+const BUCKET = "team-logos"; // Nom de ton bucket Supabase Storage
+const FOLDER = ""; // Ajoute ici un sous-dossier si les logos sont dans un répertoire (ex: "logos")
 
-// Import from source files directly
-import { findTeamByName } from './teamMatcher';
-import { uploadTeamLogo as uploadLogo } from './logoUploader';
-import { getTeamLogoUrl as getLogo } from './logoRetriever';
-import { TEAM_VALIANT_ID, VALIANT_LOGO_PATH, BUCKET_NAME } from './constants';
+/**
+ * Essaie de générer une URL publique pour un logo d'équipe basé sur l'ID.
+ * Priorité au format .webp, puis fallback sur .png
+ * @param teamId ID unique de l'équipe (correspond au nom du fichier dans Supabase Storage)
+ * @returns URL publique du logo ou null si introuvable
+ */
+export async function getTeamLogoUrl(teamId: string): Promise<string | null> {
+  if (!teamId) return null;
 
-// Re-export to avoid circular dependencies
-export const uploadTeamLogo = uploadLogo;
-export const getTeamLogoUrl = getLogo;
+  // Essaye d'abord avec .webp
+  const formats = ["webp", "png"];
 
-// Re-export all other logo-related functions and constants
-export {
-  findTeamByName,
-  TEAM_VALIANT_ID,
-  VALIANT_LOGO_PATH,
-  BUCKET_NAME
-};
+  for (const ext of formats) {
+    const path = `${FOLDER ? `${FOLDER}/` : ""}${teamId}.${ext}`;
+
+    const { data, error } = supabase.storage.from(BUCKET).getPublicUrl(path);
+
+    if (data?.publicUrl && !error) {
+      return data.publicUrl;
+    }
+  }
+
+  console.warn(`Aucun logo trouvé pour l'équipe ${teamId}`);
+  return null;
+}
