@@ -200,13 +200,14 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     // Process each player safely
     if (data && Array.isArray(data)) {
       data.forEach(item => {
-        if (item && typeof item === 'object') {
-          // Verified it's an object, now safe to convert
+        if (item && typeof item === 'object' && item !== null) {
+          // Verified it's a non-null object, now safe to convert
           const playerObj = item as Record<string, unknown>;
           
-          // Check if it has a valid playerid
+          // Check if it has a valid playerid - with explicit null check
           if ('playerid' in playerObj && 
-              playerObj.playerid && 
+              playerObj.playerid !== null && 
+              playerObj.playerid !== undefined && 
               typeof playerObj.playerid === 'string') {
             
             // Get image if available
