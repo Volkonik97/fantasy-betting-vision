@@ -67,9 +67,9 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       killParticipation: parseFloat(player.killParticipation || '0') || 0, // Handle missing killParticipation field
       championPool: player.championPool 
         ? (typeof player.championPool === 'string' 
-          ? player.championPool.split(',').map(champ => champ.trim()) 
-          : player.championPool)
-        : []
+          ? player.championPool 
+          : String(player.championPool))
+        : ''
     };
   });
   
