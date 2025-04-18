@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -36,10 +37,10 @@ export const adaptPlayerFromDatabase = (data: any): Player => {
     avg_deaths: data.avg_deaths || 0,
     avg_assists: data.avg_assists || 0,
     
-    // Early game stats
-    golddiffat15: data.golddiffat15 || 0,
-    xpdiffat15: data.xpdiffat15 || 0,
-    csdiffat15: data.csdiffat15 || 0,
+    // Early game stats - use fields from the Player interface
+    golddiffat15: data.golddiffat15 || data.avg_golddiffat15 || 0,
+    xpdiffat15: data.xpdiffat15 || data.avg_xpdiffat15 || 0,
+    csdiffat15: data.csdiffat15 || data.avg_csdiffat15 || 0,
     
     // Performance scores
     efficiency_score: data.efficiency_score || 0,

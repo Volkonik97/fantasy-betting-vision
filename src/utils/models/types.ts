@@ -1,3 +1,4 @@
+
 export type PlayerRole = "Top" | "Jungle" | "Mid" | "ADC" | "Support" | "Unknown";
 
 export interface Player {
@@ -29,6 +30,10 @@ export interface Player {
   aggression_score?: number;
   earlygame_score?: number;
   kill_participation_pct?: number;
+  // Early game stats that were missing in the interface
+  golddiffat15?: number;
+  xpdiffat15?: number;
+  csdiffat15?: number;
   // Fields for UI purposes
   teamName?: string;
   teamRegion?: string;
