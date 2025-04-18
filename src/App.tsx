@@ -4,9 +4,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-// Use lazy loading to improve initial load performance
+// Import Players component directly instead of using lazy loading to help debug the issue
+import Players from "@/pages/Players";
+
+// Continue to use lazy loading for other components
 const Home = lazy(() => import("@/pages/Home"));
-const Players = lazy(() => import("@/pages/Players"));
 const PlayerDetails = lazy(() => import("@/pages/PlayerDetails"));
 const Matches = lazy(() => import("@/pages/Matches"));
 const MatchDetails = lazy(() => import("@/pages/MatchDetails"));

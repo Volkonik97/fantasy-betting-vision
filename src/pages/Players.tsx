@@ -8,7 +8,7 @@ import PlayersList from "@/components/players/PlayersList";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { getAllPlayers, loadAllPlayersInBatches, searchPlayers, filterPlayers } from "@/services/playerService";
 import { getAllTeams } from "@/services/teamService";
-import { getPlayersCount } from "@/utils/database/players/playersService";
+import { getPlayersCount } from "@/utils/database/playersService";
 import { toast } from "sonner";
 
 // Define an interface for player with team information
@@ -50,20 +50,24 @@ const Players = () => {
   };
 
   useEffect(() => {
-    const hasActiveFilters = 
-      searchTerm.trim() !== '' || 
-      selectedRole !== "All" || 
-      selectedRegion !== "All" || 
-      selectedSubRegion !== "All" || 
-      selectedCategory !== "All";
+    const fetchInitialData = async () => {
+      const hasActiveFilters = 
+        searchTerm.trim() !== '' || 
+        selectedRole !== "All" || 
+        selectedRegion !== "All" || 
+        selectedSubRegion !== "All" || 
+        selectedCategory !== "All";
+        
+      if (!hasActiveFilters) {
+        await loadPlayersData(currentPage);
+      } else if (allPlayers.length === 0) {
+        await loadAllPlayersForFiltering();
+      }
       
-    if (!hasActiveFilters) {
-      loadPlayersData(currentPage);
-    } else if (allPlayers.length === 0) {
-      loadAllPlayersForFiltering();
-    }
+      fetchPlayersCount();
+    };
     
-    fetchPlayersCount();
+    fetchInitialData();
   }, [currentPage]);
 
   useEffect(() => {
@@ -344,6 +348,63 @@ const Players = () => {
       </main>
     </div>
   );
+  
+  // Functions needed to complete the component
+  function handleFilterChange(type: string, value: string) {
+    setCurrentPage(1);
+    
+    switch(type) {
+      case 'role':
+        setSelectedRole(value);
+        break;
+      case 'region':
+        setSelectedRegion(value);
+        break;
+      case 'subRegion':
+        setSelectedSubRegion(value);
+        break;
+      case 'category':
+        setSelectedCategory(value);
+        break;
+    }
+    
+    const hasActiveFilters = 
+      searchTerm.trim() !== '' || 
+      (type === 'role' ? value !== "All" : selectedRole !== "All") || 
+      (type === 'region' ? value !== "All" : selectedRegion !== "All") || 
+      (type === 'subRegion' ? value !== "All" : selectedSubRegion !== "All") || 
+      (type === 'category' ? value !== "All" : selectedCategory !== "All");
+      
+    if (hasActiveFilters && allPlayers.length <= pageSize) {
+      loadAllPlayersForFiltering();
+    }
+  }
+
+  function handlePageChange(page: number) {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    const hasActiveFilters = 
+      searchTerm.trim() !== '' || 
+      selectedRole !== "All" || 
+      selectedRegion !== "All" || 
+      selectedSubRegion !== "All" || 
+      selectedCategory !== "All";
+      
+    if (!hasActiveFilters) {
+      loadPlayersData(page);
+    } else {
+      applyFiltersAndSearch();
+    }
+  }
+
+  function displayFilterCount() {
+    if (filteredPlayers.length === 0) {
+      return `0 joueur`;
+    }
+    return `${filteredPlayers.length} joueurs`;
+  }
 };
 
 export default Players;
