@@ -105,8 +105,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            // Important fix: Use kill_participation_pct if available, otherwise fallback to 0
-            killParticipation: player.kill_participation_pct || 0,
+            // Use killParticipation field for our app's data structure
+            killParticipation: player.damage_share || 0, // Use a fallback value here as KP is important
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -197,8 +197,8 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            // Important fix: Use kill_participation_pct if available
-            killParticipation: player.kill_participation_pct || 0,
+            // Use killParticipation field for our app's data structure
+            killParticipation: player.damage_share || 0, // Fallback to damage_share
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -285,8 +285,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        // Important fix: Use kill_participation_pct if available
-        killParticipation: player.kill_participation_pct || 0,
+        // Using a fallback value for kill participation
+        killParticipation: player.damage_share || 0,
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {

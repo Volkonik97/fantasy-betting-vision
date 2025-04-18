@@ -17,8 +17,11 @@ const PlayerStats = ({ kda, csPerMin, killParticipation }: PlayerStatsProps) => 
   // Format Kill Participation as percentage
   // First ensure it's a valid number, then format it
   const kpValue = typeof killParticipation === 'number' ? killParticipation : 0;
-  // Display the value directly as a percentage (assuming it's already in percentage form)
-  const formattedKP = `${kpValue.toFixed(1)}%`;
+  
+  // Format KP as percentage
+  // If the value is already in percentage form (e.g., 65 for 65%), display as is
+  // If the value is in decimal form (e.g., 0.65 for 65%), multiply by 100
+  const formattedKP = `${kpValue > 1 ? kpValue.toFixed(1) : (kpValue * 100).toFixed(1)}%`;
   
   return (
     <div className="grid grid-cols-3 gap-2 mt-3 text-center text-xs border-t pt-3 border-gray-100">
