@@ -69,6 +69,45 @@ export type RawDatabasePlayer = Partial<DatabasePlayer>;
  * Adapter to convert database player format to application Player model
  */
 export const adaptPlayerFromDatabase = (dbPlayer: any): Player => {
+  if (!dbPlayer || !dbPlayer.playerid || !dbPlayer.playername) {
+    console.warn("⛔️ Invalid dbPlayer input (skipped):", dbPlayer);
+    return {
+      id: '',
+      name: '',
+      role: '',
+      image: null,
+      team: '',
+      kda: 0,
+      avg_kills: 0,
+      avg_deaths: 0,
+      avg_assists: 0,
+      championPool: '0',
+      csPerMin: 0,
+      cspm: 0,
+      earned_gpm: 0,
+      earned_gold_share: 0,
+      gold_share_percent: 0,
+      gpm: 0,
+      dpm: 0,
+      damageShare: 0,
+      dmg_per_gold: 0,
+      vspm: 0,
+      wcpm: 0,
+      match_count: 0,
+      avg_golddiffat15: 0,
+      avg_xpdiffat15: 0,
+      avg_csdiffat15: 0,
+      avg_firstblood_kill: 0,
+      avg_firstblood_assist: 0,
+      avg_firstblood_victim: 0,
+      kill_participation_pct: 0,
+      efficiency_score: 0,
+      aggression_score: 0,
+      earlygame_score: 0,
+    };
+  }
+  
+  
   // Extract match_count - ensuring it's correctly handled as a number
   let matchCount: number = 0;
   if (dbPlayer.match_count !== undefined && dbPlayer.match_count !== null) {
