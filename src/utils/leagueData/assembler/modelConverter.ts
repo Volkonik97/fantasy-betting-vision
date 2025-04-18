@@ -1,3 +1,4 @@
+
 import { Team, Player, PlayerRole } from '../../models/types';
 
 /**
@@ -139,6 +140,9 @@ export function playerToPlayerObject(playerCsv: any): Player {
   // Normalize the role
   const normalizedRole = normalizeRoleName(playerCsv.role);
   
+  // Handle killParticipation to ensure we have both killParticipation and kill_participation_pct
+  const killParticipationValue = parseFloat(playerCsv.killParticipation || '0') || 0;
+  
   return {
     id: playerCsv.id,
     name: playerCsv.name,
@@ -147,8 +151,10 @@ export function playerToPlayerObject(playerCsv: any): Player {
     team: playerCsv.team,
     kda: parseFloat(playerCsv.kda) || 0,
     csPerMin: parseFloat(playerCsv.csPerMin) || 0,
+    cspm: parseFloat(playerCsv.csPerMin) || 0, // Add cspm property
     damageShare: parseFloat(playerCsv.damageShare) || 0,
-    killParticipation: parseFloat(playerCsv.killParticipation || '0') || 0, // Added missing field with default
+    killParticipation: killParticipationValue,
+    kill_participation_pct: killParticipationValue, // Add kill_participation_pct property
     championPool: playerCsv.championPool ? 
       (Array.isArray(playerCsv.championPool) ? 
         playerCsv.championPool : 
@@ -191,6 +197,7 @@ export function createPlayerFromTrackerData(data: any): Player {
     team: data.team,
     kda: kda,
     csPerMin: csPerMin,
+    cspm: csPerMin, // Add cspm property
     damageShare: damageShare,
     killParticipation: killParticipation,
     kill_participation_pct: killParticipation * 100, // Convert to percentage for consistency with API

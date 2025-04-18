@@ -148,6 +148,13 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Need to get player images from players table as they're not in the view
     const playerIds = data.map(player => player.playerid);
+    
+    // Type guard to ensure playerIds is an array of strings and not undefined
+    if (!playerIds || playerIds.length === 0) {
+      console.warn("No player IDs available to fetch images");
+      return data.map(player => adaptPlayerFromDatabase({ ...player, image: '' }));
+    }
+    
     const { data: playerImageData, error: playerImageError } = await supabase
       .from('players')
       .select('playerid, image')
@@ -157,7 +164,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     const imageMap = new Map<string, string>();
     if (playerImageData && !playerImageError) {
       playerImageData.forEach(player => {
-        if (player.playerid && player.image) {
+        if (player && player.playerid && player.image) {
           imageMap.set(player.playerid, player.image);
         }
       });
@@ -166,10 +173,12 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Add images to the player data - safely handling types
     const playersWithImages = data.map(player => {
-      if (player.playerid) {
+      // Make sure player is a valid object before trying to spread it
+      if (player && typeof player === 'object' && player.playerid) {
         const image = imageMap.get(player.playerid) || '';
         return { ...player, image };
       }
+      // Return a safe fallback if player is not a valid object
       return { ...player, image: '' };
     });
     
