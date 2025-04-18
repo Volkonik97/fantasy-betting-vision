@@ -1,3 +1,4 @@
+
 import { Player } from '@/utils/models/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,6 +33,22 @@ export const getPlayers = async (page = 0, pageSize = 0): Promise<Player[]> => {
 
     if (!data || data.length === 0) {
       console.log("No players found in database");
+      
+      // Debug: Check if the table exists and has data
+      const { count, error: countError } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true }) as { count: number; error: any };
+      
+      if (countError) {
+        console.error("Error checking players table:", countError);
+      } else {
+        console.log(`Players table exists with ${count} records`);
+        if (count > 0) {
+          // If there are records but our query returned none, there might be an issue with the query or filters
+          console.log("Players exist but none matched the query criteria");
+        }
+      }
+      
       return [];
     }
 
@@ -40,11 +57,26 @@ export const getPlayers = async (page = 0, pageSize = 0): Promise<Player[]> => {
       : `Found ${data.length} players in database (all players)`;
     console.log(logMessage);
     
+    // Log first 3 players for debugging
+    if (data.length > 0) {
+      console.log("Sample player data:", data.slice(0, 3).map(p => ({
+        id: p.playerid,
+        name: p.playername,
+        position: p.position
+      })));
+    }
+    
     // Log image information
     const playersWithImages = data.filter(p => p.image).length;
     console.log(`Players with images: ${playersWithImages}/${data.length}`);
     
-    return data.map(adaptPlayerFromDatabase);
+    // Use adaptPlayerFromDatabase to convert database format to application model
+    const adaptedPlayers = data.map(adaptPlayerFromDatabase)
+      // Filter out any invalid players (missing required fields)
+      .filter(player => player.id && player.name);
+    
+    console.log(`Returning ${adaptedPlayers.length} valid players after adaptation`);
+    return adaptedPlayers;
   } catch (error) {
     console.error("Exception in getPlayers:", error);
     toast.error("An error occurred while fetching players");

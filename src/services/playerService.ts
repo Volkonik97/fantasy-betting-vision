@@ -82,6 +82,7 @@ export const loadAllPlayersInBatches = async (
     
     if (totalCount === 0) {
       console.log("No players found in database");
+      toast.error("Aucun joueur trouvé dans la base de données. Veuillez importer des données d'abord.");
       return [];
     }
     
@@ -99,6 +100,12 @@ export const loadAllPlayersInBatches = async (
       try {
         // Here we call getPlayers which now explicitly selects the image field
         const batchPlayers = await getPlayers(batch, batchSize);
+        
+        if (batchPlayers.length === 0 && batch === 1) {
+          console.warn("First batch returned no players, possible database issue");
+          toast.error("Aucun joueur n'a pu être chargé depuis la base de données");
+          break;
+        }
         
         // Process each player's image
         const normalizedPlayers = batchPlayers.map(player => {
@@ -152,6 +159,10 @@ export const loadAllPlayersInBatches = async (
     const playersWithImages = allPlayers.filter(p => p.image).length;
     console.log(`Loaded ${allPlayers.length} players with ${playersWithImages} having images`);
     
+    if (allPlayers.length === 0) {
+      toast.error("Aucun joueur n'a pu être chargé. Veuillez vérifier la connexion à la base de données.");
+    }
+    
     return allPlayers;
   } catch (error) {
     console.error("Error in loadAllPlayersInBatches:", error);
@@ -171,18 +182,25 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     await preloadPlayerImagesCache();
     
     const players = await getPlayers(page, pageSize);
-
-    const adaptedPlayers = players.map(player => {
-      const adapted = adaptPlayerFromDatabase(player);
-      if (!adapted.id || !adapted.name) {
-        console.warn("⚠️ Player vide ou invalide après adaptation :", adapted, player);
+    
+    if (players.length === 0) {
+      console.warn("No players returned from database");
+      // Check if there are any players at all
+      const count = await getPlayersCount();
+      if (count === 0) {
+        toast.error("Aucun joueur trouvé dans la base de données. Veuillez importer des données d'abord.");
+      } else {
+        toast.error(`Aucun joueur trouvé pour la page ${page}. Essayez une autre page.`);
       }
-      return adapted;
-});
+      return [];
+    }
 
-// ✅ Étape 1 – filtrer uniquement les joueurs valides
-const validPlayers = adaptedPlayers.filter(player => player.id && player.name);
-
+    // Filter out any invalid players to prevent errors
+    const validPlayers = players.filter(player => player.id && player.name);
+    
+    if (validPlayers.length < players.length) {
+      console.warn(`Filtered out ${players.length - validPlayers.length} invalid players`);
+    }
     
     const normalizedPlayers = validPlayers.map(player => {
       const hasImageInCache = hasImageForPlayer(player.id);
@@ -194,7 +212,6 @@ const validPlayers = adaptedPlayers.filter(player => player.id && player.name);
         image: normalizedImageUrl
       };
     });
-    
     
     // Log debugging info
     const playersWithImages = normalizedPlayers.filter(p => p.image).length;

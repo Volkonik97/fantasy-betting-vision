@@ -10,6 +10,7 @@ import { getAllPlayers, loadAllPlayersInBatches, searchPlayers, filterPlayers } 
 import { getAllTeams } from "@/services/teamService";
 import { getPlayersCount } from "@/utils/database/playersService";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 // Define an interface for player with team information
 interface PlayerWithTeam extends Player {
@@ -32,6 +33,7 @@ const Players = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [displayedPlayers, setDisplayedPlayers] = useState<PlayerWithTeam[]>([]);
   const [filteredPlayers, setFilteredPlayers] = useState<PlayerWithTeam[]>([]);
+  const [dbConnectionError, setDbConnectionError] = useState(false);
   const pageSize = 100;
 
   // Définition des rôles pour le filtrage - using consistent role names
@@ -51,20 +53,27 @@ const Players = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const hasActiveFilters = 
-        searchTerm.trim() !== '' || 
-        selectedRole !== "All" || 
-        selectedRegion !== "All" || 
-        selectedSubRegion !== "All" || 
-        selectedCategory !== "All";
+      try {
+        const hasActiveFilters = 
+          searchTerm.trim() !== '' || 
+          selectedRole !== "All" || 
+          selectedRegion !== "All" || 
+          selectedSubRegion !== "All" || 
+          selectedCategory !== "All";
+          
+        if (!hasActiveFilters) {
+          await loadPlayersData(currentPage);
+        } else if (allPlayers.length === 0) {
+          await loadAllPlayersForFiltering();
+        }
         
-      if (!hasActiveFilters) {
-        await loadPlayersData(currentPage);
-      } else if (allPlayers.length === 0) {
-        await loadAllPlayersForFiltering();
+        await fetchPlayersCount();
+        setDbConnectionError(false);
+      } catch (error) {
+        console.error("Error in fetchInitialData:", error);
+        setDbConnectionError(true);
+        setIsLoading(false);
       }
-      
-      fetchPlayersCount();
     };
     
     fetchInitialData();
@@ -80,10 +89,12 @@ const Players = () => {
     try {
       const count = await getPlayersCount();
       setTotalPlayers(count);
-      setTotalPages(Math.ceil(count / pageSize));
+      setTotalPages(Math.ceil(count / pageSize) || 1); // Ensure at least 1 page
       console.log(`Total players: ${count}, Total pages: ${Math.ceil(count / pageSize)}`);
     } catch (error) {
       console.error("Error fetching players count:", error);
+      setTotalPlayers(0);
+      setTotalPages(1);
     }
   };
 
@@ -96,8 +107,8 @@ const Players = () => {
       const teamsData = await getAllTeams();
       
       if (playersData.length === 0) {
-        toast.error("Aucun joueur trouvé dans la base de données");
         setIsLoading(false);
+        setDbConnectionError(totalPlayers === 0);
         return;
       }
       
@@ -121,6 +132,7 @@ const Players = () => {
     } catch (error) {
       console.error("Error loading players data:", error);
       toast.error("Erreur lors du chargement des données des joueurs");
+      setDbConnectionError(true);
     } finally {
       setIsLoading(false);
     }
@@ -280,6 +292,47 @@ const Players = () => {
     return `${filteredPlayers.length} joueurs`;
   };
 
+  // Render empty state when no players and not loading
+  const renderEmptyState = () => {
+    if (dbConnectionError) {
+      return (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h3 className="text-xl font-medium text-red-600 mb-4">Erreur de connexion à la base de données</h3>
+          <p className="text-gray-600 mb-6">
+            Impossible de charger les joueurs. Veuillez vérifier que la base de données est correctement configurée et contient des données.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Link to="/data-import" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+              Importer des données
+            </Link>
+            <button 
+              onClick={() => loadPlayersData(1)} 
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="bg-white rounded-lg shadow p-8 text-center">
+        <h3 className="text-xl font-medium text-gray-800 mb-4">Aucun joueur trouvé</h3>
+        <p className="text-gray-600 mb-6">
+          {allPlayers.length === 0 
+            ? "Aucun joueur n'est présent dans la base de données."
+            : "Aucun joueur ne correspond aux filtres sélectionnés."}
+        </p>
+        {allPlayers.length === 0 && (
+          <Link to="/data-import" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+            Importer des données
+          </Link>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -315,9 +368,18 @@ const Players = () => {
           )}
         </div>
 
-        <PlayersList players={displayedPlayers} loading={loading} />
+        {loading ? (
+          <div className="text-center py-10">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-2"></div>
+            <p className="text-gray-500">Chargement des joueurs...</p>
+          </div>
+        ) : displayedPlayers.length > 0 ? (
+          <PlayersList players={displayedPlayers} loading={false} />
+        ) : (
+          renderEmptyState()
+        )}
 
-        {!loading && totalPages > 1 && (
+        {!loading && displayedPlayers.length > 0 && totalPages > 1 && (
           <div className="mt-8">
             <Pagination>
               <PaginationContent>
