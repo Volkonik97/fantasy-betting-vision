@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Player } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
@@ -19,16 +19,13 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   
   const playerId = player.id ? player.id.trim() : null;
   
-  useEffect(() => {
-    // Log detailed player data for debugging
-    console.log(`PlayerCard: Player ${player.name} data:`, {
-      kda: player.kda,
-      csPerMin: player.csPerMin,
-      killParticipation: player.killParticipation,
-      killParticipationType: typeof player.killParticipation,
-      kill_participation_pct: player.kill_participation_pct
-    });
-  }, [player]);
+  // More detailed debugging for kill participation
+  console.log(`PlayerCard: Player ${player.name} KP data:`, {
+    killParticipation: player.killParticipation,
+    killParticipationType: typeof player.killParticipation,
+    kill_participation_pct: player.kill_participation_pct,
+    kill_participation_pct_type: typeof player.kill_participation_pct
+  });
 
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">

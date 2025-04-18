@@ -21,14 +21,10 @@ const PlayerStats = ({ kda, csPerMin, killParticipation }: PlayerStatsProps) => 
   let formattedKP = '0.0%';
   
   if (killParticipation !== undefined && killParticipation !== null) {
-    const numericKP = Number(killParticipation);
-    if (!isNaN(numericKP)) {
-      // If the value is already a percentage (e.g., 65.5 for 65.5%), display as is
-      // If the value is in decimal form (e.g., 0.655 for 65.5%), multiply by 100
-      const displayValue = numericKP <= 1 ? numericKP * 100 : numericKP;
-      formattedKP = `${displayValue.toFixed(1)}%`;
-      console.log(`PlayerStats: Formatted KP from ${numericKP} to ${formattedKP}`);
-    }
+    // Always treat as percentage value directly (already in the correct range of 0-100)
+    // No need to check if it's decimal or percentage format
+    formattedKP = `${Number(killParticipation).toFixed(1)}%`;
+    console.log(`PlayerStats: Formatted KP directly to ${formattedKP} from ${killParticipation}`);
   }
   
   return (

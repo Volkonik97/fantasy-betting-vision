@@ -1,42 +1,34 @@
-
 export type PlayerRole = "Top" | "Jungle" | "Mid" | "ADC" | "Support" | "Unknown";
 
 export interface Player {
   id: string;
   name: string;
-  role: "Top" | "Jungle" | "Mid" | "ADC" | "Support" | "Unknown";
+  role: string; 
+  image: string;
   team: string;
   kda: number;
   csPerMin: number;
+  damageShare: number;
   killParticipation: number;
-  championPool: string[] | string;
-  image: string;
-  // Statistics fields
-  damageShare?: number;
-  vspm?: number;
-  wcpm?: number;
-  goldSharePercent?: number;
-  // Additional fields from player_summary_view
-  avg_kills?: number;
-  avg_deaths?: number;
-  avg_assists?: number;
-  cspm?: number;
-  gold_share_percent?: number;
-  earned_gold_share?: number;
-  dmg_per_gold?: number;
-  match_count?: number;
-  dpm?: number;
-  efficiency_score?: number;
-  aggression_score?: number;
-  earlygame_score?: number;
-  kill_participation_pct?: number;
-  // Early game stats that were missing in the interface
+  kill_participation_pct: number; // Ajouté pour assurer la cohérence
+  championPool: string;
+  // Timeline stats
   golddiffat15?: number;
   xpdiffat15?: number;
   csdiffat15?: number;
-  // Fields for UI purposes
-  teamName?: string;
-  teamRegion?: string;
+  // Additional stats that might be available from database
+  dpm?: number;
+  vspm?: number;
+  wcpm?: number;
+  gold_share_percent?: number;
+  dmg_per_gold?: number;
+  avg_kills?: number;
+  avg_deaths?: number;
+  avg_assists?: number;
+  match_count?: number;
+  efficiency_score?: number;
+  aggression_score?: number;
+  earlygame_score?: number;
 }
 
 export interface Team {

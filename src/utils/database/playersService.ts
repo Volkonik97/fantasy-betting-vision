@@ -9,7 +9,7 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
   try {
     console.log("Fetching player with ID:", playerId);
     
-    // First try fetching from player_summary_view which has the vspm, wcpm, and damage_share fields
+    // Always use player_summary_view for consistent data retrieval
     const { data: summaryData, error: summaryError } = await supabase
       .from('player_summary_view')
       .select('*')
@@ -18,23 +18,28 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     if (summaryData) {
       console.log("Found player in player_summary_view:", summaryData);
-      console.log("Vision stats from view:", { 
-        vspm: summaryData.vspm, 
-        wcpm: summaryData.wcpm 
-      });
-      console.log("Gold share stats from view:", {
-        gold_share_percent: summaryData.gold_share_percent
-      });
       console.log("Kill participation from view:", {
-        kill_participation_pct: summaryData.kill_participation_pct
+        kill_participation_pct: summaryData.kill_participation_pct,
+        type: typeof summaryData.kill_participation_pct
       });
       
-      // Check if image property exists before logging
-      if ('image' in summaryData && summaryData.image) {
-        console.log("Player image URL:", summaryData.image);
+      // Get player image from players table as it's not in the view
+      const { data: playerImageData, error: playerImageError } = await supabase
+        .from('players')
+        .select('image')
+        .eq('playerid', playerId)
+        .single();
+        
+      if (playerImageData && playerImageData.image) {
+        summaryData.image = playerImageData.image;
+        console.log("Added player image from players table:", playerImageData.image);
       }
       
       return adaptPlayerFromDatabase(summaryData);
+    }
+    
+    if (summaryError) {
+      console.error("Error fetching player from summary view:", summaryError);
     }
     
     console.log("Player not found in player_summary_view, trying players table");
@@ -58,11 +63,6 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
     
     console.log("Found player in players table:", data);
     
-    // Check if image property exists before logging
-    if ('image' in data && data.image) {
-      console.log("Player image URL from players table:", data.image);
-    }
-    
     return adaptPlayerFromDatabase(data);
   } catch (error) {
     console.error("Error in getPlayerById:", error);
@@ -83,9 +83,12 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       }
     }
     
-    // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
-    // Explicitly specify the fields we need, including the kill_participation_pct field
-    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15, kill_participation_pct, dmg_per_gold, efficiency_score, aggression_score, earlygame_score, avg_kills, avg_deaths, avg_assists');
+    // Always use the player_summary_view for consistent data retrieval with explicity field selection
+    let query = supabase.from('player_summary_view').select(
+      'playerid, playername, position, teamid, kda, cspm, dpm, damage_share, vspm, wcpm, ' + 
+      'kill_participation_pct, gold_share_percent, golddiffat15, xpdiffat15, csdiffat15, ' +
+      'dmg_per_gold, efficiency_score, aggression_score, earlygame_score, avg_kills, avg_deaths, avg_assists'
+    );
     
     // Apply pagination if provided
     if (page !== undefined && pageSize !== undefined) {
@@ -138,8 +141,32 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       return [];
     }
     
-    const adaptedPlayers = data.map(player => adaptPlayerFromDatabase(player));
-    console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view with vision stats`);
+    // Need to get player images from players table as they're not in the view
+    const playerIds = data.map(player => player.playerid);
+    const { data: playerImageData, error: playerImageError } = await supabase
+      .from('players')
+      .select('playerid, image')
+      .in('playerid', playerIds);
+      
+    // Create a map for quick image lookup
+    const imageMap = new Map<string, string>();
+    if (playerImageData && !playerImageError) {
+      playerImageData.forEach(player => {
+        if (player.image) {
+          imageMap.set(player.playerid, player.image);
+        }
+      });
+      console.log(`Retrieved ${imageMap.size} player images`);
+    }
+    
+    // Add images to the player data
+    const playersWithImages = data.map(player => {
+      const image = imageMap.get(player.playerid) || '';
+      return { ...player, image };
+    });
+    
+    const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));
+    console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view`);
     
     // Log some samples of vision stats, gold share, and kill participation
     if (adaptedPlayers.length > 0) {
@@ -169,16 +196,6 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
         );
       } else {
         console.warn("No players found with non-zero kill participation");
-      }
-      
-      // Log image URL information for debugging
-      const playersWithImages = adaptedPlayers.filter(p => p.image);
-      console.log(`Players with image URLs: ${playersWithImages.length}/${adaptedPlayers.length}`);
-      if (playersWithImages.length > 0) {
-        console.log("Sample image URLs:", playersWithImages.slice(0, 3).map(p => ({
-          name: p.name,
-          image: p.image
-        })));
       }
     }
     

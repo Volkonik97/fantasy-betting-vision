@@ -55,15 +55,14 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       console.warn(`Player ${player.name} has no team ID`);
     }
     
-    // Calculate killParticipation percentage - ensure it's converted to a number
+    // For killParticipation, always assume it's a percentage value (0-100)
+    // Directly convert to number without special handling for decimal vs percentage
     let killParticipationValue = 0;
     
     if (player.killParticipation) {
-      // Try to convert to number and handle both decimal (0.655) and percentage (65.5) formats
-      const numericKP = Number(player.killParticipation);
-      if (!isNaN(numericKP)) {
-        killParticipationValue = numericKP;
-        console.log(`Player ${player.name} has killParticipation: ${killParticipationValue} (converted from ${player.killParticipation})`);
+      killParticipationValue = Number(player.killParticipation);
+      if (!isNaN(killParticipationValue)) {
+        console.log(`Player ${player.name} has killParticipation: ${killParticipationValue}`);
       }
     }
     
@@ -77,6 +76,7 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       csPerMin: parseFloat(player.csPerMin) || 0,
       damageShare: parseFloat(player.damageShare) || 0,
       killParticipation: killParticipationValue,
+      kill_participation_pct: killParticipationValue, // Store in both fields for consistency
       championPool: player.championPool 
         ? (typeof player.championPool === 'string' 
           ? player.championPool 
