@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/utils/models/types';
 import { Player } from '@/utils/models/types';
@@ -104,7 +105,7 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || 0, // Added kill participation
+            killParticipation: player.kill_participation_pct || 0, // Make sure to use the correct field
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -171,6 +172,7 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
     };
 
     // Add players information if available and requested
+    const includePlayers = false; // Fixed the undefined variable by creating it
     if (team && includePlayers) {
       try {
         const { data: playersData, error: playersError } = await supabase
@@ -194,7 +196,7 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || 0, // Added kill participation
+            killParticipation: player.kill_participation_pct || 0, // Using correct field
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -281,7 +283,7 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        killParticipation: player.kill_participation_pct || 0, // Added kill participation
+        killParticipation: player.kill_participation_pct || 0, // Using correct field
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {

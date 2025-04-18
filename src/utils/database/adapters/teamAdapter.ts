@@ -1,3 +1,4 @@
+
 import { Team } from "@/utils/models/types";
 
 /**
@@ -30,6 +31,9 @@ export interface DatabaseTeam {
   avg_towers_against: number;
   avg_heralds: number;
   avg_void_grubs: number;
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
   // Additional fields as needed
 }
 
@@ -58,6 +62,9 @@ export interface TeamSummaryViewData {
   objectives_score?: number;
   dragon_diff?: number;
   tower_diff?: number;
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
 }
 
 // For RawDatabaseTeam
