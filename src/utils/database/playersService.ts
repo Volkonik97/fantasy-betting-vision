@@ -151,11 +151,13 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Safely collect valid player IDs
     if (data && Array.isArray(data)) {
-      data.forEach(item => {
-        if (item && typeof item === 'object' && 'playerid' in item && typeof item.playerid === 'string') {
-          playerIdsArray.push(item.playerid);
+      for (const item of data) {
+        if (item && typeof item === 'object' && item !== null) {
+          if ('playerid' in item && typeof item.playerid === 'string') {
+            playerIdsArray.push(item.playerid);
+          }
         }
-      });
+      }
     }
     
     // Type guard to ensure we have valid player IDs
@@ -186,11 +188,13 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     // Create a map for quick image lookup
     const imageMap = new Map<string, string>();
     if (playerImageData && !playerImageError) {
-      playerImageData.forEach(item => {
-        if (item && typeof item === 'object' && 'playerid' in item && 'image' in item && item.playerid) {
-          imageMap.set(item.playerid, item.image || '');
+      for (const item of playerImageData) {
+        if (item && typeof item === 'object' && item !== null) {
+          if ('playerid' in item && 'image' in item && item.playerid) {
+            imageMap.set(item.playerid, item.image || '');
+          }
         }
-      });
+      }
       console.log(`Retrieved ${imageMap.size} player images`);
     }
     
@@ -199,26 +203,34 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Process each player safely
     if (data && Array.isArray(data)) {
-      data.forEach(item => {
-        if (item && typeof item === 'object' && item !== null) {
-          // Verified it's a non-null object, now safe to convert
-          const playerObj = item as Record<string, unknown>;
-          
-          // Check if it has a valid playerid - with explicit null check
-          if ('playerid' in playerObj && 
-              playerObj.playerid !== null && 
-              playerObj.playerid !== undefined && 
-              typeof playerObj.playerid === 'string') {
-            
-            // Get image if available
-            const image = imageMap.get(playerObj.playerid) || '';
-            playersWithImages.push({...playerObj, image});
-          } else {
-            // No valid ID, still include but with empty image
-            playersWithImages.push({...playerObj, image: ''});
-          }
+      for (const item of data) {
+        // Explicit null-check guard for TypeScript's strict null checking
+        if (item === null || item === undefined) {
+          continue;
         }
-      });
+        
+        // Type guard to ensure item is an object
+        if (typeof item !== 'object') {
+          continue;
+        }
+        
+        // Verified it's a non-null object, now safe to convert
+        const playerObj = item as Record<string, unknown>;
+        
+        // Check if it has a valid playerid - with explicit null check
+        if ('playerid' in playerObj && 
+            playerObj.playerid !== null && 
+            playerObj.playerid !== undefined && 
+            typeof playerObj.playerid === 'string') {
+          
+          // Get image if available
+          const image = imageMap.get(playerObj.playerid) || '';
+          playersWithImages.push({...playerObj, image});
+        } else {
+          // No valid ID, still include but with empty image
+          playersWithImages.push({...playerObj, image: ''});
+        }
+      }
     }
     
     const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));
