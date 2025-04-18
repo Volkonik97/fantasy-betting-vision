@@ -1,57 +1,7 @@
-
 import { Player } from "@/utils/models/types";
 
 // Ensure role is always set to a valid PlayerRole value
 export function adaptPlayerFromDatabase(player: any): Player {
-  // Get damageShare value safely - check multiple possible field names
-  let damageShare = null;
-  
-  // Check various possible field names for damage share data
-  if (player.damage_share !== undefined) {
-    damageShare = player.damage_share;
-    console.log(`Found damage_share field for ${player.playername}:`, damageShare);
-  } else if (player.damageshare !== undefined) {
-    damageShare = player.damageshare;
-    console.log(`Found damageshare field for ${player.playername}:`, damageShare);
-  } else if (player.damageShare !== undefined) {
-    damageShare = player.damageShare;
-    console.log(`Found damageShare field for ${player.playername}:`, damageShare);
-  }
-  
-  // Process damageShare carefully
-  let processedDamageShare: number = 0;
-  
-  if (damageShare !== null && damageShare !== undefined) {
-    try {
-      // Convert to string first to handle any input format
-      const damageShareString = String(damageShare).trim();
-      
-      // Remove any percentage sign if present
-      const cleanedValue = damageShareString.replace(/%/g, '');
-      
-      // Parse the numeric value
-      const numericValue = parseFloat(cleanedValue);
-      
-      if (!isNaN(numericValue)) {
-        // If it's a decimal between 0-1, convert to percentage (0-100 scale)
-        if (numericValue > 0 && numericValue < 1) {
-          processedDamageShare = numericValue * 100;
-          console.log(`Converted decimal damage share ${numericValue} to percentage: ${processedDamageShare} for ${player.playername}`);
-        } else {
-          processedDamageShare = numericValue;
-        }
-      }
-      
-      console.log(`Final processed damageShare for ${player.playername}:`, processedDamageShare);
-    } catch (error) {
-      console.error(`Error processing damage share for ${player.playername}:`, error);
-      processedDamageShare = 0;
-    }
-  } else {
-    console.log(`No damage share found for ${player.playername}, using default 0`);
-  }
-  
-  // Create and return the player object with all processed values
   return {
     id: player.playerid || "",
     name: player.playername || "",
@@ -59,7 +9,7 @@ export function adaptPlayerFromDatabase(player: any): Player {
     team: player.teamid || "",
     kda: parseFloat(formatNumberField(player.kda)),
     csPerMin: parseFloat(formatNumberField(player.cspm)),
-    damageShare: processedDamageShare, // Use our carefully processed damage share value
+    killParticipation: parseFloat(formatNumberField(player.kill_participation_pct)),
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };

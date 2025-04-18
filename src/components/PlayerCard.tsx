@@ -23,7 +23,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     // Log detailed player data for debugging
     console.log(`PlayerCard: Player ${player.name} data:`, {
       kda: player.kda,
-      csPerMin: player.csPerMin
+      csPerMin: player.csPerMin,
+      killParticipation: player.killParticipation
     });
   }, [player]);
 
@@ -52,6 +53,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         <PlayerStats 
           kda={player.kda} 
           csPerMin={player.csPerMin}
+          killParticipation={player.killParticipation}
         />
       </div>
     </div>
