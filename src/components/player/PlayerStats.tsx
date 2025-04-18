@@ -8,46 +8,27 @@ interface PlayerStatsProps {
 }
 
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
-  // Format damage share percentage properly
+  // Amélioration de la gestion du pourcentage de dégâts
   const formatDamageShare = (value: number | string) => {
-    // Add debugging to trace the value
-    console.log(`Formatting damageShare value:`, value, `of type:`, typeof value);
-    
-    // If value is NaN, undefined, null, or empty string, show '0%'
-    if (value === undefined || value === null || value === '' || 
-        (typeof value === 'number' && isNaN(value))) {
-      return '0%';
+    // Conversion en nombre
+    const numValue = typeof value === 'string' 
+      ? parseFloat(value.replace('%', '')) 
+      : value;
+
+    // Validation du nombre
+    if (isNaN(numValue)) return '0%';
+
+    // Si la valeur est entre 0 et 1, la convertir en pourcentage
+    if (numValue >= 0 && numValue <= 1) {
+      return `${Math.round(numValue * 100)}%`;
     }
-    
-    // If it's a number, format it properly
-    if (typeof value === 'number') {
-      // Check if the value is already a percentage (0-100) or a decimal (0-1)
-      if (value >= 0 && value <= 1) {
-        // It's a decimal representing percentage (0.24 = 24%)
-        return `${Math.round(value * 100)}%`;
-      } else {
-        // It's already a percentage value (24 = 24%)
-        return `${Math.round(value)}%`;
-      }
+
+    // Si la valeur est déjà un pourcentage
+    if (numValue >= 0 && numValue <= 100) {
+      return `${Math.round(numValue)}%`;
     }
-    
-    // If it's a string, try to parse it as a number
-    if (typeof value === 'string') {
-      // Remove any existing % sign if present
-      const cleanValue = value.replace('%', '').trim();
-      if (cleanValue === '') return '0%';
-      
-      // Try parsing as a number
-      const numValue = parseFloat(cleanValue);
-      if (!isNaN(numValue)) {
-        if (numValue >= 0 && numValue <= 1) {
-          return `${Math.round(numValue * 100)}%`;
-        }
-        return `${Math.round(numValue)}%`;
-      }
-    }
-    
-    // Default fallback
+
+    // Fallback
     return '0%';
   };
 
