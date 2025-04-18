@@ -48,9 +48,9 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         </div>
         
         <PlayerStats 
-  kda={player.kda} 
-  csPerMin={player.csPerMin} 
-  damageShare={player.damageShare}
+          kda={player.kda} 
+          csPerMin={player.csPerMin} 
+          damageShare={player.damageShare}
         />
       </div>
     </div>

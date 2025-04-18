@@ -13,24 +13,25 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
     // Add debug logs to trace value before processing
     console.log(`PlayerStats: formatting damageShare value:`, value, `of type:`, typeof value);
     
-    // Conversion en nombre
-    const numValue = typeof value === 'string' 
-      ? parseFloat(value.replace('%', '')) 
-      : value;
-
-    console.log(`PlayerStats: converted damageShare value:`, numValue);
+    // Convert to string first to safely work with any type
+    const valueAsString = String(value || '0');
+    
+    // Remove any percentage sign and convert to number
+    const numericValue = parseFloat(valueAsString.replace('%', ''));
+    
+    console.log(`PlayerStats: converted damageShare value:`, numericValue);
 
     // Validation du nombre
-    if (isNaN(numValue)) return '0%';
+    if (isNaN(numericValue)) return '0%';
 
     // Si la valeur est entre 0 et 1, la convertir en pourcentage
-    if (numValue >= 0 && numValue <= 1) {
-      return `${Math.round(numValue * 100)}%`;
+    if (numericValue >= 0 && numericValue <= 1) {
+      return `${Math.round(numericValue * 100)}%`;
     }
 
     // Si la valeur est déjà un pourcentage
-    if (numValue >= 0 && numValue <= 100) {
-      return `${Math.round(numValue)}%`;
+    if (numericValue >= 0 && numericValue <= 100) {
+      return `${Math.round(numericValue)}%`;
     }
 
     // Fallback
