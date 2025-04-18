@@ -147,28 +147,41 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Need to get player images from players table as they're not in the view
-    // Step 1: Create a safe array of player IDs with proper type checking
-    const validPlayerIds = (data || [])
-      .filter((player): player is {playerid: string} => 
-        player !== null && 
-        typeof player === 'object' && 
-        'playerid' in player && 
-        typeof player.playerid === 'string')
-      .map(player => player.playerid);
+    // First, create a safe array of playerIds
+    const playerIdsArray: string[] = [];
+    
+    // Safely collect valid player IDs
+    if (data && Array.isArray(data)) {
+      data.forEach(item => {
+        if (item && typeof item === 'object' && 'playerid' in item && typeof item.playerid === 'string') {
+          playerIdsArray.push(item.playerid);
+        }
+      });
+    }
     
     // Type guard to ensure we have valid player IDs
-    if (validPlayerIds.length === 0) {
+    if (playerIdsArray.length === 0) {
       console.warn("No valid player IDs available to fetch images");
-      // Use a type assertion to safely map without spreading
-      return (data || [])
-        .filter(player => player !== null && typeof player === 'object')
-        .map(player => adaptPlayerFromDatabase({ ...player as Record<string, unknown>, image: '' }));
+      
+      // Process data safely without player images
+      const adaptedPlayers = [];
+      if (data && Array.isArray(data)) {
+        for (const item of data) {
+          if (item && typeof item === 'object') {
+            // Use type assertion after verification
+            const playerData = item as Record<string, unknown>;
+            adaptedPlayers.push(adaptPlayerFromDatabase({...playerData, image: ''}));
+          }
+        }
+      }
+      
+      return adaptedPlayers;
     }
     
     const { data: playerImageData, error: playerImageError } = await supabase
       .from('players')
       .select('playerid, image')
-      .in('playerid', validPlayerIds);
+      .in('playerid', playerIdsArray);
       
     // Create a map for quick image lookup
     const imageMap = new Map<string, string>();
@@ -182,18 +195,30 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Add images to the player data with proper type checking
-    const playersWithImages = (data || [])
-      .filter((player): player is Record<string, unknown> => 
-        player !== null && typeof player === 'object')
-      .map(player => {
-        if ('playerid' in player && player.playerid && typeof player.playerid === 'string') {
-          const image = imageMap.get(player.playerid) || '';
-          // Use type assertion with Record to make TypeScript happy
-          return { ...player as Record<string, unknown>, image };
+    const playersWithImages: Record<string, unknown>[] = [];
+    
+    // Process each player safely
+    if (data && Array.isArray(data)) {
+      data.forEach(item => {
+        if (item && typeof item === 'object') {
+          // Verified it's an object, now safe to convert
+          const playerObj = item as Record<string, unknown>;
+          
+          // Check if it has a valid playerid
+          if ('playerid' in playerObj && 
+              playerObj.playerid && 
+              typeof playerObj.playerid === 'string') {
+            
+            // Get image if available
+            const image = imageMap.get(playerObj.playerid) || '';
+            playersWithImages.push({...playerObj, image});
+          } else {
+            // No valid ID, still include but with empty image
+            playersWithImages.push({...playerObj, image: ''});
+          }
         }
-        // Return a safe fallback with type assertion
-        return { ...player as Record<string, unknown>, image: '' };
       });
+    }
     
     const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));
     console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view`);
