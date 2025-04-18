@@ -130,7 +130,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             id: player.playerid || '',
             name: player.playername || '',
             role: validatePlayerRole(player.position || 'Unknown'),
-            image: player.image || '',
+            // Fetch image from players table or use empty string as fallback
+            image: '', // Can't access image from summary view
             team: player.teamid || '',
             teamName: team.name,
             teamRegion: team.region,
@@ -139,8 +140,37 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             damageShare: player.damage_share || 0,
             // Use kill_participation_pct from player_summary_view
             killParticipation: player.kill_participation_pct || 0,
-            championPool: player.champion_pool ? String(player.champion_pool) : ''
+            championPool: '' // Can't access champion_pool from summary view
           }));
+          
+          // After getting basic data from summary view, fetch additional fields from players table
+          if (team.players.length > 0) {
+            const playerIds = team.players.map(p => p.id);
+            const { data: additionalData, error: additionalError } = await supabase
+              .from('players')
+              .select('playerid, image, champion_pool')
+              .in('playerid', playerIds);
+              
+            if (!additionalError && additionalData && additionalData.length > 0) {
+              // Create a map for quick lookup
+              const additionalDataMap = new Map(
+                additionalData.map(item => [item.playerid, { 
+                  image: item.image, 
+                  championPool: item.champion_pool 
+                }])
+              );
+              
+              // Enhance player data with the additional fields
+              team.players = team.players.map(player => {
+                const additional = additionalDataMap.get(player.id);
+                return {
+                  ...player,
+                  image: additional?.image || '',
+                  championPool: additional?.championPool ? String(additional.championPool) : ''
+                };
+              });
+            }
+          }
         } else {
           console.log(`No players found for team ${teamId} in summary view`);
         }
@@ -304,7 +334,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         id: player.playerid || '',
         name: player.playername || '',
         role: player.position ? validatePlayerRole(player.position) : 'Unknown',
-        image: player.image || '',
+        // Fetch image from players table or use empty string as fallback
+        image: '', // Initially set empty
         team: player.teamid || '',
         teamName: team.name,
         teamRegion: team.region,
@@ -313,8 +344,37 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         damageShare: player.damage_share || 0,
         // Use kill_participation_pct from player_summary_view
         killParticipation: player.kill_participation_pct || 0,
-        championPool: player.champion_pool ? String(player.champion_pool) : ''
+        championPool: '' // Initially set empty
       }));
+      
+      // After getting basic data from summary view, fetch additional fields from players table
+      if (team.players.length > 0) {
+        const playerIds = team.players.map(p => p.id);
+        const { data: additionalData, error: additionalError } = await supabase
+          .from('players')
+          .select('playerid, image, champion_pool')
+          .in('playerid', playerIds);
+          
+        if (!additionalError && additionalData && additionalData.length > 0) {
+          // Create a map for quick lookup
+          const additionalDataMap = new Map(
+            additionalData.map(item => [item.playerid, { 
+              image: item.image, 
+              championPool: item.champion_pool 
+            }])
+          );
+          
+          // Enhance player data with the additional fields
+          team.players = team.players.map(player => {
+            const additional = additionalDataMap.get(player.id);
+            return {
+              ...player,
+              image: additional?.image || '',
+              championPool: additional?.championPool ? String(additional.championPool) : ''
+            };
+          });
+        }
+      }
     } else {
       console.log(`No players found for team ${teamId} in summary view`);
     }
