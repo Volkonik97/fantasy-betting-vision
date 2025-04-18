@@ -105,7 +105,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || player.killParticipation || 0,
+            // Use a safe fallback approach for kill participation
+            killParticipation: player.kill_participation || 0,
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -196,7 +197,8 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || player.killParticipation || 0,
+            // Use a safe fallback approach for kill participation
+            killParticipation: player.kill_participation || 0,
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -283,7 +285,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        killParticipation: player.kill_participation_pct || player.killParticipation || 0,
+        // Use a safe fallback approach for kill participation
+        killParticipation: player.kill_participation || 0,
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {
