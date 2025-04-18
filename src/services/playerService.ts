@@ -171,7 +171,13 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     await preloadPlayerImagesCache();
     
     const players = await getPlayers(page, pageSize);
-    const adaptedPlayers = players.map(adaptPlayerFromDatabase);
+    const adaptedPlayers = players.map(player => {
+      const adapted = adaptPlayerFromDatabase(player);
+      if (!adapted.id || !adapted.name) {
+        console.warn("⚠️ Player vide ou invalide après adaptation :", adapted, player);
+      }
+      return adapted;
+    });
 
     
     // Normalize image URLs
