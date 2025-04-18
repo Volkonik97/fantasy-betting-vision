@@ -62,26 +62,28 @@ const PlayerHeader = ({
   
   // Improved damage share formatting
   const getDamageShareValue = () => {
-    // Define damageShareValue with the correct type
+    // Get the initial value (either from override or player)
     let damageShareValue: number | string = damageShareOverride !== null 
       ? damageShareOverride 
       : player.damageShare;
     
     console.log("Processing damageShareValue:", damageShareValue, typeof damageShareValue);
     
-    // Convert to number if it's a string
-    if (typeof damageShareValue === 'string') {
-      // Now TypeScript knows damageShareValue is a string, so replace is valid
-      damageShareValue = parseFloat(damageShareValue.replace('%', ''));
-    }
+    // First convert to string to ensure we can work with it safely
+    const valueAsString = String(damageShareValue || '0');
+    
+    // Remove any percentage sign and convert to number
+    const numericValue = parseFloat(valueAsString.replace('%', ''));
     
     // If it's a decimal between 0-1, convert to percentage
-    if (typeof damageShareValue === 'number' && damageShareValue >= 0 && damageShareValue <= 1) {
-      damageShareValue = damageShareValue * 100;
-    }
+    const finalValue = !isNaN(numericValue)
+      ? (numericValue >= 0 && numericValue <= 1) 
+        ? numericValue * 100 
+        : numericValue
+      : 0;
     
     // Format the final value
-    return `${Math.round(Number(damageShareValue) || 0)}%`;
+    return `${Math.round(finalValue)}%`;
   };
 
   return (
