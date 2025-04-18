@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -167,7 +166,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       const adaptedPlayers = [];
       if (data && Array.isArray(data)) {
         for (const item of data) {
-          if (item && typeof item === 'object') {
+          // More strict null check and type guard
+          if (item && typeof item === 'object' && item !== null) {
             // Use type assertion after verification
             const playerData = item as Record<string, unknown>;
             adaptedPlayers.push(adaptPlayerFromDatabase({...playerData, image: ''}));
