@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { Player, PlayerRole } from "@/utils/models/types";
+import { Player } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
 import PlayerStats from "@/components/player/PlayerStats";
@@ -20,13 +20,15 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   const playerId = player.id ? player.id.trim() : null;
   
   useEffect(() => {
-    // Log player data when component mounts to help with debugging
-    console.log(`PlayerCard: Player ${player.name} mounted with data:`, {
+    // Log detailed player data for debugging
+    console.log(`PlayerCard: Player ${player.name} data:`, {
       damageShare: player.damageShare,
-      type: typeof player.damageShare,
-      rawValue: JSON.stringify(player.damageShare),
+      damageShareType: typeof player.damageShare,
+      damageShareValue: JSON.stringify(player.damageShare),
       kda: player.kda,
-      csPerMin: player.csPerMin
+      kdaType: typeof player.kda,
+      csPerMin: player.csPerMin,
+      csPerMinType: typeof player.csPerMin
     });
   }, [player]);
 
