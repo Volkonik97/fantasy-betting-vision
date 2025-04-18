@@ -20,6 +20,7 @@ export interface PlayerCSV {
   csPerMin: string;
   damageShare: string;
   championPool: string;
+  killParticipation: string;
 }
 
 export interface TournamentCSV {
