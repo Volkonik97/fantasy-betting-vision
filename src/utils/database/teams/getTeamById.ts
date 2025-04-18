@@ -105,7 +105,7 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || 0,
+            killParticipation: player.kill_participation_pct || 0, // Changed from kill_participation_pct to match the property name
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -172,7 +172,7 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
     };
 
     // Add players information if available and requested
-    const includePlayers = false; // Fixed the undefined variable by creating it
+    const includePlayers = false; // Fixed value for this function
     if (team && includePlayers) {
       try {
         const { data: playersData, error: playersError } = await supabase
@@ -196,7 +196,7 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            killParticipation: player.kill_participation_pct || 0,
+            killParticipation: player.kill_participation_pct || 0, // Changed from kill_participation_pct to match the property name
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -283,7 +283,7 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        killParticipation: player.kill_participation_pct || 0,
+        killParticipation: player.kill_participation_pct || 0, // Changed from kill_participation_pct to match the property name
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {

@@ -29,7 +29,8 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
         kda: '0',
         csPerMin: '0',
         damageShare: '0',
-        championPool: ''
+        championPool: '',
+        killParticipation: '0' // Added the missing property
       });
     }
   });
@@ -160,6 +161,9 @@ export function processPlayerData(data: LeagueGameDataRow[]): {
       
       // Champion pool
       player.championPool = Array.from(stats.championsPlayed).join(',');
+      
+      // Set kill participation to 0 for now, will be calculated elsewhere if data is available
+      player.killParticipation = '0';
     }
   });
 
