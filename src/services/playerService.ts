@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { normalizeImageUrl } from "@/utils/database/teams/images/imageUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { getAllTeams } from "@/services/teamService";
+import { adaptPlayerFromDatabase } from "@/utils/database/adapters/playerAdapter";
 
 // Cache for player images in storage
 let playerImagesCache: string[] = [];
@@ -170,9 +171,11 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     await preloadPlayerImagesCache();
     
     const players = await getPlayers(page, pageSize);
+    const adaptedPlayers = players.map(adaptPlayerFromDatabase);
+
     
     // Normalize image URLs
-    const normalizedPlayers = players.map(player => {
+    const normalizedPlayers = adaptedPlayers.map(player => {
       // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
       const hasImageInCache = hasImageForPlayer(player.id);
       
