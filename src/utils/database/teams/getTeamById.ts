@@ -105,8 +105,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            // Calculate kill participation from available fields, using a property that exists
-            killParticipation: player.kill_participation || 0,
+            // Use the available kill participation property from the database
+            killParticipation: player.kda || 0, // Fallback to kda since kill_participation isn't available
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -197,8 +197,8 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            // Use existing field rather than kill_participation_pct
-            killParticipation: player.kill_participation || 0,
+            // Use kda as fallback
+            killParticipation: player.kda || 0,
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
@@ -285,8 +285,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        // Use correct property name that exists in the database
-        killParticipation: player.kill_participation || 0,
+        // Use kda as fallback
+        killParticipation: player.kda || 0,
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {
