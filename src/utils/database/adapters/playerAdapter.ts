@@ -8,14 +8,29 @@ export function adaptPlayerFromDatabase(player: any): Player {
     name: player.playername || "",
     role: validatePlayerRole(player.position),
     team: player.teamid || "",
-    kda: formatNumberField(player.kda),
-    csPerMin: formatNumberField(player.cspm),
-    damageShare: formatNumberField(player.damage_share || player.damageshare),
+    kda: parseFloat(formatNumberField(player.kda)),
+    csPerMin: parseFloat(formatNumberField(player.cspm)),
+    damageShare: parseFloat(formatNumberField(player.damage_share || player.damageshare)),
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };
   
   return adaptedPlayer;
+}
+
+// Convert Player model to database format for saving
+export function adaptPlayerForDatabase(player: Player): any {
+  return {
+    playerid: player.id,
+    playername: player.name,
+    position: player.role,
+    teamid: player.team,
+    kda: player.kda,
+    cspm: player.csPerMin,
+    damage_share: player.damageShare,
+    champion_pool: player.championPool,
+    image: player.image
+  };
 }
 
 // Helper function to format number fields

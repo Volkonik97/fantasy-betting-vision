@@ -1,4 +1,3 @@
-
 import { Player } from '@/utils/models/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
