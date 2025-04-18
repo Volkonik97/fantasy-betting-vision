@@ -83,18 +83,50 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
     // If the team has players, load their data
     if (team && includeStats) {
       try {
-        const { data: playerData, error: playerError } = await supabase
-          .from('players')
+        // Try to get player data from player_summary_view first to access kill_participation_pct
+        const { data: summaryData, error: summaryError } = await supabase
+          .from('player_summary_view')
           .select('*')
           .eq('teamid', teamId);
-        
-        if (playerError) {
-          console.error("Error fetching team players:", playerError);
-        } else if (playerData && playerData.length > 0) {
-          console.log(`Found ${playerData.length} players for team ${teamId}`);
           
-          // Add players data to the team
-          team.players = playerData.map(player => ({
+        if (summaryError) {
+          console.error("Error fetching team players from summary view:", summaryError);
+          
+          // Fall back to regular players table if there's an error
+          const { data: playerData, error: playerError } = await supabase
+            .from('players')
+            .select('*')
+            .eq('teamid', teamId);
+          
+          if (playerError) {
+            console.error("Error fetching team players:", playerError);
+          } else if (playerData && playerData.length > 0) {
+            console.log(`Found ${playerData.length} players for team ${teamId}`);
+            
+            // Add players data to the team
+            team.players = playerData.map(player => ({
+              id: player.playerid || '',
+              name: player.playername || '',
+              role: validatePlayerRole(player.position || 'Unknown'),
+              image: player.image || '',
+              team: player.teamid || '',
+              teamName: team.name,
+              teamRegion: team.region,
+              kda: player.kda || 0,
+              csPerMin: player.cspm || 0,
+              damageShare: player.damage_share || 0,
+              // We don't have kill_participation_pct in this table, so we have to leave it at 0
+              killParticipation: 0,
+              championPool: player.champion_pool ? String(player.champion_pool) : ''
+            }));
+          } else {
+            console.log(`No players found for team ${teamId}`);
+          }
+        } else if (summaryData && summaryData.length > 0) {
+          console.log(`Found ${summaryData.length} players in summary view for team ${teamId}`);
+          
+          // Successfully got data from player_summary_view
+          team.players = summaryData.map(player => ({
             id: player.playerid || '',
             name: player.playername || '',
             role: validatePlayerRole(player.position || 'Unknown'),
@@ -105,12 +137,12 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
             kda: player.kda || 0,
             csPerMin: player.cspm || 0,
             damageShare: player.damage_share || 0,
-            // Use killParticipation field for our app's data structure
-            killParticipation: player.damage_share || 0, // Use a fallback value here as KP is important
+            // Use kill_participation_pct from player_summary_view
+            killParticipation: player.kill_participation_pct || 0,
             championPool: player.champion_pool ? String(player.champion_pool) : ''
           }));
         } else {
-          console.log(`No players found for team ${teamId}`);
+          console.log(`No players found for team ${teamId} in summary view`);
         }
       } catch (error) {
         console.error("Exception fetching team players:", error);
@@ -172,43 +204,6 @@ export async function getTeamWithBasicInfo(teamId: string): Promise<Team | null>
       players: []
     };
 
-    // Add players information if available and requested
-    const includePlayers = false; // Fixed value for this function
-    if (team && includePlayers) {
-      try {
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
-          .select('*')
-          .eq('teamid', teamId);
-          
-        if (playersError) {
-          console.error(`Error fetching players for team ${teamId}:`, playersError);
-        } else if (playersData && playersData.length > 0) {
-          console.log(`Found ${playersData.length} players for team ${teamId}`);
-          
-          team.players = playersData.map(player => ({
-            id: player.playerid || '',
-            name: player.playername || '',
-            role: player.position ? validatePlayerRole(player.position) : 'Unknown',
-            image: player.image || '',
-            team: player.teamid || '',
-            teamName: team.name,
-            teamRegion: team.region,
-            kda: player.kda || 0,
-            csPerMin: player.cspm || 0,
-            damageShare: player.damage_share || 0,
-            // Use killParticipation field for our app's data structure
-            killParticipation: player.damage_share || 0, // Fallback to damage_share
-            championPool: player.champion_pool ? String(player.champion_pool) : ''
-          }));
-        } else {
-          console.log(`No players found for team ${teamId}`);
-        }
-      } catch (error) {
-        console.error(`Exception fetching players for team ${teamId}:`, error);
-      }
-    }
-
     return team;
   } catch (error) {
     console.error("Exception in getTeamWithBasicInfo:", error);
@@ -264,17 +259,48 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
       players: []
     };
 
-    // Load players data
-    const { data: playersData, error: playersError } = await supabase
-      .from('players')
+    // Try to get player data from player_summary_view first to access kill_participation_pct
+    const { data: summaryData, error: summaryError } = await supabase
+      .from('player_summary_view')
       .select('*')
       .eq('teamid', teamId);
       
-    if (playersError) {
-      console.error(`Error fetching players for team ${teamId}:`, playersError);
-    } else if (playersData && playersData.length > 0) {
-      console.log(`Found ${playersData.length} players for team ${teamId}`);
-      team.players = playersData.map(player => ({
+    if (summaryError) {
+      console.error(`Error fetching players from summary view for team ${teamId}:`, summaryError);
+      
+      // Fall back to regular players table
+      const { data: playersData, error: playersError } = await supabase
+        .from('players')
+        .select('*')
+        .eq('teamid', teamId);
+        
+      if (playersError) {
+        console.error(`Error fetching players for team ${teamId}:`, playersError);
+      } else if (playersData && playersData.length > 0) {
+        console.log(`Found ${playersData.length} players for team ${teamId}`);
+        team.players = playersData.map(player => ({
+          id: player.playerid || '',
+          name: player.playername || '',
+          role: player.position ? validatePlayerRole(player.position) : 'Unknown',
+          image: player.image || '',
+          team: player.teamid || '',
+          teamName: team.name,
+          teamRegion: team.region,
+          kda: player.kda || 0,
+          csPerMin: player.cspm || 0,
+          damageShare: player.damage_share || 0,
+          // We don't have kill_participation_pct in this table
+          killParticipation: 0,
+          championPool: player.champion_pool ? String(player.champion_pool) : ''
+        }));
+      } else {
+        console.log(`No players found for team ${teamId}`);
+      }
+    } else if (summaryData && summaryData.length > 0) {
+      console.log(`Found ${summaryData.length} players in summary view for team ${teamId}`);
+      
+      // Successfully got data from player_summary_view
+      team.players = summaryData.map(player => ({
         id: player.playerid || '',
         name: player.playername || '',
         role: player.position ? validatePlayerRole(player.position) : 'Unknown',
@@ -285,12 +311,12 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
         kda: player.kda || 0,
         csPerMin: player.cspm || 0,
         damageShare: player.damage_share || 0,
-        // Using a fallback value for kill participation
-        killParticipation: player.damage_share || 0,
+        // Use kill_participation_pct from player_summary_view
+        killParticipation: player.kill_participation_pct || 0,
         championPool: player.champion_pool ? String(player.champion_pool) : ''
       }));
     } else {
-      console.log(`No players found for team ${teamId}`);
+      console.log(`No players found for team ${teamId} in summary view`);
     }
 
     return team;
