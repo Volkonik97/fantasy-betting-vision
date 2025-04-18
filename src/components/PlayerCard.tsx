@@ -22,13 +22,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   useEffect(() => {
     // Log detailed player data for debugging
     console.log(`PlayerCard: Player ${player.name} data:`, {
-      damageShare: player.damageShare,
-      damageShareType: typeof player.damageShare,
-      damageShareValue: JSON.stringify(player.damageShare),
       kda: player.kda,
-      kdaType: typeof player.kda,
-      csPerMin: player.csPerMin,
-      csPerMinType: typeof player.csPerMin
+      csPerMin: player.csPerMin
     });
   }, [player]);
 
@@ -56,8 +51,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         
         <PlayerStats 
           kda={player.kda} 
-          csPerMin={player.csPerMin} 
-          damageShare={player.damageShare}
+          csPerMin={player.csPerMin}
         />
       </div>
     </div>
