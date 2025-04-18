@@ -11,9 +11,28 @@ export interface Player {
   killParticipation: number;
   championPool: string;
   image: string;
+  // Statistics fields
+  damageShare?: number;
   vspm?: number;
   wcpm?: number;
   goldSharePercent?: number;
+  // Additional fields from player_summary_view
+  avg_kills?: number;
+  avg_deaths?: number;
+  avg_assists?: number;
+  cspm?: number;
+  gold_share_percent?: number;
+  earned_gold_share?: number;
+  dmg_per_gold?: number;
+  match_count?: number;
+  dpm?: number;
+  efficiency_score?: number;
+  aggression_score?: number;
+  earlygame_score?: number;
+  kill_participation_pct?: number;
+  // Fields for UI purposes
+  teamName?: string;
+  teamRegion?: string;
 }
 
 export interface Team {
@@ -36,8 +55,26 @@ export interface Team {
   redFirstHerald?: number;
   blueFirstTower?: number;
   redFirstTower?: number;
+  blueFirstBaron?: number;
+  redFirstBaron?: number;
   // References
   players?: Player[];
+  // Additional team stats fields
+  firstblood_pct?: number;
+  firstdragon_pct?: number;
+  avg_dragons?: number;
+  avg_dragons_against?: number;
+  avg_towers?: number;
+  avg_towers_against?: number;
+  avg_kills?: number;
+  avg_kill_diff?: number;
+  avg_heralds?: number;
+  avg_void_grubs?: number;
+  aggression_score?: number;
+  earlygame_score?: number;
+  objectives_score?: number;
+  dragon_diff?: number;
+  tower_diff?: number;
 }
 
 export interface MatchResult {
@@ -85,6 +122,7 @@ export interface TimelineStatPoint {
   avgKills: number;
   avgDeaths: number;
   avgAssists?: number;
+  avgXp?: number;  // Added for TimelineChart
 }
 
 export interface TimelineStats {
@@ -105,6 +143,7 @@ export interface SideStatistics {
   blueFirstBaron?: number;
   redFirstBaron?: number;
   timelineStats?: TimelineStats;
+  teamId?: string; // Added for sideStatisticsService
 }
 
 export interface Tournament {
@@ -114,4 +153,5 @@ export interface Tournament {
   startDate: string;
   endDate: string;
   matches?: Match[];
+  logo?: string; // Added for use in Tournaments.tsx
 }

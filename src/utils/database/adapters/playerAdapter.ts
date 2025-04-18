@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 // Ensure role is always set to a valid PlayerRole value
@@ -11,7 +12,26 @@ export function adaptPlayerFromDatabase(player: any): Player {
     csPerMin: parseFloat(formatNumberField(player.cspm)),
     killParticipation: parseFloat(formatNumberField(player.kill_participation_pct)),
     championPool: player.champion_pool ? String(player.champion_pool) : "",
-    image: player.image || ""
+    image: player.image || "",
+    // Optional additional fields from database
+    damageShare: player.damage_share ? parseFloat(formatNumberField(player.damage_share)) : undefined,
+    vspm: player.vspm ? parseFloat(formatNumberField(player.vspm)) : undefined,
+    wcpm: player.wcpm ? parseFloat(formatNumberField(player.wcpm)) : undefined,
+    goldSharePercent: player.gold_share_percent ? parseFloat(formatNumberField(player.gold_share_percent)) : undefined,
+    // Database-specific fields (for player_summary_view)
+    avg_kills: player.avg_kills ? parseFloat(formatNumberField(player.avg_kills)) : undefined,
+    avg_deaths: player.avg_deaths ? parseFloat(formatNumberField(player.avg_deaths)) : undefined,
+    avg_assists: player.avg_assists ? parseFloat(formatNumberField(player.avg_assists)) : undefined,
+    cspm: player.cspm ? parseFloat(formatNumberField(player.cspm)) : undefined,
+    gold_share_percent: player.gold_share_percent ? parseFloat(formatNumberField(player.gold_share_percent)) : undefined,
+    earned_gold_share: player.earned_gold_share ? parseFloat(formatNumberField(player.earned_gold_share)) : undefined,
+    dmg_per_gold: player.dmg_per_gold ? parseFloat(formatNumberField(player.dmg_per_gold)) : undefined,
+    match_count: player.match_count ? parseInt(player.match_count, 10) : undefined,
+    dpm: player.dpm ? parseFloat(formatNumberField(player.dpm)) : undefined,
+    efficiency_score: player.efficiency_score ? parseFloat(formatNumberField(player.efficiency_score)) : undefined,
+    aggression_score: player.aggression_score ? parseFloat(formatNumberField(player.aggression_score)) : undefined,
+    earlygame_score: player.earlygame_score ? parseFloat(formatNumberField(player.earlygame_score)) : undefined,
+    kill_participation_pct: player.kill_participation_pct ? parseFloat(formatNumberField(player.kill_participation_pct)) : undefined
   };
 }
 
@@ -26,7 +46,8 @@ export function adaptPlayerForDatabase(player: Player): any {
     cspm: player.csPerMin,
     damage_share: player.damageShare,
     champion_pool: player.championPool,
-    image: player.image
+    image: player.image,
+    kill_participation_pct: player.killParticipation
   };
 }
 
