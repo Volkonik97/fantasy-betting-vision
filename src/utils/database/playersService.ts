@@ -147,17 +147,22 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Need to get player images from players table as they're not in the view
-    const validPlayerIds = data
-      .filter(player => player && typeof player === 'object' && player.playerid)
+    // Step 1: Create a safe array of player IDs with proper type checking
+    const validPlayerIds = (data || [])
+      .filter((player): player is {playerid: string} => 
+        player !== null && 
+        typeof player === 'object' && 
+        'playerid' in player && 
+        typeof player.playerid === 'string')
       .map(player => player.playerid);
     
     // Type guard to ensure we have valid player IDs
     if (validPlayerIds.length === 0) {
       console.warn("No valid player IDs available to fetch images");
       // Use a type assertion to safely map without spreading
-      return data
-        .filter(player => player && typeof player === 'object')
-        .map(player => adaptPlayerFromDatabase({ ...player as object, image: '' }));
+      return (data || [])
+        .filter(player => player !== null && typeof player === 'object')
+        .map(player => adaptPlayerFromDatabase({ ...player as Record<string, unknown>, image: '' }));
     }
     
     const { data: playerImageData, error: playerImageError } = await supabase
@@ -177,16 +182,17 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Add images to the player data with proper type checking
-    const playersWithImages = data
-      .filter(player => player && typeof player === 'object')
+    const playersWithImages = (data || [])
+      .filter((player): player is Record<string, unknown> => 
+        player !== null && typeof player === 'object')
       .map(player => {
-        if ('playerid' in player && player.playerid) {
+        if ('playerid' in player && player.playerid && typeof player.playerid === 'string') {
           const image = imageMap.get(player.playerid) || '';
-          // Use type assertion to make TypeScript happy
-          return { ...player as object, image };
+          // Use type assertion with Record to make TypeScript happy
+          return { ...player as Record<string, unknown>, image };
         }
         // Return a safe fallback with type assertion
-        return { ...player as object, image: '' };
+        return { ...player as Record<string, unknown>, image: '' };
       });
     
     const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));
