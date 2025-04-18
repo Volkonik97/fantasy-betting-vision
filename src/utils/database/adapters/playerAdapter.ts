@@ -3,6 +3,9 @@ import { Player } from "@/utils/models/types";
 
 // Ensure role is always set to a valid PlayerRole value
 export function adaptPlayerFromDatabase(player: any): Player {
+  const damageShare = player.damage_share || player.damageshare;
+  console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, damageShare);
+  
   const adaptedPlayer = {
     id: player.playerid || "",
     name: player.playername || "",
@@ -10,7 +13,7 @@ export function adaptPlayerFromDatabase(player: any): Player {
     team: player.teamid || "",
     kda: parseFloat(formatNumberField(player.kda)),
     csPerMin: parseFloat(formatNumberField(player.cspm)),
-    damageShare: parseFloat(formatNumberField(player.damage_share || player.damageshare)),
+    damageShare: parseFloat(formatNumberField(damageShare)),
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Player } from "@/utils/models/types";
 import { Activity, Trophy, Award } from "lucide-react";
@@ -59,14 +60,27 @@ const PlayerHeader = ({
   const playerCsPerMin = cspmOverride !== null ? cspmOverride : 
     (typeof player.csPerMin === 'number' ? player.csPerMin : parseFloat(String(player.csPerMin) || '0'));
   
-    const formattedDamageShare = `${Math.round(
-      damageShareOverride !== null
-        ? damageShareOverride
-        : typeof player.damageShare === "number"
-          ? player.damageShare
-          : 0
-    )}%`;
+  // Improved damage share formatting
+  const getDamageShareValue = () => {
+    let damageShareValue = damageShareOverride !== null 
+      ? damageShareOverride 
+      : player.damageShare;
     
+    console.log("Processing damageShareValue:", damageShareValue, typeof damageShareValue);
+    
+    // Convert to number if it's a string
+    if (typeof damageShareValue === 'string') {
+      damageShareValue = parseFloat(damageShareValue.replace('%', ''));
+    }
+    
+    // If it's a decimal between 0-1, convert to percentage
+    if (typeof damageShareValue === 'number' && damageShareValue >= 0 && damageShareValue <= 1) {
+      damageShareValue = damageShareValue * 100;
+    }
+    
+    // Format the final value
+    return `${Math.round(damageShareValue || 0)}%`;
+  };
 
   return (
     <motion.div 
@@ -130,7 +144,7 @@ const PlayerHeader = ({
             <div className="flex justify-center mb-1">
               <Award size={18} className="text-lol-blue" />
             </div>
-            <p className="text-2xl font-bold">{formattedDamageShare}</p>
+            <p className="text-2xl font-bold">{getDamageShareValue()}</p>
             <p className="text-xs text-gray-500">Damage Share</p>
           </div>
         </div>

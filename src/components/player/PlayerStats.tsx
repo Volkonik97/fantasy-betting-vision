@@ -10,10 +10,15 @@ interface PlayerStatsProps {
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
   // Amélioration de la gestion du pourcentage de dégâts
   const formatDamageShare = (value: number | string) => {
+    // Add debug logs to trace value before processing
+    console.log(`PlayerStats: formatting damageShare value:`, value, `of type:`, typeof value);
+    
     // Conversion en nombre
     const numValue = typeof value === 'string' 
       ? parseFloat(value.replace('%', '')) 
       : value;
+
+    console.log(`PlayerStats: converted damageShare value:`, numValue);
 
     // Validation du nombre
     if (isNaN(numValue)) return '0%';
