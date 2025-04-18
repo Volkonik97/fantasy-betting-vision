@@ -14,24 +14,22 @@ const PlayerStats = ({ kda, csPerMin, killParticipation }: PlayerStatsProps) => 
   // Format CS/Min to 1 decimal place
   const formattedCSPerMin = typeof csPerMin === 'number' ? csPerMin.toFixed(1) : '0.0';
   
-  // Handle the KP value formatting with better debugging
-  console.log(`Original killParticipation value: ${killParticipation}, type: ${typeof killParticipation}`);
+  // More detailed debugging for killParticipation value
+  console.log(`PlayerStats: Raw killParticipation value: ${killParticipation}, type: ${typeof killParticipation}`);
   
-  // Parse the value to a number if it's a string, default to 0 if null/undefined
-  const kpNumericValue = typeof killParticipation === 'number' 
-    ? killParticipation 
-    : parseFloat(String(killParticipation || '0'));
+  // Format KP as percentage with consistent handling
+  let formattedKP = '0.0%';
   
-  console.log(`After parsing: kpNumericValue: ${kpNumericValue}, type: ${typeof kpNumericValue}`);
-  
-  // Format KP as percentage
-  // If the value is already in percentage form (e.g., 65 for 65%), display as is
-  // If the value is in decimal form (e.g., 0.65 for 65%), multiply by 100
-  const formattedKP = isNaN(kpNumericValue) 
-    ? '0.0%' 
-    : `${kpNumericValue > 1 ? kpNumericValue.toFixed(1) : (kpNumericValue * 100).toFixed(1)}%`;
-  
-  console.log(`Formatted KP: ${formattedKP}`);
+  if (killParticipation !== undefined && killParticipation !== null) {
+    const numericKP = Number(killParticipation);
+    if (!isNaN(numericKP)) {
+      // If the value is already a percentage (e.g., 65.5 for 65.5%), display as is
+      // If the value is in decimal form (e.g., 0.655 for 65.5%), multiply by 100
+      const displayValue = numericKP <= 1 ? numericKP * 100 : numericKP;
+      formattedKP = `${displayValue.toFixed(1)}%`;
+      console.log(`PlayerStats: Formatted KP from ${numericKP} to ${formattedKP}`);
+    }
+  }
   
   return (
     <div className="grid grid-cols-3 gap-2 mt-3 text-center text-xs border-t pt-3 border-gray-100">

@@ -1,3 +1,4 @@
+
 import { PlayerCSV } from '../csv/types';
 import { Player } from '../models/types';
 import { normalizeRoleName } from '../leagueData/assembler/modelConverter';
@@ -54,14 +55,16 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       console.warn(`Player ${player.name} has no team ID`);
     }
     
-    // Calculate killParticipation percentage
-    const killParticipationValue = player.killParticipation 
-      ? parseFloat(player.killParticipation)
-      : 0;
+    // Calculate killParticipation percentage - ensure it's converted to a number
+    let killParticipationValue = 0;
     
-    // Log any kill participation values for debugging
-    if (killParticipationValue > 0) {
-      console.log(`Player ${player.name} has killParticipation: ${killParticipationValue}`);
+    if (player.killParticipation) {
+      // Try to convert to number and handle both decimal (0.655) and percentage (65.5) formats
+      const numericKP = Number(player.killParticipation);
+      if (!isNaN(numericKP)) {
+        killParticipationValue = numericKP;
+        console.log(`Player ${player.name} has killParticipation: ${killParticipationValue} (converted from ${player.killParticipation})`);
+      }
     }
     
     return {

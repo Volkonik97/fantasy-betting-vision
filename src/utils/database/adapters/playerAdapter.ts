@@ -7,6 +7,15 @@ import { Player } from "@/utils/models/types";
 export const adaptPlayerFromDatabase = (data: any): Player => {
   // Log incoming data to debug kill_participation_pct
   console.log(`Adapting player ${data.playername}, kill_participation_pct:`, data.kill_participation_pct);
+  
+  // If data has a kill_participation_pct field, use it directly
+  let killParticipationValue = data.kill_participation_pct;
+  
+  // Ensure kill_participation_pct is a number and not a string
+  if (killParticipationValue !== undefined && killParticipationValue !== null) {
+    killParticipationValue = Number(killParticipationValue);
+    console.log(`Converted kill_participation_pct to number: ${killParticipationValue}`);
+  }
 
   return {
     id: data.playerid || '',
@@ -20,8 +29,8 @@ export const adaptPlayerFromDatabase = (data: any): Player => {
     csPerMin: data.cspm || 0,
     damageShare: data.damage_share || 0,
     
-    // Kill participation - prioritize the field from player_summary_view
-    killParticipation: data.kill_participation_pct !== undefined ? data.kill_participation_pct : 0,
+    // Kill participation - ensure it's treated as a number
+    killParticipation: killParticipationValue !== undefined ? killParticipationValue : 0,
     
     // Champion pool
     championPool: data.champion_pool ? String(data.champion_pool) : '',
@@ -52,7 +61,7 @@ export const adaptPlayerFromDatabase = (data: any): Player => {
     
     // Other stats that might be available
     dmg_per_gold: data.dmg_per_gold || 0,
-    kill_participation_pct: data.kill_participation_pct || 0 // Keep the original field too
+    kill_participation_pct: killParticipationValue !== undefined ? killParticipationValue : 0 // Keep the original field too
   };
 };
 

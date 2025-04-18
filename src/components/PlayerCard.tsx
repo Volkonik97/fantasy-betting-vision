@@ -25,7 +25,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
       kda: player.kda,
       csPerMin: player.csPerMin,
       killParticipation: player.killParticipation,
-      killParticipationType: typeof player.killParticipation
+      killParticipationType: typeof player.killParticipation,
+      kill_participation_pct: player.kill_participation_pct
     });
   }, [player]);
 

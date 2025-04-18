@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -23,6 +24,9 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
       });
       console.log("Gold share stats from view:", {
         gold_share_percent: summaryData.gold_share_percent
+      });
+      console.log("Kill participation from view:", {
+        kill_participation_pct: summaryData.kill_participation_pct
       });
       
       // Check if image property exists before logging
@@ -81,7 +85,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
     // Explicitly specify the fields we need, including the kill_participation_pct field
-    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15, kill_participation_pct');
+    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15, kill_participation_pct, dmg_per_gold, efficiency_score, aggression_score, earlygame_score, avg_kills, avg_deaths, avg_assists');
     
     // Apply pagination if provided
     if (page !== undefined && pageSize !== undefined) {
@@ -98,7 +102,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       
       // Fall back to players table
       console.log("Falling back to players table");
-      let fallbackQuery = supabase.from('players').select('playerid, playername, position, image, teamid, kda, cspm, dpm, damage_share, vspm, wcpm');
+      let fallbackQuery = supabase.from('players').select('*');
       
       if (page !== undefined && pageSize !== undefined) {
         const start = (page - 1) * pageSize;
@@ -139,13 +143,33 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     
     // Log some samples of vision stats, gold share, and kill participation
     if (adaptedPlayers.length > 0) {
+      const samplePlayer = adaptedPlayers[0];
       console.log("Sample stats:", {
-        player: adaptedPlayers[0].name,
-        vspm: adaptedPlayers[0].vspm,
-        wcpm: adaptedPlayers[0].wcpm,
-        gold_share_percent: adaptedPlayers[0].gold_share_percent,
-        kill_participation: adaptedPlayers[0].kill_participation_pct
+        player: samplePlayer.name,
+        vspm: samplePlayer.vspm,
+        wcpm: samplePlayer.wcpm,
+        gold_share_percent: samplePlayer.gold_share_percent,
+        killParticipation: samplePlayer.killParticipation,
+        kill_participation_pct: samplePlayer.kill_participation_pct
       });
+      
+      // Check for players with non-zero kill participation
+      const playersWithKP = adaptedPlayers.filter(p => 
+        (p.killParticipation && p.killParticipation > 0) || 
+        (p.kill_participation_pct && p.kill_participation_pct > 0)
+      );
+      
+      if (playersWithKP.length > 0) {
+        console.log(`Found ${playersWithKP.length} players with non-zero kill participation. Sample:`, 
+          playersWithKP.slice(0, 3).map(p => ({
+            name: p.name,
+            killParticipation: p.killParticipation,
+            kill_participation_pct: p.kill_participation_pct
+          }))
+        );
+      } else {
+        console.warn("No players found with non-zero kill participation");
+      }
       
       // Log image URL information for debugging
       const playersWithImages = adaptedPlayers.filter(p => p.image);
