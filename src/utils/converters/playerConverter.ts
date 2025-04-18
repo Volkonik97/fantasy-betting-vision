@@ -64,7 +64,7 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       kda: parseFloat(player.kda) || 0,
       csPerMin: parseFloat(player.csPerMin) || 0,
       damageShare: parseFloat(player.damageShare) || 0,
-      killParticipation: parseFloat(player.killParticipation || '0') || 0, // Handle missing killParticipation field
+      killParticipation: parseFloat(player.killParticipation || '0') || 0,
       championPool: player.championPool 
         ? (typeof player.championPool === 'string' 
           ? player.championPool 
