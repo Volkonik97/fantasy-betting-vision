@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Player, PlayerRole } from "@/utils/models/types";
 import PlayerImage from "@/components/player/PlayerImage";
 import TeamInfo from "@/components/player/TeamInfo";
@@ -19,13 +19,16 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   
   const playerId = player.id ? player.id.trim() : null;
   
-  // Log player data for debugging
-  console.log(`PlayerCard: Player ${player.name} data:`, {
-    damageShare: player.damageShare,
-    type: typeof player.damageShare,
-    kda: player.kda,
-    csPerMin: player.csPerMin
-  });
+  useEffect(() => {
+    // Log player data when component mounts to help with debugging
+    console.log(`PlayerCard: Player ${player.name} mounted with data:`, {
+      damageShare: player.damageShare,
+      type: typeof player.damageShare,
+      rawValue: JSON.stringify(player.damageShare),
+      kda: player.kda,
+      csPerMin: player.csPerMin
+    });
+  }, [player]);
 
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">

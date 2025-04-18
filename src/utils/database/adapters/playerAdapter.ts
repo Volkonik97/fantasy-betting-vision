@@ -4,26 +4,43 @@ import { Player } from "@/utils/models/types";
 // Ensure role is always set to a valid PlayerRole value
 export function adaptPlayerFromDatabase(player: any): Player {
   // Get damageShare from database field (checking for both field names)
-  const rawDamageShare = player.damage_share || player.damageshare;
-  console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, rawDamageShare);
+  const rawDamageShare = player.damage_share !== undefined 
+    ? player.damage_share 
+    : (player.damageshare !== undefined ? player.damageshare : null);
+    
+  console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, 
+    { rawValue: rawDamageShare, type: typeof rawDamageShare });
   
   // Convert damageShare to a proper number format
   let parsedDamageShare: number;
   try {
-    // First convert to string for safe processing
-    const damageShareStr = String(rawDamageShare || '0').replace(/%/g, '');
-    // Convert to number
-    parsedDamageShare = parseFloat(damageShareStr);
-    
-    // If it's a decimal between 0-1, correctly convert it to percentage (0-100)
-    if (!isNaN(parsedDamageShare) && parsedDamageShare > 0 && parsedDamageShare < 1) {
-      parsedDamageShare = parsedDamageShare * 100;
-      console.log(`adaptPlayerFromDatabase: converted decimal damage_share to percentage: ${parsedDamageShare}%`);
-    }
-    
-    // If it's a very small number, zero it out to avoid displaying near-zero values
-    if (!isNaN(parsedDamageShare) && Math.abs(parsedDamageShare) < 0.0001) {
+    if (rawDamageShare === null || rawDamageShare === undefined) {
+      console.log(`adaptPlayerFromDatabase: damage_share is null or undefined for ${player.playername}`);
       parsedDamageShare = 0;
+    } else {
+      // First convert to string for safe processing
+      const damageShareStr = String(rawDamageShare).replace(/%/g, '').trim();
+      console.log(`adaptPlayerFromDatabase: damage_share as string for ${player.playername}:`, damageShareStr);
+      
+      // Convert to number
+      parsedDamageShare = parseFloat(damageShareStr);
+      
+      if (isNaN(parsedDamageShare)) {
+        console.log(`adaptPlayerFromDatabase: damage_share is NaN for ${player.playername}, setting to 0`);
+        parsedDamageShare = 0;
+      }
+      
+      // If it's a decimal between 0-1, correctly convert it to percentage (0-100)
+      if (parsedDamageShare > 0 && parsedDamageShare < 1) {
+        const originalValue = parsedDamageShare;
+        parsedDamageShare = parsedDamageShare * 100;
+        console.log(`adaptPlayerFromDatabase: converted decimal damage_share ${originalValue} to percentage: ${parsedDamageShare}% for ${player.playername}`);
+      }
+      
+      // If it's a very small number, zero it out to avoid displaying near-zero values
+      if (Math.abs(parsedDamageShare) < 0.0001) {
+        parsedDamageShare = 0;
+      }
     }
     
     console.log(`adaptPlayerFromDatabase: final damage_share for ${player.playername}:`, parsedDamageShare);
@@ -39,7 +56,7 @@ export function adaptPlayerFromDatabase(player: any): Player {
     team: player.teamid || "",
     kda: parseFloat(formatNumberField(player.kda)),
     csPerMin: parseFloat(formatNumberField(player.cspm)),
-    damageShare: parsedDamageShare,
+    damageShare: parsedDamageShare, // Use the carefully parsed value
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };

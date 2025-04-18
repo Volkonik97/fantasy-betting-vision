@@ -10,19 +10,28 @@ interface PlayerStatsProps {
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
   // Format the damage share value to ensure proper display
   const formatDamageShareValue = (value: number | string): string => {
-    // Log for debugging the input value
+    // More detailed debugging logs
     console.log(`PlayerStats: formatting damageShare:`, value, typeof value);
     
     if (value === null || value === undefined) {
+      console.log('PlayerStats: damageShare is null or undefined');
       return '0%';
     }
     
     try {
       // Convert to string first for safe handling
       const valueAsString = String(value).trim();
+      console.log('PlayerStats: damageShare as string:', valueAsString);
+      
+      // If empty string, return 0%
+      if (!valueAsString) {
+        console.log('PlayerStats: damageShare is empty string');
+        return '0%';
+      }
       
       // Remove any percentage sign
       const cleanedValue = valueAsString.replace(/%/g, '');
+      console.log('PlayerStats: cleaned damageShare:', cleanedValue);
       
       // Convert to float
       let numericValue = parseFloat(cleanedValue);
@@ -33,14 +42,17 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
         return '0%';
       }
       
-      // If it's a decimal between 0-1, convert to percentage
+      // Always treat values between 0 and 1 as decimals that need to be converted to percentages
       if (numericValue > 0 && numericValue < 1) {
         numericValue = numericValue * 100;
         console.log(`PlayerStats: converted decimal ${value} to percentage: ${numericValue}%`);
       }
       
       // Round to nearest integer and return with % sign
-      return `${Math.round(numericValue)}%`;
+      const result = `${Math.round(numericValue)}%`;
+      console.log('PlayerStats: final formatted damageShare:', result);
+      return result;
+      
     } catch (error) {
       console.error('Error formatting damage share:', error);
       return '0%';
