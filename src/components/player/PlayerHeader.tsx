@@ -62,7 +62,8 @@ const PlayerHeader = ({
   
   // Improved damage share formatting
   const getDamageShareValue = () => {
-    let damageShareValue = damageShareOverride !== null 
+    // Define damageShareValue with the correct type
+    let damageShareValue: number | string = damageShareOverride !== null 
       ? damageShareOverride 
       : player.damageShare;
     
@@ -70,6 +71,7 @@ const PlayerHeader = ({
     
     // Convert to number if it's a string
     if (typeof damageShareValue === 'string') {
+      // Now TypeScript knows damageShareValue is a string, so replace is valid
       damageShareValue = parseFloat(damageShareValue.replace('%', ''));
     }
     
@@ -79,7 +81,7 @@ const PlayerHeader = ({
     }
     
     // Format the final value
-    return `${Math.round(damageShareValue || 0)}%`;
+    return `${Math.round(Number(damageShareValue) || 0)}%`;
   };
 
   return (
