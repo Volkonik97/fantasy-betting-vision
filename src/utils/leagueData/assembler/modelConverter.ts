@@ -147,8 +147,8 @@ export function playerToPlayerObject(playerCsv: any): Player {
     id: playerCsv.id,
     name: playerCsv.name,
     role: normalizedRole,
-    image: playerCsv.image,
-    team: playerCsv.team,
+    image: playerCsv.image || '',
+    team: playerCsv.team || '',
     kda: parseFloat(playerCsv.kda) || 0,
     csPerMin: parseFloat(playerCsv.csPerMin) || 0,
     cspm: parseFloat(playerCsv.csPerMin) || 0, // Add cspm property
@@ -193,14 +193,14 @@ export function createPlayerFromTrackerData(data: any): Player {
     id: data.id,
     name: data.name,
     role: role,
-    image: data.image,
-    team: data.team,
+    image: data.image || '',
+    team: data.team || '',
     kda: kda,
     csPerMin: csPerMin,
     cspm: csPerMin, // Add cspm property
     damageShare: damageShare,
     killParticipation: killParticipation,
     kill_participation_pct: killParticipation * 100, // Convert to percentage for consistency with API
-    championPool: data.championPool
+    championPool: data.championPool || []
   };
 }

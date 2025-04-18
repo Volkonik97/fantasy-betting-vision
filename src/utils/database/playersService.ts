@@ -147,40 +147,47 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Need to get player images from players table as they're not in the view
-    const playerIds = data.map(player => player.playerid);
+    const validPlayerIds = data
+      .filter(player => player && typeof player === 'object' && player.playerid)
+      .map(player => player.playerid);
     
-    // Type guard to ensure playerIds is an array of strings and not undefined
-    if (!playerIds || playerIds.length === 0) {
-      console.warn("No player IDs available to fetch images");
-      return data.map(player => adaptPlayerFromDatabase({ ...player, image: '' }));
+    // Type guard to ensure we have valid player IDs
+    if (validPlayerIds.length === 0) {
+      console.warn("No valid player IDs available to fetch images");
+      // Use a type assertion to safely map without spreading
+      return data
+        .filter(player => player && typeof player === 'object')
+        .map(player => adaptPlayerFromDatabase({ ...player as object, image: '' }));
     }
     
     const { data: playerImageData, error: playerImageError } = await supabase
       .from('players')
       .select('playerid, image')
-      .in('playerid', playerIds);
+      .in('playerid', validPlayerIds);
       
     // Create a map for quick image lookup
     const imageMap = new Map<string, string>();
     if (playerImageData && !playerImageError) {
-      playerImageData.forEach(player => {
-        if (player && player.playerid && player.image) {
-          imageMap.set(player.playerid, player.image);
+      playerImageData.forEach(item => {
+        if (item && typeof item === 'object' && 'playerid' in item && 'image' in item && item.playerid) {
+          imageMap.set(item.playerid, item.image || '');
         }
       });
       console.log(`Retrieved ${imageMap.size} player images`);
     }
     
-    // Add images to the player data - safely handling types
-    const playersWithImages = data.map(player => {
-      // Make sure player is a valid object before trying to spread it
-      if (player && typeof player === 'object' && player.playerid) {
-        const image = imageMap.get(player.playerid) || '';
-        return { ...player, image };
-      }
-      // Return a safe fallback if player is not a valid object
-      return { ...player, image: '' };
-    });
+    // Add images to the player data with proper type checking
+    const playersWithImages = data
+      .filter(player => player && typeof player === 'object')
+      .map(player => {
+        if ('playerid' in player && player.playerid) {
+          const image = imageMap.get(player.playerid) || '';
+          // Use type assertion to make TypeScript happy
+          return { ...player as object, image };
+        }
+        // Return a safe fallback with type assertion
+        return { ...player as object, image: '' };
+      });
     
     const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));
     console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view`);
