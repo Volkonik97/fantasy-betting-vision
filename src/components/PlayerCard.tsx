@@ -24,7 +24,8 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
     console.log(`PlayerCard: Player ${player.name} data:`, {
       kda: player.kda,
       csPerMin: player.csPerMin,
-      killParticipation: player.killParticipation
+      killParticipation: player.killParticipation,
+      killParticipationType: typeof player.killParticipation
     });
   }, [player]);
 

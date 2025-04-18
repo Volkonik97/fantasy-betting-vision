@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Team } from '@/utils/models/types';
 import { Player } from '@/utils/models/types';
@@ -126,22 +125,33 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
           console.log(`Found ${summaryData.length} players in summary view for team ${teamId}`);
           
           // Successfully got data from player_summary_view
-          team.players = summaryData.map(player => ({
-            id: player.playerid || '',
-            name: player.playername || '',
-            role: validatePlayerRole(player.position || 'Unknown'),
-            // Fetch image from players table or use empty string as fallback
-            image: '', // Can't access image from summary view
-            team: player.teamid || '',
-            teamName: team.name,
-            teamRegion: team.region,
-            kda: player.kda || 0,
-            csPerMin: player.cspm || 0,
-            damageShare: player.damage_share || 0,
-            // Use kill_participation_pct from player_summary_view
-            killParticipation: player.kill_participation_pct || 0,
-            championPool: '' // Can't access champion_pool from summary view
-          }));
+          team.players = summaryData.map(player => {
+            console.log(`Player ${player.playername} data from summary_view:`, {
+              playerid: player.playerid,
+              kda: player.kda,
+              cspm: player.cspm,
+              damageShare: player.damage_share,
+              killParticipation: player.kill_participation_pct,
+              killParticipationType: typeof player.kill_participation_pct
+            });
+            
+            return {
+              id: player.playerid || '',
+              name: player.playername || '',
+              role: validatePlayerRole(player.position || 'Unknown'),
+              // Fetch image from players table or use empty string as fallback
+              image: '', // Can't access image from summary view
+              team: player.teamid || '',
+              teamName: team.name,
+              teamRegion: team.region,
+              kda: player.kda || 0,
+              csPerMin: player.cspm || 0,
+              damageShare: player.damage_share || 0,
+              // Use kill_participation_pct from player_summary_view
+              killParticipation: player.kill_participation_pct || 0,
+              championPool: '' // Can't access champion_pool from summary view
+            }
+          });
           
           // After getting basic data from summary view, fetch additional fields from players table
           if (team.players.length > 0) {
@@ -330,22 +340,33 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
       console.log(`Found ${summaryData.length} players in summary view for team ${teamId}`);
       
       // Successfully got data from player_summary_view
-      team.players = summaryData.map(player => ({
-        id: player.playerid || '',
-        name: player.playername || '',
-        role: player.position ? validatePlayerRole(player.position) : 'Unknown',
-        // Fetch image from players table or use empty string as fallback
-        image: '', // Initially set empty
-        team: player.teamid || '',
-        teamName: team.name,
-        teamRegion: team.region,
-        kda: player.kda || 0,
-        csPerMin: player.cspm || 0,
-        damageShare: player.damage_share || 0,
-        // Use kill_participation_pct from player_summary_view
-        killParticipation: player.kill_participation_pct || 0,
-        championPool: '' // Initially set empty
-      }));
+      team.players = summaryData.map(player => {
+        console.log(`Player ${player.playername} data from summary_view (getTeamWithPlayers):`, {
+          playerid: player.playerid,
+          kda: player.kda,
+          cspm: player.cspm,
+          damageShare: player.damage_share,
+          killParticipation: player.kill_participation_pct,
+          killParticipationType: typeof player.kill_participation_pct
+        });
+        
+        return {
+          id: player.playerid || '',
+          name: player.playername || '',
+          role: player.position ? validatePlayerRole(player.position) : 'Unknown',
+          // Fetch image from players table or use empty string as fallback
+          image: '', // Initially set empty
+          team: player.teamid || '',
+          teamName: team.name,
+          teamRegion: team.region,
+          kda: player.kda || 0,
+          csPerMin: player.cspm || 0,
+          damageShare: player.damage_share || 0,
+          // Use kill_participation_pct from player_summary_view
+          killParticipation: player.kill_participation_pct || 0,
+          championPool: '' // Initially set empty
+        }
+      });
       
       // After getting basic data from summary view, fetch additional fields from players table
       if (team.players.length > 0) {

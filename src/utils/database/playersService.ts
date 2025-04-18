@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -81,8 +80,8 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     }
     
     // Prepare the query to player_summary_view which has vspm, wcpm and gold_share_percent fields
-    // Explicitly specify the fields we need, including 'image'
-    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15');
+    // Explicitly specify the fields we need, including the kill_participation_pct field
+    let query = supabase.from('player_summary_view').select('playerid, playername, position, image, teamid, cspm, dpm, damage_share, vspm, wcpm, kda, gold_share_percent, damageshare, earnedgoldshare, golddiffat15, xpdiffat15, csdiffat15, kill_participation_pct');
     
     // Apply pagination if provided
     if (page !== undefined && pageSize !== undefined) {
@@ -138,13 +137,14 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     const adaptedPlayers = data.map(player => adaptPlayerFromDatabase(player));
     console.log(`Retrieved ${adaptedPlayers.length} players from player_summary_view with vision stats`);
     
-    // Log some samples of vision stats and gold share
+    // Log some samples of vision stats, gold share, and kill participation
     if (adaptedPlayers.length > 0) {
       console.log("Sample stats:", {
         player: adaptedPlayers[0].name,
         vspm: adaptedPlayers[0].vspm,
         wcpm: adaptedPlayers[0].wcpm,
-        gold_share_percent: adaptedPlayers[0].gold_share_percent
+        gold_share_percent: adaptedPlayers[0].gold_share_percent,
+        kill_participation: adaptedPlayers[0].kill_participation_pct
       });
       
       // Log image URL information for debugging

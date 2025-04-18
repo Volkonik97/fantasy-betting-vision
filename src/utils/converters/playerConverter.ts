@@ -1,4 +1,3 @@
-
 import { PlayerCSV } from '../csv/types';
 import { Player } from '../models/types';
 import { normalizeRoleName } from '../leagueData/assembler/modelConverter';
@@ -55,6 +54,16 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       console.warn(`Player ${player.name} has no team ID`);
     }
     
+    // Calculate killParticipation percentage
+    const killParticipationValue = player.killParticipation 
+      ? parseFloat(player.killParticipation)
+      : 0;
+    
+    // Log any kill participation values for debugging
+    if (killParticipationValue > 0) {
+      console.log(`Player ${player.name} has killParticipation: ${killParticipationValue}`);
+    }
+    
     return {
       id: player.id,
       name: player.name,
@@ -64,7 +73,7 @@ export const convertPlayerData = (playersCSV: PlayerCSV[]): Player[] => {
       kda: parseFloat(player.kda) || 0,
       csPerMin: parseFloat(player.csPerMin) || 0,
       damageShare: parseFloat(player.damageShare) || 0,
-      killParticipation: parseFloat(player.killParticipation || '0') || 0, // Fixed to use the killParticipation property
+      killParticipation: killParticipationValue,
       championPool: player.championPool 
         ? (typeof player.championPool === 'string' 
           ? player.championPool 
