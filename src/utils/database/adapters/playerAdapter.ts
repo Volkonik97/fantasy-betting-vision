@@ -1,3 +1,4 @@
+
 import { Player } from "@/utils/models/types";
 
 /**
@@ -31,6 +32,13 @@ export const adaptPlayerFromDatabase = (data: any): Player => {
     killParticipation: killParticipationValue,
     kill_participation_pct: killParticipationValue,
     
+    // Additional optional properties to match the Player interface
+    teamName: data.teamName,
+    teamRegion: data.teamRegion,
+    cspm: data.cspm || 0,
+    earned_gold_share: data.earned_gold_share,
+    gold_share_percent: data.gold_share_percent || 0,
+    
     // Champion pool
     championPool: data.champion_pool ? String(data.champion_pool) : '',
     
@@ -38,7 +46,6 @@ export const adaptPlayerFromDatabase = (data: any): Player => {
     dpm: data.dpm || 0,
     vspm: data.vspm || 0,
     wcpm: data.wcpm || 0,
-    gold_share_percent: data.gold_share_percent || 0,
     
     // Timeline stats
     avg_kills: data.avg_kills || 0,

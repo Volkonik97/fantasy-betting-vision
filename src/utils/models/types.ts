@@ -1,3 +1,4 @@
+
 export type PlayerRole = "Top" | "Jungle" | "Mid" | "ADC" | "Support" | "Unknown";
 
 export interface Player {
@@ -10,8 +11,14 @@ export interface Player {
   csPerMin: number;
   damageShare: number;
   killParticipation: number;
-  kill_participation_pct: number; // Ajouté pour assurer la cohérence
+  kill_participation_pct: number;
   championPool: string;
+  // Extended properties for TeamPlayersList
+  teamName?: string;
+  teamRegion?: string;
+  // Properties from database that might be available
+  cspm?: number;
+  earned_gold_share?: number;
   // Timeline stats
   golddiffat15?: number;
   xpdiffat15?: number;

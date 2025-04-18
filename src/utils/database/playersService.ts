@@ -31,8 +31,13 @@ export const getPlayerById = async (playerId: string): Promise<Player | null> =>
         .single();
         
       if (playerImageData && playerImageData.image) {
-        summaryData.image = playerImageData.image;
+        // TypeScript safe assignment with type assertion
+        const summaryWithImage = {
+          ...summaryData,
+          image: playerImageData.image 
+        };
         console.log("Added player image from players table:", playerImageData.image);
+        return adaptPlayerFromDatabase(summaryWithImage);
       }
       
       return adaptPlayerFromDatabase(summaryData);
@@ -83,7 +88,7 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       }
     }
     
-    // Always use the player_summary_view for consistent data retrieval with explicity field selection
+    // Always use the player_summary_view for consistent data retrieval with explicit field selection
     let query = supabase.from('player_summary_view').select(
       'playerid, playername, position, teamid, kda, cspm, dpm, damage_share, vspm, wcpm, ' + 
       'kill_participation_pct, gold_share_percent, golddiffat15, xpdiffat15, csdiffat15, ' +
@@ -152,17 +157,20 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     const imageMap = new Map<string, string>();
     if (playerImageData && !playerImageError) {
       playerImageData.forEach(player => {
-        if (player.image) {
+        if (player.playerid && player.image) {
           imageMap.set(player.playerid, player.image);
         }
       });
       console.log(`Retrieved ${imageMap.size} player images`);
     }
     
-    // Add images to the player data
+    // Add images to the player data - safely handling types
     const playersWithImages = data.map(player => {
-      const image = imageMap.get(player.playerid) || '';
-      return { ...player, image };
+      if (player.playerid) {
+        const image = imageMap.get(player.playerid) || '';
+        return { ...player, image };
+      }
+      return { ...player, image: '' };
     });
     
     const adaptedPlayers = playersWithImages.map(player => adaptPlayerFromDatabase(player));

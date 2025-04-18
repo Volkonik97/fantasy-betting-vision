@@ -1,4 +1,3 @@
-
 import { Team, Player, PlayerRole } from '../../models/types';
 
 /**
@@ -155,5 +154,46 @@ export function playerToPlayerObject(playerCsv: any): Player {
         playerCsv.championPool : 
         String(playerCsv.championPool).split(',').map((champ: string) => champ.trim())
       ) : []
+  };
+}
+
+/**
+ * Helper function to calculate KDA from tracker data
+ */
+function calculateKDA(kills: number, deaths: number, assists: number): number {
+  return (kills + assists) / (deaths + 1);
+}
+
+/**
+ * Helper function to calculate CS per minute from tracker data
+ */
+function calculateCSPerMin(cs: number, games: number): number {
+  return cs / games;
+}
+
+/**
+ * Helper function to create player object from tracker data
+ */
+export function createPlayerFromTrackerData(data: any): Player {
+  const role = normalizeRoleName(data.role || 'Unknown');
+  
+  // Calculate stats from tracker data
+  const kda = calculateKDA(data.kills, data.deaths, data.assists);
+  const csPerMin = calculateCSPerMin(data.cs, data.games);
+  const damageShare = data.damageShare || 0;
+  const killParticipation = data.killParticipation || 0;
+  
+  return {
+    id: data.id,
+    name: data.name,
+    role: role,
+    image: data.image,
+    team: data.team,
+    kda: kda,
+    csPerMin: csPerMin,
+    damageShare: damageShare,
+    killParticipation: killParticipation,
+    kill_participation_pct: killParticipation * 100, // Convert to percentage for consistency with API
+    championPool: data.championPool
   };
 }

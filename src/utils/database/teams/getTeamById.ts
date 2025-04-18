@@ -116,6 +116,7 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
               damageShare: player.damage_share || 0,
               // We don't have kill_participation_pct in this table, so we have to leave it at 0
               killParticipation: 0,
+              kill_participation_pct: 0, // Ensure this is included for type compatibility
               championPool: player.champion_pool ? String(player.champion_pool) : ''
             }));
           } else {
@@ -135,6 +136,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
               killParticipationType: typeof player.kill_participation_pct
             });
             
+            const killParticipationValue = player.kill_participation_pct || 0;
+            
             return {
               id: player.playerid || '',
               name: player.playername || '',
@@ -148,7 +151,8 @@ export const getTeamById = async (teamId: string, includeStats: boolean = true):
               csPerMin: player.cspm || 0,
               damageShare: player.damage_share || 0,
               // Use kill_participation_pct from player_summary_view
-              killParticipation: player.kill_participation_pct || 0,
+              killParticipation: killParticipationValue,
+              kill_participation_pct: killParticipationValue, // Ensure both fields have the same value
               championPool: '' // Can't access champion_pool from summary view
             }
           });
@@ -331,6 +335,7 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
           damageShare: player.damage_share || 0,
           // We don't have kill_participation_pct in this table
           killParticipation: 0,
+          kill_participation_pct: 0, // Include for type compatibility
           championPool: player.champion_pool ? String(player.champion_pool) : ''
         }));
       } else {
@@ -350,6 +355,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
           killParticipationType: typeof player.kill_participation_pct
         });
         
+        const killParticipationValue = player.kill_participation_pct || 0;
+        
         return {
           id: player.playerid || '',
           name: player.playername || '',
@@ -363,7 +370,8 @@ export async function getTeamWithPlayers(teamId: string): Promise<Team | null> {
           csPerMin: player.cspm || 0,
           damageShare: player.damage_share || 0,
           // Use kill_participation_pct from player_summary_view
-          killParticipation: player.kill_participation_pct || 0,
+          killParticipation: killParticipationValue,
+          kill_participation_pct: killParticipationValue, // Ensure both fields have the same value
           championPool: '' // Initially set empty
         }
       });

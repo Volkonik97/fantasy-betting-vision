@@ -13,8 +13,9 @@ export const players: Player[] = [
     kda: 4.2,
     csPerMin: 8.7,
     damageShare: 0.24,
-    killParticipation: 0.68, // Added kill participation
-    championPool: 'Gnar, Jax, Jayce' // Changed to string instead of array
+    killParticipation: 0.68,
+    kill_participation_pct: 68, // Added kill_participation_pct
+    championPool: 'Gnar, Jax, Jayce' 
   },
   {
     id: 'p2',
@@ -25,8 +26,9 @@ export const players: Player[] = [
     kda: 4.8,
     csPerMin: 6.2,
     damageShare: 0.18,
-    killParticipation: 0.72, // Added kill participation
-    championPool: 'Viego, Lee Sin, Vi' // Changed to string instead of array
+    killParticipation: 0.72,
+    kill_participation_pct: 72, // Added kill_participation_pct
+    championPool: 'Viego, Lee Sin, Vi'
   },
   {
     id: 'p3',
@@ -37,8 +39,9 @@ export const players: Player[] = [
     kda: 5.6,
     csPerMin: 9.1,
     damageShare: 0.28,
-    killParticipation: 0.65, // Added kill participation
-    championPool: 'Azir, Ahri, Ryze' // Changed to string instead of array
+    killParticipation: 0.65,
+    kill_participation_pct: 65, // Added kill_participation_pct
+    championPool: 'Azir, Ahri, Ryze'
   },
   {
     id: 'p4',
@@ -49,8 +52,9 @@ export const players: Player[] = [
     kda: 7.2,
     csPerMin: 10.3,
     damageShare: 0.30,
-    killParticipation: 0.78, // Added kill participation
-    championPool: 'Jinx, Aphelios, Kai\'Sa' // Changed to string instead of array
+    killParticipation: 0.78,
+    kill_participation_pct: 78, // Added kill_participation_pct
+    championPool: 'Jinx, Aphelios, Kai\'Sa'
   },
   {
     id: 'p5',
@@ -61,8 +65,9 @@ export const players: Player[] = [
     kda: 6.8,
     csPerMin: 1.2,
     damageShare: 0.10,
-    killParticipation: 0.85, // Added kill participation
-    championPool: 'Thresh, Nautilus, Lulu' // Changed to string instead of array
+    killParticipation: 0.85,
+    kill_participation_pct: 85, // Added kill_participation_pct
+    championPool: 'Thresh, Nautilus, Lulu'
   },
   
   // Gen.G Players
@@ -75,8 +80,9 @@ export const players: Player[] = [
     kda: 3.8,
     csPerMin: 8.5,
     damageShare: 0.22,
-    killParticipation: 0.62, // Added kill participation
-    championPool: 'Gnar, Gragas, Renekton' // Changed to string instead of array
+    killParticipation: 0.62,
+    kill_participation_pct: 62, // Added kill_participation_pct
+    championPool: 'Gnar, Gragas, Renekton'
   },
   {
     id: 'p7',
@@ -87,8 +93,9 @@ export const players: Player[] = [
     kda: 4.5,
     csPerMin: 6.0,
     damageShare: 0.16,
-    killParticipation: 0.76, // Added kill participation
-    championPool: 'Wukong, Trundle, Vi' // Changed to string instead of array
+    killParticipation: 0.76,
+    kill_participation_pct: 76, // Added kill_participation_pct
+    championPool: 'Wukong, Trundle, Vi'
   },
   {
     id: 'p8',
@@ -99,8 +106,9 @@ export const players: Player[] = [
     kda: 6.2,
     csPerMin: 9.8,
     damageShare: 0.29,
-    killParticipation: 0.68, // Added kill participation
-    championPool: 'Azir, Sylas, Akali' // Changed to string instead of array
+    killParticipation: 0.68,
+    kill_participation_pct: 68, // Added kill_participation_pct
+    championPool: 'Azir, Sylas, Akali'
   },
   {
     id: 'p9',
@@ -111,8 +119,9 @@ export const players: Player[] = [
     kda: 6.8,
     csPerMin: 10.1,
     damageShare: 0.31,
-    killParticipation: 0.82, // Added kill participation
-    championPool: 'Zeri, Lucian, Aphelios' // Changed to string instead of array
+    killParticipation: 0.82,
+    kill_participation_pct: 82, // Added kill_participation_pct
+    championPool: 'Zeri, Lucian, Aphelios'
   },
   {
     id: 'p10',
@@ -123,8 +132,9 @@ export const players: Player[] = [
     kda: 5.6,
     csPerMin: 0.9,
     damageShare: 0.09,
-    killParticipation: 0.88, // Added kill participation
-    championPool: 'Tahm Kench, Nami, Rakan' // Changed to string instead of array
+    killParticipation: 0.88,
+    kill_participation_pct: 88, // Added kill_participation_pct
+    championPool: 'Tahm Kench, Nami, Rakan'
   }
 ];
 
