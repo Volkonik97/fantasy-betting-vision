@@ -8,34 +8,35 @@ interface PlayerStatsProps {
 }
 
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
-  // Amélioration de la gestion du pourcentage de dégâts avec la même technique que dans PlayerHeader
+  // Formatage du damageShare exactement comme dans PlayerHeader
   const formatDamageShare = (value: number | string) => {
-    // Log de débogage
-    console.log(`PlayerStats: formatting damageShare value:`, value, `of type:`, typeof value);
+    // Log de débogage pour voir la valeur avant traitement
+    console.log(`PlayerStats: formatting damageShare input:`, value, `type:`, typeof value);
     
     try {
-      // Étape 1: Convertir en string pour manipulation sécurisée
-      let valueAsString = String(value || '0');
+      // Conversion en chaîne pour manipulation sécurisée
+      const valueAsString = String(value || '0');
+      console.log(`PlayerStats: valueAsString:`, valueAsString);
       
-      // Étape 2: Nettoyer la chaîne (enlever les %)
-      valueAsString = valueAsString.replace(/%/g, '');
+      // Enlever les signes de pourcentage éventuels
+      const cleanedValue = valueAsString.replace(/%/g, '');
+      console.log(`PlayerStats: cleanedValue:`, cleanedValue);
       
-      // Étape 3: Convertir en nombre
-      let numericValue = parseFloat(valueAsString);
+      // Conversion en nombre pour manipulation
+      let numericValue = parseFloat(cleanedValue);
+      console.log(`PlayerStats: parsed numericValue:`, numericValue);
       
-      console.log(`PlayerStats: parsed damageShare value:`, numericValue);
-      
-      // Étape 4: Validation et formatage
+      // Si c'est NaN, retourner 0%
       if (isNaN(numericValue)) {
         return '0%';
       }
       
-      // Étape 5: Ajustement des décimales (0-1) en pourcentage (0-100)
+      // Si c'est un décimal entre 0-1, le convertir en pourcentage (0-100)
       if (numericValue >= 0 && numericValue <= 1) {
         numericValue = numericValue * 100;
       }
       
-      // Étape 6: Arrondir et formater
+      // Arrondir et formater
       return `${Math.round(numericValue)}%`;
     } catch (error) {
       console.error("Error formatting damage share:", error);
