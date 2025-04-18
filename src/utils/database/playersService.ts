@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Player } from "@/utils/models/types";
 import { adaptPlayerFromDatabase } from "./adapters/playerAdapter";
@@ -152,10 +153,20 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     // Safely collect valid player IDs
     if (data && Array.isArray(data)) {
       for (const item of data) {
-        if (item && typeof item === 'object' && item !== null) {
-          if ('playerid' in item && typeof item.playerid === 'string') {
-            playerIdsArray.push(item.playerid);
-          }
+        // Explicit null check to satisfy TypeScript
+        if (item === null || item === undefined) {
+          continue;
+        }
+        
+        // Type check to ensure item is an object
+        if (typeof item !== 'object') {
+          continue;
+        }
+        
+        // Safe to access properties after checking item is a non-null object
+        const nonNullItem = item as Record<string, unknown>;
+        if ('playerid' in nonNullItem && typeof nonNullItem.playerid === 'string') {
+          playerIdsArray.push(nonNullItem.playerid);
         }
       }
     }
@@ -169,11 +180,17 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
       if (data && Array.isArray(data)) {
         for (const item of data) {
           // More strict null check and type guard
-          if (item && typeof item === 'object' && item !== null) {
-            // Use type assertion after verification
-            const playerData = item as Record<string, unknown>;
-            adaptedPlayers.push(adaptPlayerFromDatabase({...playerData, image: ''}));
+          if (item === null || item === undefined) {
+            continue;
           }
+          
+          if (typeof item !== 'object') {
+            continue;
+          }
+          
+          // Use type assertion after verification
+          const playerData = item as Record<string, unknown>;
+          adaptedPlayers.push(adaptPlayerFromDatabase({...playerData, image: ''}));
         }
       }
       
@@ -189,10 +206,22 @@ export const getPlayers = async (page?: number, pageSize?: number): Promise<Play
     const imageMap = new Map<string, string>();
     if (playerImageData && !playerImageError) {
       for (const item of playerImageData) {
-        if (item && typeof item === 'object' && item !== null) {
-          if ('playerid' in item && 'image' in item && item.playerid) {
-            imageMap.set(item.playerid, item.image || '');
-          }
+        // Explicit null check to satisfy TypeScript
+        if (item === null || item === undefined) {
+          continue;
+        }
+        
+        // Type check to ensure item is an object
+        if (typeof item !== 'object') {
+          continue;
+        }
+        
+        // Safe to access properties after checking item is a non-null object
+        const nonNullItem = item as Record<string, unknown>;
+        if ('playerid' in nonNullItem && 'image' in nonNullItem && nonNullItem.playerid) {
+          const playerId = String(nonNullItem.playerid);
+          const image = nonNullItem.image !== null ? String(nonNullItem.image) : '';
+          imageMap.set(playerId, image);
         }
       }
       console.log(`Retrieved ${imageMap.size} player images`);
