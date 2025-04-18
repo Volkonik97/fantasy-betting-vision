@@ -175,7 +175,7 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
 
     
     // Normalize image URLs
-    const normalizedPlayers = players.map(player => {
+    const normalizedPlayers = adaptedPlayers.map(player => {
       // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
       const hasImageInCache = hasImageForPlayer(player.id);
       
