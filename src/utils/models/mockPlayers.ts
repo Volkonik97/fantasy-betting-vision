@@ -13,7 +13,8 @@ export const players: Player[] = [
     kda: 4.2,
     csPerMin: 8.7,
     damageShare: 0.24,
-    championPool: ['Gnar', 'Jax', 'Jayce']
+    killParticipation: 0.68, // Added kill participation
+    championPool: 'Gnar, Jax, Jayce' // Changed to string instead of array
   },
   {
     id: 'p2',
@@ -24,7 +25,8 @@ export const players: Player[] = [
     kda: 4.8,
     csPerMin: 6.2,
     damageShare: 0.18,
-    championPool: ['Viego', 'Lee Sin', 'Vi']
+    killParticipation: 0.72, // Added kill participation
+    championPool: 'Viego, Lee Sin, Vi' // Changed to string instead of array
   },
   {
     id: 'p3',
@@ -35,7 +37,8 @@ export const players: Player[] = [
     kda: 5.6,
     csPerMin: 9.1,
     damageShare: 0.28,
-    championPool: ['Azir', 'Ahri', 'Ryze']
+    killParticipation: 0.65, // Added kill participation
+    championPool: 'Azir, Ahri, Ryze' // Changed to string instead of array
   },
   {
     id: 'p4',
@@ -46,7 +49,8 @@ export const players: Player[] = [
     kda: 7.2,
     csPerMin: 10.3,
     damageShare: 0.30,
-    championPool: ['Jinx', 'Aphelios', 'Kai\'Sa']
+    killParticipation: 0.78, // Added kill participation
+    championPool: 'Jinx, Aphelios, Kai\'Sa' // Changed to string instead of array
   },
   {
     id: 'p5',
@@ -57,7 +61,8 @@ export const players: Player[] = [
     kda: 6.8,
     csPerMin: 1.2,
     damageShare: 0.10,
-    championPool: ['Thresh', 'Nautilus', 'Lulu']
+    killParticipation: 0.85, // Added kill participation
+    championPool: 'Thresh, Nautilus, Lulu' // Changed to string instead of array
   },
   
   // Gen.G Players
@@ -70,7 +75,8 @@ export const players: Player[] = [
     kda: 3.8,
     csPerMin: 8.5,
     damageShare: 0.22,
-    championPool: ['Gnar', 'Gragas', 'Renekton']
+    killParticipation: 0.62, // Added kill participation
+    championPool: 'Gnar, Gragas, Renekton' // Changed to string instead of array
   },
   {
     id: 'p7',
@@ -81,7 +87,8 @@ export const players: Player[] = [
     kda: 4.5,
     csPerMin: 6.0,
     damageShare: 0.16,
-    championPool: ['Wukong', 'Trundle', 'Vi']
+    killParticipation: 0.76, // Added kill participation
+    championPool: 'Wukong, Trundle, Vi' // Changed to string instead of array
   },
   {
     id: 'p8',
@@ -92,7 +99,8 @@ export const players: Player[] = [
     kda: 6.2,
     csPerMin: 9.8,
     damageShare: 0.29,
-    championPool: ['Azir', 'Sylas', 'Akali']
+    killParticipation: 0.68, // Added kill participation
+    championPool: 'Azir, Sylas, Akali' // Changed to string instead of array
   },
   {
     id: 'p9',
@@ -103,7 +111,8 @@ export const players: Player[] = [
     kda: 6.8,
     csPerMin: 10.1,
     damageShare: 0.31,
-    championPool: ['Zeri', 'Lucian', 'Aphelios']
+    killParticipation: 0.82, // Added kill participation
+    championPool: 'Zeri, Lucian, Aphelios' // Changed to string instead of array
   },
   {
     id: 'p10',
@@ -114,7 +123,8 @@ export const players: Player[] = [
     kda: 5.6,
     csPerMin: 0.9,
     damageShare: 0.09,
-    championPool: ['Tahm Kench', 'Nami', 'Rakan']
+    killParticipation: 0.88, // Added kill participation
+    championPool: 'Tahm Kench, Nami, Rakan' // Changed to string instead of array
   }
 ];
 

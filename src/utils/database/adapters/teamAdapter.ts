@@ -1,4 +1,3 @@
-
 import { Team } from "@/utils/models/types";
 
 /**
@@ -74,6 +73,7 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     return {
       id: '',
       name: '',
+      logo: '', // Added missing logo property
       region: 'Unknown',
       winRate: 0,
       blueWinRate: 0,
@@ -163,7 +163,12 @@ export const adaptTeamFromDatabase = (dbTeam: any): Team => {
     earlygame_score: dbTeam.earlygame_score || 0,
     objectives_score: dbTeam.objectives_score || 0,
     dragon_diff: dbTeam.dragon_diff || 0,
-    tower_diff: dbTeam.tower_diff || 0
+    tower_diff: dbTeam.tower_diff || 0,
+    
+    // Additional fields
+    avg_golddiffat15: dbTeam.avg_golddiffat15 || 0,
+    avg_xpdiffat15: dbTeam.avg_xpdiffat15 || 0,
+    avg_csdiffat15: dbTeam.avg_csdiffat15 || 0
   };
 };
 
@@ -197,6 +202,10 @@ export const adaptTeamForDatabase = (team: Team): RawDatabaseTeam => {
     avg_dragons_against: team.avg_dragons_against || 0,
     avg_towers_against: team.avg_towers_against || 0,
     avg_heralds: team.avg_heralds || 0,
-    avg_void_grubs: team.avg_void_grubs || 0
+    avg_void_grubs: team.avg_void_grubs || 0,
+    // Add mapping for additional field
+    avg_golddiffat15: team.avg_golddiffat15 || 0,
+    avg_xpdiffat15: team.avg_xpdiffat15 || 0,
+    avg_csdiffat15: team.avg_csdiffat15 || 0
   };
 };

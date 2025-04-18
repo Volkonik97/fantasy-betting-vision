@@ -149,6 +149,7 @@ export function playerToPlayerObject(playerCsv: any): Player {
     kda: parseFloat(playerCsv.kda) || 0,
     csPerMin: parseFloat(playerCsv.csPerMin) || 0,
     damageShare: parseFloat(playerCsv.damageShare) || 0,
+    killParticipation: parseFloat(playerCsv.killParticipation || '0') || 0, // Added missing field with default
     championPool: playerCsv.championPool ? 
       (Array.isArray(playerCsv.championPool) ? 
         playerCsv.championPool : 

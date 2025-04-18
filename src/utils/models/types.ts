@@ -1,4 +1,3 @@
-
 export type PlayerRole = "Top" | "Jungle" | "Mid" | "ADC" | "Support" | "Unknown";
 
 export interface Player {
@@ -9,7 +8,7 @@ export interface Player {
   kda: number;
   csPerMin: number;
   killParticipation: number;
-  championPool: string;
+  championPool: string[] | string;
   image: string;
   // Statistics fields
   damageShare?: number;
@@ -75,6 +74,10 @@ export interface Team {
   objectives_score?: number;
   dragon_diff?: number;
   tower_diff?: number;
+  // Additional fields from database
+  avg_golddiffat15?: number;
+  avg_xpdiffat15?: number;
+  avg_csdiffat15?: number;
 }
 
 export interface MatchResult {
@@ -113,7 +116,6 @@ export interface Match {
   players?: Player[];
 }
 
-// Timeline statistics for side analysis
 export interface TimelineStatPoint {
   avgGold: number;
   avgGoldDiff: number;
@@ -122,7 +124,7 @@ export interface TimelineStatPoint {
   avgKills: number;
   avgDeaths: number;
   avgAssists?: number;
-  avgXp?: number;  // Added for TimelineChart
+  avgXp?: number;
 }
 
 export interface TimelineStats {
@@ -143,7 +145,7 @@ export interface SideStatistics {
   blueFirstBaron?: number;
   redFirstBaron?: number;
   timelineStats?: TimelineStats;
-  teamId?: string; // Added for sideStatisticsService
+  teamId?: string;
 }
 
 export interface Tournament {
@@ -153,5 +155,5 @@ export interface Tournament {
   startDate: string;
   endDate: string;
   matches?: Match[];
-  logo?: string; // Added for use in Tournaments.tsx
+  logo?: string;
 }
