@@ -6,6 +6,25 @@ export function adaptPlayerFromDatabase(player: any): Player {
   const damageShare = player.damage_share || player.damageshare;
   console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, damageShare);
   
+  // Parse the damage share safely - ensure it's a valid number
+  let parsedDamageShare: number;
+  try {
+    // Convert to string first (to handle various formats including percentages)
+    const damageShareStr = String(damageShare || '0').replace(/%/g, '');
+    parsedDamageShare = parseFloat(damageShareStr);
+    
+    // If it's a valid number but extremely small (like 0.00001), set to 0
+    if (!isNaN(parsedDamageShare) && Math.abs(parsedDamageShare) < 0.0001) {
+      parsedDamageShare = 0;
+    }
+    
+    // Log the parsed value for debugging
+    console.log(`adaptPlayerFromDatabase: parsed damage_share for ${player.playername}:`, parsedDamageShare);
+  } catch (error) {
+    console.error(`Error parsing damage_share for player ${player.playername}:`, error);
+    parsedDamageShare = 0;
+  }
+  
   const adaptedPlayer = {
     id: player.playerid || "",
     name: player.playername || "",
@@ -13,7 +32,7 @@ export function adaptPlayerFromDatabase(player: any): Player {
     team: player.teamid || "",
     kda: parseFloat(formatNumberField(player.kda)),
     csPerMin: parseFloat(formatNumberField(player.cspm)),
-    damageShare: parseFloat(formatNumberField(damageShare)),
+    damageShare: isNaN(parsedDamageShare) ? 0 : parsedDamageShare,
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };

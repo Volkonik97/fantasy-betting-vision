@@ -8,34 +8,39 @@ interface PlayerStatsProps {
 }
 
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
-  // Amélioration de la gestion du pourcentage de dégâts
+  // Amélioration de la gestion du pourcentage de dégâts avec la même technique que dans PlayerHeader
   const formatDamageShare = (value: number | string) => {
-    // Add debug logs to trace value before processing
+    // Log de débogage
     console.log(`PlayerStats: formatting damageShare value:`, value, `of type:`, typeof value);
     
-    // Convert to string first to safely work with any type
-    const valueAsString = String(value || '0');
-    
-    // Remove any percentage sign and convert to number
-    const numericValue = parseFloat(valueAsString.replace('%', ''));
-    
-    console.log(`PlayerStats: converted damageShare value:`, numericValue);
-
-    // Validation du nombre
-    if (isNaN(numericValue)) return '0%';
-
-    // Si la valeur est entre 0 et 1, la convertir en pourcentage
-    if (numericValue >= 0 && numericValue <= 1) {
-      return `${Math.round(numericValue * 100)}%`;
-    }
-
-    // Si la valeur est déjà un pourcentage
-    if (numericValue >= 0 && numericValue <= 100) {
+    try {
+      // Étape 1: Convertir en string pour manipulation sécurisée
+      let valueAsString = String(value || '0');
+      
+      // Étape 2: Nettoyer la chaîne (enlever les %)
+      valueAsString = valueAsString.replace(/%/g, '');
+      
+      // Étape 3: Convertir en nombre
+      let numericValue = parseFloat(valueAsString);
+      
+      console.log(`PlayerStats: parsed damageShare value:`, numericValue);
+      
+      // Étape 4: Validation et formatage
+      if (isNaN(numericValue)) {
+        return '0%';
+      }
+      
+      // Étape 5: Ajustement des décimales (0-1) en pourcentage (0-100)
+      if (numericValue >= 0 && numericValue <= 1) {
+        numericValue = numericValue * 100;
+      }
+      
+      // Étape 6: Arrondir et formater
       return `${Math.round(numericValue)}%`;
+    } catch (error) {
+      console.error("Error formatting damage share:", error);
+      return '0%';
     }
-
-    // Fallback
-    return '0%';
   };
 
   return (
