@@ -171,34 +171,30 @@ export const getAllPlayers = async (page: number, pageSize: number): Promise<Pla
     await preloadPlayerImagesCache();
     
     const players = await getPlayers(page, pageSize);
+
     const adaptedPlayers = players.map(player => {
       const adapted = adaptPlayerFromDatabase(player);
       if (!adapted.id || !adapted.name) {
         console.warn("⚠️ Player vide ou invalide après adaptation :", adapted, player);
       }
       return adapted;
-    });
+});
+
+// ✅ Étape 1 – filtrer uniquement les joueurs valides
+const validPlayers = adaptedPlayers.filter(player => player.id && player.name);
 
     
-    // Normalize image URLs
-    const normalizedPlayers = adaptedPlayers.map(player => {
-      // Vérifier d'abord si nous avons une image dans le cache pour cet ID de joueur
+    const normalizedPlayers = validPlayers.map(player => {
       const hasImageInCache = hasImageForPlayer(player.id);
-      
-      // Si le joueur a déjà une URL d'image, la normaliser
-      // Sinon, utiliser l'ID du joueur si nous savons qu'il a une image dans le cache
       const imageToNormalize = player.image || (hasImageInCache ? `playerid${player.id}` : null);
-      
-      // Normaliser l'URL de l'image
       const normalizedImageUrl = normalizeImageUrl(imageToNormalize);
-      
-      console.log(`Joueur ${player.name} (ID: ${player.id}), image originale: ${player.image}, cache: ${hasImageInCache}, normalisée: ${normalizedImageUrl}`);
-      
+    
       return {
         ...player,
         image: normalizedImageUrl
       };
     });
+    
     
     // Log debugging info
     const playersWithImages = normalizedPlayers.filter(p => p.image).length;
