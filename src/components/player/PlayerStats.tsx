@@ -8,38 +8,41 @@ interface PlayerStatsProps {
 }
 
 const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare }) => {
-  // Formatage du damageShare exactement comme dans PlayerHeader
-  const formatDamageShare = (value: number | string) => {
-    // Log de débogage pour voir la valeur avant traitement
-    console.log(`PlayerStats: formatting damageShare input:`, value, `type:`, typeof value);
+  // Format the damage share value to ensure proper display
+  const formatDamageShareValue = (value: number | string): string => {
+    // Log for debugging the input value
+    console.log(`PlayerStats: formatting damageShare:`, value, typeof value);
+    
+    if (value === null || value === undefined) {
+      return '0%';
+    }
     
     try {
-      // Conversion en chaîne pour manipulation sécurisée
-      const valueAsString = String(value || '0');
-      console.log(`PlayerStats: valueAsString:`, valueAsString);
+      // Convert to string first for safe handling
+      const valueAsString = String(value).trim();
       
-      // Enlever les signes de pourcentage éventuels
+      // Remove any percentage sign
       const cleanedValue = valueAsString.replace(/%/g, '');
-      console.log(`PlayerStats: cleanedValue:`, cleanedValue);
       
-      // Conversion en nombre pour manipulation
+      // Convert to float
       let numericValue = parseFloat(cleanedValue);
-      console.log(`PlayerStats: parsed numericValue:`, numericValue);
       
-      // Si c'est NaN, retourner 0%
+      // Check if valid number
       if (isNaN(numericValue)) {
+        console.log('PlayerStats: invalid damageShare value:', valueAsString);
         return '0%';
       }
       
-      // Si c'est un décimal entre 0-1, le convertir en pourcentage (0-100)
-      if (numericValue >= 0 && numericValue <= 1) {
+      // If it's a decimal between 0-1, convert to percentage
+      if (numericValue > 0 && numericValue < 1) {
         numericValue = numericValue * 100;
+        console.log(`PlayerStats: converted decimal ${value} to percentage: ${numericValue}%`);
       }
       
-      // Arrondir et formater
+      // Round to nearest integer and return with % sign
       return `${Math.round(numericValue)}%`;
     } catch (error) {
-      console.error("Error formatting damage share:", error);
+      console.error('Error formatting damage share:', error);
       return '0%';
     }
   };
@@ -55,7 +58,7 @@ const PlayerStats: React.FC<PlayerStatsProps> = ({ kda, csPerMin, damageShare })
         <p className="text-xs text-gray-500">CS/min</p>
       </div>
       <div>
-        <p className="font-semibold">{formatDamageShare(damageShare)}</p>
+        <p className="font-semibold">{formatDamageShareValue(damageShare)}</p>
         <p className="text-xs text-gray-500">DMG%</p>
       </div>
     </div>

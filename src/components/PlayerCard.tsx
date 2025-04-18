@@ -13,50 +13,20 @@ interface PlayerCardProps {
 
 const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
   if (!player) {
-    console.error("PlayerCard a reçu un joueur indéfini");
+    console.error("PlayerCard received undefined player");
     return null;
   }
   
   const playerId = player.id ? player.id.trim() : null;
   
   // Log player data for debugging
-  console.log(`PlayerCard: Player ${player.name} (ID: ${playerId}):`, {
+  console.log(`PlayerCard: Player ${player.name} data:`, {
     damageShare: player.damageShare,
-    type: typeof player.damageShare
+    type: typeof player.damageShare,
+    kda: player.kda,
+    csPerMin: player.csPerMin
   });
-  
-  // Vérification explicite et conversion des valeurs de stats pour s'assurer qu'elles sont correctes
-  // Cette approche est similaire à celle utilisée dans PlayerHeader.tsx
-  const getDamageShareValue = () => {
-    // Récupérer la valeur initiale
-    let damageShareValue = player.damageShare;
-    
-    console.log(`PlayerCard processing damageShareValue for ${player.name}:`, damageShareValue, typeof damageShareValue);
-    
-    // Convertir en chaîne pour traitement sécurisé
-    const valueAsString = String(damageShareValue || '0');
-    
-    // Supprimer tout signe de pourcentage et convertir en nombre
-    const cleanedValue = valueAsString.replace(/%/g, '');
-    const numericValue = parseFloat(cleanedValue);
-    
-    console.log(`PlayerCard cleaned value for ${player.name}:`, cleanedValue, numericValue);
-    
-    // Si c'est un décimal entre 0-1, convertir en pourcentage
-    if (!isNaN(numericValue)) {
-      const finalValue = (numericValue >= 0 && numericValue <= 1) 
-        ? numericValue * 100 
-        : numericValue;
-      
-      return finalValue;
-    }
-    
-    return 0;
-  };
-  
-  // Calculer la valeur de damageShare une seule fois
-  const processedDamageShare = getDamageShareValue();
-  
+
   return (
     <div className="group h-full bg-white rounded-lg shadow-subtle hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="relative">
@@ -82,7 +52,7 @@ const PlayerCard = ({ player, showTeamLogo = false }: PlayerCardProps) => {
         <PlayerStats 
           kda={player.kda} 
           csPerMin={player.csPerMin} 
-          damageShare={processedDamageShare}
+          damageShare={player.damageShare}
         />
       </div>
     </div>

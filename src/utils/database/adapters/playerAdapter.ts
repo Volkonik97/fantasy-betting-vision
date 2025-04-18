@@ -3,41 +3,46 @@ import { Player } from "@/utils/models/types";
 
 // Ensure role is always set to a valid PlayerRole value
 export function adaptPlayerFromDatabase(player: any): Player {
-  const damageShare = player.damage_share || player.damageshare;
-  console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, damageShare);
+  // Get damageShare from database field (checking for both field names)
+  const rawDamageShare = player.damage_share || player.damageshare;
+  console.log(`adaptPlayerFromDatabase: processing player ${player.playername} with damage_share:`, rawDamageShare);
   
-  // Traiter damageShare de la même manière que dans PlayerHeader
+  // Convert damageShare to a proper number format
   let parsedDamageShare: number;
   try {
-    // Convertir en chaîne d'abord pour gérer différents formats
-    const damageShareStr = String(damageShare || '0').replace(/%/g, '');
+    // First convert to string for safe processing
+    const damageShareStr = String(rawDamageShare || '0').replace(/%/g, '');
+    // Convert to number
     parsedDamageShare = parseFloat(damageShareStr);
     
-    // Si c'est un nombre valide mais extrêmement petit, mettre à 0
+    // If it's a decimal between 0-1, correctly convert it to percentage (0-100)
+    if (!isNaN(parsedDamageShare) && parsedDamageShare > 0 && parsedDamageShare < 1) {
+      parsedDamageShare = parsedDamageShare * 100;
+      console.log(`adaptPlayerFromDatabase: converted decimal damage_share to percentage: ${parsedDamageShare}%`);
+    }
+    
+    // If it's a very small number, zero it out to avoid displaying near-zero values
     if (!isNaN(parsedDamageShare) && Math.abs(parsedDamageShare) < 0.0001) {
       parsedDamageShare = 0;
     }
     
-    // Loguer la valeur pour débogage
-    console.log(`adaptPlayerFromDatabase: parsed damage_share for ${player.playername}:`, parsedDamageShare);
+    console.log(`adaptPlayerFromDatabase: final damage_share for ${player.playername}:`, parsedDamageShare);
   } catch (error) {
     console.error(`Error parsing damage_share for player ${player.playername}:`, error);
     parsedDamageShare = 0;
   }
   
-  const adaptedPlayer = {
+  return {
     id: player.playerid || "",
     name: player.playername || "",
     role: validatePlayerRole(player.position),
     team: player.teamid || "",
     kda: parseFloat(formatNumberField(player.kda)),
     csPerMin: parseFloat(formatNumberField(player.cspm)),
-    damageShare: isNaN(parsedDamageShare) ? 0 : parsedDamageShare,
+    damageShare: parsedDamageShare,
     championPool: player.champion_pool ? String(player.champion_pool) : "",
     image: player.image || ""
   };
-  
-  return adaptedPlayer;
 }
 
 // Convert Player model to database format for saving
